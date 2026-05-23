@@ -1,0 +1,50 @@
+.school-settings-form {
+  align-items: start;
+  display: grid;
+  gap: 22px;
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+
+.school-logo-preview {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px dashed rgba(148, 163, 184, 0.8);
+  border-radius: 20px;
+  color: var(--muted);
+  display: flex;
+  font-weight: 700;
+  height: 180px;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.school-logo-preview img {
+  display: block;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.school-settings-fields {
+  display: grid;
+  gap: 16px;
+}
+
+.school-academic-year-input {
+  -moz-appearance: auto;
+  -webkit-appearance: auto;
+  appearance: auto;
+}
+
+.school-academic-year-input::-webkit-inner-spin-button,
+.school-academic-year-input::-webkit-outer-spin-button {
+  -webkit-appearance: auto;
+  margin-left: 6px;
+  opacity: 1;
+}
+
+.school-settings-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}

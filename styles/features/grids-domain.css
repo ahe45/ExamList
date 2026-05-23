@@ -1,0 +1,223 @@
+.account-management-table td.table-column-id,
+.account-management-table td.table-column-name,
+.account-management-table td.table-column-role,
+.account-management-table td.table-column-recentAccess {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-management-table td.table-column-name strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-pagination {
+  position: relative;
+  z-index: 20;
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 9px 14px;
+}
+
+.table-page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.table-page-size > span {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.table-page-size-select {
+  min-width: 90px;
+  position: relative;
+  z-index: 21;
+}
+
+.page-size-trigger {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 12px;
+  color: var(--text);
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  gap: 10px;
+  justify-content: space-between;
+  min-height: 36px;
+  min-width: 100%;
+  padding: 0 12px;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+  white-space: nowrap;
+}
+
+.page-size-trigger:hover,
+.page-size-trigger:focus-visible {
+  border-color: rgba(40, 88, 184, 0.7);
+  box-shadow: 0 0 0 3px rgba(40, 88, 184, 0.12);
+  outline: none;
+}
+
+.page-size-caret {
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #69788f;
+  flex: 0 0 auto;
+  height: 0;
+  margin-left: 2px;
+  transform: translateY(1px);
+  width: 0;
+}
+
+.page-size-menu {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  bottom: calc(100% + 8px);
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.16);
+  display: grid;
+  gap: 2px;
+  left: 0;
+  max-height: min(280px, calc(100vh - 32px));
+  min-width: max(100%, 112px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  position: absolute;
+  z-index: 120;
+}
+
+.page-size-option {
+  align-items: center;
+  background: #ffffff;
+  border: 0;
+  border-radius: 8px;
+  color: #334155;
+  display: flex;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  justify-content: flex-start;
+  min-height: 32px;
+  padding: 6px 10px;
+  text-align: left;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.page-size-option.active,
+.page-size-option:hover {
+  background: #eef5ff;
+  color: #17324a;
+}
+
+.table-pagination-actions {
+  --page-picker-height: 36px;
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.table-pagination-divider {
+  align-self: center;
+  background: #d7e1eb;
+  display: inline-block;
+  height: 24px;
+  margin: 0 6px 0 8px;
+  width: 1px;
+}
+
+.page-picker-group {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.page-picker {
+  align-items: center;
+  display: inline-flex;
+  gap: 7px;
+  min-width: 0;
+}
+
+.page-picker-label {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+.page-picker-select {
+  font: inherit;
+  font-size: 0.8rem;
+  height: var(--page-picker-height);
+  min-width: 68px;
+}
+
+.page-picker-select {
+  padding-left: 12px !important;
+}
+
+.table-pagination-summary {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  text-align: right;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.table-pagination-ellipsis {
+  padding: 0 2px;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.page-btn {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid #d7e1eb;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #445466;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.page-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

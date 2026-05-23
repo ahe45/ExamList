@@ -1,0 +1,423 @@
+.school-management-panel {
+  margin: 0 auto;
+  width: min(100%, 1180px);
+}
+
+.school-search-field {
+  min-width: min(460px, 100%);
+}
+
+.school-header-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.school-list {
+  display: grid;
+  gap: 12px;
+}
+
+.school-list-row {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(203, 213, 225, 0.58);
+  border-radius: 18px;
+  box-shadow: 0 14px 28px rgba(14, 24, 48, 0.05);
+  cursor: pointer;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  padding: 18px 20px;
+  position: relative;
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.school-list-row:hover,
+.school-list-row:focus-within {
+  background: #f3f7ff;
+  border-color: rgba(45, 99, 245, 0.28);
+  box-shadow: 0 18px 38px rgba(45, 99, 245, 0.12);
+  transform: translateY(-2px);
+}
+
+.school-list-row:hover .school-list-title,
+.school-list-row:focus-within .school-list-title {
+  color: var(--accent-strong);
+}
+
+.school-list-row:hover .school-meta-badge,
+.school-list-row:focus-within .school-meta-badge {
+  background: #eaf2ff;
+  color: var(--accent-strong);
+}
+
+.school-list-main {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  gap: 22px;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.school-list-heading {
+  display: grid;
+  flex: 0 1 220px;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.school-list-title {
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.school-list-code {
+  color: #64748b;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.school-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.school-meta-badge {
+  background: var(--panel-muted);
+  border: 1px solid rgba(223, 229, 240, 0.9);
+  border-radius: 999px;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 10px 13px;
+  white-space: nowrap;
+}
+
+.school-list-side {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.school-icon-action {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(203, 213, 225, 0.76);
+  border-radius: 14px;
+  color: var(--muted);
+  display: inline-flex;
+  height: 40px;
+  justify-content: center;
+  padding: 0;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+  width: 40px;
+}
+
+.school-icon-action .button-icon {
+  height: 18px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+  width: 18px;
+}
+
+.school-icon-action:hover,
+.school-icon-action:focus-visible {
+  background: #ffffff;
+  border-color: rgba(45, 99, 245, 0.28);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+  color: var(--accent-strong);
+}
+
+.school-settings-button {
+  background: rgba(234, 242, 255, 0.96);
+  border-color: rgba(45, 99, 245, 0.26);
+  color: var(--accent-strong);
+}
+
+.school-delete-button {
+  background: rgba(255, 232, 238, 0.96);
+  border-color: rgba(210, 65, 91, 0.28);
+  color: var(--danger);
+}
+
+.school-delete-button:hover,
+.school-delete-button:focus-visible {
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #dc2626;
+}
+
+.school-icon-action:disabled,
+.school-icon-action:disabled:hover,
+.school-icon-action:disabled:focus-visible {
+  background: #f8fafc;
+  border-color: rgba(203, 213, 225, 0.68);
+  box-shadow: none;
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+}
+
+.school-empty-state {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px dashed rgba(203, 213, 225, 0.86);
+  border-radius: 18px;
+  color: var(--muted);
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  min-height: 160px;
+  padding: 24px;
+  text-align: center;
+}
+
+.school-empty-state strong {
+  color: var(--text);
+}
+
+.school-modal-overlay {
+  display: grid;
+}
+
+.school-modal-card {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.school-modal-field-row {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.school-suffixed-input {
+  align-items: stretch;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(203, 213, 225, 0.76);
+  border-radius: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 44px;
+  overflow: hidden;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.school-suffixed-input:focus-within {
+  border-color: rgba(45, 99, 245, 0.38);
+  box-shadow: 0 0 0 3px rgba(45, 99, 245, 0.08);
+}
+
+.school-suffixed-input input,
+.school-suffixed-input input:disabled {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  min-height: 42px;
+  min-width: 0;
+  padding: 12px 0 12px 14px;
+  text-align: right;
+}
+
+.school-suffixed-input input:focus {
+  outline: 0;
+}
+
+.school-suffixed-input .school-input-suffix {
+  align-items: center;
+  color: var(--text);
+  display: inline-flex;
+  font-size: 0.88rem;
+  font-weight: 800;
+  min-height: 42px;
+  padding: 0 14px 0 8px;
+  white-space: nowrap;
+}
+
+.school-year-input {
+  display: block;
+  position: relative;
+}
+
+.school-year-input input,
+.school-year-input input:disabled {
+  padding-right: 82px;
+  width: 100%;
+}
+
+.school-year-input input::-webkit-outer-spin-button,
+.school-year-input input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.school-year-input input[type="number"] {
+  appearance: textfield;
+}
+
+.school-year-input .school-input-suffix {
+  bottom: 0;
+  min-height: 0;
+  padding: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 32px;
+  top: 0;
+}
+
+.school-year-stepper {
+  display: grid;
+  gap: 1px;
+  height: 22px;
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+}
+
+.school-year-step {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  height: 10px;
+  justify-content: center;
+  padding: 0;
+  width: 14px;
+}
+
+.school-year-step::before {
+  content: "";
+  display: block;
+  height: 0;
+  width: 0;
+}
+
+.school-year-step-up::before {
+  border-bottom: 5px solid #64748b;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+}
+
+.school-year-step-down::before {
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #64748b;
+}
+
+.school-year-step:hover::before,
+.school-year-step:focus-visible::before {
+  border-bottom-color: var(--accent-strong);
+  border-top-color: var(--accent-strong);
+}
+
+.school-year-step:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.school-modal-code-input {
+  text-align: right;
+}
+
+.school-modal-description {
+  resize: none;
+}
+
+.school-modal-deletion-password-row {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.school-modal-deletion-password-field {
+  min-width: 0;
+}
+
+.school-modal-settings-section {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 14px;
+  padding-top: 16px;
+}
+
+.school-modal-settings-section h3 {
+  font-size: 1rem;
+  margin: 2px 0 0;
+}
+
+.school-modal-settings-section .helper-text {
+  margin: 6px 0 0;
+}
+
+.school-modal-settings-form {
+  grid-template-columns: 180px minmax(0, 1fr);
+}
+
+.school-modal-settings-form .school-logo-preview {
+  height: 148px;
+}
+
+.school-modal-actions {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.school-modal-actions-left,
+.school-modal-actions-right {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .school-list-row {
+    grid-template-columns: 1fr;
+  }
+
+  .school-list-main {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .school-list-heading {
+    min-width: 0;
+  }
+
+  .school-list-side {
+    justify-content: space-between;
+  }
+
+  .school-modal-field-row,
+  .school-modal-deletion-password-row {
+    grid-template-columns: 1fr;
+  }
+
+  .school-modal-actions,
+  .school-modal-actions-left,
+  .school-modal-actions-right {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .school-modal-actions-left,
+  .school-modal-actions-right {
+    flex-direction: column;
+  }
+}

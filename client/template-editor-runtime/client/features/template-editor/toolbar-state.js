@@ -1,0 +1,299 @@
+(function (globalScope, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+    return;
+  }
+
+  globalScope.ExamListTemplateEditorToolbarState = factory();
+})(typeof globalThis !== "undefined" ? globalThis : this, () => {
+  const TEMPLATE_EDITOR_CSS_PIXELS_PER_POINT = 96 / 72;
+
+  function formatTemplateEditorToolbarPointValue(value) {
+    const roundedValue = Math.round(value * 10) / 10;
+    return Number.isInteger(roundedValue) ? String(roundedValue) : roundedValue.toFixed(1).replace(/\.0$/, "");
+  }
+
+  function parseTemplateEditorToolbarPointValue(rawValue, fallbackValue = "") {
+    const trimmedValue = String(rawValue || "").trim();
+
+    if (!trimmedValue) {
+      return fallbackValue;
+    }
+
+    const numericValue = Number.parseFloat(trimmedValue);
+
+    if (!Number.isFinite(numericValue)) {
+      return fallbackValue;
+    }
+
+    if (/pt$/i.test(trimmedValue)) {
+      return formatTemplateEditorToolbarPointValue(Math.max(0, numericValue));
+    }
+
+    return formatTemplateEditorToolbarPointValue(Math.max(0, numericValue / TEMPLATE_EDITOR_CSS_PIXELS_PER_POINT));
+  }
+
+  function createTemplateEditorToolbarStateController({
+    TEMPLATE_EDITOR_DEFAULT_FONT_FAMILY,
+    TEMPLATE_EDITOR_DEFAULT_FONT_SIZE,
+    getTemplateEditorActiveTableSelection,
+    getTemplateEditorBorderColorElement,
+    getTemplateEditorBorderStyleElement,
+    getTemplateEditorBorderTargetElement,
+    getTemplateEditorBorderWidthElement,
+    getTemplateEditorCellPaddingBottomElement,
+    getTemplateEditorCellPaddingLeftElement,
+    getTemplateEditorCellPaddingRightElement,
+    getTemplateEditorCellPaddingTopElement,
+    getTemplateEditorCellShadingElement,
+    getTemplateEditorCellShadingValue,
+    getTemplateEditorCellWidthElement,
+    getTemplateEditorFontFamilyElement,
+    getTemplateEditorFontSizeElement,
+    getTemplateEditorModal,
+    getTemplateEditorPixelValue,
+    getTemplateEditorRowHeightElement,
+    getTemplateEditorSelectedCell,
+    getTemplateEditorSelectionNode,
+    getTemplateEditorSurface,
+    getTemplateEditorTextColorElement,
+    getTemplateEditorTextShadingElement,
+    syncEditorToolbarBorderSelectControl,
+    syncEditorToolbarColorControls,
+    updateEditorToolbarFormattingState,
+  }) {
+    function syncTemplateTableVerticalAlignButtons(selectedCell) {
+      const templateEditorModal = getTemplateEditorModal();
+
+      if (!templateEditorModal) {
+        return;
+      }
+
+      const activeValue = selectedCell
+        ? (() => {
+            const computedValue = String(selectedCell.style.verticalAlign || window.getComputedStyle(selectedCell).verticalAlign || "")
+              .trim()
+              .toLowerCase();
+            return computedValue === "bottom" ? "bottom" : computedValue === "middle" ? "middle" : "top";
+          })()
+        : "";
+
+      templateEditorModal
+        .querySelectorAll("[data-template-table-action^='cell-vertical-align-']")
+        .forEach((buttonElement) => {
+          const buttonValue = String(buttonElement.dataset.templateTableAction || "").replace("cell-vertical-align-", "");
+          const isActive = activeValue !== "" && buttonValue === activeValue;
+
+          buttonElement.classList.toggle("is-active", isActive);
+          buttonElement.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+    }
+
+    function getTemplateEditorFormattingTargetCells() {
+      const tableSelection = getTemplateEditorActiveTableSelection();
+      const templateEditorSurface = getTemplateEditorSurface();
+
+      if (!tableSelection?.selectedCells?.length || !templateEditorSurface) {
+        return [];
+      }
+
+      return tableSelection.selectedCells.filter((cell) => templateEditorSurface.contains(cell));
+    }
+
+    function getTemplateEditorBorderControlSide(borderTargetElement) {
+      const targetValue = String(borderTargetElement?.value || "").trim();
+      return ["top", "right", "bottom", "left"].includes(targetValue) ? targetValue : "top";
+    }
+
+    function getTemplateEditorBorderStyleProperty(side, suffix) {
+      return `border${side[0].toUpperCase()}${side.slice(1)}${suffix}`;
+    }
+
+    function getTemplateEditorCellPaddingValue(selectedCell, propertyName) {
+      if (!selectedCell) {
+        return "";
+      }
+
+      const computedStyle = window.getComputedStyle(selectedCell);
+      return parseTemplateEditorToolbarPointValue(
+        selectedCell.style[propertyName] || computedStyle[propertyName],
+        "",
+      );
+    }
+
+    function updateTemplateEditorFormattingControls() {
+      const templateEditorSurface = getTemplateEditorSurface();
+      const templateEditorModal = getTemplateEditorModal();
+      const templateEditorFontFamily = getTemplateEditorFontFamilyElement();
+      const templateEditorFontSize = getTemplateEditorFontSizeElement();
+      const templateEditorTextColor = getTemplateEditorTextColorElement();
+      const templateEditorTextShading = getTemplateEditorTextShadingElement();
+
+      if (
+        !templateEditorSurface ||
+        !templateEditorModal ||
+        templateEditorModal.classList.contains("hidden") ||
+        document.activeElement === templateEditorFontFamily ||
+        document.activeElement === templateEditorFontSize ||
+        document.activeElement === templateEditorTextColor ||
+        document.activeElement === templateEditorTextShading
+      ) {
+        return;
+      }
+
+      const selectionNode = getTemplateEditorSelectionNode();
+      const selectedCell = getTemplateEditorSelectedCell();
+      const tableFormattingCells = getTemplateEditorFormattingTargetCells();
+      const selectionElement =
+        selectionNode instanceof Element ? selectionNode : selectionNode?.parentElement || null;
+      const shouldUseSelectedCellAsTextContext =
+        !selectionNode ||
+        selectionNode === selectedCell ||
+        selectionElement === selectedCell;
+      const contextElement = tableFormattingCells[0] || (shouldUseSelectedCellAsTextContext ? selectedCell : null);
+
+      updateEditorToolbarFormattingState({
+        rootElement: templateEditorSurface,
+        commandAttributeName: "data-template-command",
+        fontFamilyElement: templateEditorFontFamily,
+        fontSizeElement: templateEditorFontSize,
+        textColorElement: templateEditorTextColor,
+        textShadingElement: templateEditorTextShading,
+        selectionNode,
+        contextElement,
+        defaultFontFamily: TEMPLATE_EDITOR_DEFAULT_FONT_FAMILY,
+        defaultFontSize: TEMPLATE_EDITOR_DEFAULT_FONT_SIZE,
+      });
+
+      if (templateEditorFontSize) {
+        templateEditorFontSize.dataset.templateEditorCurrentFontSize = `${templateEditorFontSize.value}pt`;
+      }
+    }
+
+    function updateTemplateTableControls() {
+      const templateEditorModal = getTemplateEditorModal();
+      const templateEditorBorderColor = getTemplateEditorBorderColorElement?.();
+      const templateEditorBorderStyle = getTemplateEditorBorderStyleElement?.();
+      const templateEditorBorderTarget = getTemplateEditorBorderTargetElement?.();
+      const templateEditorBorderWidth = getTemplateEditorBorderWidthElement?.();
+      const templateEditorCellPaddingBottom = getTemplateEditorCellPaddingBottomElement?.();
+      const templateEditorCellPaddingLeft = getTemplateEditorCellPaddingLeftElement?.();
+      const templateEditorCellPaddingRight = getTemplateEditorCellPaddingRightElement?.();
+      const templateEditorCellPaddingTop = getTemplateEditorCellPaddingTopElement?.();
+      const templateEditorCellWidth = getTemplateEditorCellWidthElement();
+      const templateEditorRowHeight = getTemplateEditorRowHeightElement();
+      const templateEditorCellShading = getTemplateEditorCellShadingElement();
+      const activeElement = document.activeElement instanceof Element ? document.activeElement : null;
+      const isActiveBorderDropdown =
+        Boolean(activeElement?.closest(".template-toolbar-icon-select")) ||
+        Boolean(templateEditorModal?.querySelector(".template-toolbar-icon-select.open"));
+      const hasDirtyBorderControl = [
+        templateEditorBorderColor,
+        templateEditorBorderStyle,
+        templateEditorBorderTarget,
+        templateEditorBorderWidth,
+      ].some((element) => element?.dataset?.editorBorderUserValue === "true");
+
+      if (
+        !templateEditorModal ||
+        templateEditorModal.classList.contains("hidden") ||
+        document.activeElement === templateEditorBorderColor ||
+        document.activeElement === templateEditorBorderStyle ||
+        document.activeElement === templateEditorBorderTarget ||
+        document.activeElement === templateEditorBorderWidth ||
+        document.activeElement === templateEditorCellPaddingBottom ||
+        document.activeElement === templateEditorCellPaddingLeft ||
+        document.activeElement === templateEditorCellPaddingRight ||
+        document.activeElement === templateEditorCellPaddingTop ||
+        isActiveBorderDropdown ||
+        hasDirtyBorderControl ||
+        document.activeElement === templateEditorCellWidth ||
+        document.activeElement === templateEditorRowHeight ||
+        document.activeElement === templateEditorCellShading
+      ) {
+        return;
+      }
+
+      const selectedCell = getTemplateEditorSelectedCell();
+
+      if (templateEditorCellWidth) {
+        templateEditorCellWidth.value = getTemplateEditorPixelValue(selectedCell, "width");
+      }
+
+      if (templateEditorRowHeight) {
+        templateEditorRowHeight.value = getTemplateEditorPixelValue(selectedCell, "height");
+      }
+
+      if (templateEditorCellShading) {
+        syncEditorToolbarColorControls({
+          colorInputElement: templateEditorCellShading,
+          colorValue: getTemplateEditorCellShadingValue(selectedCell),
+          fallbackValue: "#ffffff",
+        });
+      }
+
+      if (templateEditorCellPaddingTop) {
+        templateEditorCellPaddingTop.value = getTemplateEditorCellPaddingValue(selectedCell, "paddingTop");
+      }
+
+      if (templateEditorCellPaddingRight) {
+        templateEditorCellPaddingRight.value = getTemplateEditorCellPaddingValue(selectedCell, "paddingRight");
+      }
+
+      if (templateEditorCellPaddingBottom) {
+        templateEditorCellPaddingBottom.value = getTemplateEditorCellPaddingValue(selectedCell, "paddingBottom");
+      }
+
+      if (templateEditorCellPaddingLeft) {
+        templateEditorCellPaddingLeft.value = getTemplateEditorCellPaddingValue(selectedCell, "paddingLeft");
+      }
+
+      const borderControlSide = getTemplateEditorBorderControlSide(templateEditorBorderTarget);
+
+      if (templateEditorBorderWidth && selectedCell) {
+        const computedStyle = window.getComputedStyle(selectedCell);
+        const widthProperty = getTemplateEditorBorderStyleProperty(borderControlSide, "Width");
+        const styleProperty = getTemplateEditorBorderStyleProperty(borderControlSide, "Style");
+        const borderStyle = String(selectedCell.style[styleProperty] || computedStyle[styleProperty] || "solid");
+        const actualBorderWidth = Number.parseFloat(selectedCell.style[widthProperty] || computedStyle[widthProperty] || "1");
+        const borderWidth = borderStyle === "double" && Number.isFinite(actualBorderWidth)
+          ? Math.max(1, actualBorderWidth - 2)
+          : actualBorderWidth;
+        templateEditorBorderWidth.value = String(Number.isFinite(borderWidth) ? Math.max(0, Math.round(borderWidth)) : 1);
+      }
+
+      if (templateEditorBorderStyle && selectedCell) {
+        const styleProperty = getTemplateEditorBorderStyleProperty(borderControlSide, "Style");
+        const borderStyle = String(selectedCell.style[styleProperty] || window.getComputedStyle(selectedCell)[styleProperty] || "solid");
+        templateEditorBorderStyle.value = ["solid", "dashed", "dotted", "double", "none"].includes(borderStyle) ? borderStyle : "solid";
+        syncEditorToolbarBorderSelectControl?.(templateEditorBorderStyle);
+      }
+
+      if (templateEditorBorderColor && selectedCell) {
+        const colorProperty = getTemplateEditorBorderStyleProperty(borderControlSide, "Color");
+        syncEditorToolbarColorControls({
+          colorInputElement: templateEditorBorderColor,
+          colorValue: selectedCell.style[colorProperty] || window.getComputedStyle(selectedCell)[colorProperty],
+          fallbackValue: "#000000",
+        });
+      }
+
+      if (templateEditorBorderTarget && !templateEditorBorderTarget.value) {
+        templateEditorBorderTarget.value = "all";
+      }
+
+      syncEditorToolbarBorderSelectControl?.(templateEditorBorderTarget);
+      syncTemplateTableVerticalAlignButtons(selectedCell);
+    }
+
+    return Object.freeze({
+      getTemplateEditorFormattingTargetCells,
+      updateTemplateEditorFormattingControls,
+      updateTemplateTableControls,
+    });
+  }
+
+  return Object.freeze({
+    createTemplateEditorToolbarStateController,
+  });
+});

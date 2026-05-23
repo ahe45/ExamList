@@ -1,0 +1,482 @@
+.app-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  min-height: 100vh;
+  padding: 86px 24px 24px;
+}
+
+.app-shell.workspace-mode {
+  align-items: start;
+  grid-template-columns: 232px minmax(0, 1fr);
+}
+
+@media (min-width: 1081px) {
+  .app-shell.workspace-mode {
+    align-items: stretch;
+    grid-template-rows: minmax(0, 1fr);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .app-shell.workspace-mode .workspace-sidebar {
+    align-self: start;
+    max-height: 100%;
+    overflow: auto;
+    position: static;
+    top: auto;
+  }
+
+  .app-shell.workspace-mode .page-shell,
+  .app-shell.workspace-mode .content-grid,
+  .app-shell.workspace-mode .view-panel:not(.hidden) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .app-shell.workspace-mode .content-grid {
+    align-content: stretch;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .app-shell.workspace-mode .view-panel:not(.hidden) > .view-stack,
+  .app-shell.workspace-mode .view-panel:not(.hidden) > .template-editor-shell {
+    height: 100%;
+    min-height: 0;
+  }
+}
+
+.app-shell.template-list-mode .page-shell {
+  margin: 0 auto;
+  max-width: 1320px;
+  width: 100%;
+}
+
+html[data-shell-mode="template-list"] .app-shell .page-shell {
+  margin: 0 auto;
+  max-width: 1320px;
+  width: 100%;
+}
+
+.brand {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  display: flex;
+  flex: 0 0 auto;
+  gap: 14px;
+  min-height: 48px;
+  padding: 0;
+  text-align: left;
+}
+
+.brand-badge {
+  display: block;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 14px 24px rgba(45, 99, 245, 0.24));
+  height: 41px;
+  object-fit: contain;
+  width: 41px;
+}
+
+.brand-kicker {
+  color: #8794a8;
+  display: block;
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.brand > div {
+  display: grid;
+  gap: 2px;
+}
+
+.brand h1 {
+  color: var(--text);
+  font-family: "Manrope", "Noto Sans KR", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.page-shell {
+  display: grid;
+  gap: 18px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.app-shell.workspace-mode .page-shell {
+  margin-left: 0;
+  margin-right: 0;
+  max-width: none;
+  width: 100%;
+}
+
+.app-shell.workspace-mode .content-grid {
+  min-width: 0;
+  width: 100%;
+}
+
+html[data-current-view="templateEditor"],
+html[data-current-view="templateEditor"] body {
+  height: 100%;
+  overflow: hidden;
+}
+
+html[data-current-view="templateEditor"] .app-shell.workspace-mode,
+html[data-current-view="templateEditor"] .app-shell.workspace-mode .page-shell,
+html[data-current-view="templateEditor"] .app-shell.workspace-mode .content-grid,
+html[data-current-view="templateEditor"] .app-shell.workspace-mode .view-panel:not(.hidden),
+html[data-current-view="templateEditor"] .template-editor-shell,
+html[data-current-view="templateEditor"] .template-editor-modal-sheet {
+  height: 100%;
+  min-height: 0;
+}
+
+html[data-current-view="accountManagement"],
+html[data-current-view="accountManagement"] body {
+  height: 100%;
+  overflow: hidden;
+}
+
+html[data-current-view="accountManagement"] .app-shell.template-list-mode {
+  grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+html[data-current-view="accountManagement"] .app-shell.template-list-mode .page-shell,
+html[data-current-view="accountManagement"] .app-shell.template-list-mode .content-grid,
+html[data-current-view="accountManagement"] .app-shell.template-list-mode .view-panel:not(.hidden),
+html[data-current-view="accountManagement"] .app-shell.template-list-mode .view-panel:not(.hidden) > .view-stack {
+  height: 100%;
+  min-height: 0;
+}
+
+html[data-current-view="accountManagement"] .app-shell.template-list-mode .content-grid {
+  align-content: stretch;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.topbar {
+  align-items: center;
+  backdrop-filter: blur(18px);
+  background: rgba(247, 249, 253, 0.82);
+  border-bottom: 1px solid rgba(203, 213, 225, 0.42);
+  display: grid;
+  gap: 18px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  left: 0;
+  min-height: var(--app-header-height);
+  padding: 10px 28px;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 30;
+}
+
+.topbar-left {
+  align-items: center;
+  display: flex;
+  min-width: 0;
+}
+
+.topbar .brand-badge {
+  height: 41px;
+  width: 41px;
+}
+
+.workspace-sidebar {
+  align-self: start;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(203, 213, 225, 0.7);
+  border-radius: 20px;
+  box-shadow: 0 18px 42px rgba(14, 24, 48, 0.08);
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  position: sticky;
+  top: 84px;
+  width: 100%;
+}
+
+.workspace-nav {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.workspace-nav-item {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--text);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  min-height: 44px;
+  padding: 5px 10px 5px 6px;
+  position: relative;
+  text-align: left;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.workspace-nav-icon {
+  align-items: center;
+  background: rgba(238, 244, 255, 0.82);
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 10px;
+  color: #4f6380;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.workspace-nav-icon svg {
+  display: block;
+  fill: none;
+  height: 18px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.65;
+  width: 18px;
+}
+
+.workspace-nav-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-nav-item:hover,
+.workspace-nav-item:focus-visible {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(45, 99, 245, 0.18);
+  box-shadow: 0 12px 22px rgba(45, 99, 245, 0.1);
+  color: var(--accent-strong);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.workspace-nav-item::after {
+  content: none;
+}
+
+.workspace-nav-item.active {
+  background: linear-gradient(135deg, rgba(45, 99, 245, 0.16), rgba(45, 99, 245, 0.05));
+  box-shadow: inset 0 0 0 1px rgba(45, 99, 245, 0.16);
+  color: var(--accent-strong);
+}
+
+.workspace-nav-item.active .workspace-nav-icon {
+  background: #ffffff;
+  border-color: rgba(45, 99, 245, 0.36);
+  color: var(--accent-strong);
+}
+
+.workspace-nav-item:disabled {
+  color: #94a3b8;
+  cursor: default;
+  opacity: 0.62;
+}
+
+.workspace-nav-item:disabled::after {
+  display: none;
+}
+
+.ghost-button.active {
+  background: rgba(122, 168, 255, 0.2);
+}
+
+.topbar-right {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+  justify-content: flex-end;
+  justify-self: end;
+  padding-left: 0;
+}
+
+.content-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.status-message {
+  background: var(--success-soft);
+  border: 1px solid rgba(32, 116, 83, 0.24);
+  border-radius: 12px;
+  color: var(--success);
+  margin: 0 0 16px;
+  padding: 12px 14px;
+}
+
+.account-management-panel {
+  margin: 0 auto;
+  width: min(100%, 1180px);
+}
+
+.account-management-grid th,
+.account-management-grid td {
+  white-space: nowrap;
+}
+
+.account-management-table {
+  --account-action-column-width: 78px;
+  min-width: 0;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.account-management-panel .table-wrap {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.result-grid-card table.account-management-table {
+  min-width: 0;
+}
+
+.account-management-table th.table-column-id,
+.account-management-table td.table-column-id,
+.account-management-table th.table-column-name,
+.account-management-table td.table-column-name {
+  width: calc((100% - var(--account-action-column-width)) * 0.22);
+}
+
+.account-management-table th.table-column-role,
+.account-management-table td.table-column-role {
+  width: calc((100% - var(--account-action-column-width)) * 0.22);
+}
+
+.account-management-table th.table-column-recentAccess,
+.account-management-table td.table-column-recentAccess {
+  width: calc((100% - var(--account-action-column-width)) * 0.34);
+}
+
+.account-management-table th.table-action-column,
+.account-management-table td.table-action-column {
+  width: var(--account-action-column-width);
+  min-width: var(--account-action-column-width);
+  max-width: var(--account-action-column-width);
+}
+
+.account-management-table .table-action-column .table-inline-actions-compact {
+  gap: 3px;
+}
+
+.account-management-table .table-action-column .table-inline-button:not(.table-inline-icon-button) {
+  min-height: 30px;
+  padding-left: 7px;
+  padding-right: 7px;
+}
+
+.account-management-table .table-action-column .table-inline-icon-button {
+  height: 30px;
+  min-height: 30px;
+  min-width: 30px;
+  width: 30px;
+}
+
+.account-management-table .table-action-column .button-icon {
+  height: 15px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+  width: 15px;
+}
+
+.account-management-table td.table-action-column > .table-inline-actions-compact {
+  display: inline-flex;
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.account-modal-overlay {
+  display: grid;
+}
+
+.account-modal-card {
+  width: min(620px, calc(100vw - 32px));
+}
+
+.account-modal-field-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 720px) {
+  .account-management-panel {
+    width: 100%;
+  }
+
+  .account-management-table {
+    --account-action-column-width: 68px;
+  }
+
+  .account-management-grid th,
+  .account-management-grid td {
+    font-size: 0.78rem;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .account-management-table th.table-column-id,
+  .account-management-table td.table-column-id,
+  .account-management-table th.table-column-name,
+  .account-management-table td.table-column-name {
+    width: calc((100% - var(--account-action-column-width)) * 0.19);
+  }
+
+  .account-management-table th.table-column-role,
+  .account-management-table td.table-column-role {
+    width: calc((100% - var(--account-action-column-width)) * 0.2);
+  }
+
+  .account-management-table th.table-column-recentAccess,
+  .account-management-table td.table-column-recentAccess {
+    width: calc((100% - var(--account-action-column-width)) * 0.42);
+  }
+
+  .account-management-table th.table-column-recentAccess .table-header-static {
+    line-height: 1.15;
+    white-space: normal;
+  }
+
+  .account-management-table .table-action-column .table-inline-actions-compact {
+    gap: 2px;
+  }
+
+  .account-management-table .table-action-column .table-inline-icon-button {
+    height: 28px;
+    min-height: 28px;
+    min-width: 28px;
+    width: 28px;
+  }
+}

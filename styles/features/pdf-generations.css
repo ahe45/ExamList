@@ -1,0 +1,1302 @@
+.pdf-generation-management-panel {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.pdf-history-management-panel {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.generation-history-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.generation-history-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.pdf-generation-result-grid {
+  --pdf-generation-grid-min-width: 2292px;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.pdf-generation-header-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.pdf-history-header-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.pdf-history-log-grid {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.pdf-history-table-wrap {
+  margin: 5px;
+  max-width: 100%;
+  min-width: 0;
+  width: auto;
+}
+
+.pdf-history-table {
+  min-width: 980px;
+  table-layout: fixed;
+}
+
+.pdf-history-table th,
+.pdf-history-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.pdf-history-table th:nth-child(1),
+.pdf-history-table td:nth-child(1) {
+  width: 64px;
+}
+
+.pdf-history-table th:nth-child(2),
+.pdf-history-table td:nth-child(2) {
+  width: 180px;
+}
+
+.pdf-history-table th:nth-child(3),
+.pdf-history-table td:nth-child(3) {
+  width: 160px;
+}
+
+.pdf-history-table th:nth-child(4),
+.pdf-history-table td:nth-child(4) {
+  width: 96px;
+}
+
+.pdf-history-table th:nth-child(6),
+.pdf-history-table td:nth-child(6) {
+  width: 148px;
+}
+
+.pdf-history-table td:nth-child(2),
+.pdf-history-table td:nth-child(3),
+.pdf-history-table td:nth-child(5) {
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+}
+
+.pdf-history-table td:nth-child(2) strong,
+.pdf-history-table td:nth-child(3) strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-audit-metadata-cell {
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pdf-audit-empty-cell,
+.pdf-history-loading-text {
+  color: var(--text-dim);
+  font-weight: 700;
+  padding: 24px;
+  text-align: center;
+}
+
+.pdf-generation-table-wrap {
+  margin: 5px;
+  max-width: 100%;
+  min-width: 0;
+  width: auto;
+}
+
+.pdf-generation-result-grid .pdf-generation-table {
+  min-width: var(--pdf-generation-grid-min-width);
+  table-layout: fixed;
+  width: 100%;
+}
+
+.pdf-generation-table th,
+.pdf-generation-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.pdf-generation-table tbody {
+  user-select: none;
+}
+
+.pdf-generation-select-column {
+  width: 46px;
+}
+
+.pdf-generation-select-column input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+  height: 15px;
+  width: 15px;
+}
+
+.pdf-generation-print-column,
+.pdf-generation-detail-column {
+  width: 60px;
+}
+
+.pdf-generation-records-table th.pdf-generation-select-column,
+.pdf-generation-records-table td.pdf-generation-select-column {
+  min-width: 52px;
+  width: 52px;
+}
+
+.pdf-generation-records-table th.pdf-generation-select-column,
+.pdf-generation-records-table th.pdf-generation-print-column,
+.pdf-generation-records-table th.pdf-generation-detail-column {
+  padding: 4px 6px;
+}
+
+.pdf-generation-records-table th.pdf-generation-select-column .table-header-static,
+.pdf-generation-records-table th.pdf-generation-print-column .table-header-static,
+.pdf-generation-records-table th.pdf-generation-detail-column .table-header-static {
+  min-height: 29px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.pdf-generation-records-table th.pdf-generation-print-column,
+.pdf-generation-records-table td.pdf-generation-print-column,
+.pdf-generation-records-table th.pdf-generation-detail-column,
+.pdf-generation-records-table td.pdf-generation-detail-column {
+  max-width: 60px;
+  min-width: 60px;
+  width: 60px;
+}
+
+.pdf-generation-records-table th.table-column-pageCount,
+.pdf-generation-records-table td.table-column-pageCount,
+.pdf-generation-records-table th.table-column-candidateCount,
+.pdf-generation-records-table td.table-column-candidateCount {
+  min-width: 112px;
+  width: 112px;
+}
+
+.pdf-generation-records-table th.table-column-sequenceNumber,
+.pdf-generation-records-table td.table-column-sequenceNumber {
+  min-width: 72px;
+  width: 72px;
+}
+
+.pdf-generation-records-table th.table-column-sequenceNumber .table-header-shell {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.pdf-generation-records-table th.table-column-sequenceNumber .table-sort-button {
+  flex: 0 0 auto;
+  gap: 4px;
+  width: auto;
+}
+
+.pdf-generation-records-table th.table-column-sequenceNumber .table-header-label {
+  flex: 0 0 auto;
+}
+
+.pdf-generation-records-table th.table-column-sequenceNumber .table-sort-icon {
+  flex: 0 0 auto;
+}
+
+.pdf-generation-records-table th.table-column-campus,
+.pdf-generation-records-table td.table-column-campus,
+.pdf-generation-records-table th.table-column-track,
+.pdf-generation-records-table td.table-column-track,
+.pdf-generation-records-table th.table-column-admission,
+.pdf-generation-records-table td.table-column-admission,
+.pdf-generation-records-table th.table-column-series,
+.pdf-generation-records-table td.table-column-series,
+.pdf-generation-records-table th.table-column-major,
+.pdf-generation-records-table td.table-column-major,
+.pdf-generation-records-table th.table-column-period,
+.pdf-generation-records-table td.table-column-period,
+.pdf-generation-records-table th.table-column-room,
+.pdf-generation-records-table td.table-column-room,
+.pdf-generation-records-table th.table-column-group,
+.pdf-generation-records-table td.table-column-group {
+  min-width: 116px;
+  width: 116px;
+}
+
+.pdf-generation-records-table th.table-column-unit,
+.pdf-generation-records-table td.table-column-unit,
+.pdf-generation-records-table th.table-column-building,
+.pdf-generation-records-table td.table-column-building {
+  min-width: 136px;
+  width: 136px;
+}
+
+.pdf-generation-records-table th.table-column-examDate,
+.pdf-generation-records-table td.table-column-examDate,
+.pdf-generation-records-table th.table-column-time,
+.pdf-generation-records-table td.table-column-time,
+.pdf-generation-records-table th.table-column-endTime,
+.pdf-generation-records-table td.table-column-endTime {
+  min-width: 128px;
+  width: 128px;
+}
+
+.pdf-generation-records-table th.table-column-createdAt,
+.pdf-generation-records-table td.table-column-createdAt {
+  min-width: 148px;
+  width: 148px;
+}
+
+.generation-print-button,
+.generation-detail-button {
+  height: 34px;
+  margin: 0 auto;
+  width: 34px;
+}
+
+.generation-print-button:disabled,
+.generation-detail-button:disabled {
+  cursor: default;
+  opacity: 0.46;
+  transform: none;
+}
+
+.pdf-generation-delete-button {
+  color: var(--danger);
+}
+
+.pdf-generation-delete-button:hover,
+.pdf-generation-delete-button:focus-visible {
+  border-color: rgba(210, 65, 91, 0.28);
+  box-shadow: 0 12px 24px rgba(210, 65, 91, 0.12);
+  color: #ad243d;
+}
+
+.pdf-generation-delete-button:disabled {
+  color: var(--muted);
+  cursor: default;
+  opacity: 0.46;
+  transform: none;
+}
+
+.pdf-generation-create-overlay,
+.pdf-generation-delete-overlay,
+.pdf-generation-download-overlay,
+.pdf-generation-generated-result-overlay {
+  overflow: auto;
+  z-index: 1550;
+}
+
+.busy-overlay {
+  display: grid;
+  inset: 0;
+  padding: 24px;
+  place-items: center;
+  position: fixed;
+}
+
+.busy-overlay-backdrop {
+  backdrop-filter: blur(8px);
+  background: rgba(10, 18, 31, 0.52);
+  inset: 0;
+  position: absolute;
+}
+
+.busy-overlay-panel {
+  background: rgba(17, 28, 48, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 28px;
+  box-shadow: 0 30px 80px rgba(7, 12, 24, 0.36);
+  color: #ffffff;
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  padding: 32px 28px;
+  position: relative;
+  text-align: center;
+  width: min(420px, calc(100vw - 48px));
+}
+
+.busy-overlay-panel strong {
+  font-size: 1.18rem;
+}
+
+.busy-overlay-panel p {
+  color: rgba(255, 255, 255, 0.76);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.busy-overlay-progress {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.busy-overlay-progress-meta {
+  align-items: center;
+  color: rgba(255, 255, 255, 0.72);
+  display: flex;
+  font-size: 0.8rem;
+  font-weight: 700;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.busy-overlay-progress-value {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.progress-bar {
+  background: rgba(203, 213, 225, 0.45);
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.progress-bar span {
+  background: linear-gradient(90deg, #2d63f5, #54d3ba);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  transition: width 0.2s ease, transform 0.2s ease;
+  width: 0;
+}
+
+.progress-bar.is-indeterminate span {
+  animation: progress-bar-indeterminate 1.15s ease-in-out infinite;
+  width: 38%;
+}
+
+.busy-spinner {
+  animation: busy-spin 0.85s linear infinite;
+  border: 4px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  border-right-color: #d5e6ff;
+  border-top-color: #7fb2ff;
+  height: 56px;
+  width: 56px;
+}
+
+.pdf-generation-download-busy-overlay {
+  z-index: 1660;
+}
+
+.pdf-generation-download-busy-meta {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+@keyframes progress-bar-indeterminate {
+  from {
+    transform: translateX(-140%);
+  }
+
+  to {
+    transform: translateX(320%);
+  }
+}
+
+@keyframes busy-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pdf-generation-detail-overlay {
+  overflow: auto;
+  z-index: 1550;
+}
+
+.pdf-generation-detail-modal-card {
+  display: flex;
+  flex-direction: column;
+  max-height: min(86vh, 820px);
+  max-width: 980px;
+  min-height: 0;
+  width: min(980px, calc(100vw - 32px));
+}
+
+.pdf-generation-detail-modal-body {
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.pdf-generation-create-overlay {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.pdf-generation-create-card {
+  max-width: min(672px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  margin: auto;
+  overflow: auto;
+  width: min(672px, calc(100vw - 32px));
+}
+
+.pdf-generation-download-card {
+  max-height: calc(100vh - 48px);
+  margin: 24px 0;
+  overflow: auto;
+  width: min(520px, calc(100vw - 32px));
+}
+
+.pdf-generation-delete-card {
+  max-height: calc(100vh - 48px);
+  margin: 24px 0;
+  overflow: auto;
+  width: min(520px, calc(100vw - 32px));
+}
+
+.pdf-generation-download-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 8px 0 0;
+}
+
+.pdf-generation-template-field {
+  min-width: 0;
+}
+
+.pdf-generation-template-field {
+  grid-template-columns: 4.25em minmax(0, 1fr);
+}
+
+.pdf-generation-template-control-row {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  justify-content: start;
+  max-width: 100%;
+  width: 100%;
+}
+
+.pdf-generation-template-preview-button {
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  width: 36px;
+}
+
+.pdf-generation-template-preview-button .button-icon {
+  height: 18px;
+  width: 18px;
+}
+
+.pdf-generation-create-form {
+  gap: 18px;
+}
+
+.pdf-generation-estimate-grid span,
+.pdf-generation-hidden-filter-row > span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.pdf-generation-create-section-header {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.pdf-generation-create-section-header h3 {
+  font-size: 1.02rem;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.pdf-generation-create-section-header > div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.pdf-generation-filter-section .pdf-generation-create-section-header {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.pdf-generation-filter-section .pdf-generation-create-section-header > div {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.pdf-generation-condition-badges {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.pdf-generation-filter-section .pdf-generation-create-section-header > .pdf-generation-condition-badges {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pdf-generation-condition-badges .status-badge {
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 30px;
+  width: 100%;
+}
+
+.pdf-generation-condition-badges .status-badge strong {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pdf-generation-condition-badges .status-badge span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-generation-filter-section,
+.pdf-generation-create-summary-section {
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid rgba(203, 213, 225, 0.66);
+  border-radius: 14px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.pdf-generation-create-summary-section {
+  align-items: center;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.pdf-generation-create-summary-section .pdf-generation-create-section-header {
+  justify-content: flex-start;
+}
+
+.pdf-generation-filter-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr;
+  max-width: none;
+}
+
+.pdf-generation-filter-field {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 4.25em minmax(0, 1fr);
+  justify-content: start;
+  min-width: 0;
+  padding: 0;
+  transition: none;
+  width: 100%;
+}
+
+.pdf-generation-filter-field.pdf-generation-template-field {
+  grid-template-columns: 4.25em minmax(0, 1fr);
+}
+
+.pdf-generation-filter-field.is-pending {
+  background: transparent;
+  border-style: none;
+}
+
+.pdf-generation-filter-field.is-selected {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.pdf-generation-filter-field select {
+  min-width: 0;
+  width: 100%;
+}
+
+.pdf-generation-hidden-filter-row {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.pdf-generation-hidden-filter-row > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pdf-generation-hidden-filter-row em {
+  background: rgba(241, 245, 249, 0.88);
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.2;
+  padding: 7px 10px;
+}
+
+.pdf-generation-estimate-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pdf-generation-estimate-grid > div {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid rgba(223, 229, 240, 0.96);
+  border-radius: 12px;
+  display: flex;
+  gap: 10px;
+  height: 36px;
+  justify-content: space-between;
+  min-height: 36px;
+  min-width: 0;
+  padding: 0 12px;
+}
+
+.pdf-generation-estimate-grid strong {
+  color: var(--text);
+  font-size: 0.95rem;
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-generation-process-tabs {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.pdf-generation-process-tab {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid rgba(203, 213, 225, 0.78);
+  border-radius: 10px;
+  color: var(--muted);
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+  min-height: 58px;
+  min-width: 0;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.pdf-generation-process-tab span {
+  color: #94a3b8;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.pdf-generation-process-tab strong {
+  display: block;
+  font-size: 0.78rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.pdf-generation-process-tab.is-active {
+  background: #eef5ff;
+  border-color: rgba(45, 99, 245, 0.48);
+  box-shadow: inset 0 0 0 1px rgba(45, 99, 245, 0.12);
+  color: var(--accent-strong);
+}
+
+.pdf-generation-process-tab.is-active span {
+  color: var(--accent);
+}
+
+.pdf-generation-process-tab.is-complete {
+  background: #f6fbf8;
+  border-color: rgba(31, 157, 107, 0.32);
+  color: #167653;
+}
+
+.pdf-generation-step-page {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 14px;
+  display: grid;
+  gap: 16px;
+  min-height: 210px;
+  padding: 18px;
+}
+
+.pdf-generation-step-page-header {
+  align-items: end;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.pdf-generation-step-page-header h3 {
+  font-size: 1.1rem;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.pdf-generation-step-page-header p {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.pdf-generation-step-label {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  justify-content: flex-start;
+  min-height: 24px;
+}
+
+.pdf-generation-step-reset {
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.pdf-generation-step-reset:disabled {
+  color: var(--muted);
+  cursor: default;
+  opacity: 0.58;
+}
+
+.pdf-generation-step-choice,
+.pdf-generation-selected-template {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid rgba(223, 229, 240, 0.96);
+  border-radius: 12px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 12px 14px;
+}
+
+.pdf-generation-step-choice span,
+.pdf-generation-selected-template span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.pdf-generation-step-choice strong,
+.pdf-generation-selected-template strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-generation-create-actions {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pdf-generation-create-action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.pdf-generation-first-preview-button {
+  min-width: 92px;
+}
+
+.pdf-generation-download-form {
+  gap: 12px;
+}
+
+.pdf-generation-download-choice {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid rgba(203, 213, 225, 0.76);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+}
+
+.pdf-generation-download-choice.is-selected {
+  background: #f3f7ff;
+  border-color: rgba(45, 99, 245, 0.35);
+  box-shadow: 0 10px 22px rgba(45, 99, 245, 0.08);
+}
+
+.pdf-generation-download-choice input {
+  margin: 0;
+}
+
+.pdf-generation-download-choice span {
+  display: grid;
+  gap: 4px;
+}
+
+.pdf-generation-download-choice small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.pdf-generation-delete-message {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin: 8px 0 0;
+}
+
+.pdf-generation-delete-summary {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pdf-generation-delete-summary-item {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.pdf-generation-delete-summary-item span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.pdf-generation-delete-summary-item strong {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.pdf-generation-delete-target-list {
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 8px;
+  display: grid;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  max-height: 168px;
+  overflow: auto;
+  padding: 0;
+}
+
+.pdf-generation-delete-target-list li {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+}
+
+.pdf-generation-delete-target-list li + li {
+  border-top: 1px solid rgba(203, 213, 225, 0.58);
+}
+
+.pdf-generation-delete-target-list strong {
+  color: var(--text);
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-generation-delete-target-list span,
+.pdf-generation-delete-target-extra {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.pdf-generation-delete-confirm-button {
+  background: linear-gradient(135deg, var(--danger) 0%, #ad243d 100%);
+  box-shadow: 0 14px 26px rgba(210, 65, 91, 0.18);
+}
+
+.pdf-generation-progress-overlay {
+  z-index: 1650;
+}
+
+.pdf-generation-progress-card {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.pdf-generation-progress-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.pdf-generation-progress-header strong {
+  color: #ffffff;
+  font-size: 1.02rem;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.pdf-generation-progress-header span {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.pdf-generation-progress-header-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.pdf-generation-progress-cancel-button {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 999px;
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 800;
+  height: 30px;
+  justify-content: center;
+  padding: 0 10px;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+
+.pdf-generation-progress-cancel-button:hover,
+.pdf-generation-progress-cancel-button:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.34);
+  transform: translateY(-1px);
+}
+
+.pdf-generation-progress-cancel-button:disabled {
+  cursor: default;
+  opacity: 0.58;
+  transform: none;
+}
+
+.pdf-generation-progress-summary {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.pdf-generation-progress-completed,
+.pdf-generation-progress-duration {
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.pdf-generation-progress-duration {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.pdf-generation-progress-track {
+  height: 12px;
+}
+
+.pdf-generation-progress-value {
+  background: linear-gradient(90deg, #2d63f5, #54d3ba);
+  transition: width 180ms ease;
+}
+
+.generation-operations-panel {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.1fr);
+  margin-bottom: 18px;
+}
+
+.generation-operations-card {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(203, 213, 225, 0.58);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.generation-operations-header {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.generation-operations-header h3 {
+  font-family: "Manrope", sans-serif;
+  font-size: 1.02rem;
+  margin: 4px 0 0;
+}
+
+.generation-operation-result {
+  background: rgba(45, 99, 245, 0.1);
+  border-radius: 12px;
+  color: var(--accent);
+  margin: 12px 0 0;
+  padding: 10px 12px;
+}
+
+.generation-audit-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.generation-audit-item {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(223, 229, 240, 0.9);
+  border-radius: 14px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 14px;
+}
+
+.generation-audit-item small {
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.generation-rerun-summary {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+}
+
+.generation-rerun-summary p {
+  margin: 0;
+}
+
+.generation-detail-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.generation-detail-grid,
+.generation-detail-sections {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.generation-detail-sections {
+  margin-top: 16px;
+}
+
+.generation-detail-card {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(203, 213, 225, 0.58);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.generation-detail-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.generation-detail-list div {
+  display: grid;
+  gap: 4px;
+}
+
+.generation-detail-list dt {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.generation-detail-list dd {
+  margin: 0;
+}
+
+.generation-filter-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.generation-filter-chip {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 999px;
+  display: inline-flex;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.generation-detail-message {
+  margin-top: 12px;
+}
+
+.generation-file-title {
+  display: block;
+  word-break: break-word;
+}
+
+.generation-error-text,
+.generation-warning-text {
+  margin: 8px 0 0;
+}
+
+.generation-error-text {
+  color: var(--danger);
+}
+
+.generation-warning-text {
+  color: var(--warning);
+  line-height: 1.5;
+}
+
+@media (max-width: 980px) {
+  .pdf-generation-process-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .pdf-generation-create-card {
+    padding: 20px;
+  }
+
+  .pdf-generation-filter-list,
+  .pdf-generation-filter-field {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-generation-create-summary-section {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-generation-estimate-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-generation-template-control-row {
+    grid-template-columns: minmax(0, 1fr) 34px;
+    width: 100%;
+  }
+
+  .pdf-generation-condition-badges,
+  .pdf-generation-filter-section .pdf-generation-create-section-header > .pdf-generation-condition-badges {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-generation-create-action-buttons {
+    display: grid;
+    gap: 10px;
+  }
+
+  .pdf-generation-create-section-header,
+  .pdf-generation-hidden-filter-row {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-generation-create-section-header {
+    flex-direction: column;
+  }
+
+  .pdf-generation-process-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pdf-generation-step-page-header,
+  .pdf-generation-step-choice,
+  .pdf-generation-selected-template {
+    align-items: start;
+    flex-direction: column;
+  }
+}

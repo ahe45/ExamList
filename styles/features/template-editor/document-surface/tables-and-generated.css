@@ -1,0 +1,147 @@
+.template-editor-surface table,
+.template-render-sheet table,
+.editor-document-surface table {
+  border-collapse: collapse;
+  box-sizing: border-box;
+  table-layout: fixed;
+  margin: 1pt 0;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+.template-editor-surface th,
+.template-editor-surface td,
+.template-render-sheet th,
+.template-render-sheet td,
+.editor-document-surface th,
+.editor-document-surface td {
+  border: 1pt solid rgba(154, 169, 191, 0.9);
+  box-sizing: border-box;
+  min-width: 24px;
+  overflow-wrap: break-word;
+  padding: 8pt 10pt;
+  text-align: left;
+  vertical-align: top;
+  white-space: normal;
+}
+
+.template-editor-surface th,
+.template-render-sheet th,
+.editor-document-surface th {
+  background: rgba(238, 243, 251, 0.92);
+  font-weight: 800;
+}
+
+.template-render-sheet td.examinee-photo-token-cell,
+.template-render-sheet th.examinee-photo-token-cell {
+  line-height: 0;
+  overflow: hidden;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.template-render-sheet .examinee-photo-token-frame {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  line-height: 0;
+  min-height: 0;
+  width: 100%;
+}
+
+.template-render-sheet .examinee-photo-token-image {
+  display: block;
+  height: auto;
+  margin: 0;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  width: auto;
+}
+
+.template-render-sheet .examinee-photo-token-cell .examinee-photo-token-image {
+  height: 100%;
+  width: 100%;
+}
+
+.template-editor-surface td.is-selected-cell,
+.template-editor-surface th.is-selected-cell {
+  background: rgba(45, 99, 245, 0.14);
+  outline: 2px solid rgba(45, 99, 245, 0.82);
+  outline-offset: -2px;
+}
+
+.template-editor-surface.is-table-selecting,
+.template-editor-surface.is-table-resizing {
+  user-select: none;
+}
+
+.template-editor-surface.is-table-column-hover,
+.template-editor-surface.is-table-column-resizing {
+  cursor: col-resize;
+}
+
+.template-editor-surface.is-table-row-hover,
+.template-editor-surface.is-table-row-resizing {
+  cursor: row-resize;
+}
+
+.template-editor-surface.is-table-object-border-hover {
+  cursor: pointer;
+}
+
+.template-editor-surface.is-table-object-border-hover .examlist-candidate-block.is-candidate-block-template-source,
+.template-editor-surface.is-table-object-border-hover .examlist-candidate-block.is-candidate-block-template-source table,
+.template-editor-surface.is-table-object-border-hover .examlist-candidate-block.is-candidate-block-template-source th,
+.template-editor-surface.is-table-object-border-hover .examlist-candidate-block.is-candidate-block-template-source td {
+  cursor: pointer;
+}
+
+.editor-document-image-placeholder,
+.editor-document-signature-box {
+  align-items: center;
+  border-radius: 18pt;
+  display: grid;
+  gap: 8pt;
+  justify-items: center;
+  margin: 0 0 16pt;
+  padding: 20pt;
+  text-align: center;
+}
+
+.editor-document-image-placeholder {
+  background: linear-gradient(180deg, rgba(230, 238, 248, 0.9), rgba(244, 247, 252, 0.95));
+  border: 1pt dashed rgba(81, 101, 133, 0.52);
+  color: #516585;
+  min-height: 124pt;
+}
+
+.editor-document-signature-box {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1pt dashed rgba(81, 101, 133, 0.68);
+  max-width: 260pt;
+}
+
+.editor-document-signature-box strong {
+  font-size: 0.95rem;
+}
+
+.editor-document-signature-box figcaption {
+  color: var(--muted);
+  font-size: 10pt;
+}
+
+.template-generated-object {
+  background: #ffffff;
+  max-width: none;
+}
+
+.template-generated-object-barcode {
+  object-fit: fill;
+}
+
+.template-generated-object-qrcode {
+  object-fit: fill;
+}

@@ -1,0 +1,212 @@
+.candidate-view-stack {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.candidate-data-table {
+  --candidate-grid-min-width: 3500px;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.form-card {
+  backdrop-filter: blur(14px);
+  background: var(--panel);
+  border: 1px solid rgba(203, 213, 225, 0.44);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
+  padding: 22px;
+}
+
+.menu-section-copy h3 {
+  font-family: "Manrope", sans-serif;
+  font-size: 1.16rem;
+  margin: 0;
+}
+
+.menu-section-copy p {
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 6px 0 0;
+}
+
+.outline-button {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(203, 213, 225, 0.76);
+  border-radius: var(--button-radius);
+  color: var(--text);
+  display: inline-flex;
+  font-weight: 700;
+  gap: 8px;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.outline-button:hover {
+  background: #ffffff;
+  border-color: rgba(45, 99, 245, 0.28);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+  color: var(--accent-strong);
+  transform: translateY(-1px);
+}
+
+.outline-button:disabled {
+  cursor: default;
+  opacity: 0.55;
+  transform: none;
+}
+
+.search-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.search-grid.five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.search-grid.four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.field {
+  color: var(--muted);
+  display: grid;
+  font-size: 0.9rem;
+  gap: 8px;
+}
+
+.field label {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.field input,
+.field select {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(203, 213, 225, 0.76);
+  border-radius: 14px;
+  color: var(--text);
+  min-height: 42px;
+  padding: 10px 12px;
+}
+
+.candidate-search-grid-actions {
+  align-items: end;
+}
+
+.candidate-filter-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  grid-column: span 2;
+}
+
+.table-header-actions,
+.inline-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.candidate-table-filter-strip {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding: 12px;
+}
+
+.candidate-table-wrap {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(223, 229, 240, 0.92);
+  border-radius: 18px;
+  max-width: 100%;
+  min-width: 0;
+  overflow: auto;
+  width: auto;
+}
+
+.candidate-grid-table th {
+  background: #f8fbff;
+  white-space: nowrap;
+}
+
+.candidate-grid-table td {
+  white-space: nowrap;
+}
+
+.candidate-grid-table th,
+.candidate-grid-table td {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.result-grid-card tbody tr.is-clickable,
+.candidate-grid-table tr.is-clickable {
+  cursor: pointer;
+}
+
+.result-grid-card tbody tr.is-clickable:hover td,
+.candidate-grid-table tr.is-clickable:hover td {
+  background: var(--grid-hover);
+}
+
+.candidate-grid-table {
+  min-width: var(--candidate-grid-min-width);
+  table-layout: fixed;
+  width: 100%;
+}
+
+.row-number-col,
+.candidate-row-number {
+  color: var(--muted);
+  font-weight: 800;
+  min-width: 64px;
+  text-align: right;
+}
+
+.table-empty-row .table-empty-cell {
+  color: var(--muted);
+  padding: 34px 12px;
+  text-align: center;
+}
+
+.candidate-grid-pagination {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.9rem;
+  justify-content: space-between;
+  padding-top: 16px;
+}
+
+.candidate-download-confirm-modal {
+  width: min(420px, calc(100vw - 32px));
+}
+
+.candidate-download-confirm-message {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.55;
+  margin: 0 0 22px;
+}

@@ -1,0 +1,28 @@
+{
+  "name": "examlist",
+  "version": "0.1.0",
+  "description": "수험생확인대장 PDF 생성 프로그램",
+  "main": "server.js",
+  "scripts": {
+    "db:create-user": "node scripts/create-db-user.js",
+    "setup:db": "node scripts/setup-db.js",
+    "start": "node server.js",
+    "dev": "node server.js",
+    "worker:pdf": "node scripts/pdf-worker.js",
+    "smoke:browser": "node scripts/smoke-browser.js",
+    "smoke:bullmq": "node scripts/smoke-bullmq.js",
+    "smoke:ui": "node scripts/smoke-ui.js",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test"
+  },
+  "private": true,
+  "dependencies": {
+    "adm-zip": "^0.5.17",
+    "bullmq": "^5.75.2",
+    "dotenv": "^17.3.1",
+    "exceljs": "^4.4.0",
+    "ioredis": "^5.10.1",
+    "mysql2": "^3.20.0",
+    "pdf-lib": "^1.17.1",
+    "yazl": "^3.3.1"
+  }
+}

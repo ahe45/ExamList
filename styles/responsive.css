@@ -1,0 +1,240 @@
+@media (max-width: 1080px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell.workspace-mode {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-sidebar {
+    position: static;
+  }
+
+  .workspace-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .filter-bar,
+  .generation-operations-panel,
+  .search-grid.five,
+  .search-grid.four,
+  .school-settings-form,
+  .template-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-import-panel,
+  .candidate-upload-file-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .candidate-filter-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .candidate-filter-actions,
+  .candidate-detail-layout,
+  .upload-preview-summary-grid {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-detail-layout {
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
+
+  .candidate-detail-field-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .candidate-detail-photo-panel {
+    justify-self: stretch;
+    max-width: none;
+    width: 100%;
+  }
+
+  .editor-toolbar-column,
+  .template-tag-panel,
+  .editor-inspector-column,
+  .template-page-properties-column,
+  .editor-canvas-column {
+    max-height: none;
+  }
+
+  .template-toolbar-section-row-dual {
+    grid-template-columns: 1fr;
+  }
+
+  .template-toolbar-color-picker-align-end {
+    justify-self: start;
+  }
+
+  .template-toolbar-color-picker-align-end .template-toolbar-color-panel {
+    left: 0;
+    right: auto;
+  }
+}
+
+@media (max-width: 860px) {
+  .candidate-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-detail-field-grid {
+    grid-row: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .candidate-detail-photo-panel {
+    grid-row: 1;
+    justify-self: center;
+    max-width: 220px;
+  }
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) max-content;
+  }
+}
+
+@media (max-width: 720px) {
+  .toast-root {
+    bottom: 16px;
+    right: 16px;
+    width: calc(100vw - 32px);
+  }
+
+  .app-shell {
+    padding: 150px 14px 14px;
+  }
+
+  html[data-shell-mode="template-list"] .app-shell {
+    padding-top: 150px;
+  }
+
+  .modal-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .candidate-detail-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-detail-photo-panel {
+    max-width: 100%;
+  }
+
+  .row-actions,
+  .form-grid,
+  .topbar-left,
+  .editor-toolbar-left,
+  .editor-toolbar-meta,
+  .editor-coordinate-grid {
+    flex-direction: column;
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    align-items: stretch;
+    gap: 10px;
+    grid-template-columns: 1fr;
+    min-height: 0;
+    padding: 10px 14px 12px;
+  }
+
+  .topbar .brand {
+    justify-content: flex-start;
+  }
+
+  .topbar-left {
+    width: 100%;
+  }
+
+  .workspace-sidebar {
+    border-radius: 16px;
+    padding: 10px;
+  }
+
+  .workspace-nav {
+    gap: 6px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-nav-item {
+    gap: 8px;
+    grid-template-columns: 30px minmax(0, 1fr);
+    min-height: 40px;
+    padding: 4px 8px 4px 5px;
+  }
+
+  .workspace-nav-icon {
+    height: 28px;
+    width: 28px;
+  }
+
+  .topbar-right {
+    align-items: center;
+    border-top: 1px solid rgba(199, 209, 226, 0.72);
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 8px 0 0;
+  }
+
+  .topbar-school-card {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .topbar-separator {
+    display: none;
+  }
+
+  .topbar-school-meta strong {
+    max-width: none;
+  }
+
+  .user-meta {
+    text-align: left;
+  }
+
+  .generation-audit-item,
+  .generation-operations-header,
+  .candidate-grid-pagination,
+  .section-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .generation-audit-item small {
+    text-align: left;
+  }
+
+  .table-pagination {
+    grid-template-columns: 1fr;
+  }
+
+  .table-page-size,
+  .table-pagination-actions,
+  .table-pagination-summary {
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: stretch;
+  }
+
+  .table-pagination-actions {
+    justify-content: center;
+  }
+
+  .table-pagination-summary {
+    text-align: left;
+  }
+
+  .editor-canvas-frame {
+    padding: 16px;
+  }
+}

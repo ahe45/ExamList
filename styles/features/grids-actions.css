@@ -1,0 +1,476 @@
+.table-header-static {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 8px;
+  text-align: center;
+}
+
+.table-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.table-inline-actions-compact {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.table-inline-actions-dual {
+  display: inline-grid;
+  grid-template-columns: max-content max-content;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.table-inline-actions-reserved::before,
+.table-inline-actions-reserved::after {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  visibility: hidden;
+  pointer-events: none;
+  grid-row: 1;
+  box-sizing: border-box;
+  content: "";
+}
+
+.table-inline-actions-reserved::before {
+  grid-column: 1;
+  content: "저장";
+}
+
+.table-inline-actions-reserved::after {
+  grid-column: 2;
+  content: "취소";
+}
+
+.table-inline-button-span-2 {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  width: 100%;
+}
+
+.table-inline-button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(203, 213, 225, 0.92);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.table-inline-icon-button {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 10px;
+}
+
+.table-inline-icon-button .button-icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.8;
+}
+
+.table-inline-button:hover,
+.table-inline-button:focus-visible {
+  border-color: rgba(45, 99, 245, 0.62);
+  box-shadow: 0 0 0 3px rgba(45, 99, 245, 0.12);
+}
+
+.table-inline-button.primary {
+  color: #ffffff;
+  border-color: rgba(45, 99, 245, 0.94);
+  background: linear-gradient(180deg, #2d63f5, #1f53e5);
+}
+
+.table-inline-button.danger {
+  color: #a61b35;
+  border-color: rgba(210, 65, 91, 0.28);
+  background: rgba(255, 238, 242, 0.98);
+}
+
+.table-inline-input,
+.table-inline-select {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.table-inline-input:focus,
+.table-inline-select:focus {
+  outline: none;
+  border-color: rgba(45, 99, 245, 0.72);
+  box-shadow: 0 0 0 3px rgba(45, 99, 245, 0.12);
+}
+
+.result-grid-card th:first-child,
+.result-grid-card td:first-child {
+  width: 64px;
+  min-width: 64px;
+  text-align: center;
+}
+
+.result-grid-card th.row-number-col,
+.result-grid-card td.row-number-col {
+  width: 64px;
+  min-width: 64px;
+  text-align: center;
+}
+
+.result-grid-card th.select-col,
+.result-grid-card td.select-col {
+  width: 64px;
+  min-width: 64px;
+  text-align: center;
+}
+
+.result-grid-card .select-col input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.result-grid-card th.table-action-column,
+.result-grid-card td.table-action-column {
+  width: 1%;
+  min-width: 0;
+  padding-left: 5px;
+  padding-right: 5px;
+  text-align: center;
+}
+
+.result-grid-card th.table-action-column .table-header-static {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.result-grid-card.has-print-column th:last-child,
+.result-grid-card.has-print-column td:last-child {
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
+  text-align: center;
+}
+
+.result-grid-card table {
+  width: 100%;
+  min-width: 720px;
+  table-layout: fixed;
+}
+
+.table-cell-text {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: inherit;
+}
+
+.table-cell-text strong {
+  font: inherit;
+  font-weight: 800;
+}
+
+.table-cell-tooltip {
+  position: fixed;
+  z-index: 1200;
+  max-width: min(360px, calc(100vw - 24px));
+  padding: 6px 8px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: normal;
+  word-break: break-word;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  pointer-events: none;
+}
+.candidate-records-table {
+  --candidate-col-admission: 102px;
+  --candidate-col-admission-code: 108px;
+  --candidate-col-admission-year: 136px;
+  --candidate-col-birth: 112px;
+  --candidate-col-building: 124px;
+  --candidate-col-building-code: 132px;
+  --candidate-col-campus: 112px;
+  --candidate-col-campus-code: 124px;
+  --candidate-col-date: 112px;
+  --candidate-col-designated-sort: 108px;
+  --candidate-col-exam-no: 112px;
+  --candidate-col-major: 102px;
+  --candidate-col-major-code: 108px;
+  --candidate-col-name: 84px;
+  --candidate-col-opt: 100px;
+  --candidate-col-period: 102px;
+  --candidate-col-period-code: 108px;
+  --candidate-col-room: 108px;
+  --candidate-col-room-code: 116px;
+  --candidate-col-row-number: 52px;
+  --candidate-col-series: 102px;
+  --candidate-col-series-code: 108px;
+  --candidate-col-temporary-no: 96px;
+  --candidate-col-time: 112px;
+  --candidate-col-track: 112px;
+  --candidate-col-unit: 124px;
+  --candidate-col-unit-code: 132px;
+}
+
+.candidate-records-table th.row-number-col,
+.candidate-records-table td.row-number-col {
+  min-width: var(--candidate-col-row-number);
+  width: var(--candidate-col-row-number);
+}
+
+.candidate-records-table th.table-column-admissionYear,
+.candidate-records-table td.table-column-admissionYear {
+  min-width: var(--candidate-col-admission-year);
+  width: var(--candidate-col-admission-year);
+}
+
+.candidate-records-table th.table-column-date,
+.candidate-records-table td.table-column-date {
+  min-width: var(--candidate-col-date);
+  width: var(--candidate-col-date);
+}
+
+.candidate-records-table th.table-column-time,
+.candidate-records-table td.table-column-time {
+  min-width: var(--candidate-col-time);
+  width: var(--candidate-col-time);
+}
+
+.candidate-records-table th.table-column-endTime,
+.candidate-records-table td.table-column-endTime {
+  min-width: var(--candidate-col-time);
+  width: var(--candidate-col-time);
+}
+
+.candidate-records-table th.table-column-designatedSort,
+.candidate-records-table td.table-column-designatedSort {
+  min-width: var(--candidate-col-designated-sort);
+  width: var(--candidate-col-designated-sort);
+}
+
+.candidate-records-table th.table-column-track,
+.candidate-records-table td.table-column-track {
+  min-width: var(--candidate-col-track);
+  width: var(--candidate-col-track);
+}
+
+.candidate-records-table th.table-column-campus,
+.candidate-records-table td.table-column-campus {
+  min-width: var(--candidate-col-campus);
+  width: var(--candidate-col-campus);
+}
+
+.candidate-records-table th.table-column-campusCode,
+.candidate-records-table td.table-column-campusCode {
+  min-width: var(--candidate-col-campus-code);
+  width: var(--candidate-col-campus-code);
+}
+
+.candidate-records-table th.table-column-admission,
+.candidate-records-table td.table-column-admission {
+  min-width: var(--candidate-col-admission);
+  width: var(--candidate-col-admission);
+}
+
+.candidate-records-table th.table-column-admissionCode,
+.candidate-records-table td.table-column-admissionCode {
+  min-width: var(--candidate-col-admission-code);
+  width: var(--candidate-col-admission-code);
+}
+
+.candidate-records-table th.table-column-series,
+.candidate-records-table td.table-column-series {
+  min-width: var(--candidate-col-series);
+  width: var(--candidate-col-series);
+}
+
+.candidate-records-table th.table-column-seriesCode,
+.candidate-records-table td.table-column-seriesCode {
+  min-width: var(--candidate-col-series-code);
+  width: var(--candidate-col-series-code);
+}
+
+.candidate-records-table th.table-column-unit,
+.candidate-records-table td.table-column-unit {
+  min-width: var(--candidate-col-unit);
+  width: var(--candidate-col-unit);
+}
+
+.candidate-records-table th.table-column-unitCode,
+.candidate-records-table td.table-column-unitCode {
+  min-width: var(--candidate-col-unit-code);
+  width: var(--candidate-col-unit-code);
+}
+
+.candidate-records-table th.table-column-major,
+.candidate-records-table td.table-column-major {
+  min-width: var(--candidate-col-major);
+  width: var(--candidate-col-major);
+}
+
+.candidate-records-table th.table-column-majorCode,
+.candidate-records-table td.table-column-majorCode {
+  min-width: var(--candidate-col-major-code);
+  width: var(--candidate-col-major-code);
+}
+
+.candidate-records-table th.table-column-period,
+.candidate-records-table td.table-column-period {
+  min-width: var(--candidate-col-period);
+  width: var(--candidate-col-period);
+}
+
+.candidate-records-table th.table-column-periodCode,
+.candidate-records-table td.table-column-periodCode {
+  min-width: var(--candidate-col-period-code);
+  width: var(--candidate-col-period-code);
+}
+
+.candidate-records-table th.table-column-building,
+.candidate-records-table td.table-column-building {
+  min-width: var(--candidate-col-building);
+  width: var(--candidate-col-building);
+}
+
+.candidate-records-table th.table-column-buildingCode,
+.candidate-records-table td.table-column-buildingCode {
+  min-width: var(--candidate-col-building-code);
+  width: var(--candidate-col-building-code);
+}
+
+.candidate-records-table th.table-column-room,
+.candidate-records-table td.table-column-room {
+  min-width: var(--candidate-col-room);
+  width: var(--candidate-col-room);
+}
+
+.candidate-records-table th.table-column-roomCode,
+.candidate-records-table td.table-column-roomCode {
+  min-width: var(--candidate-col-room-code);
+  width: var(--candidate-col-room-code);
+}
+
+.candidate-records-table th.table-column-group,
+.candidate-records-table td.table-column-group {
+  min-width: 72px;
+  width: 72px;
+}
+
+.candidate-records-table th.table-column-examineeNo,
+.candidate-records-table td.table-column-examineeNo {
+  min-width: var(--candidate-col-exam-no);
+  width: var(--candidate-col-exam-no);
+}
+
+.candidate-records-table th.table-column-name,
+.candidate-records-table td.table-column-name {
+  min-width: var(--candidate-col-name);
+  width: var(--candidate-col-name);
+}
+
+.candidate-records-table th.table-column-temporaryNo,
+.candidate-records-table td.table-column-temporaryNo {
+  min-width: var(--candidate-col-temporary-no);
+  width: var(--candidate-col-temporary-no);
+}
+
+.candidate-records-table th.table-column-birth,
+.candidate-records-table td.table-column-birth {
+  min-width: var(--candidate-col-birth);
+  width: var(--candidate-col-birth);
+}
+
+.candidate-records-table th.table-column-opt1,
+.candidate-records-table td.table-column-opt1,
+.candidate-records-table th.table-column-opt2,
+.candidate-records-table td.table-column-opt2,
+.candidate-records-table th.table-column-opt3,
+.candidate-records-table td.table-column-opt3,
+.candidate-records-table th.table-column-opt4,
+.candidate-records-table td.table-column-opt4,
+.candidate-records-table th.table-column-opt5,
+.candidate-records-table td.table-column-opt5 {
+  min-width: var(--candidate-col-opt);
+  width: var(--candidate-col-opt);
+}
+
+.candidate-records-table th.table-column-hasPhoto,
+.candidate-records-table td.table-column-hasPhoto {
+  width: 68px;
+}
+
+.print-history-table th.table-column-printedAt,
+.print-history-table td.table-column-printedAt {
+  width: 136px;
+}
+
+.candidate-registration-table table {
+  min-width: var(--candidate-grid-min-width, 3330px);
+  width: 100%;
+}
+
+.print-history-table table {
+  min-width: 1450px;
+}
+
+.account-management-table th.table-column-id,
+.account-management-table td.table-column-id {
+  width: 130px;
+}
+
+.account-management-table th.table-column-name,
+.account-management-table td.table-column-name {
+  width: 160px;
+}
+
+.account-management-table th.table-column-role,
+.account-management-table td.table-column-role {
+  width: 120px;
+}
+
+.account-management-table th.table-column-recentAccess,
+.account-management-table td.table-column-recentAccess {
+  width: 210px;
+}

@@ -1,0 +1,206 @@
+.editor-overflow-warning {
+  background: rgba(254, 242, 242, 0.98);
+  border: 1px solid rgba(248, 113, 113, 0.46);
+  border-radius: 12px;
+  color: #b42318;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.45;
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.editor-canvas-overflow-warning {
+  bottom: 16px;
+  box-shadow: 0 14px 30px rgba(127, 29, 29, 0.14);
+  left: 16px;
+  position: sticky;
+  right: 16px;
+  z-index: 6;
+}
+
+.editor-document-surface h1,
+.editor-document-surface h2,
+.editor-document-surface h3,
+.editor-document-surface p,
+.editor-document-surface ul,
+.editor-document-surface ol,
+.editor-document-surface table,
+.editor-document-surface blockquote,
+.editor-document-surface figure {
+  margin: 0 0 1pt;
+}
+
+.editor-document-surface .template-doc > div:not([data-candidate-block-grid], .examlist-candidate-block-grid) {
+  margin: 0 0 1pt;
+}
+
+.editor-document-surface h1 {
+  font-size: 20pt;
+  font-weight: 800;
+}
+
+.editor-document-surface h2 {
+  font-size: 16pt;
+  font-weight: 800;
+}
+
+.editor-document-surface h3 {
+  font-size: 14pt;
+  font-weight: 700;
+}
+
+.editor-document-surface ul,
+.editor-document-surface ol {
+  padding-left: 22pt;
+}
+
+.editor-document-surface blockquote {
+  background: rgba(238, 243, 251, 0.8);
+  border-left: 4pt solid rgba(40, 88, 184, 0.5);
+  border-radius: 12pt;
+  padding: 12pt 16pt;
+}
+
+.editor-document-surface hr {
+  border: 0;
+  border-top: 1pt solid rgba(81, 101, 133, 0.35);
+  margin: 20pt 0;
+}
+
+.editor-document-surface img {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+.editor-document-surface img.template-generated-object {
+  max-width: none;
+}
+
+.template-editor-surface img.template-editor-image-object {
+  cursor: pointer;
+  touch-action: none;
+}
+
+.template-editor-surface img.template-editor-image-object.is-selected-object {
+  cursor: grab;
+  outline: 0;
+}
+
+.template-editor-surface img.template-editor-image-object.is-selected-object.is-cell-contained-object {
+  cursor: pointer;
+}
+
+.template-editor-surface table.is-selected-object,
+.template-editor-surface table.is-selected-table-object {
+  cursor: grab;
+  outline: 0;
+}
+
+.template-editor-surface.has-multiple-object-selection table.is-selected-object,
+.template-editor-surface.has-multiple-object-selection table.is-selected-table-object {
+  outline: 0;
+}
+
+.template-editor-surface table.is-selected-object.is-floating-object,
+.template-editor-surface table.is-selected-table-object.is-floating-object {
+  max-width: none;
+}
+
+.template-editor-surface img.template-editor-image-object.is-floating-object {
+  max-width: 100%;
+}
+
+.template-editor-surface img.template-editor-image-object.template-generated-object,
+.template-editor-surface img.template-editor-image-object.template-generated-object.is-floating-object {
+  max-width: none;
+}
+
+.template-editor-surface img.template-editor-image-object.is-moving-object {
+  cursor: grabbing;
+  z-index: 3;
+}
+
+.template-editor-surface.is-image-moving {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.template-editor-surface.is-image-resizing {
+  cursor: nwse-resize;
+  user-select: none;
+}
+
+.template-editor-surface.is-image-resizing-top-right,
+.template-editor-surface.is-image-resizing-bottom-left {
+  cursor: nesw-resize;
+}
+
+.template-editor-surface.is-image-resizing-top-left,
+.template-editor-surface.is-image-resizing-bottom-right {
+  cursor: nwse-resize;
+}
+
+.template-editor-surface.is-image-resizing-top,
+.template-editor-surface.is-image-resizing-bottom {
+  cursor: ns-resize;
+}
+
+.template-editor-surface.is-image-resizing-left,
+.template-editor-surface.is-image-resizing-right {
+  cursor: ew-resize;
+}
+
+.template-editor-surface.is-table-object-resizing {
+  user-select: none;
+}
+
+.template-editor-surface.is-table-object-resizing-top-right,
+.template-editor-surface.is-table-object-resizing-bottom-left {
+  cursor: nesw-resize;
+}
+
+.template-editor-surface.is-table-object-resizing-top-left,
+.template-editor-surface.is-table-object-resizing-bottom-right {
+  cursor: nwse-resize;
+}
+
+.template-editor-surface.is-table-object-resizing-top,
+.template-editor-surface.is-table-object-resizing-bottom {
+  cursor: ns-resize;
+}
+
+.template-editor-surface.is-table-object-resizing-left,
+.template-editor-surface.is-table-object-resizing-right {
+  cursor: ew-resize;
+}
+
+.template-editor-surface.is-table-object-moving {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.template-editor-surface.is-object-group-resizing {
+  user-select: none;
+}
+
+.template-editor-surface.is-object-group-resizing-top-right,
+.template-editor-surface.is-object-group-resizing-bottom-left {
+  cursor: nesw-resize;
+}
+
+.template-editor-surface.is-object-group-resizing-top-left,
+.template-editor-surface.is-object-group-resizing-bottom-right {
+  cursor: nwse-resize;
+}
+
+.template-editor-surface.is-object-group-resizing-top,
+.template-editor-surface.is-object-group-resizing-bottom {
+  cursor: ns-resize;
+}
+
+.template-editor-surface.is-object-group-resizing-left,
+.template-editor-surface.is-object-group-resizing-right {
+  cursor: ew-resize;
+}

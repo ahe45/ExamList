@@ -1,0 +1,203 @@
+.editor-inspector-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.editor-page-margin-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.editor-page-margin-note {
+  margin-top: 8px;
+}
+
+.editor-inspector-column fieldset,
+.template-page-properties-panel fieldset {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.editor-empty {
+  color: var(--muted);
+  margin: 0;
+}
+
+.editor-preview-modal {
+  align-items: stretch;
+  padding: 24px;
+  z-index: 1680;
+}
+
+.editor-preview-modal-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: calc(100vh - 48px);
+  max-height: calc(100vh - 48px);
+  max-width: 1320px;
+  width: min(100%, 1320px);
+}
+
+.editor-preview-body {
+  display: grid;
+  gap: 16px;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.editor-preview-frame {
+  align-self: stretch;
+  background: #dce4f1;
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 18px;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.template-editor-modal-sheet {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.template-editor-page {
+  background: linear-gradient(180deg, rgba(231, 238, 247, 0.92), rgba(244, 247, 252, 0.92));
+}
+
+.examlist-template-editor-body.template-editor-runtime-shell {
+  background: transparent;
+  padding: 0;
+}
+
+.editor-toolbar,
+.editor-toolbar-footer,
+.template-tag-panel,
+.editor-inspector-column,
+.template-page-properties-panel {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(203, 213, 225, 0.58);
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.template-page-switcher {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(203, 213, 225, 0.72);
+}
+
+.template-page-switcher-button.selected,
+.template-page-property-control:focus,
+.template-toolbar-choice-option > input:focus-visible + span {
+  box-shadow: 0 0 0 3px rgba(45, 99, 245, 0.12);
+}
+
+.template-page-property-control,
+.template-page-orientation-options span,
+.template-toolbar-choice-option > span,
+.template-table-insert-panel {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(203, 213, 225, 0.76);
+}
+
+.editor-inspector-panel select,
+.template-page-properties-panel select,
+select.template-page-property-control {
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: #ffffff !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #69788f 50%),
+    linear-gradient(135deg, #69788f 50%, transparent 50%) !important;
+  background-position:
+    calc(100% - 17px) 52%,
+    calc(100% - 12px) 52% !important;
+  background-repeat: no-repeat !important;
+  background-size:
+    5px 5px,
+    5px 5px !important;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 12px;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  min-height: 36px;
+  outline: none;
+  padding: 0 34px 0 12px !important;
+  width: 100%;
+}
+
+.editor-inspector-panel select::-ms-expand,
+.template-page-properties-panel select::-ms-expand,
+select.template-page-property-control::-ms-expand {
+  display: none;
+}
+
+.editor-inspector-panel select:focus,
+.template-page-properties-panel select:focus,
+select.template-page-property-control:focus {
+  border-color: rgba(40, 88, 184, 0.7);
+  box-shadow: 0 0 0 3px rgba(40, 88, 184, 0.12);
+}
+
+.editor-inspector-panel select:disabled,
+.template-page-properties-panel select:disabled,
+select.template-page-property-control:disabled {
+  background-color: #f8fbff !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #94a3b8 50%),
+    linear-gradient(135deg, #94a3b8 50%, transparent 50%) !important;
+  color: rgba(105, 120, 143, 0.58);
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.template-table-insert-panel,
+.template-toolbar-color-panel,
+.template-toolbar-font-size-menu {
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.14);
+}
+
+@media (max-width: 1120px) {
+  .template-editor-modal-sheet,
+  .examlist-template-editor-sheet,
+  .examlist-template-editor-body.template-editor-runtime-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    min-width: 0;
+    padding: 0;
+    width: 100%;
+  }
+
+  .examlist-template-editor-body.template-editor-runtime-shell > .editor-toolbar-column,
+  .examlist-template-editor-body.template-editor-runtime-shell > .template-tag-panel,
+  .examlist-template-editor-body.template-editor-runtime-shell > .template-editor-page,
+  .examlist-template-editor-body.template-editor-runtime-shell > .template-page-properties-column {
+    grid-column: 1;
+    max-height: none;
+  }
+
+  .examlist-template-editor-body.template-editor-runtime-shell > .editor-toolbar-column {
+    grid-row: 1;
+  }
+
+  .examlist-template-editor-body.template-editor-runtime-shell > .template-tag-panel {
+    grid-row: 2;
+  }
+
+  .examlist-template-editor-body.template-editor-runtime-shell > .template-editor-page {
+    grid-row: 3;
+    min-width: 0;
+  }
+
+  .examlist-template-editor-body.template-editor-runtime-shell > .template-page-properties-column {
+    grid-row: 4;
+    height: auto;
+  }
+}

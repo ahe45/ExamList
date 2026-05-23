@@ -1,0 +1,74 @@
+:root {
+  --bg: #eef2f8;
+  --panel: rgba(255, 255, 255, 0.88);
+  --panel-strong: #ffffff;
+  --panel-muted: #f5f7fb;
+  --surface: var(--panel);
+  --surface-soft: var(--panel-muted);
+  --surface-strong: #eef4fb;
+  --line: #dfe5f0;
+  --line-strong: #cbd5e1;
+  --text: #152033;
+  --muted: #5e6a80;
+  --text-dim: var(--muted);
+  --text-muted: var(--muted);
+  --accent: #2d63f5;
+  --accent-strong: #143fcf;
+  --accent-soft: rgba(45, 99, 245, 0.12);
+  --success: #1f9d6b;
+  --success-soft: #dcf7ee;
+  --warning: #f59e0b;
+  --warning-soft: #fff7e8;
+  --danger: #d2415b;
+  --danger-soft: #ffe8ee;
+  --grid-line: #d9e4ee;
+  --grid-head: #f8fbff;
+  --grid-head-text: #5d6d7e;
+  --grid-row-line: #ecf2f7;
+  --grid-hover: #eef7ff;
+  --grid-row-height: 42px;
+  --shadow: 0 24px 50px rgba(14, 24, 48, 0.08);
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --button-radius: 10px;
+  --button-radius-sm: 8px;
+  --app-header-height: 61px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(111, 152, 255, 0.18), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(81, 203, 170, 0.14), transparent 24%),
+    linear-gradient(180deg, #f7f9fd 0%, var(--bg) 100%);
+  color: var(--text);
+  font-family: "Manrope", "Noto Sans KR", sans-serif;
+  overflow-x: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+.hidden {
+  display: none !important;
+}

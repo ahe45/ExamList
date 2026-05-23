@@ -1,0 +1,267 @@
+(function (globalScope, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory(globalScope);
+    return;
+  }
+
+  globalScope.ExamListTemplateEditorToolbarInteractions = factory(globalScope);
+})(typeof globalThis !== "undefined" ? globalThis : this, (globalScope) => {
+  const toolbarRenderingModule = globalScope.ExamListTemplateEditorToolbarRendering;
+  const toolbarColorInteractionsModule = globalScope.ExamListTemplateEditorToolbarColorInteractions;
+
+  if (!toolbarRenderingModule?.createTemplateEditorToolbarRenderingController) {
+    throw new Error("client/features/template-editor/toolbar-rendering.js must be loaded before toolbar-interactions.js.");
+  }
+
+  if (!toolbarColorInteractionsModule?.createTemplateEditorToolbarColorInteractionController) {
+    throw new Error("client/features/template-editor/toolbar-color-interactions.js must be loaded before toolbar-interactions.js.");
+  }
+
+  const { createTemplateEditorToolbarRenderingController } = toolbarRenderingModule;
+  const { createTemplateEditorToolbarColorInteractionController } = toolbarColorInteractionsModule;
+
+  function createTemplateEditorToolbarInteractionController({
+    TEMPLATE_EDITOR_DEFAULT_FONT_FAMILY,
+    TEMPLATE_EDITOR_DEFAULT_FONT_SIZE,
+    applyTemplateEditorCommand,
+    applyTemplateEditorFontSize,
+    applyTemplateTableSize,
+    escapeAttribute,
+    escapeHtml,
+    getElementById,
+    getTemplateEditorCellSplitConfig,
+    getTemplateEditorModal,
+    handleTemplateEditorInsert,
+    handleTemplateTableAction,
+    insertTemplateImageSource,
+    insertTemplateTag,
+    options,
+    pageSettings,
+    setTemplateEditorCellSplitPanelVisibility,
+    setTemplateEditorStatus,
+    shell,
+    tagDefinitions,
+    toolbar,
+    toolbarElements,
+    toolbarIds,
+  }) {
+    const {
+      renderPagePropertiesPanel,
+      renderTagPanel,
+      renderToolbar,
+    } = createTemplateEditorToolbarRenderingController({
+      TEMPLATE_EDITOR_DEFAULT_FONT_FAMILY,
+      TEMPLATE_EDITOR_DEFAULT_FONT_SIZE,
+      escapeAttribute,
+      escapeHtml,
+      getElementById,
+      pageSettings,
+      shell,
+      tagDefinitions,
+      toolbar,
+      toolbarElements,
+      toolbarIds,
+    });
+    const {
+      applyToolbarColorTrigger,
+      applyToolbarHexColorInput,
+    } = createTemplateEditorToolbarColorInteractionController({
+      applyTemplateEditorCommand,
+      getElementById,
+      handleTemplateTableAction,
+      toolbar,
+      toolbarIds,
+    });
+
+    function handleClick(event) {
+      const target = event.target instanceof Element ? event.target : null;
+
+      if (!target || !getTemplateEditorModal().contains(target)) {
+        return;
+      }
+
+      const fontSizeToggleTrigger = target.closest("[data-editor-font-size-toggle]");
+      const fontSizeOptionTrigger = target.closest("[data-editor-font-size-option]");
+      const borderSelectToggleTrigger = target.closest("[data-editor-border-select-toggle]");
+      const borderSelectOptionTrigger = target.closest("[data-editor-border-select-option]");
+      const colorToggleTrigger = target.closest("[data-editor-color-toggle]");
+      const colorDirectTrigger = target.closest("[data-editor-color-direct]");
+      const colorPresetTrigger = target.closest("[data-editor-color-preset]");
+      const colorApplyTrigger = target.closest("[data-editor-color-apply]");
+      const cellSplitStepTrigger = target.closest("[data-template-cell-split-step]");
+      const cellSplitToggleTrigger = target.closest("[data-template-cell-split-toggle]");
+      const cellSplitConfirmTrigger = target.closest("[data-template-cell-split-confirm]");
+      const commandTrigger = target.closest("[data-template-command]");
+      const tableActionTrigger = target.closest("[data-template-table-action]");
+      const tableSizeTrigger = target.closest("[data-template-table-size]");
+      const insertTrigger = target.closest("[data-template-insert]");
+      const tagTrigger = target.closest("[data-template-tag]");
+      const openImageTrigger = target.closest("[data-template-open-image]");
+      const imageInsertToggleTrigger = target.closest("[data-template-image-insert-toggle]");
+      const schoolLogoTrigger = target.closest("[data-template-insert-school-logo]");
+
+      if (fontSizeToggleTrigger) {
+        const inputId = fontSizeToggleTrigger.dataset.editorFontSizeToggle;
+        const comboElement = fontSizeToggleTrigger.closest(".template-toolbar-font-size-combo");
+        const menuElement = comboElement?.querySelector(".template-toolbar-combo-menu");
+        toolbar.setEditorToolbarFontSizeMenuVisibility(inputId, menuElement?.classList.contains("hidden") ?? true);
+        return;
+      }
+
+      if (fontSizeOptionTrigger) {
+        const comboMenu = fontSizeOptionTrigger.closest(".template-toolbar-combo-menu");
+        const inputId = comboMenu?.dataset.editorFontSizeMenuFor || "";
+        const fontSize = fontSizeOptionTrigger.dataset.editorFontSizeOption || "";
+        const inputElement = getElementById(inputId);
+
+        if (inputElement) {
+          inputElement.value = fontSize;
+        }
+
+        if (inputId === toolbarIds.fontSize) {
+          applyTemplateEditorFontSize(fontSize);
+        }
+
+        toolbar.setEditorToolbarFontSizeMenuVisibility(inputId, false);
+        return;
+      }
+
+      if (borderSelectToggleTrigger) {
+        const inputId = borderSelectToggleTrigger.dataset.editorBorderSelectToggle || "";
+        const { menuElement } = toolbar.getEditorToolbarBorderSelectElements?.(inputId) || {};
+
+        toolbar.setEditorToolbarBorderSelectMenuVisibility?.(inputId, menuElement?.classList.contains("hidden") ?? true);
+        return;
+      }
+
+      if (borderSelectOptionTrigger) {
+        const comboMenu = borderSelectOptionTrigger.closest(".template-toolbar-icon-select-menu");
+        const inputId = comboMenu?.dataset.editorBorderSelectMenuFor || "";
+        const value = borderSelectOptionTrigger.dataset.editorBorderSelectOption || "";
+
+        if (inputId && value) {
+          toolbar.applyEditorToolbarBorderSelectOption?.(inputId, value);
+        }
+
+        toolbar.setEditorToolbarBorderSelectMenuVisibility?.(inputId, false);
+        return;
+      }
+
+      if (colorToggleTrigger) {
+        const inputId = colorToggleTrigger.dataset.editorColorToggle || "";
+        const { panelElement } = toolbar.getEditorToolbarColorPickerElements(inputId);
+        toolbar.setEditorToolbarColorPanelVisibility(inputId, panelElement?.classList.contains("hidden") ?? true);
+        return;
+      }
+
+      if (colorDirectTrigger) {
+        const inputId = colorDirectTrigger.dataset.editorColorInput || "";
+        const { inputElement } = toolbar.getEditorToolbarColorPickerElements(inputId);
+        inputElement?.showPicker ? inputElement.showPicker() : inputElement?.click();
+        return;
+      }
+
+      if (colorPresetTrigger || colorApplyTrigger) {
+        applyToolbarColorTrigger(colorPresetTrigger || colorApplyTrigger);
+        toolbar.closeAllEditorToolbarColorPanels();
+        return;
+      }
+
+      if (cellSplitStepTrigger) {
+        const nextStep = cellSplitStepTrigger.dataset.templateCellSplitStep;
+        globalScope.ExamListEditorToolbarControls?.stepEditorToolbarNumberInput({
+          inputElement: toolbarElements.cellSplitCount,
+          direction: nextStep,
+          minimum: 2,
+        });
+        globalScope.ExamListEditorToolbarControls?.focusEditorToolbarNumberInput(toolbarElements.cellSplitCount);
+        return;
+      }
+
+      if (cellSplitToggleTrigger) {
+        const nextOpen = toolbarElements.cellSplitPanel?.classList.contains("hidden") ?? true;
+        setTemplateEditorCellSplitPanelVisibility(nextOpen);
+        toolbarElements.cellSplitCount?.focus();
+        toolbarElements.cellSplitCount?.select?.();
+        return;
+      }
+
+      if (cellSplitConfirmTrigger) {
+        const cellSplitConfig = getTemplateEditorCellSplitConfig?.();
+
+        if (cellSplitConfig && handleTemplateTableAction("split-cell", cellSplitConfig)) {
+          setTemplateEditorCellSplitPanelVisibility(false);
+        }
+        return;
+      }
+
+      if (commandTrigger) {
+        applyTemplateEditorCommand(commandTrigger.dataset.templateCommand);
+        return;
+      }
+
+      if (tableActionTrigger) {
+        handleTemplateTableAction(tableActionTrigger.dataset.templateTableAction);
+        return;
+      }
+
+      if (tableSizeTrigger) {
+        applyTemplateTableSize();
+        return;
+      }
+
+      if (insertTrigger) {
+        handleTemplateEditorInsert(insertTrigger.dataset.templateInsert);
+        return;
+      }
+
+      if (tagTrigger) {
+        insertTemplateTag(tagTrigger.dataset.templateTag);
+        return;
+      }
+
+      if (imageInsertToggleTrigger) {
+        const panelId = imageInsertToggleTrigger.dataset.templateImageInsertToggle || "";
+        const { panelElement } = toolbar.getEditorToolbarTableInsertPopoverElements?.(panelId) || {};
+
+        toolbar.setEditorToolbarTableInsertPanelVisibility?.(panelId, panelElement?.classList.contains("hidden") ?? true);
+        return;
+      }
+
+      if (schoolLogoTrigger) {
+        const logoDataUrl =
+          typeof options.getSchoolLogoDataUrl === "function"
+            ? options.getSchoolLogoDataUrl()
+            : options.schoolLogoDataUrl;
+
+        toolbar.closeAllEditorToolbarTableInsertPanels?.();
+
+        if (!String(logoDataUrl || "").trim()) {
+          setTemplateEditorStatus("학교 설정에 등록된 로고가 없습니다.", "warning");
+          return;
+        }
+
+        insertTemplateImageSource(logoDataUrl, "학교 로고");
+        return;
+      }
+
+      if (openImageTrigger) {
+        toolbar.closeAllEditorToolbarTableInsertPanels?.();
+        toolbarElements.imageInput?.click();
+      }
+    }
+
+    return Object.freeze({
+      applyToolbarColorTrigger,
+      applyToolbarHexColorInput,
+      handleClick,
+      renderPagePropertiesPanel,
+      renderTagPanel,
+      renderToolbar,
+    });
+  }
+
+  return Object.freeze({
+    createTemplateEditorToolbarInteractionController,
+  });
+});

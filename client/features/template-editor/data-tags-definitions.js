@@ -1,0 +1,131 @@
+import { escapeHtml } from "../../app/html-utils.js";
+import {
+  dataTagAccordionGroups,
+  dataTagFallbackDefinitions,
+  getDataTagGroupForKey,
+  isVisibleTemplateTag,
+  renderDataTagIcon,
+} from "./data-tags-config.js";
+import { applyDataTagSampleValuesToDefinitions } from "./data-tag-samples.js";
+import { getDataTagViewOptions, normalizeDataTagViewOptions } from "./data-tags-view-options.js";
+import { generatedObjectPreviewValues } from "./generated-objects-config.js";
+
+export function uniqueDataTagValues(values) {
+  return Array.from(new Set((Array.isArray(values) ? values : []).map((value) => String(value || "").trim()).filter(Boolean)));
+}
+
+function createTemplateTagDefinition(tag = {}) {
+  const key = String(tag?.key || "").trim();
+  const fallback = dataTagFallbackDefinitions[key] || {};
+  const label = String(fallback.label || tag?.label || key).trim();
+
+  if (!key) {
+    return null;
+  }
+
+  const iconKey = String(tag?.iconKey || tag?.icon || getDataTagGroupForKey(key)?.icon || "more").trim() || "more";
+  const tagLabel = String(tag?.label || "").trim();
+
+  return {
+    aliases: uniqueDataTagValues([label, key, tagLabel, ...(Array.isArray(fallback.aliases) ? fallback.aliases : [])]),
+    dataKey: key,
+    editorToken: `#${label || key}`,
+    example: String(tag?.example || fallback.example || generatedObjectPreviewValues[key] || ""),
+    id: key,
+    iconKey,
+    iconMarkup: renderDataTagIcon(iconKey),
+    key,
+    label: label || key,
+    token: key,
+    type: String(tag?.type || fallback.type || "string"),
+  };
+}
+
+export function flattenTemplateTags(dataTags, sampleValues = {}) {
+  const tagDefinitions = (Array.isArray(dataTags?.groups) ? dataTags.groups : [])
+    .flatMap((group) => (Array.isArray(group?.tags) ? group.tags : []))
+    .map(createTemplateTagDefinition)
+    .filter(isVisibleTemplateTag);
+  const definitionMap = new Map(tagDefinitions.map((definition) => [definition.key, definition]));
+
+  dataTagAccordionGroups.forEach((group) => {
+    group.keys.forEach((key) => {
+      if (!definitionMap.has(key)) {
+        const fallbackDefinition = createTemplateTagDefinition({
+          key,
+          ...(dataTagFallbackDefinitions[key] || {}),
+        });
+
+        if (isVisibleTemplateTag(fallbackDefinition)) {
+          definitionMap.set(key, fallbackDefinition);
+        }
+      }
+    });
+  });
+
+  return applyDataTagSampleValuesToDefinitions(Array.from(definitionMap.values()), sampleValues);
+}
+
+function findTagDefinitionByToken(rawToken, tagDefinitions = []) {
+  const normalizedToken = String(rawToken || "")
+    .trim()
+    .replace(/^@\{/, "")
+    .replace(/^#/, "")
+    .replace(/\}$/, "");
+
+  if (!normalizedToken) {
+    return null;
+  }
+
+  return tagDefinitions.find((definition) => {
+    const candidates = uniqueDataTagValues([
+      definition.key,
+      definition.token,
+      definition.dataKey,
+      definition.label,
+      ...(Array.isArray(definition.aliases) ? definition.aliases : []),
+    ]);
+
+    return candidates.includes(normalizedToken);
+  }) || null;
+}
+
+function getTokenDisplayText(definition = {}, viewOptions = getDataTagViewOptions()) {
+  const options = normalizeDataTagViewOptions(viewOptions);
+  const sampleText = String(definition.example || "").trim();
+  const labelText = String(definition.label || definition.key || "").trim();
+
+  return options.showSampleData && sampleText ? sampleText : labelText;
+}
+
+function getTokenIconMarkup(definition = {}, viewOptions = getDataTagViewOptions()) {
+  const options = normalizeDataTagViewOptions(viewOptions);
+
+  if (!options.showIcons) {
+    return "";
+  }
+
+  return definition.iconMarkup || renderDataTagIcon(definition.iconKey || getDataTagGroupForKey(definition.key)?.icon || "more");
+}
+
+export function normalizeTokenLabels(rootElement, tagDefinitions = [], viewOptions = getDataTagViewOptions()) {
+  const options = normalizeDataTagViewOptions(viewOptions);
+
+  rootElement?.querySelectorAll?.(".template-token[data-template-tag-value]").forEach((tokenElement) => {
+    const definition = findTagDefinitionByToken(tokenElement.dataset.templateTagValue, tagDefinitions);
+
+    if (!definition) {
+      return;
+    }
+
+    tokenElement.dataset.templateTagValue = definition.key;
+    tokenElement.dataset.templateTagLabel = definition.label;
+    tokenElement.dataset.templateTagExample = String(definition.example || "");
+    tokenElement.setAttribute("contenteditable", "false");
+    tokenElement.setAttribute("spellcheck", "false");
+    tokenElement.title = [definition.label, definition.example].map((value) => String(value || "").trim()).filter(Boolean).join(" · ");
+    tokenElement.classList.toggle("template-token-icons-hidden", !options.showIcons);
+    tokenElement.classList.toggle("template-token-sample-display", options.showSampleData);
+    tokenElement.innerHTML = `${getTokenIconMarkup(definition, options)}${escapeHtml(getTokenDisplayText(definition, options))}`;
+  });
+}
