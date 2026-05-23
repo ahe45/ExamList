@@ -46,7 +46,9 @@ npm install
 npm run start
 ```
 
-기본 서버 주소는 `http://localhost:3002`입니다. 포트와 DB, PDF 큐, 브라우저 경로는 `.env` 또는 `.env.example` 기준 환경 변수로 설정합니다.
+기본 서버 주소는 `http://localhost`입니다. `PORT`를 별도로 설정하지 않으면 HTTP 기본 포트인 `80`을 사용하므로 주소 뒤에 포트 번호를 붙이지 않습니다. DB, PDF 큐, 브라우저 경로는 `.env` 또는 `.env.example` 기준 환경 변수로 설정합니다.
+
+Windows 11 PC를 실제 서버처럼 사용할 경우에는 [Windows 간편 배포 가이드](deploy/windows/README.md)를 참고합니다. `.env` 생성, 의존성 설치, DB 스키마 준비, 실행 배치 파일, NSSM 자동 시작 등록을 단계별로 제공합니다.
 
 ## 핵심 기능 요약
 
