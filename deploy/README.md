@@ -39,7 +39,7 @@ start-server.bat
 
 `DB_HOST`와 `DB_PORT`는 직접 입력받지 않고 항상 `DB_HOST=127.0.0.1`, `DB_PORT=3306`으로 자동 저장합니다. `DB_NAME`도 직접 입력받지 않고 항상 `examlist`로 자동 저장합니다. `npm run setup:db`는 이 이름의 DB를 생성하거나 스키마를 갱신합니다. 단, 입력한 DB 계정이 DB 생성 권한을 갖고 있지 않다면 MariaDB/MySQL에서 `examlist` DB를 먼저 만들어야 합니다.
 
-입력이 끝나면 Windows setup은 `npm run setup:db`를 자동 실행하고, 완료 후 ExamList 서버를 바로 시작합니다. 이 단계에서는 MariaDB/MySQL 서버가 실행 중이어야 합니다.
+입력이 끝나면 Windows setup은 `npm run setup:db`를 자동 실행하고, 완료 후 ExamList 서버를 바로 시작합니다. 이 단계에서는 MariaDB/MySQL 서버가 실행 중이어야 합니다. 초기 DB 스키마 준비 시 `한국대학교`와 `기본 템플릿` 양식도 자동 생성됩니다.
 
 setup 실행 로그는 프로젝트 루트의 `log\setup-windows.log`에 저장됩니다. `log` 폴더가 없으면 실행 시 자동으로 생성됩니다.
 
