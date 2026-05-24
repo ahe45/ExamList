@@ -2,8 +2,20 @@
 setlocal
 
 set "__BAT_PATH=%~f0"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$path=$env:__BAT_PATH; $content=[IO.File]::ReadAllText($path); $marker='# __POWERSHELL_PAYLOAD__'; $index=$content.LastIndexOf($marker); if($index -lt 0){ throw 'PowerShell payload was not found.' }; Invoke-Expression $content.Substring($index + $marker.Length)"
-exit /b %ERRORLEVEL%
+set "__SETUP_LOG=%~dp0setup-windows.log"
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $path=$env:__BAT_PATH; $log=$env:__SETUP_LOG; try { Start-Transcript -Path $log -Append | Out-Null } catch {}; try { $content=[IO.File]::ReadAllText($path); $marker='# __POWERSHELL_PAYLOAD__'; $index=$content.LastIndexOf($marker); if($index -lt 0){ throw 'PowerShell payload was not found.' }; Invoke-Expression $content.Substring($index + $marker.Length); exit 0 } catch { Write-Host ''; Write-Host 'ExamList setup failed.' -ForegroundColor Red; Write-Host $_.Exception.Message -ForegroundColor Red; if($_.ScriptStackTrace){ Write-Host $_.ScriptStackTrace }; exit 1 } finally { try { Stop-Transcript | Out-Null } catch {} }"
+set "__SETUP_EXIT=%ERRORLEVEL%"
+
+if not "%__SETUP_EXIT%"=="0" (
+  echo.
+  echo ExamList setup failed. See the log file:
+  echo   %__SETUP_LOG%
+  echo.
+  pause
+)
+
+exit /b %__SETUP_EXIT%
 
 # __POWERSHELL_PAYLOAD__
 $ErrorActionPreference = "Stop"
