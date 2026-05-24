@@ -39,7 +39,9 @@ test("account management view renders account rows for super administrators", ()
   assert.match(html, /data-action="open-account-edit-modal"/);
   assert.match(html, /data-action="delete-account"/);
   assert.match(html, /table-inline-icon-button/);
-  assert.match(html, /title="수정"/);
+  assert.match(html, /<div class="table-header-static">관리<\/div>/);
+  assert.match(html, /<div class="table-header-static">삭제<\/div>/);
+  assert.match(html, /title="설정"/);
   assert.match(html, /title="삭제"/);
 });
 

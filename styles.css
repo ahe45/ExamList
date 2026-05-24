@@ -346,7 +346,8 @@ html[data-current-view="accountManagement"] .app-shell.template-list-mode .conte
 }
 
 .account-management-table {
-  --account-action-column-width: 78px;
+  --account-action-column-width: 42px;
+  --account-actions-total-width: calc(var(--account-action-column-width) + var(--account-action-column-width));
   min-width: 0;
   table-layout: fixed;
   width: 100%;
@@ -365,17 +366,17 @@ html[data-current-view="accountManagement"] .app-shell.template-list-mode .conte
 .account-management-table td.table-column-id,
 .account-management-table th.table-column-name,
 .account-management-table td.table-column-name {
-  width: calc((100% - var(--account-action-column-width)) * 0.22);
+  width: calc((100% - var(--account-actions-total-width)) * 0.22);
 }
 
 .account-management-table th.table-column-role,
 .account-management-table td.table-column-role {
-  width: calc((100% - var(--account-action-column-width)) * 0.22);
+  width: calc((100% - var(--account-actions-total-width)) * 0.22);
 }
 
 .account-management-table th.table-column-recentAccess,
 .account-management-table td.table-column-recentAccess {
-  width: calc((100% - var(--account-action-column-width)) * 0.34);
+  width: calc((100% - var(--account-actions-total-width)) * 0.34);
 }
 
 .account-management-table th.table-action-column,
@@ -396,13 +397,20 @@ html[data-current-view="accountManagement"] .app-shell.template-list-mode .conte
 }
 
 .account-management-table .table-action-column .table-inline-icon-button {
+  align-items: center;
+  display: inline-flex;
   height: 30px;
+  justify-content: center;
+  line-height: 1;
   min-height: 30px;
   min-width: 30px;
+  padding: 0;
   width: 30px;
 }
 
 .account-management-table .table-action-column .button-icon {
+  display: block;
+  flex: 0 0 auto;
   height: 15px;
   stroke: currentColor;
   stroke-linecap: round;
@@ -437,7 +445,7 @@ html[data-current-view="accountManagement"] .app-shell.template-list-mode .conte
   }
 
   .account-management-table {
-    --account-action-column-width: 68px;
+    --account-action-column-width: 36px;
   }
 
   .account-management-grid th,
@@ -451,17 +459,17 @@ html[data-current-view="accountManagement"] .app-shell.template-list-mode .conte
   .account-management-table td.table-column-id,
   .account-management-table th.table-column-name,
   .account-management-table td.table-column-name {
-    width: calc((100% - var(--account-action-column-width)) * 0.19);
+    width: calc((100% - var(--account-actions-total-width)) * 0.19);
   }
 
   .account-management-table th.table-column-role,
   .account-management-table td.table-column-role {
-    width: calc((100% - var(--account-action-column-width)) * 0.2);
+    width: calc((100% - var(--account-actions-total-width)) * 0.2);
   }
 
   .account-management-table th.table-column-recentAccess,
   .account-management-table td.table-column-recentAccess {
-    width: calc((100% - var(--account-action-column-width)) * 0.42);
+    width: calc((100% - var(--account-actions-total-width)) * 0.42);
   }
 
   .account-management-table th.table-column-recentAccess .table-header-static {

@@ -261,13 +261,25 @@ async function runAccountChecks(context, results, screenshotDir) {
           .map((header) => header.textContent.replace(/\\s+/g, ' ').trim())
           .join('|');
         const iconButtons = [...document.querySelectorAll('.account-management-table .table-action-column button')];
+        const iconsAreCentered = iconButtons.every((button) => {
+          const buttonRect = button.getBoundingClientRect();
+          const iconRect = button.querySelector('svg.button-icon')?.getBoundingClientRect();
 
-        return headers === '아이디|이름|권한|마지막 로그인|관리' &&
+          if (!iconRect) {
+            return false;
+          }
+
+          return Math.abs((buttonRect.left + buttonRect.width / 2) - (iconRect.left + iconRect.width / 2)) <= 1 &&
+            Math.abs((buttonRect.top + buttonRect.height / 2) - (iconRect.top + iconRect.height / 2)) <= 1;
+        });
+
+        return headers === '아이디|이름|권한|마지막 로그인|관리|삭제' &&
           !document.body.innerText.includes('계정 사용 여부') &&
-          iconButtons.every((button) => button.querySelector('svg.button-icon'));
+          iconButtons.every((button) => button.querySelector('svg.button-icon')) &&
+          iconsAreCentered;
       })()
     `,
-    "계정관리 컬럼 및 아이콘 액션 확인",
+    "계정관리 컬럼 및 아이콘 정렬 확인",
   );
   await addCheckpoint({ client, results, screenshotDir }, "05-account-management-desktop");
 

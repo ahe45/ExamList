@@ -39,6 +39,60 @@ async function runCandidateBlockGridSetupSelectionScenario(context) {
       client,
       `
         (() => {
+          const setControlValue = (selector, value) => {
+            const control = document.querySelector(selector);
+
+            if (!control) {
+              return false;
+            }
+
+            control.value = value;
+            control.dispatchEvent(new Event('input', { bubbles: true }));
+            control.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+          };
+          const portraitControl = document.querySelector('[data-template-page-setting="orientation"][value="portrait"]');
+
+          if (!portraitControl) {
+            return false;
+          }
+
+          portraitControl.checked = true;
+          portraitControl.dispatchEvent(new Event('change', { bubbles: true }));
+
+          return setControlValue('[data-template-page-setting="size"]', 'A4') &&
+            setControlValue('[data-template-page-setting="marginTop"]', '10') &&
+            setControlValue('[data-template-page-setting="marginRight"]', '10') &&
+            setControlValue('[data-template-page-setting="marginBottom"]', '10') &&
+            setControlValue('[data-template-page-setting="marginLeft"]', '10');
+        })()
+      `,
+    );
+    await waitForCondition(
+      client,
+      `
+        (() => {
+          const surface = document.querySelector('#templateEditorSurface');
+          const documentElement = surface?.querySelector('.template-doc');
+          const surfaceStyle = surface ? getComputedStyle(surface) : null;
+
+          return Boolean(
+            documentElement?.dataset.templatePageSize === 'A4' &&
+              documentElement.dataset.templatePageOrientation === 'portrait' &&
+              documentElement.dataset.templatePageMarginTop === '10' &&
+              documentElement.dataset.templatePageMarginRight === '10' &&
+              documentElement.dataset.templatePageMarginBottom === '10' &&
+              documentElement.dataset.templatePageMarginLeft === '10' &&
+              surfaceStyle?.paddingTop === '38px'
+          );
+        })()
+      `,
+      "수험생 데이터 블록 테스트 A4 10mm 여백 적용",
+    );
+    await evaluate(
+      client,
+      `
+        (() => {
           const columnsControl = document.querySelector('[data-examlist-block-grid-setting="columns"]');
           const rowsControl = document.querySelector('[data-examlist-block-grid-setting="rows"]');
           const createButton = document.querySelector('[data-examlist-block-grid-create]');
@@ -110,6 +164,33 @@ async function runCandidateBlockGridSetupSelectionScenario(context) {
       `,
       "수험생 데이터 블록 외부 본문 입력 위치 유지",
     );
+    await evaluate(
+      client,
+      `
+        (() => {
+          const surface = document.querySelector('#templateEditorSurface');
+          const documentElement = surface?.querySelector('.template-doc');
+          const surfaceStyle = surface ? getComputedStyle(surface) : null;
+          const documentRect = documentElement?.getBoundingClientRect();
+
+          window.__examlistCandidateBlockPageMetrics = surfaceStyle && documentRect && documentElement
+            ? {
+                documentHeight: documentRect.height,
+                documentWidth: documentRect.width,
+                marginBottom: documentElement.dataset.templatePageMarginBottom,
+                marginLeft: documentElement.dataset.templatePageMarginLeft,
+                marginRight: documentElement.dataset.templatePageMarginRight,
+                marginTop: documentElement.dataset.templatePageMarginTop,
+                paddingBottom: surfaceStyle.paddingBottom,
+                paddingLeft: surfaceStyle.paddingLeft,
+                paddingRight: surfaceStyle.paddingRight,
+                paddingTop: surfaceStyle.paddingTop
+              }
+            : null;
+          return Boolean(window.__examlistCandidateBlockPageMetrics);
+        })()
+      `,
+    );
     const candidateBlockOutsidePoint = await getBrowserPoint(
       client,
       `(() => {
@@ -149,6 +230,25 @@ async function runCandidateBlockGridSetupSelectionScenario(context) {
           const anchorElement = selection?.anchorNode?.nodeType === Node.ELEMENT_NODE
             ? selection.anchorNode
             : selection?.anchorNode?.parentElement || null;
+          const beforeMetrics = window.__examlistCandidateBlockPageMetrics;
+          const surface = document.querySelector('#templateEditorSurface');
+          const surfaceStyle = surface ? getComputedStyle(surface) : null;
+          const documentRect = documentElement?.getBoundingClientRect();
+          const pageMarginsAreStable = Boolean(
+            beforeMetrics &&
+              surfaceStyle &&
+              documentRect &&
+              documentElement.dataset.templatePageMarginTop === beforeMetrics.marginTop &&
+              documentElement.dataset.templatePageMarginRight === beforeMetrics.marginRight &&
+              documentElement.dataset.templatePageMarginBottom === beforeMetrics.marginBottom &&
+              documentElement.dataset.templatePageMarginLeft === beforeMetrics.marginLeft &&
+              surfaceStyle.paddingTop === beforeMetrics.paddingTop &&
+              surfaceStyle.paddingRight === beforeMetrics.paddingRight &&
+              surfaceStyle.paddingBottom === beforeMetrics.paddingBottom &&
+              surfaceStyle.paddingLeft === beforeMetrics.paddingLeft &&
+              Math.abs(documentRect.width - beforeMetrics.documentWidth) <= 1 &&
+              Math.abs(documentRect.height - beforeMetrics.documentHeight) <= 1
+          );
 
           return Boolean(
             documentElement &&
@@ -157,11 +257,12 @@ async function runCandidateBlockGridSetupSelectionScenario(context) {
               outsideText.includes('다음줄') &&
               !blockText.includes('블록밖입력') &&
               !blockText.includes('다음줄') &&
-              !anchorElement?.closest?.('[data-candidate-block-instance]')
+              !anchorElement?.closest?.('[data-candidate-block-instance]') &&
+              pageMarginsAreStable
           );
         })()
       `,
-      "수험생 데이터 블록 외부 본문 입력 및 줄바꿈 분리",
+      "수험생 데이터 블록 외부 본문 입력 및 여백 유지",
     );
     await evaluate(
       client,

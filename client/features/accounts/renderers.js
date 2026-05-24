@@ -54,7 +54,7 @@ function renderAccountRows(accounts = []) {
   if (!accounts.length) {
     return `
       <tr>
-        <td colspan="5" class="empty-cell">등록된 계정이 없습니다.</td>
+        <td colspan="6" class="empty-cell">등록된 계정이 없습니다.</td>
       </tr>
     `;
   }
@@ -70,10 +70,10 @@ function renderAccountRows(accounts = []) {
           <td class="table-column-role"><span class="status-badge neutral">${escapeHtml(account.roleLabel || account.role || "-")}</span></td>
           <td class="table-column-recentAccess"><span class="table-cell-text">${escapeHtml(formatDateTime(account.lastLoginAt))}</span></td>
           <td class="table-action-column">
-            <span class="table-inline-actions table-inline-actions-compact">
-              <button class="table-inline-button table-inline-icon-button" data-action="open-account-edit-modal" data-account-id="${escapeHtml(accountId)}" type="button" aria-label="${escapeHtml(account.userName || account.userId || "계정")} 수정" title="수정">${accountActionIcons.settings}</button>
-              <button class="table-inline-button table-inline-icon-button danger" data-action="delete-account" data-account-id="${escapeHtml(accountId)}" type="button" aria-label="${escapeHtml(account.userName || account.userId || "계정")} 삭제" title="삭제">${accountActionIcons.trash}</button>
-            </span>
+            <button class="table-inline-button table-inline-icon-button" data-action="open-account-edit-modal" data-account-id="${escapeHtml(accountId)}" type="button" aria-label="${escapeHtml(account.userName || account.userId || "계정")} 설정" title="설정">${accountActionIcons.settings}</button>
+          </td>
+          <td class="table-action-column">
+            <button class="table-inline-button table-inline-icon-button danger" data-action="delete-account" data-account-id="${escapeHtml(accountId)}" type="button" aria-label="${escapeHtml(account.userName || account.userId || "계정")} 삭제" title="삭제">${accountActionIcons.trash}</button>
           </td>
         </tr>
       `;
@@ -196,10 +196,11 @@ export function renderAccountManagementView({ access, accounts }) {
                 <th class="table-column-role"><div class="table-header-static">권한</div></th>
                 <th class="table-column-recentAccess"><div class="table-header-static">마지막 로그인</div></th>
                 <th class="table-action-column"><div class="table-header-static">관리</div></th>
+                <th class="table-action-column"><div class="table-header-static">삭제</div></th>
               </tr>
             </thead>
             <tbody>
-              ${accounts.loading ? '<tr><td colspan="5" class="empty-cell">계정 목록을 불러오는 중입니다.</td></tr>' : renderAccountRows(accounts.items || [])}
+              ${accounts.loading ? '<tr><td colspan="6" class="empty-cell">계정 목록을 불러오는 중입니다.</td></tr>' : renderAccountRows(accounts.items || [])}
             </tbody>
           </table>
         </div>
