@@ -4,4 +4,5 @@ node_modules/
 artifacts/
 uploads/
 storage/
+log/
 *.log

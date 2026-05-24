@@ -3,6 +3,11 @@ $ErrorActionPreference = "Stop"
 $script:transcriptStarted = $false
 if ($env:__SETUP_LOG) {
   try {
+    $setupLogDir = Split-Path -Parent $env:__SETUP_LOG
+    if ($setupLogDir -and -not (Test-Path $setupLogDir)) {
+      New-Item -ItemType Directory -Path $setupLogDir -Force | Out-Null
+    }
+
     Start-Transcript -Path $env:__SETUP_LOG -Append | Out-Null
     $script:transcriptStarted = $true
   } catch {
@@ -480,33 +485,23 @@ Remove-EnvValue "PDF_QUEUE_PROCESS_IN_WEB"
 Write-Host "PDF_QUEUE_DRIVER=memory was saved to .env. External queue settings were removed."
 
 Write-Step "Preparing database schema"
-
-$runDbSetup = Read-Host "Run npm run setup:db now? DB server and .env DB_* values must be ready. [Y/n]"
-if ($runDbSetup.Trim().ToLowerInvariant() -ne "n") {
-  Invoke-Checked "npm.cmd" "run setup:db"
-} else {
-  Write-Host "Skipped database schema setup."
-}
+Write-Host "Running npm run setup:db automatically. DB server and .env DB_* values must be ready."
+Invoke-Checked "npm.cmd" "run setup:db"
 
 Write-Step "Setup complete"
 $serverPort = Resolve-ConfiguredServerPort
 Write-Host "Local URL: $(Format-HttpUrl "localhost" $serverPort)"
 Write-Host "Same-network URL: $(Format-HttpUrl "<server-ip>" $serverPort)"
 Write-Host ""
-Write-Host "Login account reminder: EXAMLIST_AUTH_ENABLED=true requires EXAMLIST_USERS_JSON or a DB account."
-Write-Host "See deploy\README.md for the initial administrator account setup."
+Write-Host "Initial login account: admin / 1234"
+Write-Host "Change this password after the first login."
 
-$startApp = Read-Host "Start ExamList now? [Y/n]"
-if ($startApp.Trim().ToLowerInvariant() -ne "n") {
-  Write-Host "Starting ExamList. Press Ctrl+C in this window to stop it."
-  Push-Location $rootDir
-  try {
-    & node server.js
-  } finally {
-    Pop-Location
-  }
-} else {
-  Write-Host "Start it later with: node server.js"
+Write-Host "Starting ExamList automatically. Press Ctrl+C in this window to stop it."
+Push-Location $rootDir
+try {
+  & node server.js
+} finally {
+  Pop-Location
 }
 
 if ($script:transcriptStarted) {

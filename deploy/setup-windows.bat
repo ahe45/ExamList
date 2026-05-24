@@ -2,10 +2,13 @@
 setlocal
 
 set "__SETUP_PS1=%~dp0setup-windows.ps1"
-set "__SETUP_LOG=%~dp0setup-windows.log"
+set "__PROJECT_ROOT=%~dp0.."
+set "__LOG_DIR=%__PROJECT_ROOT%\log"
+set "__SETUP_LOG=%__LOG_DIR%\setup-windows.log"
 set "__SETUP_BAT_PATH=%~f0"
 set "__BAT_PATH=%__SETUP_PS1%"
 
+if not exist "%__LOG_DIR%" mkdir "%__LOG_DIR%"
 echo ExamList setup launcher started: %DATE% %TIME%> "%__SETUP_LOG%"
 
 if not exist "%__SETUP_PS1%" (
