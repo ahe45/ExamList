@@ -4,7 +4,7 @@
 
 ## 파일 구성
 
-- `setup-windows.bat`: Node.js 사전 설치 확인, `.env` 생성, DB 접속 정보 입력, 의존성 설치, DB 스키마 준비, 서버 실행을 처리합니다.
+- `setup-windows.bat`: Node.js 사전 설치 확인, `.env` 생성, DB 접속 사용자 정보 입력, 의존성 설치, DB 스키마 준비, 서버 실행을 처리합니다.
 - `README.md`: 이 안내 문서입니다.
 
 ## 직접 준비해야 하는 항목
@@ -33,12 +33,10 @@ Node.js가 없으면 이 파일이 스스로 관리자 권한으로 다시 실�
 
 1. `Q1. 서버 포트번호를 별도로 설정하시겠습니까? (예: Y / 아니오: N)`
 2. Q1에서 `Y`를 입력한 경우: `Q1-1. 포트번호를 설정하세요`
-3. `Q2. DB HOST(세션 이름)를 설정하세요`
-4. `Q3. DB PORT를 설정하세요`
-5. `Q4. DB USER ID를 설정하세요`
-6. `Q5. DB USER PASSWORD를 설정하세요`
+3. `Q2. DB USER ID를 설정하세요`
+4. `Q3. DB USER PASSWORD를 설정하세요`
 
-`DB_NAME`은 직접 입력받지 않고 항상 `examlist`로 자동 저장합니다. `npm run setup:db`는 이 이름의 DB를 생성하거나 스키마를 갱신합니다. 단, 입력한 DB 계정이 DB 생성 권한을 갖고 있지 않다면 MariaDB/MySQL에서 `examlist` DB를 먼저 만들어야 합니다.
+`DB_HOST`와 `DB_PORT`는 직접 입력받지 않고 항상 `DB_HOST=127.0.0.1`, `DB_PORT=3306`으로 자동 저장합니다. `DB_NAME`도 직접 입력받지 않고 항상 `examlist`로 자동 저장합니다. `npm run setup:db`는 이 이름의 DB를 생성하거나 스키마를 갱신합니다. 단, 입력한 DB 계정이 DB 생성 권한을 갖고 있지 않다면 MariaDB/MySQL에서 `examlist` DB를 먼저 만들어야 합니다.
 
 ## 접속 주소
 

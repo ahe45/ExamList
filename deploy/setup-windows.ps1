@@ -350,35 +350,30 @@ function Configure-ServerEnvironment() {
 
 function Configure-DatabaseEnvironment() {
   Write-Step "Configuring database connection"
+  Write-Host "DB_HOST is set automatically to '127.0.0.1'."
+  Write-Host "DB_PORT is set automatically to '3306'."
   Write-Host "DB_NAME is set automatically to 'examlist'."
 
-  $dbHost = Read-RequiredTextWithDefault "Q2. DB HOST(세션 이름)를 설정하세요" (Read-EnvValue "DB_HOST")
-  $dbPort = Read-RequiredTextWithDefault "Q3. DB PORT를 설정하세요" (Read-EnvValue "DB_PORT")
-  $parsedDbPort = 0
-
-  while (-not ([int]::TryParse($dbPort, [ref] $parsedDbPort) -and $parsedDbPort -ge 1 -and $parsedDbPort -le 65535)) {
-    Write-Warning "Enter a valid TCP port between 1 and 65535."
-    $dbPort = Read-RequiredTextWithDefault "Q3. DB PORT를 설정하세요" "3306"
-  }
-
-  $dbUser = Read-RequiredTextWithDefault "Q4. DB USER ID를 설정하세요" (Read-EnvValue "DB_USER")
+  $dbHost = "127.0.0.1"
+  $dbPort = "3306"
+  $dbUser = Read-RequiredTextWithDefault "Q2. DB USER ID를 설정하세요" (Read-EnvValue "DB_USER")
   $currentPassword = Read-EnvValue "DB_PASSWORD"
 
   if ($currentPassword -eq "change-this-db-password") {
     $currentPassword = ""
   }
 
-  $dbPassword = Read-RequiredPasswordWithDefault "Q5. DB USER PASSWORD를 설정하세요" $currentPassword
+  $dbPassword = Read-RequiredPasswordWithDefault "Q3. DB USER PASSWORD를 설정하세요" $currentPassword
 
   Set-EnvValue "DB_HOST" $dbHost
-  Set-EnvValue "DB_PORT" ([string] $parsedDbPort)
+  Set-EnvValue "DB_PORT" $dbPort
   Set-EnvValue "DB_NAME" "examlist"
   Set-EnvValue "DB_USER" $dbUser
   Set-EnvValue "DB_PASSWORD" $dbPassword
 
   Write-Host "DB connection saved to .env."
   Write-Host "DB_HOST=$dbHost"
-  Write-Host "DB_PORT=$parsedDbPort"
+  Write-Host "DB_PORT=$dbPort"
   Write-Host "DB_NAME=examlist"
   Write-Host "DB_USER=$dbUser"
 }
