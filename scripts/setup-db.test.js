@@ -1,10 +1,20 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const { createHash } = require("node:crypto");
 
+const defaultSeed = require("../db/default-seed.json");
 const { ensureInitialDefaultSchoolTemplate } = require("./setup-db");
 
 function normalizeSql(sql) {
   return String(sql || "").replace(/\s+/g, " ").trim();
+}
+
+function hashJson(value) {
+  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
+function hashText(value) {
+  return createHash("sha256").update(String(value || "")).digest("hex");
 }
 
 function createSeedPool(initialState = {}) {
@@ -33,15 +43,27 @@ function createSeedPool(initialState = {}) {
       }
 
       if (compactSql.startsWith("SELECT id FROM schools WHERE code = ?")) {
-        return [state.schools.filter((school) => school.code === params[0]).map((school) => ({ id: school.id }))];
+        return [
+          state.schools
+            .filter((school) => {
+              if (compactSql.includes("AND id <> ?")) {
+                return school.code === params[0] && school.id !== params[1];
+              }
+
+              return school.code === params[0];
+            })
+            .map((school) => ({ id: school.id })),
+        ];
       }
 
       if (compactSql.startsWith("UPDATE schools SET")) {
-        const school = state.schools.find((item) => item.id === params[2]);
+        const school = state.schools.find((item) => item.id === params[4]);
 
         if (school) {
-          school.name = params[0];
-          school.description = params[1];
+          school.code = params[0];
+          school.name = params[1];
+          school.description = params[2];
+          school.deletionPasswordHash = params[3];
           school.isActive = 1;
           school.deletedAt = null;
         }
@@ -53,6 +75,7 @@ function createSeedPool(initialState = {}) {
         state.schools.push({
           code: params[1],
           description: params[3],
+          deletionPasswordHash: params[4],
           id: params[0],
           isActive: params[5],
           name: params[2],
@@ -66,9 +89,13 @@ function createSeedPool(initialState = {}) {
         if (existingSettings) {
           existingSettings.schoolId = params[1];
           existingSettings.schoolName = params[2];
+          existingSettings.academicYear = params[3];
+          existingSettings.logoDataUrl = params[4];
         } else {
           state.settings.push({
+            academicYear: params[3],
             id: params[0],
+            logoDataUrl: params[4],
             schoolId: params[1],
             schoolName: params[2],
           });
@@ -93,12 +120,16 @@ function createSeedPool(initialState = {}) {
         state.templates.push({
           description: params[3],
           generationUnit: params[6],
+          coverEnabled: params[8],
           id: params[0],
+          isActive: params[7],
           layout: JSON.parse(params[11]),
+          latestVersionNo: params[10],
           name: params[2],
           orientation: params[5],
           paperPreset: params[4],
           schoolId: params[1],
+          contentEnabled: params[9],
         });
         return [{ affectedRows: 1 }];
       }
@@ -115,10 +146,16 @@ function createSeedPool(initialState = {}) {
 
       if (compactSql.startsWith("INSERT INTO pdf_template_pages")) {
         state.pages.push({
+          enabled: params[5],
+          heightPt: params[8],
           id: params[0],
           name: params[3],
           pageType: params[2],
+          repeatable: params[6],
+          settings: JSON.parse(params[9]),
+          sortOrder: params[4],
           templateId: params[1],
+          widthPt: params[7],
         });
         return [{ affectedRows: 1 }];
       }
@@ -180,30 +217,42 @@ test("setup-db seeds 한국대학교 and 기본 템플릿 when missing", async (
   assert.equal(state.didCommit, true);
   assert.equal(state.didRelease, true);
   assert.deepEqual(state.schools[0], {
-    code: "KOREA",
-    description: "",
-    id: "school-default",
+    code: defaultSeed.school.code,
+    description: defaultSeed.school.description,
+    deletionPasswordHash: defaultSeed.school.deletionPasswordHash,
+    id: defaultSeed.school.id,
     isActive: 1,
-    name: "한국대학교",
+    name: defaultSeed.school.name,
   });
-  assert.deepEqual(state.settings[0], {
-    id: "default",
-    schoolId: "school-default",
-    schoolName: "한국대학교",
-  });
+  assert.equal(state.settings[0].id, defaultSeed.schoolSettings.id);
+  assert.equal(state.settings[0].schoolId, defaultSeed.schoolSettings.schoolId);
+  assert.equal(state.settings[0].schoolName, defaultSeed.schoolSettings.schoolName);
+  assert.equal(state.settings[0].academicYear, defaultSeed.schoolSettings.academicYear);
+  assert.equal(hashText(state.settings[0].logoDataUrl), hashText(defaultSeed.schoolSettings.logoDataUrl));
   assert.equal(state.templates.length, 1);
-  assert.equal(state.templates[0].schoolId, "school-default");
-  assert.equal(state.templates[0].name, "기본 템플릿");
-  assert.equal(state.templates[0].paperPreset, "A4");
-  assert.equal(state.templates[0].orientation, "portrait");
-  assert.equal(state.templates[0].generationUnit, "roomCode");
-  assert.equal(state.templates[0].layout.pages.length, 2);
+  assert.equal(state.templates[0].id, defaultSeed.template.id);
+  assert.equal(state.templates[0].schoolId, defaultSeed.template.schoolId);
+  assert.equal(state.templates[0].name, defaultSeed.template.name);
+  assert.equal(state.templates[0].description, defaultSeed.template.description);
+  assert.equal(state.templates[0].paperPreset, defaultSeed.template.paperPreset);
+  assert.equal(state.templates[0].orientation, defaultSeed.template.orientation);
+  assert.equal(state.templates[0].generationUnit, defaultSeed.template.generationUnit);
+  assert.equal(state.templates[0].isActive, 1);
+  assert.equal(state.templates[0].coverEnabled, 1);
+  assert.equal(state.templates[0].contentEnabled, 1);
+  assert.equal(hashJson(state.templates[0].layout), hashJson(defaultSeed.template.layout));
+  assert.equal(state.templates[0].layout.pages.length, defaultSeed.template.layout.pages.length);
+  assert.match(state.templates[0].layout.pages[0].settings.documentHtml, /수험생확인대장/);
+  assert.match(state.templates[0].layout.pages[1].settings.documentHtml, /candidate-block-grid/);
   assert.deepEqual(
     state.pages.map((page) => page.pageType),
     ["cover", "content"],
   );
+  assert.equal(state.pages[0].settings.documentHtml, defaultSeed.template.layout.pages[0].settings.documentHtml);
+  assert.equal(state.pages[1].settings.documentHtml, defaultSeed.template.layout.pages[1].settings.documentHtml);
   assert.equal(state.versions.length, 1);
   assert.equal(state.versions[0].templateId, state.templates[0].id);
+  assert.equal(hashJson(state.versions[0].snapshot), hashJson(defaultSeed.template.layout));
 });
 
 test("setup-db does not duplicate an existing 기본 템플릿", async () => {
@@ -233,7 +282,11 @@ test("setup-db does not duplicate an existing 기본 템플릿", async () => {
   assert.equal(state.templates[0].id, "template-existing");
   assert.equal(state.pages.length, 0);
   assert.equal(state.versions.length, 0);
+  assert.equal(state.schools[0].code, defaultSeed.school.code);
   assert.equal(state.schools[0].name, "한국대학교");
+  assert.equal(state.schools[0].description, defaultSeed.school.description);
   assert.equal(state.schools[0].isActive, 1);
   assert.equal(state.schools[0].deletedAt, null);
+  assert.equal(state.settings[0].academicYear, defaultSeed.schoolSettings.academicYear);
+  assert.equal(hashText(state.settings[0].logoDataUrl), hashText(defaultSeed.schoolSettings.logoDataUrl));
 });
