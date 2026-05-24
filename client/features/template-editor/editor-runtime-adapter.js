@@ -70,9 +70,7 @@ function normalizeComparableTemplateValue(value) {
   return value;
 }
 
-function stripRuntimeOwnedSelectedPageFields(template, selectedPageId = "") {
-  const normalizedSelectedPageId = String(selectedPageId || "");
-
+function stripRuntimeOwnedPageFields(template) {
   if (!template || typeof template !== "object") {
     return template;
   }
@@ -81,7 +79,7 @@ function stripRuntimeOwnedSelectedPageFields(template, selectedPageId = "") {
   const pages = Array.isArray(clone?.layout?.pages) ? clone.layout.pages : [];
 
   pages.forEach((page) => {
-    if (String(page?.id || "") !== normalizedSelectedPageId || !page.settings || typeof page.settings !== "object") {
+    if (!page.settings || typeof page.settings !== "object") {
       return;
     }
 
@@ -156,7 +154,7 @@ function syncRuntimeOwnedSelectedPageFieldsToSavedSnapshot(appState, selectedPag
   return true;
 }
 
-function hasTemplateSnapshotChanges(appState, selectedPageId = "") {
+function hasTemplateSnapshotChanges(appState) {
   const currentTemplate = appState?.templateEditor?.template || null;
   const savedTemplate = appState?.templateEditor?.savedTemplateSnapshot || null;
 
@@ -165,8 +163,8 @@ function hasTemplateSnapshotChanges(appState, selectedPageId = "") {
   }
 
   try {
-    const currentComparable = stripRuntimeOwnedSelectedPageFields(currentTemplate, selectedPageId);
-    const savedComparable = stripRuntimeOwnedSelectedPageFields(savedTemplate, selectedPageId);
+    const currentComparable = stripRuntimeOwnedPageFields(currentTemplate);
+    const savedComparable = stripRuntimeOwnedPageFields(savedTemplate);
 
     return JSON.stringify(normalizeComparableTemplateValue(currentComparable)) !==
       JSON.stringify(normalizeComparableTemplateValue(savedComparable));
@@ -213,6 +211,19 @@ function markTemplateEditorDirty(appState) {
     appState.templateEditor.isDirty = true;
   }
   updateSaveButtonState();
+}
+
+function updateMountedRuntimeDirtyState(appState, selectedPage, html) {
+  const hasRuntimeChanges = hasSelectedPageRuntimeChanges(appState, selectedPage, html);
+
+  mountedDirty = hasRuntimeChanges;
+
+  if (appState?.templateEditor) {
+    appState.templateEditor.isDirty = hasRuntimeChanges || hasTemplateSnapshotChanges(appState);
+  }
+
+  updateSaveButtonState();
+  return mountedDirty;
 }
 
 export function unmountTemplateEditorRuntime() {
@@ -426,14 +437,18 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
       syncMountedRuntimeHtmlToState(appState, selectedPage, html);
     },
     onChange(html) {
+      const selectedMountedPage = getCurrentMountedSelectedPage(appState, selectedPage);
+      const normalizedHtml = normalizeSavedRuntimeHtml(html, mountedTagDefinitions);
+
       syncMountedRuntimeHtmlToState(appState, selectedPage, html);
-      mountedDirty = true;
-      appState.templateEditor.isDirty = true;
+      updateMountedRuntimeDirtyState(appState, selectedMountedPage, normalizedHtml);
       window.requestAnimationFrame(() => {
-        syncCandidateBlockTemplateFromSurface(surfaceElement, getCurrentMountedSelectedPage(appState, selectedPage));
+        const currentSelectedPage = getCurrentMountedSelectedPage(appState, selectedPage);
+
+        syncCandidateBlockTemplateFromSurface(surfaceElement, currentSelectedPage);
         applyMountedDataTagViewOptions(surfaceElement);
+        updateMountedRuntimeDirtyState(appState, currentSelectedPage, normalizedHtml);
       });
-      updateSaveButtonState();
     },
   });
   renderGroupedDataTagPanel(tagHost, tagDefinitions, canEdit);
@@ -539,7 +554,7 @@ export function syncTemplateEditorRuntimeToState({ appState } = {}) {
   }
 
   applyTemplateMetadataControlsToState(appState, pagePropertiesHost);
-  const hadSnapshotChangesBeforeRuntimeSync = hasTemplateSnapshotChanges(appState, selectedPage.id);
+  const hadSnapshotChangesBeforeRuntimeSync = hasTemplateSnapshotChanges(appState);
   syncCandidateBlockTemplateFromSurface(document.getElementById("templateEditorSurface"), selectedPage, null, { allowFallback: true });
 
   const html = normalizeSavedRuntimeHtml(mountedEditor.getHtml(), mountedTagDefinitions);
@@ -574,7 +589,7 @@ export function syncTemplateEditorRuntimeToState({ appState } = {}) {
   }
 
   mountedDirty = hasRuntimeChanges;
-  appState.templateEditor.isDirty = hasRuntimeChanges || hasTemplateSnapshotChanges(appState, selectedPage.id);
+  appState.templateEditor.isDirty = hasRuntimeChanges || hasTemplateSnapshotChanges(appState);
   updateSaveButtonState();
   return true;
 }
