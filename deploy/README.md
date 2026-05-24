@@ -4,7 +4,7 @@
 
 ## 파일 구성
 
-- `setup-windows.bat`: Node.js/Docker Desktop 사전 설치 확인, `.env` 생성, DB 접속 정보 입력, Redis 컨테이너 시작, 의존성 설치, DB 스키마 준비, 서버 실행을 처리합니다.
+- `setup-windows.bat`: Node.js 사전 설치 확인, `.env` 생성, DB 접속 정보 입력, 의존성 설치, DB 스키마 준비, 서버 실행을 처리합니다.
 - `README.md`: 이 안내 문서입니다.
 
 ## 직접 준비해야 하는 항목
@@ -25,7 +25,7 @@
 deploy\setup-windows.bat
 ```
 
-Node.js 또는 Docker Desktop이 없으면 이 파일이 스스로 관리자 권한으로 다시 실행되어 설치를 시도합니다. 재부팅이 필요하면 `지금 재부팅하시겠습니까?`를 물어보고, `Y`를 입력하면 10초 뒤 Windows를 재부팅합니다. 재부팅 후 Docker Desktop을 한 번 실행하고 같은 파일을 다시 실행합니다.
+Node.js가 없으면 이 파일이 스스로 관리자 권한으로 다시 실행되어 설치를 시도합니다.
 
 ## setup 입력 순서
 

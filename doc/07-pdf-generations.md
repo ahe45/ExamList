@@ -351,7 +351,7 @@ API:
 - `batch-orchestrator.js`: 배치 row 생성, chunk plan 생성, job enqueue.
 - `generation-runner.js`: 단일 PDF 생성 실행.
 - `browser-renderer.js`: HTML을 PDF로 렌더링.
-- `queue-service.js`: BullMQ 또는 memory queue 선택.
+- `queue-service.js`: 기본 memory queue로 작업 등록.
 - `queue-lifecycle.js`: 큐 작업 처리.
 - `batch-status-service.js`: 배치 진행률 refresh.
 - `history-service.js`: 이력 조회, 삭제, 재생성, 파일 제공.

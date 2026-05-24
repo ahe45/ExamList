@@ -59,14 +59,6 @@ function createPdfGenerationQueueRecoveryController({
   async function startPdfGenerationQueue() {
     const queueDriver = resolveQueueDriver();
 
-    if (queueDriver === "memory" && String(process.env.NODE_ENV || "").trim().toLowerCase() === "production") {
-      throw createHttpError(
-        500,
-        "운영 환경에서는 메모리 PDF 큐를 사용할 수 없습니다. PDF_QUEUE_DRIVER=bullmq와 REDIS_URL을 설정해주세요.",
-        "PDF_QUEUE_MEMORY_DRIVER_NOT_ALLOWED",
-      );
-    }
-
     if (queueDriver === "bullmq") {
       const bullState = getBullQueueState();
 

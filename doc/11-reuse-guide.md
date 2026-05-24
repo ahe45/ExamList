@@ -112,7 +112,7 @@
 
 - PDF 렌더링 가능한 Chrome/Chromium 또는 `PDF_BROWSER_PATH`.
 - `PDF_STORAGE_DIR`.
-- 큐를 쓰려면 Redis와 BullMQ 설정.
+- `PDF_QUEUE_DRIVER=memory` 기준 queue 설정.
 
 필수 상태:
 
@@ -218,6 +218,6 @@ Toast:
 - 수험생 업로드의 중복 기준은 학교와 수험번호 기반 source id이다.
 - PDF 생성 목록은 기본적으로 completed 상태만 조회한다.
 - 템플릿 편집 저장 전 화면 이동은 guard 대상이다.
-- BullMQ production 운영에는 `REDIS_URL` 설정이 필요하다.
+- memory queue는 서버 프로세스 안에서 순차 처리된다.
 - PDF 렌더링은 브라우저 실행 파일에 의존한다.
 - `storage/` 하위 파일은 runtime 산출물이다.

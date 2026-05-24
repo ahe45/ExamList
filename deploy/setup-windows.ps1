@@ -34,7 +34,6 @@ $scriptDir = Split-Path -Parent $scriptPath
 $rootDir = Resolve-Path (Join-Path $scriptDir "..")
 $envPath = Join-Path $rootDir ".env"
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-$script:rebootRequired = $false
 
 function Write-Step($message) {
   Write-Host ""
@@ -79,7 +78,6 @@ function Add-PathIfExists($pathValue) {
 
 function Refresh-CommonToolPaths() {
   Add-PathIfExists (Join-Path $env:ProgramFiles "nodejs")
-  Add-PathIfExists (Join-Path $env:ProgramFiles "Docker\Docker\resources\bin")
 }
 
 function Invoke-CommandChecked($file, [string[]] $arguments) {
@@ -89,29 +87,6 @@ function Invoke-CommandChecked($file, [string[]] $arguments) {
 
   if ($exitCode -ne 0) {
     throw "$file failed with exit code $exitCode."
-  }
-}
-
-function Enable-FeatureIfNeeded($featureName, $label) {
-  Write-Step "Checking Windows feature: $label"
-
-  $feature = Get-WindowsOptionalFeature -Online -FeatureName $featureName -ErrorAction SilentlyContinue
-
-  if (-not $feature) {
-    Write-Warning "Windows feature was not found: $featureName"
-    return
-  }
-
-  if ($feature.State -eq "Enabled") {
-    Write-Host "$label is already enabled."
-    return
-  }
-
-  $result = Enable-WindowsOptionalFeature -Online -FeatureName $featureName -All -NoRestart -ErrorAction Stop
-  Write-Host "$label was enabled."
-
-  if ($result.RestartNeeded) {
-    $script:rebootRequired = $true
   }
 }
 
@@ -137,62 +112,14 @@ function Install-WingetPackage($id, $label, $commandToCheck = "") {
   Refresh-CommonToolPaths
 }
 
-function Test-DockerDesktopInstalled() {
-  $desktopPath = Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
-  $dockerCliPath = Join-Path $env:ProgramFiles "Docker\Docker\resources\bin\docker.exe"
-
-  return (Test-Path $desktopPath) -or (Test-Path $dockerCliPath) -or (Test-Command "docker")
-}
-
-function Install-DockerDesktop() {
-  Write-Step "Checking Docker Desktop"
-  Refresh-CommonToolPaths
-
-  if (Test-DockerDesktopInstalled) {
-    Write-Host "Docker Desktop is already installed."
-    return
-  }
-
-  Write-Host "Installing Docker Desktop with winget..."
-  Invoke-CommandChecked "winget" @(
-    "install",
-    "-e",
-    "--id",
-    "Docker.DockerDesktop",
-    "--accept-package-agreements",
-    "--accept-source-agreements"
-  )
-
-  Refresh-CommonToolPaths
-}
-
-function Try-UpdateWsl() {
-  Write-Step "Checking WSL"
-
-  if (-not (Test-Command "wsl")) {
-    Write-Warning "wsl.exe was not found. Docker Desktop may finish WSL setup on first launch."
-    return
-  }
-
-  try {
-    & wsl --update
-    if ($LASTEXITCODE -eq 3010) {
-      $script:rebootRequired = $true
-    }
-  } catch {
-    Write-Warning "WSL update was skipped: $($_.Exception.Message)"
-  }
-}
-
 function Ensure-Prerequisites() {
   Write-Step "Checking prerequisites"
   Refresh-CommonToolPaths
 
   $nodeReady = (Test-Command "node") -and (Test-Command "npm")
-  $dockerReady = Test-DockerDesktopInstalled
 
-  if ($nodeReady -and $dockerReady) {
-    Write-Host "Node.js and Docker Desktop are already available."
+  if ($nodeReady) {
+    Write-Host "Node.js is already available."
     return
   }
 
@@ -206,28 +133,8 @@ function Ensure-Prerequisites() {
 
   Write-Host "winget: $(winget --version)"
 
-  Enable-FeatureIfNeeded "Microsoft-Windows-Subsystem-Linux" "Windows Subsystem for Linux"
-  Enable-FeatureIfNeeded "VirtualMachinePlatform" "Virtual Machine Platform"
-
   Install-WingetPackage "OpenJS.NodeJS.LTS" "Node.js LTS" "node"
-  Install-DockerDesktop
-  Try-UpdateWsl
   Refresh-CommonToolPaths
-
-  if ($script:rebootRequired) {
-    Write-Host ""
-    Write-Host "A Windows reboot is required before setup can continue."
-    $restartNow = Read-Host "지금 재부팅하시겠습니까? (예: Y / 아니오: N)"
-
-    if ($restartNow.Trim().ToLowerInvariant() -eq "y") {
-      Write-Host "Windows will restart in 10 seconds. Save any open work now."
-      & shutdown.exe /r /t 10 /c "ExamList prerequisite installation requires a Windows reboot."
-    } else {
-      Write-Host "Reboot manually, start Docker Desktop once, then run this file again."
-    }
-
-    exit 0
-  }
 }
 
 function New-RandomHex($byteCount) {
@@ -397,15 +304,11 @@ EXAMLIST_USERS_JSON=[]
 PDF_BROWSER_PATH=
 PDF_STORAGE_DIR=storage/pdf-generations
 
-PDF_QUEUE_DRIVER=bullmq
-PDF_QUEUE_NAME=examlist-pdf-generation
-PDF_QUEUE_CONCURRENCY=1
+PDF_QUEUE_DRIVER=memory
 PDF_QUEUE_MAX_ATTEMPTS=2
 PDF_QUEUE_RETRY_DELAY_MS=5000
-PDF_QUEUE_PROCESS_IN_WEB=true
 PDF_GENERATION_CHUNK_SIZE=500
 PDF_RETENTION_DAYS=30
-REDIS_URL=redis://127.0.0.1:6379
 "@
 }
 
@@ -508,101 +411,6 @@ function Invoke-Checked($file, $arguments) {
   }
 }
 
-function Test-TcpPort($hostName, $port) {
-  try {
-    return Test-NetConnection -ComputerName $hostName -Port $port -InformationLevel Quiet
-  } catch {
-    return $false
-  }
-}
-
-function Wait-TcpPort($hostName, $port, $timeoutSeconds) {
-  $deadline = (Get-Date).AddSeconds($timeoutSeconds)
-
-  while ((Get-Date) -lt $deadline) {
-    if (Test-TcpPort $hostName $port) {
-      return $true
-    }
-
-    Start-Sleep -Seconds 1
-  }
-
-  return $false
-}
-
-function Test-DockerDaemon() {
-  if (-not (Test-Command "docker")) {
-    return $false
-  }
-
-  & docker info > $null 2>&1
-  return $LASTEXITCODE -eq 0
-}
-
-function Wait-DockerDaemon($timeoutSeconds) {
-  $deadline = (Get-Date).AddSeconds($timeoutSeconds)
-
-  while ((Get-Date) -lt $deadline) {
-    if (Test-DockerDaemon) {
-      return $true
-    }
-
-    Start-Sleep -Seconds 2
-  }
-
-  return $false
-}
-
-function Ensure-DockerDaemon() {
-  if (Test-DockerDaemon) {
-    Write-Host "Docker daemon is ready."
-    return
-  }
-
-  $dockerDesktopPath = Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
-
-  if (Test-Path $dockerDesktopPath) {
-    Write-Host "Starting Docker Desktop..."
-    Start-Process -FilePath $dockerDesktopPath | Out-Null
-
-    if (Wait-DockerDaemon 120) {
-      Write-Host "Docker daemon is ready."
-      return
-    }
-  }
-
-  throw "Docker Desktop is installed but not ready. Start Docker Desktop manually, finish any first-run prompts, then run this file again."
-}
-
-function Ensure-DockerRedis() {
-  if (Test-TcpPort "127.0.0.1" 6379) {
-    Write-Host "Redis port 6379 is reachable."
-    return
-  }
-
-  if (-not (Test-Command "docker")) {
-    throw "Docker Desktop is required for the recommended BullMQ mode. Run this file again as Administrator to install prerequisites, then start Docker Desktop."
-  }
-
-  Ensure-DockerDaemon
-
-  Write-Host "Redis is not reachable. Starting Docker Redis container..."
-
-  $containerNames = & docker ps -a --format "{{.Names}}"
-
-  if ($containerNames -contains "examlist-redis") {
-    Invoke-Checked "docker" "start examlist-redis"
-  } else {
-    Invoke-Checked "docker" "run -d --name examlist-redis -p 6379:6379 --restart unless-stopped redis:7-alpine"
-  }
-
-  if (-not (Wait-TcpPort "127.0.0.1" 6379 30)) {
-    throw "Docker Redis started command finished, but port 6379 is still not reachable. Check Docker Desktop status."
-  }
-
-  Write-Host "Redis is ready on 127.0.0.1:6379."
-}
-
 Ensure-Prerequisites
 
 Write-Step "Checking required commands"
@@ -668,21 +476,13 @@ if ($browserFound) {
   Write-Warning "Edge or Chrome was not found in the default path. Install one, or set PDF_BROWSER_PATH in .env."
 }
 
-Write-Step "Checking PDF queue mode"
-
-$queueDriver = (Read-EnvValue "PDF_QUEUE_DRIVER").ToLowerInvariant()
-
-if (-not $queueDriver) {
-  $queueDriver = "bullmq"
-}
-
-if ($queueDriver -eq "bullmq") {
-  $redisUrl = Read-EnvValue "REDIS_URL"
-  Write-Host "BullMQ mode is enabled. REDIS_URL=$redisUrl"
-  Ensure-DockerRedis
-} else {
-  Write-Warning "Memory queue mode is enabled. Redis will not be used, and queued PDF jobs can be lost when the app restarts."
-}
+Write-Step "Configuring PDF queue mode"
+Set-EnvValue "PDF_QUEUE_DRIVER" "memory"
+Remove-EnvValue "REDIS_URL"
+Remove-EnvValue "PDF_QUEUE_NAME"
+Remove-EnvValue "PDF_QUEUE_CONCURRENCY"
+Remove-EnvValue "PDF_QUEUE_PROCESS_IN_WEB"
+Write-Host "PDF_QUEUE_DRIVER=memory was saved to .env. External queue settings were removed."
 
 Write-Step "Preparing database schema"
 

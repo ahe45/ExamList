@@ -130,7 +130,7 @@
 | `server/modules/pdf-generations/batch-target-resolution.js` | 배치 요청에서 템플릿, 학교, 필터, 대상 해석. |
 | `server/modules/pdf-generations/batch-orchestrator.js` | 배치 row 생성, chunk 계획, job enqueue. |
 | `server/modules/pdf-generations/chunks.js` | target별 chunk 분할. |
-| `server/modules/pdf-generations/queue-service.js` | `bullmq` 또는 memory queue driver 선택. |
+| `server/modules/pdf-generations/queue-service.js` | 기본 memory queue driver 선택과 job 등록. |
 | `server/modules/pdf-generations/queue-enqueuer.js` | 단일/배치 job 등록. |
 | `server/modules/pdf-generations/queue-job-processor.js` | queue job 실행 진입. |
 | `server/modules/pdf-generations/queue-lifecycle.js` | worker 시작, event 처리, memory queue 처리. |
@@ -496,7 +496,6 @@
 | `scripts/smoke-browser.js` | 로그인부터 주요 화면과 편집기 기본 동작까지 브라우저 smoke. |
 | `scripts/full-browser-regression.js` | 주요 화면 screenshot/checkpoint 회귀 테스트. |
 | `scripts/check-dropdown-ui.js` | route별 드롭다운, 페이지네이션, 반응형 UI 점검. |
-| `scripts/smoke-bullmq.js` | BullMQ 연결 smoke. |
 | `scripts/smoke/*` | 브라우저 CDP helper와 시나리오. |
 | `scripts/smoke/template-editor/*` | 편집기 상세 브라우저 시나리오. |
 

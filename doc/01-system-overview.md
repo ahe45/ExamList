@@ -24,7 +24,7 @@ ExamList는 학교별 수험생확인대장 PDF를 생성하기 위한 운영자
 - PDF 렌더링: 브라우저 실행 파일을 이용해 HTML을 PDF로 출력.
 - PDF 병합: `pdf-lib`.
 - ZIP 처리: `adm-zip`, `yazl`.
-- 큐: `bullmq`와 `ioredis`, 또는 memory queue.
+- 큐: 기본 memory queue.
 - 테스트: Node 내장 test runner.
 
 ## 실행 진입점
@@ -49,7 +49,6 @@ npm run start
 | `npm run db:create-user` | DB 사용자 생성 |
 | `npm run smoke:ui` | UI smoke 테스트 |
 | `npm run smoke:browser` | 브라우저 smoke 테스트 |
-| `npm run smoke:bullmq` | BullMQ 연결 smoke 테스트 |
 | `npm run test` | Node test runner 실행 |
 
 ## 환경 변수
@@ -73,16 +72,12 @@ npm run start
 | `EXAMLIST_PHOTO_ARCHIVE_MAX_MB` | 기본 2048 | 사진 ZIP 최대 업로드 크기, 1MB에서 4096MB 사이 |
 | `PDF_BROWSER_PATH` | 빈 값 | PDF 렌더링용 브라우저 실행 파일 경로 |
 | `PDF_STORAGE_DIR` | `storage/pdf-generations` | PDF 결과 저장 루트 |
-| `PDF_QUEUE_DRIVER` | `bullmq` | `bullmq` 또는 `memory` |
-| `PDF_QUEUE_NAME` | `examlist-pdf-generation` | BullMQ queue 이름 |
-| `PDF_QUEUE_CONCURRENCY` | `1` | PDF queue 동시 처리 수, 최대 5 |
+| `PDF_QUEUE_DRIVER` | `memory` | PDF queue driver. Windows 배포 기본값은 `memory` |
 | `PDF_QUEUE_MAX_ATTEMPTS` | `2` | 생성 실패 재시도 횟수 |
 | `PDF_QUEUE_RETRY_DELAY_MS` | `5000` | 재시도 지연 |
-| `PDF_QUEUE_PROCESS_IN_WEB` | `true` | 웹 프로세스에서 queue 처리 여부 |
 | `PDF_GENERATION_CHUNK_SIZE` | `500` | 대상별 수험생 chunk 크기 |
 | `PDF_RETENTION_DAYS` | `30` | PDF 파일 보관 일수 |
-| `REDIS_URL` | `redis://localhost:6379` | BullMQ Redis 연결 주소 |
-| `NODE_ENV` | 빈 값 | `production`에서 memory queue 사용 여부 검증에 사용 |
+| `NODE_ENV` | 빈 값 | 실행 환경 구분 |
 | `DB_ADMIN_USER` | `root` | `npm run db:create-user` 실행 시 관리자 DB 사용자 |
 | `DB_ADMIN_PASSWORD` | 빈 값 | `npm run db:create-user` 실행 시 관리자 DB 비밀번호 |
 | `MYSQL_CLI_PATH`, `MARIADB_CLI_PATH` | 빈 값 | DB 사용자 생성 script가 사용할 CLI 실행 파일 경로 |

@@ -56,11 +56,11 @@ function calculateExpiryDate(createdAt = new Date(), retentionDays = 30) {
 function resolveQueueDriver() {
   const configuredDriver = String(process.env.PDF_QUEUE_DRIVER || "").trim().toLowerCase();
 
-  if (configuredDriver) {
-    return configuredDriver;
+  if (configuredDriver === "bullmq") {
+    return "bullmq";
   }
 
-  return String(process.env.REDIS_URL || "").trim() ? "bullmq" : "memory";
+  return "memory";
 }
 
 module.exports = {
