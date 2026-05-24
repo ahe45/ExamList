@@ -2,8 +2,8 @@ export const dataTagViewOptionsEventName = "examlist:data-tag-view-options-chang
 
 const storageKey = "examlist.templateEditor.dataTagViewOptions";
 const defaultDataTagViewOptions = Object.freeze({
-  showIcons: true,
-  showSampleData: false,
+  showIcons: false,
+  showSampleData: true,
 });
 
 function normalizeBoolean(value, fallback) {

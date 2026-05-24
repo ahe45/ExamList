@@ -22,7 +22,22 @@ async function setSampleDisplayOption(client, checked) {
   );
 }
 
+async function readSampleDisplayOption(client) {
+  return evaluate(
+    client,
+    `
+      (() => {
+        const input = document.querySelector('[data-template-tag-view-option="showSampleData"]');
+
+        return Boolean(input?.checked);
+      })()
+    `,
+  );
+}
+
 async function runDataTagSampleDisplaySyncCase(client) {
+  const initialSampleDisplay = await readSampleDisplayOption(client);
+
   try {
     await waitForCondition(client, "Boolean(window.ExamListTemplateEditorRuntime?.setHtml)", "편집 런타임 준비");
     await setRuntimeHtml(
@@ -67,7 +82,7 @@ async function runDataTagSampleDisplaySyncCase(client) {
       "동기화 후 데이터 태그 샘플값 표시 유지 및 저장값 라벨 유지",
     );
   } finally {
-    await setSampleDisplayOption(client, false);
+    await setSampleDisplayOption(client, initialSampleDisplay);
   }
 }
 
