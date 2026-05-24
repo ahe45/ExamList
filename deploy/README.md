@@ -5,7 +5,7 @@
 ## 파일 구성
 
 - 프로젝트 루트의 `start-server.bat`: 서버 구성 여부를 확인하고, 최초 실행이면 Windows setup을 먼저 진행한 뒤 서버를 시작합니다.
-- `setup-windows.bat`: Node.js 사전 설치 확인, `.env` 생성, DB 접속 사용자 정보 입력, 의존성 설치, DB 스키마 준비, 서버 실행을 처리하는 setup 전용 진입점입니다.
+- `deploy\setup-windows.bat`: Node.js 사전 설치 확인, `.env` 생성, DB 접속 사용자 정보 입력, 의존성 설치, DB 스키마 준비, 서버 실행을 처리하는 setup 전용 진입점입니다.
 - `README.md`: 이 안내 문서입니다.
 
 ## 직접 준비해야 하는 항목
