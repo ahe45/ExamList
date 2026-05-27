@@ -123,6 +123,18 @@ function clearCandidateBlockPreviewRuntimeState(blockElement, surfaceElement, ed
   }
 }
 
+function isCandidateBlockGridNumberControl(control) {
+  return control instanceof HTMLInputElement &&
+    control.type === "number" &&
+    Boolean(control.closest?.(".examlist-candidate-block-grid-field"));
+}
+
+function getCandidateBlockGridSettingControl(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+
+  return target?.closest?.("[data-examlist-block-grid-setting]") || null;
+}
+
 function isCandidateBlockGridKeyboardDeleteTarget(event, surfaceElement, gridElement) {
   if (!(gridElement instanceof HTMLElement) || !surfaceElement?.contains?.(gridElement)) {
     return false;
@@ -401,6 +413,65 @@ export { buildCandidateBlockGridHtml } from "./candidate-block-grid-renderer.js"
 export { resetCandidateBlockGridState } from "./candidate-block-grid-selection.js";
 export { syncCandidateBlockTemplateFromSurface } from "./candidate-block-grid-surface.js";
 
+export function commitCandidateBlockGridControlsToPage({ pagePropertiesHost, selectedPage, surfaceElement, syncControls = true } = {}) {
+  const sectionElement = pagePropertiesHost?.querySelector?.(".examlist-candidate-block-grid-field") || null;
+
+  if (!sectionElement || !selectedPage) {
+    return false;
+  }
+
+  const previousConfig = ensurePageCandidateBlockGridConfig(selectedPage);
+  const hasGridOnSurface = Boolean(surfaceElement?.querySelector?.("[data-candidate-block-grid]"));
+  const activeTemplateHtml =
+    (surfaceElement ? extractCandidateBlockTemplateHtml(surfaceElement) : "") ||
+    previousConfig.blockTemplateHtml;
+  const nextConfig = readCandidateBlockGridControls(sectionElement, {
+    ...previousConfig,
+    blockTemplateHtml: activeTemplateHtml,
+  });
+
+  if (nextConfig.variant === "photo" && hasGridOnSurface) {
+    nextConfig.enabled = true;
+  }
+
+  selectedPage.settings.candidateBlockGrid = nextConfig;
+
+  if (syncControls) {
+    syncCandidateBlockGridControls(sectionElement, selectedPage);
+  }
+
+  if (!surfaceElement) {
+    return true;
+  }
+
+  if (nextConfig.variant === "photo") {
+    const shouldRestoreSelection = Boolean(
+      surfaceElement.querySelector("[data-candidate-block-grid].is-selected-candidate-block-grid"),
+    );
+
+    if (nextConfig.enabled && hasGridOnSurface) {
+      renderCandidateBlockGridOnSurface(surfaceElement, selectedPage);
+
+      if (shouldRestoreSelection) {
+        selectCandidateBlockGridElement(surfaceElement.querySelector("[data-candidate-block-grid]"), { focus: false });
+      }
+    }
+  } else {
+    const documentElement = surfaceElement.querySelector(".template-doc") || surfaceElement;
+
+    nextConfig.enabled = false;
+    selectedPage.settings.candidateBlockGrid = nextConfig;
+    removeCandidateBlockGridElements(documentElement);
+    clearCandidateBlockGridSelection();
+
+    if (isBlankCandidateBlockGridHost(documentElement)) {
+      documentElement.innerHTML = "<p><br></p>";
+    }
+  }
+
+  return true;
+}
+
 export function bindCandidateBlockGridControls({ editor = null, onDirty = null, pagePropertiesHost, selectedPage, surfaceElement }) {
   if (!pagePropertiesHost || !selectedPage || !surfaceElement) {
     return null;
@@ -439,38 +510,41 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
 
   const applyFromControls = () => {
     closeCandidateBlockFocusEditor();
-    const previousConfig = ensurePageCandidateBlockGridConfig(selectedPage);
-    const activeTemplateHtml = extractCandidateBlockTemplateHtml(surfaceElement) || previousConfig.blockTemplateHtml;
-    const nextConfig = readCandidateBlockGridControls(sectionElement, {
-      ...previousConfig,
-      blockTemplateHtml: activeTemplateHtml,
-    });
-
-    selectedPage.settings.candidateBlockGrid = nextConfig;
-    syncCandidateBlockGridControls(sectionElement, selectedPage);
-
-    if (nextConfig.variant === "photo") {
-      if (nextConfig.enabled && surfaceElement.querySelector("[data-candidate-block-grid]")) {
-        renderCandidateBlockGridOnSurface(surfaceElement, selectedPage);
-      }
-    } else {
-      const documentElement = surfaceElement.querySelector(".template-doc") || surfaceElement;
-
-      nextConfig.enabled = false;
-      selectedPage.settings.candidateBlockGrid = nextConfig;
-      removeCandidateBlockGridElements(documentElement);
-      clearCandidateBlockGridSelection();
-
-      if (isBlankCandidateBlockGridHost(documentElement)) {
-        documentElement.innerHTML = "<p><br></p>";
-      }
-    }
-
+    commitCandidateBlockGridControlsToPage({ pagePropertiesHost, selectedPage, surfaceElement });
     markDirty();
   };
 
+  const handleControlInput = (event) => {
+    const control = getCandidateBlockGridSettingControl(event);
+
+    if (!control) {
+      return;
+    }
+
+    if (isCandidateBlockGridNumberControl(control)) {
+      commitCandidateBlockGridControlsToPage({
+        pagePropertiesHost,
+        selectedPage,
+        surfaceElement,
+        syncControls: false,
+      });
+      markDirty();
+      return;
+    }
+
+    applyFromControls();
+  };
   const handleControlChange = (event) => {
-    if (!event.target?.closest?.("[data-examlist-block-grid-setting]")) {
+    if (!getCandidateBlockGridSettingControl(event)) {
+      return;
+    }
+
+    applyFromControls();
+  };
+  const handleControlFocusOut = (event) => {
+    const control = getCandidateBlockGridSettingControl(event);
+
+    if (!isCandidateBlockGridNumberControl(control)) {
       return;
     }
 
@@ -755,8 +829,9 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
     markDirty();
   };
 
-  sectionElement.addEventListener("input", handleControlChange);
+  sectionElement.addEventListener("input", handleControlInput);
   sectionElement.addEventListener("change", handleControlChange);
+  sectionElement.addEventListener("focusout", handleControlFocusOut);
   sectionElement.addEventListener("click", handleCreateClick);
   candidateBlockPreviewInteractionEvents.forEach((eventName) => {
     surfaceElement.addEventListener(eventName, handlePreviewInteraction, true);
@@ -780,8 +855,9 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
     clearCandidateBlockGridSelection();
     clearCandidateBlockGridBorderHover(surfaceElement);
     resetCandidateBlockGridInteractionSessions();
-    sectionElement.removeEventListener("input", handleControlChange);
+    sectionElement.removeEventListener("input", handleControlInput);
     sectionElement.removeEventListener("change", handleControlChange);
+    sectionElement.removeEventListener("focusout", handleControlFocusOut);
     sectionElement.removeEventListener("click", handleCreateClick);
     candidateBlockPreviewInteractionEvents.forEach((eventName) => {
       surfaceElement.removeEventListener(eventName, handlePreviewInteraction, true);

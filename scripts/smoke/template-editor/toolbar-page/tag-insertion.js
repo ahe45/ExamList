@@ -28,6 +28,8 @@ async function runEmptyCanvasTagInsertionCase(client) {
         const documentRect = documentElement?.getBoundingClientRect();
         const surfaceRect = surface?.getBoundingClientRect();
         const tokenRect = token?.getBoundingClientRect();
+        const tokenText = token?.textContent.trim() || '';
+        const tokenUsesHiddenIcons = Boolean(token?.classList.contains('template-token-icons-hidden'));
 
         return Boolean(
           surface &&
@@ -41,8 +43,11 @@ async function runEmptyCanvasTagInsertionCase(client) {
             token.closest('p') &&
             tokenRect.top - documentRect.top < 80 &&
             surfaceRect.bottom - tokenRect.bottom > 100 &&
-            token.textContent.trim() === '수험번호' &&
-            tokenIcon &&
+            token.dataset.templateTagValue === 'candidate.examNo' &&
+            token.dataset.templateTagLabel === '수험번호' &&
+            token.dataset.templateTagExample === '26010001' &&
+            (tokenText === '수험번호' || tokenText === '26010001') &&
+            (tokenUsesHiddenIcons ? !tokenIcon : Boolean(tokenIcon)) &&
             tokenStyle.display === 'inline-flex' &&
             tokenStyle.borderTopWidth === '1px' &&
             tokenStyle.borderTopLeftRadius === '8px' &&

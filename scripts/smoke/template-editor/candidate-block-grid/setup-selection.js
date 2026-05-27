@@ -6,6 +6,85 @@ const {
   waitForCondition
 } = require("../../../smoke-browser-cdp");
 
+async function dispatchBrowserControlA(client) {
+  await client.send("Input.dispatchKeyEvent", {
+    code: "ControlLeft",
+    key: "Control",
+    modifiers: 2,
+    nativeVirtualKeyCode: 17,
+    type: "keyDown",
+    windowsVirtualKeyCode: 17,
+  });
+  await client.send("Input.dispatchKeyEvent", {
+    code: "KeyA",
+    key: "a",
+    modifiers: 2,
+    nativeVirtualKeyCode: 65,
+    type: "keyDown",
+    windowsVirtualKeyCode: 65,
+  });
+  await client.send("Input.dispatchKeyEvent", {
+    code: "KeyA",
+    key: "a",
+    modifiers: 2,
+    nativeVirtualKeyCode: 65,
+    type: "keyUp",
+    windowsVirtualKeyCode: 65,
+  });
+  await client.send("Input.dispatchKeyEvent", {
+    code: "ControlLeft",
+    key: "Control",
+    nativeVirtualKeyCode: 17,
+    type: "keyUp",
+    windowsVirtualKeyCode: 17,
+  });
+}
+
+async function replaceRightPanelControlValue(client, selector, value, description) {
+  const point = await getBrowserPoint(
+    client,
+    `(() => {
+      const element = document.querySelector(${JSON.stringify(selector)});
+
+      if (!element) {
+        return null;
+      }
+
+      element.scrollIntoView({ block: 'center', inline: 'center' });
+      const rect = element.getBoundingClientRect();
+
+      if (!rect.width || !rect.height) {
+        return null;
+      }
+
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    })()`,
+    description,
+  );
+
+  await dispatchBrowserMouseClickAtPoint(client, point);
+  await dispatchBrowserControlA(client);
+  await client.send("Input.insertText", { text: value });
+  await waitForCondition(
+    client,
+    `document.querySelector(${JSON.stringify(selector)})?.value === ${JSON.stringify(value)}`,
+    description,
+  );
+}
+
+async function resetTemplateEditorHorizontalScroll(client) {
+  await evaluate(
+    client,
+    `
+      (() => {
+        window.scrollTo(0, window.scrollY);
+        document.querySelector('.template-editor-shell')?.scrollTo({ left: 0 });
+        return true;
+      })()
+    `,
+  );
+}
+
 async function runCandidateBlockGridSetupSelectionScenario(context) {
   const { client } = context;
     await waitForCondition(
@@ -89,31 +168,102 @@ async function runCandidateBlockGridSetupSelectionScenario(context) {
       `,
       "수험생 데이터 블록 테스트 A4 10mm 여백 적용",
     );
-    await evaluate(
+    await waitForCondition(
       client,
       `
         (() => {
           const columnsControl = document.querySelector('[data-examlist-block-grid-setting="columns"]');
           const rowsControl = document.querySelector('[data-examlist-block-grid-setting="rows"]');
+          const gapXControl = document.querySelector('[data-examlist-block-grid-setting="gapXPt"]');
+          const gapYControl = document.querySelector('[data-examlist-block-grid-setting="gapYPt"]');
           const createButton = document.querySelector('[data-examlist-block-grid-create]');
 
-          if (!columnsControl || !rowsControl || !createButton) {
-            return false;
-          }
-
-          columnsControl.value = '2';
-          rowsControl.value = '2';
-          columnsControl.dispatchEvent(new Event('input', { bubbles: true }));
-          rowsControl.dispatchEvent(new Event('input', { bubbles: true }));
-          createButton.click();
-          return true;
+          return Boolean(
+            columnsControl?.type === 'number' &&
+              rowsControl?.type === 'number' &&
+              gapXControl?.type === 'number' &&
+              gapYControl?.type === 'number' &&
+              createButton
+          );
         })()
       `,
+      "수험생 데이터 블록 숫자 컨트롤 표시",
+    );
+    await replaceRightPanelControlValue(
+      client,
+      '[data-examlist-block-grid-setting="columns"]',
+      "3",
+      "수험생 데이터 열 직접 키 입력",
+    );
+    await replaceRightPanelControlValue(
+      client,
+      '[data-examlist-block-grid-setting="rows"]',
+      "2",
+      "수험생 데이터 행 직접 키 입력",
+    );
+    await replaceRightPanelControlValue(
+      client,
+      '[data-examlist-block-grid-setting="gapXPt"]',
+      "0",
+      "수험생 데이터 가로 간격 직접 키 입력",
+    );
+    await replaceRightPanelControlValue(
+      client,
+      '[data-examlist-block-grid-setting="gapYPt"]',
+      "1.5",
+      "수험생 데이터 세로 간격 직접 키 입력",
+    );
+    const createButtonPoint = await getBrowserPoint(
+      client,
+      `(() => {
+        const element = document.querySelector('[data-examlist-block-grid-create]');
+
+        if (!element) {
+          return null;
+        }
+
+        element.scrollIntoView({ block: 'center', inline: 'center' });
+        const rect = element.getBoundingClientRect();
+
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      })()`,
+      "수험생 데이터 블록 생성 버튼",
+    );
+    await dispatchBrowserMouseClickAtPoint(client, createButtonPoint);
+    await waitForCondition(
+      client,
+      `
+        (() => {
+          const grid = document.querySelector('#templateEditorSurface [data-candidate-block-grid]');
+          const blocks = [...document.querySelectorAll('#templateEditorSurface [data-candidate-block-instance]')];
+
+          return Boolean(
+            grid &&
+              blocks.length === 6 &&
+              grid.style.gridTemplateColumns.includes('repeat(3') &&
+              grid.style.gridTemplateRows.includes('repeat(2') &&
+              grid.style.gap === '1.5pt 0pt'
+          );
+        })()
+      `,
+      "사진형 반복 블록 직접 입력값 생성",
+    );
+    await replaceRightPanelControlValue(
+      client,
+      '[data-examlist-block-grid-setting="columns"]',
+      "2",
+      "수험생 데이터 열 직접 키 입력 갱신",
+    );
+    await replaceRightPanelControlValue(
+      client,
+      '[data-examlist-block-grid-setting="rows"]',
+      "2",
+      "수험생 데이터 행 직접 키 입력 갱신",
     );
     await waitForCondition(
       client,
       `document.querySelectorAll('#templateEditorSurface [data-candidate-block-instance]').length === 4`,
-      "사진형 반복 블록 생성 버튼 삽입",
+      "사진형 반복 블록 직접 입력값 갱신",
     );
     await waitForCondition(
       client,
@@ -785,6 +935,7 @@ async function runCandidateBlockGridSetupSelectionScenario(context) {
       `,
       "수험생 데이터 블록 8방향 리사이즈 핸들 표시",
     );
+    await resetTemplateEditorHorizontalScroll(client);
 }
 
 module.exports = { runCandidateBlockGridSetupSelectionScenario };

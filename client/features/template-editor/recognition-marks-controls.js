@@ -119,11 +119,11 @@ function createRecognitionMarksControls(page) {
     <div class="template-page-margin-grid examlist-recognition-marks-grid">
       <label>
         <span>X 여백</span>
-        <input class="template-page-property-control" data-examlist-recognition-setting="offsetX" type="number" min="0" max="80" step="0.5" value="${formatMillimeterInputValue(config.offsetXPt)}" />
+        <input class="template-page-property-control" data-examlist-recognition-setting="offsetX" type="number" inputmode="decimal" autocomplete="off" min="0" max="80" step="0.5" value="${formatMillimeterInputValue(config.offsetXPt)}" aria-label="인식 기준값 X 여백 직접 입력" />
       </label>
       <label>
         <span>Y 여백</span>
-        <input class="template-page-property-control" data-examlist-recognition-setting="offsetY" type="number" min="0" max="80" step="0.5" value="${formatMillimeterInputValue(config.offsetYPt)}" />
+        <input class="template-page-property-control" data-examlist-recognition-setting="offsetY" type="number" inputmode="decimal" autocomplete="off" min="0" max="80" step="0.5" value="${formatMillimeterInputValue(config.offsetYPt)}" aria-label="인식 기준값 Y 여백 직접 입력" />
       </label>
     </div>
   `;
@@ -166,6 +166,12 @@ function readRecognitionMarksControls(sectionElement, fallbackConfig) {
   });
 }
 
+function isRecognitionMarksNumberControl(control) {
+  return control instanceof HTMLInputElement &&
+    control.type === "number" &&
+    Boolean(control.closest?.(".examlist-recognition-marks-field"));
+}
+
 export function bindRecognitionMarksControls({ onDirty = null, pagePropertiesHost, selectedPage, surfaceElement }) {
   if (!pagePropertiesHost || !selectedPage || !surfaceElement) {
     return null;
@@ -178,11 +184,13 @@ export function bindRecognitionMarksControls({ onDirty = null, pagePropertiesHos
   syncRecognitionMarksControls(sectionElement, getPageRecognitionMarksConfig(selectedPage));
   updateRecognitionMarksOverlay(surfaceElement, selectedPage);
 
-  const applyFromControls = () => {
+  const applyFromControls = ({ syncControls = true } = {}) => {
     const nextConfig = readRecognitionMarksControls(sectionElement, getPageRecognitionMarksConfig(selectedPage));
 
     writeRecognitionMarksConfigToPage(selectedPage, nextConfig);
-    syncRecognitionMarksControls(sectionElement, nextConfig);
+    if (syncControls) {
+      syncRecognitionMarksControls(sectionElement, nextConfig);
+    }
     updateRecognitionMarksOverlay(surfaceElement, selectedPage);
 
     if (typeof onDirty === "function") {
@@ -193,7 +201,18 @@ export function bindRecognitionMarksControls({ onDirty = null, pagePropertiesHos
     window.requestAnimationFrame(() => updateRecognitionMarksOverlay(surfaceElement, selectedPage));
   };
   const handleRecognitionControlChange = (event) => {
-    if (!event.target?.closest?.("[data-examlist-recognition-setting]")) {
+    const control = event.target?.closest?.("[data-examlist-recognition-setting]");
+
+    if (!control) {
+      return;
+    }
+
+    applyFromControls({ syncControls: !isRecognitionMarksNumberControl(control) });
+  };
+  const handleRecognitionControlFocusOut = (event) => {
+    const control = event.target?.closest?.("[data-examlist-recognition-setting]");
+
+    if (!isRecognitionMarksNumberControl(control)) {
       return;
     }
 
@@ -212,6 +231,7 @@ export function bindRecognitionMarksControls({ onDirty = null, pagePropertiesHos
 
   sectionElement.addEventListener("input", handleRecognitionControlChange);
   sectionElement.addEventListener("change", handleRecognitionControlChange);
+  sectionElement.addEventListener("focusout", handleRecognitionControlFocusOut);
   pagePropertiesHost.addEventListener("input", handlePageSettingChange);
   pagePropertiesHost.addEventListener("change", handlePageSettingChange);
   resizeObserver?.observe(surfaceElement);
@@ -219,6 +239,7 @@ export function bindRecognitionMarksControls({ onDirty = null, pagePropertiesHos
   return () => {
     sectionElement.removeEventListener("input", handleRecognitionControlChange);
     sectionElement.removeEventListener("change", handleRecognitionControlChange);
+    sectionElement.removeEventListener("focusout", handleRecognitionControlFocusOut);
     pagePropertiesHost.removeEventListener("input", handlePageSettingChange);
     pagePropertiesHost.removeEventListener("change", handlePageSettingChange);
     resizeObserver?.disconnect();

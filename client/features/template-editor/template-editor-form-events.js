@@ -26,6 +26,23 @@ function isSelectedCandidateBlockGridTarget(target) {
   return Boolean(element?.closest?.("[data-candidate-block-grid].is-selected-candidate-block-grid"));
 }
 
+function isTemplateEditorControlTarget(target) {
+  const element = getElementFromEventTarget(target);
+
+  return Boolean(
+    element?.closest?.(
+      [
+        "#templateEditorToolbarHost",
+        "#templatePagePropertiesPanel",
+        "#templateTagStrip",
+        ".editor-sidebar-footer",
+        ".template-page-properties-column",
+        ".template-tag-panel",
+      ].join(", "),
+    ),
+  );
+}
+
 export function bindTemplateEditorFormEvents({
   applyDocumentColor,
   applyDocumentFontFamily,
@@ -202,6 +219,7 @@ export function bindTemplateEditorFormEvents({
 
       syncSelectedPageDocumentHtml({
         pageId,
+        preserveSelection: !isTemplateEditorControlTarget(event.relatedTarget),
         render: false,
         revertOnOverflow: true,
       });

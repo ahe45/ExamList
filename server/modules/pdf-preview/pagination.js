@@ -56,6 +56,20 @@ function chunkArray(items, chunkSize) {
   return chunks;
 }
 
+function normalizeFiniteNumber(value, fallback, minimum = 0, maximum = 100000) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return fallback;
+  }
+
+  return Math.min(maximum, Math.max(minimum, numericValue));
+}
+
+function normalizeInteger(value, fallback, minimum, maximum) {
+  return Math.round(normalizeFiniteNumber(value, fallback, minimum, maximum));
+}
+
 function normalizeCandidateBlockGridConfig(page) {
   const source = page?.settings?.candidateBlockGrid && typeof page.settings.candidateBlockGrid === "object"
     ? page.settings.candidateBlockGrid
@@ -64,19 +78,19 @@ function normalizeCandidateBlockGridConfig(page) {
 
   return {
     blockTemplateHtml: String(source.blockTemplateHtml || "").trim() || "<p><br></p>",
-    columns: Math.min(4, Math.max(1, Math.round(Number(source.columns) || 2))),
+    columns: normalizeInteger(source.columns, 2, 1, 4),
     enabled: !isCoverPage(page) && (source.enabled === true || String(source.enabled || "").trim() === "true"),
     fillEmptyBlocks: source.fillEmptyBlocks !== false,
-    gapXPt: Math.min(48, Math.max(0, Number(source.gapXPt ?? source.gapX) || 4)),
-    gapYPt: Math.min(48, Math.max(0, Number(source.gapYPt ?? source.gapY) || 4)),
-    heightPt: Math.min(2000, Math.max(0, Number(source.heightPt) || 0)),
-    rows: Math.min(30, Math.max(1, Math.round(Number(source.rows) || 10))),
+    gapXPt: normalizeFiniteNumber(source.gapXPt ?? source.gapX, 4, 0, 48),
+    gapYPt: normalizeFiniteNumber(source.gapYPt ?? source.gapY, 4, 0, 48),
+    heightPt: normalizeFiniteNumber(source.heightPt, 0, 0, 2000),
+    rows: normalizeInteger(source.rows, 10, 1, 30),
     sortDirection: normalizeCandidateBlockGridSortDirection(source.sortDirection ?? source.sort?.direction),
     sortKey: normalizeCandidateBlockGridSortKey(source.sortKey ?? source.sortField ?? source.sort?.field),
     variant,
-    widthPt: Math.min(2000, Math.max(0, Number(source.widthPt) || 0)),
-    xPt: Math.min(2000, Math.max(0, Number(source.xPt ?? source.x) || 0)),
-    yPt: Math.min(2000, Math.max(0, Number(source.yPt ?? source.y) || 0)),
+    widthPt: normalizeFiniteNumber(source.widthPt, 0, 0, 2000),
+    xPt: normalizeFiniteNumber(source.xPt ?? source.x, 0, 0, 2000),
+    yPt: normalizeFiniteNumber(source.yPt ?? source.y, 0, 0, 2000),
   };
 }
 

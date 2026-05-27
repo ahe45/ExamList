@@ -136,6 +136,51 @@ test("renderPreviewDocument places candidate block data column-first from the to
   );
 });
 
+test("renderPreviewDocument preserves zero candidate block grid gaps", () => {
+  const layout = normalizeTemplateLayout(
+    {
+      pages: [
+        {
+          repeatable: true,
+          settings: {
+            documentHtml: '<div class="template-doc"><div data-candidate-block-grid="true"></div></div>',
+            editorMode: "document",
+            candidateBlockGrid: {
+              blockTemplateHtml: "<p>{{candidate.examNo}}</p>",
+              columns: 3,
+              enabled: true,
+              gapXPt: 0,
+              gapYPt: 0,
+              rows: 2,
+              variant: "photo",
+            },
+          },
+          type: "content",
+        },
+      ],
+    },
+    {
+      description: "미리보기 테스트",
+      generationUnit: "room",
+      name: "데이터블록 간격 테스트",
+      orientation: "portrait",
+      paperPreset: "A4",
+    },
+    "template-preview-block-grid-zero-gap-test",
+  );
+  const result = renderPreviewDocument({
+    candidates: [
+      { examNo: "26010001", name: "홍길동", roomName: "101호" },
+    ],
+    generatedAt: new Date("2026-04-20T09:00:00+09:00"),
+    template: createTemplate(layout),
+  });
+
+  assert.match(result.html, /grid-template-columns:repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(result.html, /grid-template-rows:repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(result.html, /gap:0pt 0pt/);
+});
+
 test("renderPreviewDocument fits candidate photo token to candidate block table cell", () => {
   const layout = normalizeTemplateLayout(
     {

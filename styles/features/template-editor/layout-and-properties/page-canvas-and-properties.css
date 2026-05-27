@@ -83,6 +83,20 @@
   width: 100%;
 }
 
+.template-page-properties-panel input[type="number"].template-page-property-control {
+  -moz-appearance: auto;
+  -webkit-appearance: auto;
+  appearance: auto;
+  padding-right: 2px;
+}
+
+.template-page-properties-panel input[type="number"].template-page-property-control::-webkit-inner-spin-button,
+.template-page-properties-panel input[type="number"].template-page-property-control::-webkit-outer-spin-button {
+  -webkit-appearance: auto;
+  margin: 0;
+  opacity: 1;
+}
+
 .template-page-property-control:focus {
   border-color: rgba(45, 99, 245, 0.72);
   box-shadow: 0 0 0 3px rgba(45, 99, 245, 0.12);

@@ -28,19 +28,19 @@ export function createCandidateBlockGridControls(page) {
     <div class="template-page-margin-grid examlist-candidate-block-grid-controls">
       <label>
         <span>열</span>
-        <input class="template-page-property-control" data-examlist-block-grid-setting="columns" type="number" min="1" max="4" step="1" value="${escapeHtml(config.columns)}" ${isEnabled ? "" : "disabled"} />
+        <input class="template-page-property-control" data-examlist-block-grid-setting="columns" type="number" inputmode="numeric" autocomplete="off" min="1" max="4" step="1" value="${escapeHtml(config.columns)}" aria-label="수험생 데이터 열 직접 입력" ${isEnabled ? "" : "disabled"} />
       </label>
       <label>
         <span>행</span>
-        <input class="template-page-property-control" data-examlist-block-grid-setting="rows" type="number" min="1" max="30" step="1" value="${escapeHtml(config.rows)}" ${isEnabled ? "" : "disabled"} />
+        <input class="template-page-property-control" data-examlist-block-grid-setting="rows" type="number" inputmode="numeric" autocomplete="off" min="1" max="30" step="1" value="${escapeHtml(config.rows)}" aria-label="수험생 데이터 행 직접 입력" ${isEnabled ? "" : "disabled"} />
       </label>
       <label>
         <span>가로 간격(pt)</span>
-        <input class="template-page-property-control" data-examlist-block-grid-setting="gapXPt" type="number" min="0" max="48" step="0.5" value="${escapeHtml(config.gapXPt)}" ${isEnabled ? "" : "disabled"} />
+        <input class="template-page-property-control" data-examlist-block-grid-setting="gapXPt" type="number" inputmode="decimal" autocomplete="off" min="0" max="48" step="0.5" value="${escapeHtml(config.gapXPt)}" aria-label="수험생 데이터 가로 간격 직접 입력" ${isEnabled ? "" : "disabled"} />
       </label>
       <label>
         <span>세로 간격(pt)</span>
-        <input class="template-page-property-control" data-examlist-block-grid-setting="gapYPt" type="number" min="0" max="48" step="0.5" value="${escapeHtml(config.gapYPt)}" ${isEnabled ? "" : "disabled"} />
+        <input class="template-page-property-control" data-examlist-block-grid-setting="gapYPt" type="number" inputmode="decimal" autocomplete="off" min="0" max="48" step="0.5" value="${escapeHtml(config.gapYPt)}" aria-label="수험생 데이터 세로 간격 직접 입력" ${isEnabled ? "" : "disabled"} />
       </label>
     </div>
     <div class="template-page-margin-grid examlist-candidate-block-grid-sort-controls">

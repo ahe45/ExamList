@@ -1,4 +1,9 @@
-import { getCandidateBlockGridConfig, resetCandidateBlockGridState, syncCandidateBlockTemplateFromSurface } from "./candidate-block-grid-adapter.js";
+import {
+  commitCandidateBlockGridControlsToPage,
+  getCandidateBlockGridConfig,
+  resetCandidateBlockGridState,
+  syncCandidateBlockTemplateFromSurface,
+} from "./candidate-block-grid-adapter.js";
 import {
   flattenTemplateTags,
   normalizeTokenLabels,
@@ -548,6 +553,7 @@ export function syncTemplateEditorRuntimeToState({ appState } = {}) {
   const template = appState?.templateEditor?.template || null;
   const selectedPage = getSelectedPage(appState?.templateEditor);
   const pagePropertiesHost = document.getElementById("templatePagePropertiesPanel");
+  const surfaceElement = document.getElementById("templateEditorSurface");
 
   if (!mountedEditor || !template || !selectedPage) {
     return false;
@@ -555,7 +561,8 @@ export function syncTemplateEditorRuntimeToState({ appState } = {}) {
 
   applyTemplateMetadataControlsToState(appState, pagePropertiesHost);
   const hadSnapshotChangesBeforeRuntimeSync = hasTemplateSnapshotChanges(appState);
-  syncCandidateBlockTemplateFromSurface(document.getElementById("templateEditorSurface"), selectedPage, null, { allowFallback: true });
+  commitCandidateBlockGridControlsToPage({ pagePropertiesHost, selectedPage, surfaceElement });
+  syncCandidateBlockTemplateFromSurface(surfaceElement, selectedPage, null, { allowFallback: true });
 
   const html = normalizeSavedRuntimeHtml(mountedEditor.getHtml(), mountedTagDefinitions);
   const settings = readRuntimePageSettingsFromHtml(html);
