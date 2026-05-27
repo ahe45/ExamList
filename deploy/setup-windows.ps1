@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 $script:transcriptStarted = $false
 if ($env:__SETUP_LOG) {
