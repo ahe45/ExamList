@@ -110,6 +110,7 @@ function renderAccountModal(accounts = {}) {
                 required
                 type="text"
                 value="${escapeHtml(modal.userId || "")}"
+                ${isEditMode ? "" : "autofocus data-account-modal-initial-focus"}
                 ${isEditMode ? "disabled" : ""}
               />
             </label>

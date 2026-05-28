@@ -60,6 +60,7 @@ test("account management view renders the create account modal", () => {
 
   assert.match(html, /계정 추가/);
   assert.match(html, /data-account-form/);
+  assert.match(html, /data-account-modal-field="userId"[\s\S]*autofocus data-account-modal-initial-focus/);
   assert.match(html, /<option value="admin" selected>/);
   assert.match(html, /placeholder="1234"/);
   assert.doesNotMatch(html, /계정 사용/);

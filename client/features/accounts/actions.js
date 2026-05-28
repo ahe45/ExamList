@@ -70,6 +70,27 @@ export function setupAccountActions({ appState, onStateChange }) {
     return true;
   }
 
+  function focusAccountCreateModalUserIdField() {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return;
+    }
+
+    const focusField = () => {
+      const field = document.querySelector("[data-account-modal-initial-focus]");
+
+      if (field instanceof HTMLElement && !field.disabled) {
+        field.focus();
+      }
+    };
+
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(focusField);
+      return;
+    }
+
+    setTimeout(focusField, 0);
+  }
+
   function openEditAccountModal(accountId = "") {
     if (!canManageAccounts()) {
       return false;
@@ -214,8 +235,12 @@ export function setupAccountActions({ appState, onStateChange }) {
     }
 
     if (actionTarget.dataset.action === "open-account-create-modal") {
-      openCreateAccountModal();
+      const opened = openCreateAccountModal();
       await onStateChange();
+
+      if (opened) {
+        focusAccountCreateModalUserIdField();
+      }
       return;
     }
 
