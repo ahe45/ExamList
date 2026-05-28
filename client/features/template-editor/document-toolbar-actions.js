@@ -9,6 +9,16 @@ export function createDocumentToolbarActions({
   syncSelectedPageDocumentHtml,
 }) {
   function closeDocumentToolbarPanels(exceptions = {}) {
+    document.querySelectorAll(".template-toolbar-font-family-combo.open").forEach((comboElement) => {
+      if (comboElement.dataset.editorFontFamilyCombo === exceptions.fontFamilyInputId) {
+        return;
+      }
+
+      comboElement.classList.remove("open");
+      comboElement.querySelector("[data-action='toggle-document-font-family-menu']")?.setAttribute("aria-expanded", "false");
+      comboElement.querySelector(".template-toolbar-combo-menu")?.classList.add("hidden");
+    });
+
     document.querySelectorAll(".template-toolbar-font-size-combo.open").forEach((comboElement) => {
       if (comboElement.dataset.editorFontSizeCombo === exceptions.fontSizeInputId) {
         return;
@@ -42,6 +52,27 @@ export function createDocumentToolbarActions({
     });
   }
 
+  function setDocumentFontFamilyMenuVisibility(inputId, isOpen) {
+    const comboElement = document.querySelector(`[data-editor-font-family-combo="${inputId}"]`);
+    const menuElement = comboElement?.querySelector(".template-toolbar-combo-menu");
+    const toggleButton = comboElement?.querySelector("[data-action='toggle-document-font-family-menu']");
+    const inputElement = document.getElementById(inputId);
+
+    if (!comboElement || !menuElement || !toggleButton || !inputElement) {
+      return;
+    }
+
+    closeDocumentToolbarPanels(isOpen ? { fontFamilyInputId: inputId } : {});
+    syncDocumentFontFamilyComboSelection(inputId, inputElement.value);
+    comboElement.classList.toggle("open", isOpen);
+    menuElement.classList.toggle("hidden", !isOpen);
+    toggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
+
+    if (isOpen) {
+      scrollActiveToolbarComboOptionIntoView(menuElement);
+    }
+  }
+
   function setDocumentFontSizeMenuVisibility(inputId, isOpen) {
     const comboElement = document.querySelector(`[data-editor-font-size-combo="${inputId}"]`);
     const menuElement = comboElement?.querySelector(".template-toolbar-combo-menu");
@@ -55,6 +86,26 @@ export function createDocumentToolbarActions({
     comboElement.classList.toggle("open", isOpen);
     menuElement.classList.toggle("hidden", !isOpen);
     toggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
+
+    if (isOpen) {
+      scrollActiveToolbarComboOptionIntoView(menuElement);
+    }
+  }
+
+  function scrollActiveToolbarComboOptionIntoView(menuElement) {
+    const activeOption = menuElement?.querySelector?.(".template-toolbar-combo-option.active") || null;
+    const menuHeight = menuElement?.clientHeight || 0;
+    const optionHeight = activeOption?.offsetHeight || 0;
+
+    if (!menuElement || !activeOption || !menuHeight || !optionHeight) {
+      return false;
+    }
+
+    const targetScrollTop = activeOption.offsetTop - (menuHeight - optionHeight) / 2;
+    const maxScrollTop = Math.max(0, menuElement.scrollHeight - menuHeight);
+
+    menuElement.scrollTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
+    return true;
   }
 
   function setDocumentPopoverVisibility(panelId, isOpen) {
@@ -90,16 +141,27 @@ export function createDocumentToolbarActions({
   function setDocumentColorValue(inputId, value) {
     const inputElement = document.getElementById(inputId);
     const pickerElement = document.querySelector(`[data-editor-color-picker="${inputId}"]`);
-    const normalizedValue = String(value || "#000000").trim().toLowerCase();
+    const normalizedRawValue = String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+    const isNoColor = normalizedRawValue === "transparent" || normalizedRawValue === "none" || normalizedRawValue === "rgba(0,0,0,0)";
+    const normalizedValue = isNoColor ? "transparent" : String(value || "#000000").trim().toLowerCase();
 
     if (inputElement) {
-      inputElement.value = normalizedValue;
+      if (isNoColor) {
+        inputElement.dataset.editorColorNone = "true";
+      } else {
+        delete inputElement.dataset.editorColorNone;
+        inputElement.value = normalizedValue;
+      }
     }
 
     if (pickerElement) {
       pickerElement.style.setProperty("--editor-toolbar-current-color", normalizedValue);
+      pickerElement.classList.toggle("is-no-color", isNoColor);
       pickerElement.querySelectorAll(".template-toolbar-color-swatch").forEach((swatchElement) => {
-        const isActive = String(swatchElement.dataset.colorPreset || "").trim().toLowerCase() === normalizedValue;
+        const isNoColorPreset = swatchElement.dataset.colorNone === "true";
+        const isActive = isNoColor
+          ? isNoColorPreset
+          : String(swatchElement.dataset.colorPreset || "").trim().toLowerCase() === normalizedValue;
 
         swatchElement.classList.toggle("active", isActive);
         swatchElement.setAttribute("aria-pressed", isActive ? "true" : "false");
@@ -135,6 +197,10 @@ export function createDocumentToolbarActions({
 
     if (inputElement) {
       inputElement.value = String(normalizedValue);
+      inputElement
+        .closest?.(".template-toolbar-font-size-combo")
+        ?.querySelector?.("[data-editor-font-size-current]")
+        ?.replaceChildren?.(String(normalizedValue));
     }
 
     document
@@ -147,8 +213,40 @@ export function createDocumentToolbarActions({
       });
   }
 
+  function syncDocumentFontFamilyComboSelection(inputId, value) {
+    const inputElement = document.getElementById(inputId);
+    const normalizedValue = String(value || "").trim();
+    const optionElements = Array.from(
+      document.querySelectorAll(`[data-editor-font-family-menu-for="${inputId}"] .template-toolbar-combo-option`),
+    );
+    const activeOption =
+      optionElements.find((optionElement) => optionElement.dataset.fontFamilyOption === normalizedValue) ||
+      (!normalizedValue ? optionElements[0] : null) ||
+      null;
+    const nextValue = activeOption?.dataset.fontFamilyOption || normalizedValue;
+    const nextLabel = activeOption?.dataset.fontFamilyLabel || activeOption?.textContent?.trim() || nextValue;
+
+    if (inputElement) {
+      inputElement.value = nextValue;
+      inputElement
+        .closest?.(".template-toolbar-font-family-combo")
+        ?.querySelector?.("[data-editor-font-family-current]")
+        ?.replaceChildren?.(nextLabel);
+    }
+
+    optionElements.forEach((optionElement) => {
+      const isActive = optionElement === activeOption;
+
+      optionElement.classList.toggle("active", isActive);
+      optionElement.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
+  }
+
   function applyDocumentFontFamily(fontFamily) {
-    applyDocumentCommand("fontName", fontFamily);
+    const normalizedFontFamily = String(fontFamily || "").trim() || "'Noto Sans KR', sans-serif";
+
+    syncDocumentFontFamilyComboSelection("templateEditorFontFamily", normalizedFontFamily);
+    applyDocumentCommand("fontName", normalizedFontFamily);
   }
 
   function applyDocumentFontSize(fontSizeValue) {
@@ -235,22 +333,41 @@ export function createDocumentToolbarActions({
     return element && surface.contains(element) ? element : null;
   }
 
-  function syncDocumentFontFamilySelection(fontFamilyValue) {
-    const fontFamilyElement = document.getElementById("templateEditorFontFamily");
+  function getDocumentToolbarBackgroundControlValue(element, fallbackValue) {
+    const inlineBackgroundColor = String(element?.style?.backgroundColor || "").trim().toLowerCase().replace(/\s+/g, "");
 
-    if (!fontFamilyElement || document.activeElement === fontFamilyElement) {
+    if (inlineBackgroundColor === "transparent" || inlineBackgroundColor === "rgba(0,0,0,0)") {
+      return "transparent";
+    }
+
+    return normalizeDocumentToolbarColorValue(
+      element ? window.getComputedStyle(element).backgroundColor : "",
+      fallbackValue,
+    );
+  }
+
+  function syncDocumentFontFamilySelection(fontFamilyValue) {
+    const optionElements = Array.from(
+      document.querySelectorAll('[data-editor-font-family-menu-for="templateEditorFontFamily"] .template-toolbar-combo-option'),
+    );
+
+    if (!optionElements.length) {
       return;
     }
 
     const normalizedComputedValue = String(fontFamilyValue || "").replace(/["']/g, "").toLowerCase();
-    const matchingOption = Array.from(fontFamilyElement.options).find((option) => {
-      const optionPrimaryFont = String(option.value || "").split(",")[0].replace(/["']/g, "").trim().toLowerCase();
+    const matchingOption = optionElements.find((optionElement) => {
+      const optionPrimaryFont = String(optionElement.dataset.fontFamilyOption || "")
+        .split(",")[0]
+        .replace(/["']/g, "")
+        .trim()
+        .toLowerCase();
 
       return optionPrimaryFont && normalizedComputedValue.includes(optionPrimaryFont);
     });
 
     if (matchingOption) {
-      fontFamilyElement.value = matchingOption.value;
+      syncDocumentFontFamilyComboSelection("templateEditorFontFamily", matchingOption.dataset.fontFamilyOption || "");
     }
   }
 
@@ -311,14 +428,11 @@ export function createDocumentToolbarActions({
     setDocumentColorValue("templateEditorTextColor", normalizeDocumentToolbarColorValue(computedStyle.color, "#152033"));
     setDocumentColorValue(
       "templateEditorTextShading",
-      normalizeDocumentToolbarColorValue(computedStyle.backgroundColor, "#fff59d"),
+      getDocumentToolbarBackgroundControlValue(contextElement, "#fff59d"),
     );
     setDocumentColorValue(
       "templateEditorCellShading",
-      normalizeDocumentToolbarColorValue(
-        activeCell ? activeCell.style.backgroundColor || window.getComputedStyle(activeCell).backgroundColor : "",
-        "#ffffff",
-      ),
+      getDocumentToolbarBackgroundControlValue(activeCell, "#ffffff"),
     );
 
     ["bold", "italic", "underline", "insertUnorderedList", "justifyLeft", "justifyCenter", "justifyRight", "justifyFull"].forEach(
@@ -341,8 +455,10 @@ export function createDocumentToolbarActions({
     closeDocumentToolbarPanels,
     setDocumentColorPanelVisibility,
     setDocumentColorValue,
+    setDocumentFontFamilyMenuVisibility,
     setDocumentFontSizeMenuVisibility,
     setDocumentPopoverVisibility,
+    syncDocumentFontFamilyComboSelection,
     syncDocumentFontSizeMenuSelection,
     updateDocumentFormattingControls,
   };

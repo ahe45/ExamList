@@ -1,7 +1,7 @@
 export const defaultEditorLineHeight = 1;
 export const lineHeightMinimum = 0;
 export const lineHeightMaximum = 5;
-export const lineHeightStep = 0.1;
+export const lineHeightStep = 0.5;
 export const fontSizeMinimum = 1;
 export const fontSizeMaximum = 72;
 export const fontSizeStep = 1;

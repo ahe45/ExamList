@@ -16,6 +16,45 @@
       return fontSizeElement?.closest(".template-toolbar-font-size-combo")?.querySelector(".template-toolbar-combo-menu") || null;
     }
 
+    function getEditorToolbarFontFamilyMenuElement(fontFamilyElement = null) {
+      return fontFamilyElement?.closest(".template-toolbar-font-family-combo")?.querySelector(".template-toolbar-combo-menu") || null;
+    }
+
+    function syncEditorToolbarFontFamilyControls(fontFamilyElement = null, rawFontFamily = "") {
+      const comboElement = fontFamilyElement?.closest(".template-toolbar-font-family-combo") || null;
+      const valueElement = comboElement?.querySelector("[data-editor-font-family-current]") || null;
+      const fontFamily = String(rawFontFamily || "").trim();
+      let activeLabel = "";
+
+      if (fontFamilyElement) {
+        fontFamilyElement.value = fontFamily;
+      }
+
+      Array.from(comboElement?.querySelectorAll("[data-editor-font-family-option]") || []).forEach((optionButton) => {
+        const isActive = optionButton.dataset.editorFontFamilyOption === fontFamily;
+
+        if (isActive) {
+          activeLabel = optionButton.dataset.editorFontFamilyLabel || optionButton.textContent.trim();
+        }
+
+        optionButton.classList.toggle("active", isActive);
+        optionButton.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+
+      if (valueElement) {
+        valueElement.textContent = activeLabel || fontFamily;
+      }
+    }
+
+    function syncEditorToolbarFontSizeValueText(fontSizeElement = null, rawFontSize = "") {
+      const comboElement = fontSizeElement?.closest(".template-toolbar-font-size-combo") || null;
+      const valueElement = comboElement?.querySelector("[data-editor-font-size-current]") || null;
+
+      if (valueElement) {
+        valueElement.textContent = String(rawFontSize);
+      }
+    }
+
     function syncEditorToolbarFontSizeMenuSelection(fontSizeElement = null, rawFontSize = "") {
       const menuElement = getEditorToolbarFontSizeMenuElement(fontSizeElement);
 
@@ -37,6 +76,22 @@
       });
     }
 
+    function scrollEditorToolbarActiveComboOptionIntoView(menuElement = null) {
+      const activeOption = menuElement?.querySelector?.(".template-toolbar-combo-option.active") || null;
+      const menuHeight = menuElement?.clientHeight || 0;
+      const optionHeight = activeOption?.offsetHeight || 0;
+
+      if (!menuElement || !activeOption || !menuHeight || !optionHeight) {
+        return false;
+      }
+
+      const targetScrollTop = activeOption.offsetTop - (menuHeight - optionHeight) / 2;
+      const maxScrollTop = Math.max(0, menuElement.scrollHeight - menuHeight);
+
+      menuElement.scrollTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
+      return true;
+    }
+
     function syncEditorToolbarFontSizeControls({
       fontSizeElement = null,
       fontSize = "",
@@ -47,8 +102,10 @@
 
       if (fontSizeElement) {
         fontSizeElement.value = String(resolvedFontSize);
+        fontSizeElement.dataset.templateEditorCurrentFontSize = `${resolvedFontSize}pt`;
       }
 
+      syncEditorToolbarFontSizeValueText(fontSizeElement, resolvedFontSize);
       syncEditorToolbarFontSizeMenuSelection(fontSizeElement, resolvedFontSize);
     }
 
@@ -87,6 +144,41 @@
       return closedAnyMenu;
     }
 
+    function getEditorToolbarFontFamilyComboElements(fontFamilyInputId = "") {
+      const inputElement = document.getElementById(String(fontFamilyInputId || "").trim());
+      const comboElement = inputElement?.closest(".template-toolbar-font-family-combo") || null;
+      const toggleElement = comboElement?.querySelector("[data-editor-font-family-toggle]") || null;
+      const menuElement = comboElement?.querySelector(".template-toolbar-combo-menu") || null;
+
+      return { inputElement, comboElement, toggleElement, menuElement };
+    }
+
+    function closeAllEditorToolbarFontFamilyMenus(exceptFontFamilyInputId = "") {
+      let closedAnyMenu = false;
+
+      Array.from(document.querySelectorAll(".template-toolbar-font-family-combo")).forEach((comboElement) => {
+        const inputElement = comboElement.querySelector(".template-toolbar-font-family-input");
+        const toggleElement = comboElement.querySelector("[data-editor-font-family-toggle]");
+        const menuElement = comboElement.querySelector(".template-toolbar-combo-menu");
+        const shouldKeepOpen =
+          exceptFontFamilyInputId &&
+          inputElement?.id === exceptFontFamilyInputId &&
+          menuElement &&
+          !menuElement.classList.contains("hidden");
+
+        if (!menuElement || shouldKeepOpen || menuElement.classList.contains("hidden")) {
+          return;
+        }
+
+        menuElement.classList.add("hidden");
+        comboElement.classList.remove("open");
+        toggleElement?.setAttribute("aria-expanded", "false");
+        closedAnyMenu = true;
+      });
+
+      return closedAnyMenu;
+    }
+
     function setEditorToolbarFontSizeMenuVisibility(fontSizeInputId = "", nextVisible = false) {
       const { inputElement, comboElement, toggleElement, menuElement } = getEditorToolbarFontSizeComboElements(fontSizeInputId);
 
@@ -96,6 +188,7 @@
 
       if (nextVisible) {
         closeAllEditorToolbarFontSizeMenus(fontSizeInputId);
+        closeAllEditorToolbarFontFamilyMenus();
         syncEditorToolbarFontSizeMenuSelection(inputElement, inputElement.value);
         closeAllEditorToolbarTableInsertPanels();
         closeAllEditorToolbarColorPanels();
@@ -106,14 +199,50 @@
       comboElement.classList.toggle("open", nextVisible);
       toggleElement?.setAttribute("aria-expanded", nextVisible ? "true" : "false");
 
+      if (nextVisible) {
+        scrollEditorToolbarActiveComboOptionIntoView(menuElement);
+      }
+
+      return true;
+    }
+
+    function setEditorToolbarFontFamilyMenuVisibility(fontFamilyInputId = "", nextVisible = false) {
+      const { inputElement, comboElement, toggleElement, menuElement } = getEditorToolbarFontFamilyComboElements(fontFamilyInputId);
+
+      if (!inputElement || !comboElement || !menuElement) {
+        return false;
+      }
+
+      if (nextVisible) {
+        closeAllEditorToolbarFontFamilyMenus(fontFamilyInputId);
+        closeAllEditorToolbarFontSizeMenus();
+        syncEditorToolbarFontFamilyControls(inputElement, inputElement.value);
+        closeAllEditorToolbarTableInsertPanels();
+        closeAllEditorToolbarColorPanels();
+        closeAllEditorToolbarBorderSelectMenus();
+      }
+
+      menuElement.classList.toggle("hidden", !nextVisible);
+      comboElement.classList.toggle("open", nextVisible);
+      toggleElement?.setAttribute("aria-expanded", nextVisible ? "true" : "false");
+
+      if (nextVisible) {
+        scrollEditorToolbarActiveComboOptionIntoView(menuElement);
+      }
+
       return true;
     }
 
     return Object.freeze({
+      closeAllEditorToolbarFontFamilyMenus,
       closeAllEditorToolbarFontSizeMenus,
+      getEditorToolbarFontFamilyComboElements,
+      getEditorToolbarFontFamilyMenuElement,
       getEditorToolbarFontSizeComboElements,
       getEditorToolbarFontSizeMenuElement,
+      setEditorToolbarFontFamilyMenuVisibility,
       setEditorToolbarFontSizeMenuVisibility,
+      syncEditorToolbarFontFamilyControls,
       syncEditorToolbarFontSizeControls,
       syncEditorToolbarFontSizeMenuSelection,
     });

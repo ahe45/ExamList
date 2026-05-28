@@ -6,6 +6,7 @@ export {
   normalizeTemplateIds,
 } from "./constants.js";
 export { renderDataDeletionModal } from "./modal-renderer.js";
+export { renderDataDeletionProgressOverlay } from "./progress-overlay-renderer.js";
 export {
   renderDataDeletionCard,
   renderDataDeletionView,

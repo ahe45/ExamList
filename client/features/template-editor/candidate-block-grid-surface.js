@@ -1,6 +1,7 @@
 import { showToast } from "../../app/toast.js";
 import { normalizeTokenLabels } from "./data-tags-adapter.js";
 import {
+  candidateBlockGridDefaults,
   isCandidateBlockGridContentPage,
 } from "./candidate-block-grid-config.js";
 import {
@@ -218,6 +219,7 @@ export function insertCandidateBlockGridAtSelection(surfaceElement, selectedPage
       : null;
   const nextConfig = {
     ...config,
+    blockTemplateHtml: candidateBlockGridDefaults.blockTemplateHtml,
     enabled: true,
     variant: "photo",
   };

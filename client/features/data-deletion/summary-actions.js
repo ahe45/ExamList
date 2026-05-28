@@ -71,6 +71,9 @@ export function createDataDeletionSummaryActions({
     if (summaryResult.status === "fulfilled") {
       modal.summary = summaryResult.value;
       modal.summaryErrorMessage = "";
+      if (isTemplateScope) {
+        modal.selectedTemplateIds = normalizeTemplateIds(summaryResult.value?.templates?.selectedIds);
+      }
     } else {
       modal.summary = null;
       modal.summaryErrorMessage = summaryResult.reason?.message || "삭제 대상 건수를 불러오지 못했습니다.";

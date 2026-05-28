@@ -8,11 +8,18 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
   function createEditorToolbarColorUiController({
     closeAllEditorToolbarBorderSelectMenus,
+    closeAllEditorToolbarFontFamilyMenus,
     closeAllEditorToolbarFontSizeMenus,
     closeAllEditorToolbarTableInsertPanels,
     normalizeEditorToolbarColorValue,
     updateEditorToolbarFloatingPanelPlacement,
   }) {
+    function isEditorToolbarNoColorValue(value = "") {
+      const normalizedValue = String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+
+      return normalizedValue === "transparent" || normalizedValue === "none" || normalizedValue === "rgba(0,0,0,0)";
+    }
+
     function getEditorToolbarColorPickerElements(colorInputId = "") {
       const normalizedColorInputId = String(colorInputId || "").trim();
       const inputElement = normalizedColorInputId ? document.getElementById(normalizedColorInputId) : null;
@@ -43,8 +50,17 @@
         return fallbackValue;
       }
 
-      const normalizedColorValue = normalizeEditorToolbarColorValue(colorValue || inputElement.value || "", fallbackValue);
-      inputElement.value = normalizedColorValue;
+      const isNoColor = isEditorToolbarNoColorValue(colorValue);
+      const normalizedColorValue = isNoColor
+        ? "transparent"
+        : normalizeEditorToolbarColorValue(colorValue || inputElement.value || "", fallbackValue);
+
+      if (isNoColor) {
+        inputElement.dataset.editorColorNone = "true";
+      } else {
+        delete inputElement.dataset.editorColorNone;
+        inputElement.value = normalizedColorValue;
+      }
 
       const pickerElement = inputElement.closest(".template-toolbar-color-picker");
 
@@ -53,14 +69,18 @@
       }
 
       pickerElement.style.setProperty("--editor-toolbar-current-color", normalizedColorValue);
+      pickerElement.classList.toggle("is-no-color", isNoColor);
 
       pickerElement.querySelectorAll("[data-editor-color-hex-input]").forEach((hexInputElement) => {
-        hexInputElement.value = normalizedColorValue;
+        hexInputElement.value = isNoColor ? "" : normalizedColorValue;
       });
 
       pickerElement.querySelectorAll("[data-editor-color-preset]").forEach((buttonElement) => {
-        const presetValue = normalizeEditorToolbarColorValue(buttonElement.dataset.editorColorPreset || "", fallbackValue);
-        const isActive = presetValue === normalizedColorValue;
+        const isNoColorPreset = buttonElement.dataset.editorColorNone === "true";
+        const presetValue = isNoColorPreset
+          ? "transparent"
+          : normalizeEditorToolbarColorValue(buttonElement.dataset.editorColorPreset || "", fallbackValue);
+        const isActive = isNoColor ? isNoColorPreset : presetValue === normalizedColorValue;
 
         buttonElement.classList.toggle("active", isActive);
         buttonElement.setAttribute("aria-pressed", isActive ? "true" : "false");
@@ -105,6 +125,7 @@
       if (nextVisible) {
         closeAllEditorToolbarColorPanels(colorInputId);
         closeAllEditorToolbarTableInsertPanels();
+        closeAllEditorToolbarFontFamilyMenus();
         closeAllEditorToolbarFontSizeMenus();
         closeAllEditorToolbarBorderSelectMenus();
       }

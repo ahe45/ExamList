@@ -12,9 +12,10 @@ async function runTableFormatSaveScenario(context) {
         (() => {
           const surface = document.querySelector('#templateEditorSurface');
           const cell = surface?.querySelector('.template-doc table tr:first-child td:first-child');
-          const lineHeightInput = document.querySelector('#templateEditorToolbarHost .template-toolbar-line-height-input');
+          const lineHeightToggle = document.querySelector('#templateEditorToolbarHost [data-template-line-height-toggle]');
+          const lineHeightOption = document.querySelector('#templateEditorToolbarHost [data-template-line-height-option="1.5"]');
 
-          if (!surface || !cell || !lineHeightInput) {
+          if (!surface || !cell || !lineHeightToggle || !lineHeightOption) {
             return false;
           }
 
@@ -27,9 +28,10 @@ async function runTableFormatSaveScenario(context) {
           selection.addRange(range);
           document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
 
-          lineHeightInput.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
-          lineHeightInput.value = '1.25';
-          lineHeightInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
+          lineHeightToggle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+          lineHeightToggle.click();
+          lineHeightOption.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+          lineHeightOption.click();
           return true;
         })()
       `,
@@ -47,7 +49,7 @@ async function runTableFormatSaveScenario(context) {
             cell &&
               cell.style.lineHeight &&
               Number.isFinite(lineSpacingPt) &&
-              Math.abs(lineSpacingPt - 1.25) <= 0.05
+              Math.abs(lineSpacingPt - 1.5) <= 0.05
           );
         })()
       `,
@@ -129,7 +131,7 @@ async function runTableFormatSaveScenario(context) {
               firstCell &&
               firstCell.style.lineHeight &&
               Number.isFinite(firstCellLineSpacingPt) &&
-              Math.abs(firstCellLineSpacingPt - 1.25) <= 0.05 &&
+              Math.abs(firstCellLineSpacingPt - 1.5) <= 0.05 &&
               saveButton &&
               !saveButton.disabled &&
               toast &&

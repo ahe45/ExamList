@@ -26,6 +26,12 @@
     "[data-candidate-block-focus-layer]",
     ".examlist-candidate-block-focus-layer",
   ].join(",");
+  const nonSplittableFlowTextBlockSelector = [
+    "[data-candidate-block-grid]",
+    ".examlist-candidate-block-grid",
+    "[data-candidate-block-instance]",
+    ".examlist-candidate-block",
+  ].join(",");
   let objectFlowReflowIdCounter = 0;
   const flowObjectLayoutState = new WeakMap();
 
@@ -377,7 +383,9 @@ function getFlowObjectMetrics(objectElement, documentElement, geometry = {}, min
     return (
       (tagName === "P" || tagName === "DIV") &&
       !element.matches("[data-template-object-flow-spacer]") &&
+      !element.matches(nonSplittableFlowTextBlockSelector) &&
       !element.matches(flowObjectSelector) &&
+      !element.querySelector(nonSplittableFlowTextBlockSelector) &&
       !element.querySelector(flowObjectSelector) &&
       Boolean(element.querySelector("br"))
     );

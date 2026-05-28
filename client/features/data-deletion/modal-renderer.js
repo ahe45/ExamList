@@ -36,7 +36,7 @@ export function renderDataDeletionModal(dataDeletion = {}, { access, school } = 
     ...createEmptyPdfGenerationFilters(),
     ...(modal.filters && typeof modal.filters === "object" ? modal.filters : {}),
   };
-  const isDeleting = Boolean(dataDeletion?.isDeleting);
+  const isDeleting = Boolean(dataDeletion?.isDeleting || modal.isDeleting);
   const isLoadingOptions = Boolean(modal.isLoadingOptions);
   const isLoadingSummary = Boolean(modal.isLoadingSummary);
   const isBusy = isDeleting || isLoadingOptions || isLoadingSummary;

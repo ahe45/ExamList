@@ -60,7 +60,7 @@ async function assertEditorGridLayout(client) {
         const pageSwitcher = document.querySelector('.template-page-switcher, .editor-page-tabs');
         const surface = grid?.querySelector('#templateEditorSurface.template-editor-surface.editor-paper.editor-document-surface');
         const documentWrapper = surface?.querySelector('.template-doc');
-        const fontFamilySection = toolbarColumn?.querySelector('select[id$="FontFamily"]')?.closest('.template-toolbar-section');
+        const fontFamilySection = toolbarColumn?.querySelector('.template-toolbar-font-family-combo')?.closest('.template-toolbar-section');
         const fontSizeSection = toolbarColumn?.querySelector('.template-toolbar-font-size-input')?.closest('.template-toolbar-section');
         const lineHeightSection = toolbarColumn?.querySelector('.template-toolbar-line-height-input')?.closest('.template-toolbar-section');
         const fontFamilyRect = fontFamilySection?.getBoundingClientRect();
@@ -68,14 +68,19 @@ async function assertEditorGridLayout(client) {
         const lineHeightRect = lineHeightSection?.getBoundingClientRect();
         const fontSizeInput = toolbarColumn?.querySelector('.template-toolbar-font-size-input');
         const lineHeightInput = toolbarColumn?.querySelector('.template-toolbar-line-height-input');
+        const fontSizeToggle = toolbarColumn?.querySelector('[data-editor-font-size-toggle]');
+        const lineHeightToggle = toolbarColumn?.querySelector('[data-template-line-height-toggle]');
         const toolbarHasDocumentTools = Boolean(
           toolbarColumn?.querySelector('#templateEditorToolbarHost') &&
-          toolbarColumn?.querySelector('select[id$="FontFamily"]') &&
+          toolbarColumn?.querySelector('.template-toolbar-font-family-input[type="hidden"]') &&
+          toolbarColumn?.querySelector('[data-editor-font-family-toggle]') &&
           fontSizeInput &&
-          ['number', 'text'].includes(fontSizeInput.type) &&
+          fontSizeInput.type === 'hidden' &&
+          fontSizeToggle &&
           !toolbarColumn?.querySelector('.examlist-font-size-stepper-controls') &&
           lineHeightInput &&
-          ['number', 'text'].includes(lineHeightInput.type) &&
+          lineHeightInput.type === 'hidden' &&
+          lineHeightToggle &&
             !toolbarColumn?.querySelector('[data-examlist-line-height-step]') &&
             toolbarColumn?.querySelector('[data-template-command="bold"]')
         );

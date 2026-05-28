@@ -554,11 +554,7 @@
       const fontFamily = String(rawFontFamily || "").trim() || TEMPLATE_EDITOR_DEFAULT_FONT_FAMILY;
 
       if (applyTemplateEditorTableSelectionFontFamily(fontFamily)) {
-        const fontFamilyElement = getTemplateEditorFontFamilyElement();
-
-        if (fontFamilyElement) {
-          fontFamilyElement.value = fontFamily;
-        }
+        syncTemplateEditorFontFamilyControlValue(fontFamily);
         return;
       }
 
@@ -573,11 +569,7 @@
           shouldStopAfterTokenStyle: true,
         })
       ) {
-        const fontFamilyElement = getTemplateEditorFontFamilyElement();
-
-        if (fontFamilyElement) {
-          fontFamilyElement.value = fontFamily;
-        }
+        syncTemplateEditorFontFamilyControlValue(fontFamily);
         return;
       }
 
@@ -596,6 +588,62 @@
       restoreTemplateTokenStyles(mixedTokenStyleSnapshot);
     }
 
+    function syncTemplateEditorFontFamilyControlValue(fontFamily) {
+      const fontFamilyElement = getTemplateEditorFontFamilyElement();
+      const normalizedFontFamily = String(fontFamily || "").trim() || TEMPLATE_EDITOR_DEFAULT_FONT_FAMILY;
+
+      if (!fontFamilyElement) {
+        return;
+      }
+
+      const comboElement = fontFamilyElement.closest?.(".template-toolbar-font-family-combo") || null;
+      const valueElement = comboElement?.querySelector?.("[data-editor-font-family-current]") || null;
+      let activeLabel = "";
+
+      fontFamilyElement.value = normalizedFontFamily;
+
+      Array.from(comboElement?.querySelectorAll?.("[data-editor-font-family-option]") || []).forEach((optionElement) => {
+        const isActive = optionElement.dataset.editorFontFamilyOption === normalizedFontFamily;
+
+        if (isActive) {
+          activeLabel = optionElement.dataset.editorFontFamilyLabel || optionElement.textContent.trim();
+        }
+
+        optionElement.classList.toggle("active", isActive);
+        optionElement.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+
+      if (valueElement) {
+        valueElement.textContent = activeLabel || normalizedFontFamily;
+      }
+    }
+
+    function syncTemplateEditorFontSizeControlValue(fontSize) {
+      const fontSizeElement = getTemplateEditorFontSizeElement();
+      const normalizedFontSize = String(fontSize);
+
+      if (!fontSizeElement) {
+        return;
+      }
+
+      const comboElement = fontSizeElement.closest?.(".template-toolbar-font-size-combo") || null;
+      const valueElement = comboElement?.querySelector?.("[data-editor-font-size-current]") || null;
+
+      fontSizeElement.value = normalizedFontSize;
+      fontSizeElement.dataset.templateEditorCurrentFontSize = `${normalizedFontSize}pt`;
+
+      if (valueElement) {
+        valueElement.textContent = normalizedFontSize;
+      }
+
+      Array.from(comboElement?.querySelectorAll?.("[data-editor-font-size-option]") || []).forEach((optionElement) => {
+        const isActive = optionElement.dataset.editorFontSizeOption === normalizedFontSize;
+
+        optionElement.classList.toggle("active", isActive);
+        optionElement.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+    }
+
     function applyTemplateEditorFontSize(rawFontSize) {
       const templateEditorSurface = getTemplateEditorSurface();
 
@@ -612,12 +660,7 @@
         : [];
 
       if (isFontSizeInRange && applyTemplateEditorTableSelectionFontSize(normalizedFontSize)) {
-        const fontSizeElement = getTemplateEditorFontSizeElement();
-
-        if (fontSizeElement) {
-          fontSizeElement.value = String(normalizedFontSize);
-          fontSizeElement.dataset.templateEditorCurrentFontSize = `${normalizedFontSize}pt`;
-        }
+        syncTemplateEditorFontSizeControlValue(normalizedFontSize);
         syncTemplateEditorLineHeightSnapshot(lineHeightSnapshot, { allowOverflow: true });
         return;
       }
@@ -630,12 +673,7 @@
         !tokenSelection.shouldStopAfterTokenStyle &&
         applyMixedTemplateTokenTextFontSize(normalizedFontSize, tokenSelection, templateEditorSurface)
       ) {
-        const fontSizeElement = getTemplateEditorFontSizeElement();
-
-        if (fontSizeElement) {
-          fontSizeElement.value = String(normalizedFontSize);
-          fontSizeElement.dataset.templateEditorCurrentFontSize = `${normalizedFontSize}pt`;
-        }
+        syncTemplateEditorFontSizeControlValue(normalizedFontSize);
         syncTemplateEditorLineHeightSnapshot(lineHeightSnapshot, { allowOverflow: true });
         return;
       }
@@ -650,11 +688,8 @@
           shouldStopAfterTokenStyle: true,
         })
       ) {
-        const fontSizeElement = getTemplateEditorFontSizeElement();
-
-        if (fontSizeElement && Number.isFinite(normalizedFontSize)) {
-          fontSizeElement.value = String(normalizedFontSize);
-          fontSizeElement.dataset.templateEditorCurrentFontSize = `${normalizedFontSize}pt`;
+        if (Number.isFinite(normalizedFontSize)) {
+          syncTemplateEditorFontSizeControlValue(normalizedFontSize);
         }
         syncTemplateEditorLineHeightSnapshot(lineHeightSnapshot, { allowOverflow: true });
         return;
@@ -685,8 +720,7 @@
       });
 
       if (fontSizeElement && Number.isFinite(normalizedFontSize)) {
-        fontSizeElement.value = String(normalizedFontSize);
-        fontSizeElement.dataset.templateEditorCurrentFontSize = `${normalizedFontSize}pt`;
+        syncTemplateEditorFontSizeControlValue(normalizedFontSize);
       }
 
       if (allowFontSizeOverflow) {
@@ -717,7 +751,7 @@
           surfaceElement;
       }
 
-      return getTemplateEditorDocumentElement() || surfaceElement?.closest(".template-editor-page") || null;
+      return surfaceElement || null;
     }
 
     function placeCaretAtEnd(element) {

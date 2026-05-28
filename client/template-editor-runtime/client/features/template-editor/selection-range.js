@@ -66,6 +66,41 @@
       return node.nodeType === Node.TEXT_NODE ? node.textContent.length : node.childNodes.length;
     }
 
+    function cloneTemplateEditorSelectionSnapshot(snapshot) {
+      if (!snapshot) {
+        return null;
+      }
+
+      return {
+        startPath: Array.isArray(snapshot.startPath) ? [...snapshot.startPath] : [],
+        startOffset: snapshot.startOffset,
+        endPath: Array.isArray(snapshot.endPath) ? [...snapshot.endPath] : [],
+        endOffset: snapshot.endOffset,
+        collapsed: Boolean(snapshot.collapsed),
+      };
+    }
+
+    function createTemplateEditorSelectionSnapshotFromRange(range) {
+      if (!range) {
+        return null;
+      }
+
+      const startPath = getTemplateEditorNodePath(range.startContainer);
+      const endPath = getTemplateEditorNodePath(range.endContainer);
+
+      if (!startPath || !endPath) {
+        return null;
+      }
+
+      return {
+        startPath,
+        startOffset: range.startOffset,
+        endPath,
+        endOffset: range.endOffset,
+        collapsed: range.collapsed,
+      };
+    }
+
     function setTemplateEditorCollapsedSelection(node, offset) {
       const templateEditorSurface = getTemplateEditorSurface();
 
@@ -87,6 +122,7 @@
         selection.removeAllRanges();
         selection.addRange(range);
         state.templateEditor.savedRange = range.cloneRange();
+        state.templateEditor.savedSelectionSnapshot = createTemplateEditorSelectionSnapshotFromRange(range);
         return true;
       } catch (error) {
         return false;
@@ -111,7 +147,10 @@
         return;
       }
 
-      state.templateEditor.savedRange = selection.getRangeAt(0).cloneRange();
+      const range = selection.getRangeAt(0);
+
+      state.templateEditor.savedRange = range.cloneRange();
+      state.templateEditor.savedSelectionSnapshot = createTemplateEditorSelectionSnapshotFromRange(range);
     }
 
     function placeCaretAtTemplateEditorEnd() {
@@ -153,20 +192,13 @@
         return null;
       }
 
-      const startPath = getTemplateEditorNodePath(range.startContainer);
-      const endPath = getTemplateEditorNodePath(range.endContainer);
+      const snapshot = createTemplateEditorSelectionSnapshotFromRange(range);
 
-      if (!startPath || !endPath) {
-        return null;
+      if (snapshot) {
+        return snapshot;
       }
 
-      return {
-        startPath,
-        startOffset: range.startOffset,
-        endPath,
-        endOffset: range.endOffset,
-        collapsed: range.collapsed,
-      };
+      return cloneTemplateEditorSelectionSnapshot(state.templateEditor.savedSelectionSnapshot);
     }
 
     function restoreTemplateEditorSelectionSnapshot(snapshot) {
@@ -201,6 +233,7 @@
       selection.removeAllRanges();
       selection.addRange(range);
       state.templateEditor.savedRange = range.cloneRange();
+      state.templateEditor.savedSelectionSnapshot = cloneTemplateEditorSelectionSnapshot(snapshot);
       return true;
     }
 
@@ -219,6 +252,10 @@
       }
 
       templateEditorSurface.focus();
+
+      if (state.templateEditor.savedSelectionSnapshot && restoreTemplateEditorSelectionSnapshot(state.templateEditor.savedSelectionSnapshot)) {
+        return;
+      }
 
       if (!state.templateEditor.savedRange) {
         placeCaretAtTemplateEditorEnd();
@@ -248,6 +285,12 @@
 
       if (baseElement && templateEditorSurface?.contains(baseElement)) {
         return activeNode;
+      }
+
+      const snapshotStartNode = resolveTemplateEditorNodePath(state.templateEditor.savedSelectionSnapshot?.startPath);
+
+      if (snapshotStartNode && templateEditorSurface?.contains(snapshotStartNode)) {
+        return snapshotStartNode;
       }
 
       return state.templateEditor.savedRange?.startContainer || null;

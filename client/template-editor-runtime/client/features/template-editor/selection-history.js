@@ -70,7 +70,7 @@
       recordTemplateEditorHistorySnapshot({ force: true });
     }
 
-    function applyTemplateEditorHistorySnapshot(snapshot) {
+    function applyTemplateEditorHistorySnapshot(snapshot, { verifyNativeHistory = true } = {}) {
       const templateEditorSurface = getTemplateEditorSurface();
 
       if (!templateEditorSurface || !snapshot) {
@@ -95,9 +95,36 @@
       updateTemplateEditorActiveCell();
       updateTemplateEditorFormattingControls();
       updateTemplateTableControls();
+
+      if (verifyNativeHistory) {
+        const expectedHistoryIndex = state.templateEditor.historyIndex;
+        const ownerWindow = templateEditorSurface.ownerDocument?.defaultView ||
+          (typeof window !== "undefined" ? window : null);
+
+        if (!ownerWindow?.setTimeout) {
+          return;
+        }
+
+        ownerWindow.setTimeout(() => {
+          const currentSnapshot = state.templateEditor.historyEntries[state.templateEditor.historyIndex] || null;
+
+          if (
+            state.templateEditor.isRestoringHistory ||
+            state.templateEditor.historyIndex !== expectedHistoryIndex ||
+            currentSnapshot !== snapshot ||
+            getTemplateEditorSerializedHtml() === snapshot.html
+          ) {
+            return;
+          }
+
+          applyTemplateEditorHistorySnapshot(snapshot, { verifyNativeHistory: false });
+        }, 0);
+      }
     }
 
     function undoTemplateEditorHistory() {
+      recordTemplateEditorHistorySnapshot();
+
       if (state.templateEditor.historyIndex <= 0) {
         return;
       }

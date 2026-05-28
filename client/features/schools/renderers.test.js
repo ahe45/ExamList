@@ -6,6 +6,15 @@ import { renderSchoolManagementView } from "./renderers.js";
 function createSchoolsState(overrides = {}) {
   return {
     filters: { keyword: "" },
+    deletingSchoolId: "",
+    deletionProgress: {
+      candidateCount: 0,
+      message: "",
+      schoolName: "",
+      stageLabel: "",
+      templateCount: 0,
+    },
+    isDeleting: false,
     items: [],
     loading: false,
     modal: {
@@ -107,4 +116,46 @@ test("school management disables delete action for Korea University", () => {
   assert.match(html, /school-settings-button/);
   assert.match(html, /school-delete-button[\s\S]*disabled/);
   assert.match(html, /한국대학교는 삭제할 수 없습니다/);
+});
+
+test("school management renders deletion progress overlay with known counts", () => {
+  const html = renderSchoolManagementView({
+    access: {
+      permissions: {
+        manageAccounts: false,
+        manageTemplates: true,
+      },
+    },
+    schools: createSchoolsState({
+      deletingSchoolId: "school-seoul",
+      deletionProgress: {
+        candidateCount: 24,
+        message: "학교 목록을 갱신하고 있습니다.",
+        schoolName: "서울대학교",
+        stageLabel: "목록 갱신",
+        templateCount: 3,
+      },
+      isDeleting: true,
+      items: [
+        {
+          candidateCount: 24,
+          code: "SEOUL",
+          id: "school-seoul",
+          name: "서울대학교",
+          templateCount: 3,
+          updatedAt: "2026-05-20T00:00:00.000Z",
+        },
+      ],
+    }),
+  });
+
+  assert.match(html, /busy-overlay school-delete-progress-overlay/);
+  assert.match(html, /data-school-delete-progress-overlay/);
+  assert.match(html, /서울대학교 삭제 중/);
+  assert.match(html, /수험생/);
+  assert.match(html, /24건/);
+  assert.match(html, /양식/);
+  assert.match(html, /3개/);
+  assert.match(html, /school-delete-button is-loading/);
+  assert.match(html, /progress-bar is-indeterminate/);
 });

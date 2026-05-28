@@ -36,8 +36,28 @@
     toolbar,
     toolbarElements,
     undoTemplateEditorHistory,
-    updateTemplateEditorTableObjectOverlay,
-  }) {
+      updateTemplateEditorTableObjectOverlay,
+    }) {
+    function markTemplateEditorNativeHistoryInputHandled(inputType) {
+      state.templateEditor.suppressedNativeHistoryInputType = inputType;
+      ownerWindow.setTimeout(() => {
+        if (state.templateEditor.suppressedNativeHistoryInputType === inputType) {
+          delete state.templateEditor.suppressedNativeHistoryInputType;
+        }
+      }, 0);
+    }
+
+    function applyTemplateEditorKeyboardHistory(action) {
+      if (action === "redo") {
+        markTemplateEditorNativeHistoryInputHandled("historyRedo");
+        redoTemplateEditorHistory();
+        return;
+      }
+
+      markTemplateEditorNativeHistoryInputHandled("historyUndo");
+      undoTemplateEditorHistory();
+    }
+
     function resolveTemplateEditorTableNavigationCell(matrix, rowIndex, colIndex, axis) {
       const targetRow = matrix[rowIndex] || [];
       const directCell = targetRow[colIndex] || null;
@@ -461,19 +481,19 @@
       if (isSurfaceTarget && isModifierPressed && !event.altKey) {
         if (normalizedKey === "z" && event.shiftKey) {
           event.preventDefault();
-          redoTemplateEditorHistory();
+          applyTemplateEditorKeyboardHistory("redo");
           return;
         }
 
         if (normalizedKey === "z") {
           event.preventDefault();
-          undoTemplateEditorHistory();
+          applyTemplateEditorKeyboardHistory("undo");
           return;
         }
 
         if (normalizedKey === "y") {
           event.preventDefault();
-          redoTemplateEditorHistory();
+          applyTemplateEditorKeyboardHistory("redo");
           return;
         }
       }

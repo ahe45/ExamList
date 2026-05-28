@@ -36,6 +36,12 @@
         return "#ffffff";
       }
 
+      const inlineBackgroundColor = String(cell.style.backgroundColor || "").trim().toLowerCase().replace(/\s+/g, "");
+
+      if (inlineBackgroundColor === "transparent" || inlineBackgroundColor === "rgba(0,0,0,0)") {
+        return "transparent";
+      }
+
       const fallbackValue = cell.tagName === "TH" ? TEMPLATE_EDITOR_DEFAULT_TABLE_HEADER_BACKGROUND : "#ffffff";
       return normalizeTemplateEditorColorValue(cell.style.backgroundColor || window.getComputedStyle(cell).backgroundColor, fallbackValue);
     }

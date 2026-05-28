@@ -101,8 +101,21 @@ function getPreviewContentStyles() {
 
     .preview-candidate-block {
       box-sizing: border-box;
+      line-height: calc(1em + 1pt);
       min-height: 36pt;
       overflow: hidden;
+    }
+
+    .preview-candidate-block p,
+    .preview-candidate-block h1,
+    .preview-candidate-block h2,
+    .preview-candidate-block h3,
+    .preview-candidate-block div,
+    .preview-candidate-block li,
+    .preview-candidate-block blockquote,
+    .preview-candidate-block table th,
+    .preview-candidate-block table td {
+      line-height: calc(1em + 1pt);
     }
 
     .preview-candidate-block > :first-child {

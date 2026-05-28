@@ -37,7 +37,7 @@ function isProtectedSchool(school = {}) {
   return formatSchoolNameForSave(school.name) === "한국대학교";
 }
 
-function renderSchoolRows(schools = [], access = null) {
+function renderSchoolRows(schools = [], access = null, schoolState = {}) {
   if (!schools.length) {
     return `
       <div class="school-empty-state">
@@ -51,11 +51,13 @@ function renderSchoolRows(schools = [], access = null) {
     .map(
       (school) => {
         const canManageSchool = hasAccess(access, "manageTemplates");
-        const isDeleteDisabled = isProtectedSchool(school);
+        const isDeleting = Boolean(schoolState?.isDeleting);
+        const isDeletingThisSchool = isDeleting && String(schoolState?.deletingSchoolId || "") === String(school.id || "");
+        const isDeleteDisabled = isProtectedSchool(school) || isDeleting;
 
         return `
         <article
-          class="school-list-row"
+          class="school-list-row ${isDeletingThisSchool ? "is-deleting" : ""}"
           data-action="open-school-workspace"
           data-school-code="${escapeHtml(school.code || school.id)}"
           data-school-id="${escapeHtml(school.id)}"
@@ -75,11 +77,11 @@ function renderSchoolRows(schools = [], access = null) {
             canManageSchool
               ? `
                 <div class="school-list-side">
-                  <button class="school-icon-action school-settings-button" data-action="open-school-edit-modal" data-school-id="${escapeHtml(school.id)}" type="button" aria-label="${escapeHtml(school.name)} 설정" title="설정">
+                  <button class="school-icon-action school-settings-button" data-action="open-school-edit-modal" data-school-id="${escapeHtml(school.id)}" type="button" aria-label="${escapeHtml(school.name)} 설정" title="설정" ${isDeleting ? "disabled" : ""}>
                     ${schoolActionIcons.settings}
                   </button>
                   <button
-                    class="school-icon-action school-delete-button"
+                    class="school-icon-action school-delete-button ${isDeletingThisSchool ? "is-loading" : ""}"
                     data-action="delete-school"
                     data-school-id="${escapeHtml(school.id)}"
                     type="button"
@@ -98,6 +100,49 @@ function renderSchoolRows(schools = [], access = null) {
       },
     )
     .join("");
+}
+
+function renderSchoolDeletionProgressOverlay(schools = {}) {
+  if (!schools?.isDeleting) {
+    return "";
+  }
+
+  const progress = schools.deletionProgress || {};
+  const schoolName = String(progress.schoolName || "선택한 학교").trim();
+  const templateCount = Number(progress.templateCount) || 0;
+  const candidateCount = Number(progress.candidateCount) || 0;
+  const message = String(progress.message || "").trim() || "학교 데이터를 삭제하고 있습니다. 완료될 때까지 화면을 닫지 마세요.";
+  const stageLabel = String(progress.stageLabel || "").trim() || "삭제 처리";
+
+  return `
+    <div class="busy-overlay school-delete-progress-overlay" role="alert" aria-live="polite" aria-busy="true" data-school-delete-progress-overlay>
+      <div class="busy-overlay-backdrop"></div>
+      <section class="busy-overlay-panel school-delete-progress-card">
+        <div class="busy-spinner" aria-hidden="true"></div>
+        <strong>${escapeHtml(schoolName)} 삭제 중</strong>
+        <p>${escapeHtml(message)}</p>
+        <div class="busy-overlay-progress" aria-label="학교 삭제 진행 상태">
+          <div class="busy-overlay-progress-meta">
+            <span>${escapeHtml(stageLabel)}</span>
+            <span class="busy-overlay-progress-value">처리 중</span>
+          </div>
+          <div class="progress-bar is-indeterminate">
+            <span></span>
+          </div>
+        </div>
+        <div class="school-delete-progress-counts">
+          <span>
+            <strong>수험생</strong>
+            <em>${formatCount(candidateCount)}건</em>
+          </span>
+          <span>
+            <strong>양식</strong>
+            <em>${formatCount(templateCount)}개</em>
+          </span>
+        </div>
+      </section>
+    </div>
+  `;
 }
 
 function renderCreateSchoolModal(schools, access = null) {
@@ -286,9 +331,10 @@ export function renderSchoolManagementView({ access, schools }) {
       </form>
 
       <div class="school-list">
-        ${schools.loading ? '<p class="helper-text">학교 목록을 불러오는 중입니다.</p>' : renderSchoolRows(schools.items, access)}
+        ${schools.loading ? '<p class="helper-text">학교 목록을 불러오는 중입니다.</p>' : renderSchoolRows(schools.items, access, schools)}
       </div>
     </section>
     ${renderCreateSchoolModal(schools, access)}
+    ${renderSchoolDeletionProgressOverlay(schools)}
   `;
 }

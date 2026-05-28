@@ -9,6 +9,7 @@
   function createEditorToolbarTableInsertUiController({
     closeAllEditorToolbarBorderSelectMenus,
     closeAllEditorToolbarColorPanels,
+    closeAllEditorToolbarFontFamilyMenus,
     closeAllEditorToolbarFontSizeMenus,
   }) {
     function getEditorToolbarTableInsertPopoverElements(panelId = "") {
@@ -59,6 +60,7 @@
       if (nextVisible) {
         closeAllEditorToolbarTableInsertPanels(panelId);
         closeAllEditorToolbarColorPanels();
+        closeAllEditorToolbarFontFamilyMenus();
         closeAllEditorToolbarFontSizeMenus();
         closeAllEditorToolbarBorderSelectMenus();
       }

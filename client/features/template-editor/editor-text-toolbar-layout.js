@@ -1,6 +1,6 @@
 export function positionFontSizeSection(toolbarHost) {
   const fontSizeSection = toolbarHost?.querySelector?.(".template-toolbar-font-size-combo")?.closest(".template-toolbar-section") || null;
-  const fontFamilySection = toolbarHost?.querySelector?.('select[id$="FontFamily"]')?.closest(".template-toolbar-section") || null;
+  const fontFamilySection = toolbarHost?.querySelector?.(".template-toolbar-font-family-combo")?.closest(".template-toolbar-section") || null;
   const fontFamilyRow = fontFamilySection?.closest(".template-toolbar-section-row") || null;
 
   if (fontFamilyRow) {

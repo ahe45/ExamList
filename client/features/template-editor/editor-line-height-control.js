@@ -190,7 +190,7 @@ function updateLineHeightControlValue(surfaceElement, inputElement) {
 
   const target = getLineHeightTargets(surfaceElement)[0];
 
-  inputElement.value = normalizeLineHeightValue(target ? getLineSpacingPointValue(target) : defaultEditorLineHeight);
+  syncLineHeightControlValue(inputElement, target ? getLineSpacingPointValue(target) : defaultEditorLineHeight);
 }
 
 function syncLineHeightMutation(editor, surfaceElement) {
@@ -231,6 +231,97 @@ function applyLineHeightToSelection(editor, surfaceElement, rawValue) {
   return true;
 }
 
+function getLineHeightOptionValues() {
+  const values = [];
+  const steps = Math.round((lineHeightMaximum - lineHeightMinimum) / lineHeightStep);
+
+  for (let index = 0; index <= steps; index += 1) {
+    values.push(normalizeLineHeightValue(lineHeightMinimum + index * lineHeightStep));
+  }
+
+  return Array.from(new Set(values));
+}
+
+function renderLineHeightOptionButtons(selectedValue = defaultEditorLineHeight) {
+  const normalizedSelectedValue = normalizeLineHeightValue(selectedValue);
+
+  return getLineHeightOptionValues()
+    .map((lineHeightValue) => {
+      const isActive = lineHeightValue === normalizedSelectedValue;
+
+      return `
+        <button
+          class="template-toolbar-combo-option${isActive ? " active" : ""}"
+          data-template-line-height-option="${lineHeightValue}"
+          type="button"
+          role="option"
+          aria-selected="${isActive ? "true" : "false"}"
+        >
+          ${lineHeightValue}pt
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function syncLineHeightControlValue(inputElement, rawValue = defaultEditorLineHeight) {
+  const lineHeightValue = normalizeLineHeightValue(rawValue);
+  const comboElement = inputElement?.closest?.(".template-toolbar-line-height-combo") || null;
+  const valueElement = comboElement?.querySelector?.("[data-template-line-height-current]") || null;
+
+  if (inputElement) {
+    inputElement.value = lineHeightValue;
+  }
+
+  if (valueElement) {
+    valueElement.textContent = lineHeightValue;
+  }
+
+  comboElement?.querySelectorAll?.("[data-template-line-height-option]")?.forEach((optionElement) => {
+    const isActive = optionElement.dataset.templateLineHeightOption === lineHeightValue;
+
+    optionElement.classList.toggle("active", isActive);
+    optionElement.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+
+  return lineHeightValue;
+}
+
+function setLineHeightMenuVisibility(comboElement, nextVisible = false) {
+  const toggleElement = comboElement?.querySelector?.("[data-template-line-height-toggle]") || null;
+  const menuElement = comboElement?.querySelector?.(".template-toolbar-combo-menu") || null;
+
+  if (!comboElement || !toggleElement || !menuElement) {
+    return false;
+  }
+
+  menuElement.classList.toggle("hidden", !nextVisible);
+  comboElement.classList.toggle("open", nextVisible);
+  toggleElement.setAttribute("aria-expanded", nextVisible ? "true" : "false");
+
+  if (nextVisible) {
+    scrollActiveToolbarComboOptionIntoView(menuElement);
+  }
+
+  return true;
+}
+
+function scrollActiveToolbarComboOptionIntoView(menuElement) {
+  const activeOption = menuElement?.querySelector?.(".template-toolbar-combo-option.active") || null;
+  const menuHeight = menuElement?.clientHeight || 0;
+  const optionHeight = activeOption?.offsetHeight || 0;
+
+  if (!menuElement || !activeOption || !menuHeight || !optionHeight) {
+    return false;
+  }
+
+  const targetScrollTop = activeOption.offsetTop - (menuHeight - optionHeight) / 2;
+  const maxScrollTop = Math.max(0, menuElement.scrollHeight - menuHeight);
+
+  menuElement.scrollTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
+  return true;
+}
+
 function createLineHeightControl() {
   const sectionElement = document.createElement("div");
 
@@ -238,16 +329,21 @@ function createLineHeightControl() {
   sectionElement.innerHTML = `
     <span class="template-toolbar-section-label">줄 간격</span>
     <div class="template-toolbar-group-controls">
-      <div class="examlist-line-height-stepper">
+      <div class="template-toolbar-line-height-combo" data-template-line-height-combo>
         <input
-          class="template-toolbar-number template-toolbar-line-height-input"
-          type="number"
-          min="${lineHeightMinimum}"
-          max="${lineHeightMaximum}"
-          step="${lineHeightStep}"
+          class="template-toolbar-line-height-input"
+          type="hidden"
           value="${defaultEditorLineHeight}"
-          aria-label="줄 간격"
+          aria-hidden="true"
+          tabindex="-1"
         />
+        <button class="template-toolbar-combo-value template-toolbar-line-height-value" data-template-line-height-toggle type="button" aria-label="줄 간격 목록 열기" aria-expanded="false">
+          <span data-template-line-height-current>${defaultEditorLineHeight}</span>
+          <span class="template-toolbar-combo-caret" aria-hidden="true"></span>
+        </button>
+        <div class="template-toolbar-combo-menu hidden" role="listbox" aria-label="줄 간격 목록">
+          ${renderLineHeightOptionButtons(defaultEditorLineHeight)}
+        </div>
       </div>
       <span class="template-toolbar-value-unit" aria-hidden="true">pt</span>
     </div>
@@ -276,6 +372,7 @@ export function bindLineHeightControl({ editor, surfaceElement, toolbarHost }) {
   }
 
   const lineHeightInput = lineHeightControl.querySelector(".template-toolbar-line-height-input");
+  const lineHeightCombo = lineHeightControl.querySelector(".template-toolbar-line-height-combo");
 
   const handleToolbarPointerDown = () => {
     rememberEditorTextControlSelection(getActiveLineHeightSurface(surfaceElement));
@@ -291,30 +388,49 @@ export function bindLineHeightControl({ editor, surfaceElement, toolbarHost }) {
     rememberEditorTextControlSelection(activeSurface);
     updateLineHeightControlValue(activeSurface, lineHeightInput);
   };
-  const handleApply = () => {
-    if (applyLineHeightToSelection(editor, surfaceElement, lineHeightInput.value)) {
-      lineHeightInput.value = normalizeLineHeightValue(lineHeightInput.value);
+  const handleClick = (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const toggleElement = target?.closest?.("[data-template-line-height-toggle]") || null;
+    const optionElement = target?.closest?.("[data-template-line-height-option]") || null;
+
+    if (toggleElement && lineHeightControl.contains(toggleElement)) {
+      const isOpen = !lineHeightCombo?.querySelector(".template-toolbar-combo-menu")?.classList.contains("hidden");
+
       updateLineHeightControlValue(getActiveLineHeightSurface(surfaceElement), lineHeightInput);
-    }
-  };
-  const handleKeyDown = (event) => {
-    if (event.key !== "Enter") {
+      setLineHeightMenuVisibility(lineHeightCombo, !isOpen);
       return;
     }
 
-    event.preventDefault();
-    handleApply();
+    if (!optionElement || !lineHeightControl.contains(optionElement)) {
+      return;
+    }
+
+    const lineHeightValue = optionElement.dataset.templateLineHeightOption || lineHeightInput.value;
+
+    if (applyLineHeightToSelection(editor, surfaceElement, lineHeightValue)) {
+      syncLineHeightControlValue(lineHeightInput, lineHeightValue);
+    }
+
+    setLineHeightMenuVisibility(lineHeightCombo, false);
   };
+  const handleDocumentClick = (event) => {
+    if (lineHeightControl.contains(event.target)) {
+      return;
+    }
+
+    setLineHeightMenuVisibility(lineHeightCombo, false);
+  };
+
   lineHeightControl.addEventListener("pointerdown", handleToolbarPointerDown, true);
-  lineHeightInput.addEventListener("change", handleApply);
-  lineHeightInput.addEventListener("keydown", handleKeyDown);
+  lineHeightControl.addEventListener("click", handleClick);
+  document.addEventListener("click", handleDocumentClick, true);
   document.addEventListener("selectionchange", handleSelectionChange);
   updateLineHeightControlValue(getActiveLineHeightSurface(surfaceElement), lineHeightInput);
 
   return () => {
     lineHeightControl.removeEventListener("pointerdown", handleToolbarPointerDown, true);
-    lineHeightInput.removeEventListener("change", handleApply);
-    lineHeightInput.removeEventListener("keydown", handleKeyDown);
+    lineHeightControl.removeEventListener("click", handleClick);
+    document.removeEventListener("click", handleDocumentClick, true);
     document.removeEventListener("selectionchange", handleSelectionChange);
     lineHeightControl.remove();
   };

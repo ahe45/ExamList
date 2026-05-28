@@ -1,7 +1,8 @@
 import { parseCandidateBlockPixelValue } from "./candidate-block-grid-pixels.js";
 
 export const candidateBlockTableMinimumCellSize = 1;
-const candidateBlockTableLineHeightRatio = 1.2;
+const cssPixelsPerPoint = 96 / 72;
+const candidateBlockTableDefaultLineSpacingPx = cssPixelsPerPoint;
 
 export function buildCandidateBlockTableCellEntries(tableElement) {
   const entries = new Map();
@@ -58,14 +59,14 @@ function getCandidateBlockLineHeightPixelValue(style, fontSize) {
   const numericLineHeight = Number.parseFloat(rawLineHeight);
 
   if (!rawLineHeight || rawLineHeight === "normal") {
-    return fontSize * candidateBlockTableLineHeightRatio;
+    return fontSize + candidateBlockTableDefaultLineSpacingPx;
   }
 
   if (Number.isFinite(numericLineHeight) && /^-?\d+(?:\.\d+)?$/.test(rawLineHeight)) {
     return fontSize * numericLineHeight;
   }
 
-  return parseCandidateBlockPixelValue(rawLineHeight, fontSize * candidateBlockTableLineHeightRatio);
+  return parseCandidateBlockPixelValue(rawLineHeight, fontSize + candidateBlockTableDefaultLineSpacingPx);
 }
 
 function getCandidateBlockCellMinimumSize(cellElement, axis) {

@@ -37,6 +37,7 @@
   border: 1px dashed rgba(148, 163, 184, 0.78);
   box-sizing: border-box;
   cursor: zoom-in;
+  line-height: calc(1em + 1pt);
   min-height: 0;
   min-width: 0;
   overflow: visible;
@@ -318,7 +319,7 @@
 .editor-document-surface .examlist-candidate-block-focus-layer .examlist-candidate-block.is-candidate-block-focus-editor > div:only-child:has(> br:only-child) {
   font-size: inherit;
   height: auto;
-  line-height: 1.2;
+  line-height: calc(1em + 1pt);
   margin: 0;
   min-height: 1em;
   overflow: hidden;
@@ -331,7 +332,7 @@
 .editor-document-surface .examlist-candidate-block div,
 .editor-document-surface .examlist-candidate-block li,
 .editor-document-surface .examlist-candidate-block blockquote {
-  line-height: 1.2;
+  line-height: calc(1em + 1pt);
   margin-bottom: 0;
   margin-top: 0;
   overflow-wrap: anywhere;
@@ -339,7 +340,7 @@
 
 .editor-document-surface .examlist-candidate-block th,
 .editor-document-surface .examlist-candidate-block td {
-  line-height: 1.2;
+  line-height: calc(1em + 1pt);
 }
 
 .editor-document-surface .examlist-candidate-block > :first-child {

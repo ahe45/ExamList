@@ -8,9 +8,10 @@ async function runCompactLineHeightCase(client) {
     `
       (() => {
         const paragraph = document.querySelector('#lineHeightParagraph');
-        const lineHeightInput = document.querySelector('#templateEditorToolbarHost .template-toolbar-line-height-input');
+        const lineHeightToggle = document.querySelector('#templateEditorToolbarHost [data-template-line-height-toggle]');
+        const lineHeightOption = document.querySelector('#templateEditorToolbarHost [data-template-line-height-option="0"]');
 
-        if (!paragraph || !lineHeightInput || lineHeightInput.min !== '0') {
+        if (!paragraph || !lineHeightToggle || !lineHeightOption) {
           return false;
         }
 
@@ -22,9 +23,10 @@ async function runCompactLineHeightCase(client) {
         selection.addRange(range);
         document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
 
-        lineHeightInput.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
-        lineHeightInput.value = '0';
-        lineHeightInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
+        lineHeightToggle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+        lineHeightToggle.click();
+        lineHeightOption.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+        lineHeightOption.click();
         return true;
       })()
     `,
@@ -57,9 +59,10 @@ async function runParagraphLineHeightCase(client) {
     `
       (() => {
         const paragraph = document.querySelector('#lineHeightParagraph');
-        const lineHeightInput = document.querySelector('#templateEditorToolbarHost .template-toolbar-line-height-input');
+        const lineHeightToggle = document.querySelector('#templateEditorToolbarHost [data-template-line-height-toggle]');
+        const lineHeightOption = document.querySelector('#templateEditorToolbarHost [data-template-line-height-option="1.5"]');
 
-        if (!paragraph || !lineHeightInput) {
+        if (!paragraph || !lineHeightToggle || !lineHeightOption) {
           return false;
         }
 
@@ -71,11 +74,10 @@ async function runParagraphLineHeightCase(client) {
         selection.addRange(range);
         document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
 
-        lineHeightInput.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
-        lineHeightInput.value = '1.2';
-        lineHeightInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
-        lineHeightInput.stepUp();
-        lineHeightInput.dispatchEvent(new Event('change', { bubbles: true }));
+        lineHeightToggle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+        lineHeightToggle.click();
+        lineHeightOption.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+        lineHeightOption.click();
         return true;
       })()
     `,
@@ -90,11 +92,11 @@ async function runParagraphLineHeightCase(client) {
           (Number.parseFloat(style?.lineHeight || '') - Number.parseFloat(style?.fontSize || '')) * 0.75;
 
         return Boolean(
-          paragraph &&
+            paragraph &&
             paragraph.style.lineHeight &&
-            paragraph.style.marginBottom === '1.3pt' &&
+            paragraph.style.marginBottom === '1.5pt' &&
             Number.isFinite(lineSpacingPt) &&
-            Math.abs(lineSpacingPt - 1.3) <= 0.05
+            Math.abs(lineSpacingPt - 1.5) <= 0.05
         );
       })()
     `,

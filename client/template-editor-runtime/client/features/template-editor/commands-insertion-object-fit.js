@@ -8,10 +8,11 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
   const CSS_PIXELS_PER_POINT = 96 / 72;
   const CANDIDATE_BLOCK_TABLE_FIT_TOLERANCE = 1;
-  const CANDIDATE_BLOCK_TABLE_LINE_HEIGHT_RATIO = 1.2;
   const CANDIDATE_BLOCK_TABLE_MIN_FONT_SIZE_PT = 5;
-  const CANDIDATE_BLOCK_TABLE_MIN_PADDING_PT = 1;
+  const CANDIDATE_BLOCK_TABLE_MIN_PADDING_PT = 0;
   const CANDIDATE_BLOCK_TABLE_DEFAULT_FONT_SIZE_PT = 11;
+  const CANDIDATE_BLOCK_TABLE_DEFAULT_LINE_SPACING_PT = 1;
+  const CANDIDATE_BLOCK_TABLE_DEFAULT_LINE_HEIGHT = `calc(1em + ${CANDIDATE_BLOCK_TABLE_DEFAULT_LINE_SPACING_PT}pt)`;
   const CANDIDATE_BLOCK_TABLE_MIN_AVAILABLE_SIZE = 1;
   const CANDIDATE_BLOCK_TABLE_DEFAULT_PADDING_PT = Object.freeze({
     bottom: 8,
@@ -105,6 +106,33 @@
       right: lengthValues[1],
       top: lengthValues[0],
     };
+  }
+
+  function parseTemplateEditorLineHeightToPoints(value, fontSizePt = CANDIDATE_BLOCK_TABLE_DEFAULT_FONT_SIZE_PT) {
+    const normalizedValue = String(value || "").trim();
+    const safeFontSizePt = Number.isFinite(Number(fontSizePt)) && Number(fontSizePt) > 0
+      ? Number(fontSizePt)
+      : CANDIDATE_BLOCK_TABLE_DEFAULT_FONT_SIZE_PT;
+
+    if (!normalizedValue || normalizedValue.toLowerCase() === "normal") {
+      return safeFontSizePt + CANDIDATE_BLOCK_TABLE_DEFAULT_LINE_SPACING_PT;
+    }
+
+    const calcMatch = normalizedValue.match(/^calc\(\s*1em\s*\+\s*(-?\d+(?:\.\d+)?)pt\s*\)$/i);
+
+    if (calcMatch) {
+      return safeFontSizePt + Math.max(0, Number(calcMatch[1]) || 0);
+    }
+
+    if (/^-?\d+(?:\.\d+)?$/.test(normalizedValue)) {
+      return Math.max(0, safeFontSizePt * (Number(normalizedValue) || 1));
+    }
+
+    const lengthValue = parseTemplateEditorCssLengthToPoints(normalizedValue, Number.NaN);
+
+    return Number.isFinite(lengthValue) && lengthValue > 0
+      ? lengthValue
+      : safeFontSizePt + CANDIDATE_BLOCK_TABLE_DEFAULT_LINE_SPACING_PT;
   }
 
   function getTemplateEditorCandidateBlockContentSize(blockElement) {
@@ -277,6 +305,7 @@
         borderRight: 1,
         borderTop: 1,
         fontSize: CANDIDATE_BLOCK_TABLE_DEFAULT_FONT_SIZE_PT,
+        lineHeight: CANDIDATE_BLOCK_TABLE_DEFAULT_FONT_SIZE_PT + CANDIDATE_BLOCK_TABLE_DEFAULT_LINE_SPACING_PT,
         paddingBottom: fallbackPadding.bottom,
         paddingLeft: fallbackPadding.left,
         paddingRight: fallbackPadding.right,
@@ -286,13 +315,15 @@
 
     const borderValue = firstCell.style.border || "";
     const paddingValue = parseTemplateEditorCssPaddingToPoints(firstCell.style.padding, fallbackPadding);
+    const fontSize = parseTemplateEditorCssLengthToPoints(firstCell.style.fontSize, CANDIDATE_BLOCK_TABLE_DEFAULT_FONT_SIZE_PT);
 
     return {
       borderBottom: parseTemplateEditorCssLengthToPoints(firstCell.style.borderBottomWidth || borderValue, 1),
       borderLeft: parseTemplateEditorCssLengthToPoints(firstCell.style.borderLeftWidth || borderValue, 1),
       borderRight: parseTemplateEditorCssLengthToPoints(firstCell.style.borderRightWidth || borderValue, 1),
       borderTop: parseTemplateEditorCssLengthToPoints(firstCell.style.borderTopWidth || borderValue, 1),
-      fontSize: parseTemplateEditorCssLengthToPoints(firstCell.style.fontSize, CANDIDATE_BLOCK_TABLE_DEFAULT_FONT_SIZE_PT),
+      fontSize,
+      lineHeight: parseTemplateEditorLineHeightToPoints(firstCell.style.lineHeight, fontSize),
       paddingBottom: parseTemplateEditorCssLengthToPoints(firstCell.style.paddingBottom, paddingValue.bottom),
       paddingLeft: parseTemplateEditorCssLengthToPoints(firstCell.style.paddingLeft, paddingValue.left),
       paddingRight: parseTemplateEditorCssLengthToPoints(firstCell.style.paddingRight, paddingValue.right),
@@ -370,7 +401,7 @@
     const rowRequiredHeight =
       metrics.paddingTop +
       metrics.paddingBottom +
-      metrics.fontSize * CANDIDATE_BLOCK_TABLE_LINE_HEIGHT_RATIO +
+      metrics.lineHeight +
       Math.max(0, (metrics.borderTop + metrics.borderBottom) / 2);
 
     return {
@@ -402,6 +433,9 @@
     tableElement.querySelectorAll("th, td").forEach((cellElement) => {
       cellElement.style.boxSizing = "border-box";
       cellElement.style.fontSize = `${formattedFontSize}pt`;
+      if (!String(cellElement.style.lineHeight || "").trim()) {
+        cellElement.style.lineHeight = CANDIDATE_BLOCK_TABLE_DEFAULT_LINE_HEIGHT;
+      }
       cellElement.style.paddingBottom = `${formattedPaddingBottom}pt`;
       cellElement.style.paddingLeft = `${formattedPaddingLeft}pt`;
       cellElement.style.paddingRight = `${formattedPaddingRight}pt`;
@@ -435,7 +469,7 @@
       0.01,
       metrics.paddingTop +
         metrics.paddingBottom +
-        metrics.fontSize * CANDIDATE_BLOCK_TABLE_LINE_HEIGHT_RATIO,
+        metrics.lineHeight,
     );
     const horizontalScale = Math.min(1, availableColumnWidth / horizontalPaddingTotal);
     const verticalScale = Math.min(1, availableRowHeight / verticalTotal);
@@ -600,6 +634,12 @@
     tableElement.style.tableLayout = "fixed";
     tableElement.style.borderCollapse = "collapse";
     tableElement.style.boxSizing = "border-box";
+    tableElement.querySelectorAll("th, td").forEach((cellElement) => {
+      cellElement.style.padding = "0px";
+      if (!String(cellElement.style.lineHeight || "").trim()) {
+        cellElement.style.lineHeight = CANDIDATE_BLOCK_TABLE_DEFAULT_LINE_HEIGHT;
+      }
+    });
 
     const blockSize = availableSize || getTemplateEditorCandidateBlockContentSize(blockElement);
     const rawWidth = String(tableElement.style.width || "").trim();

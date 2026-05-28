@@ -39,12 +39,21 @@
     toolbar,
     toolbarIds,
   }) {
+    function isTemplateToolbarNoColorValue(value = "") {
+      const normalizedValue = String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+
+      return normalizedValue === "transparent" || normalizedValue === "none" || normalizedValue === "rgba(0,0,0,0)";
+    }
+
     function applyToolbarColorTrigger(triggerElement) {
       const colorInputId = triggerElement?.dataset?.editorColorInput || "";
       const colorCommand = triggerElement?.dataset?.editorColorCommand || "";
       const colorTableAction = triggerElement?.dataset?.editorColorTableAction || "";
       const colorInputElement = getElementById(colorInputId);
-      const colorValue = triggerElement?.dataset?.editorColorPreset || colorInputElement?.value || "";
+      const colorValue =
+        triggerElement?.dataset?.editorColorNone === "true"
+          ? "transparent"
+          : triggerElement?.dataset?.editorColorPreset || colorInputElement?.value || "";
       const fallbackValue =
         typeof toolbar.getEditorToolbarColorFallback === "function"
           ? toolbar.getEditorToolbarColorFallback(colorCommand, colorTableAction)
@@ -52,8 +61,11 @@
             ? "#000000"
             : "#ffffff";
 
-      if (colorInputElement && colorValue) {
+      if (colorInputElement && colorValue && !isTemplateToolbarNoColorValue(colorValue)) {
         colorInputElement.value = colorValue;
+      }
+
+      if (colorInputElement && colorValue) {
         toolbar.syncEditorToolbarColorControls({ colorInputElement, colorValue, fallbackValue });
       }
 

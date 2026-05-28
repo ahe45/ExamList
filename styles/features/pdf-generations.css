@@ -357,10 +357,28 @@
   font-size: 1.18rem;
 }
 
+.busy-overlay-kicker {
+  color: rgba(213, 230, 255, 0.92);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
 .busy-overlay-panel p {
   color: rgba(255, 255, 255, 0.76);
   line-height: 1.6;
   margin: 0;
+}
+
+.busy-overlay-detail {
+  color: rgba(255, 255, 255, 0.68);
+  display: block;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .busy-overlay-progress {
@@ -512,10 +530,14 @@
   align-items: center;
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(0, 1fr) 34px;
+  grid-template-columns: minmax(0, 1fr) auto 34px;
   justify-content: start;
   max-width: 100%;
   width: 100%;
+}
+
+.pdf-generation-template-control-row.is-disabled .field-required-badge {
+  opacity: 0.58;
 }
 
 .pdf-generation-template-preview-button {
@@ -1265,7 +1287,7 @@
   }
 
   .pdf-generation-template-control-row {
-    grid-template-columns: minmax(0, 1fr) 34px;
+    grid-template-columns: minmax(0, 1fr) auto 34px;
     width: 100%;
   }
 

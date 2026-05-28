@@ -241,6 +241,18 @@
   gap: 10px;
 }
 
+.data-deletion-template-required-header {
+  align-items: center;
+  color: #0f172a;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.35;
+  min-width: 0;
+}
+
 .data-deletion-template-select-all-row {
   align-items: center;
   color: #0f172a;
@@ -500,6 +512,38 @@
 .data-deletion-confirm-actions .danger-button {
   background: linear-gradient(135deg, var(--danger) 0%, #ad243d 100%);
   box-shadow: 0 14px 26px rgba(210, 65, 91, 0.18);
+}
+
+.data-deletion-progress-overlay {
+  z-index: 1760;
+}
+
+.data-deletion-progress-card {
+  width: min(460px, calc(100vw - 48px));
+}
+
+.data-deletion-progress-counts {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.data-deletion-progress-counts span {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  display: flex;
+  font-size: 0.84rem;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 9px 11px;
+}
+
+.data-deletion-progress-counts strong,
+.data-deletion-progress-counts em {
+  color: #ffffff;
+  font-style: normal;
 }
 
 @keyframes data-deletion-button-pulse {

@@ -133,7 +133,7 @@
       }
 
       if (templateEditorImageOverlay) {
-        if (!overlayContainer.contains(templateEditorImageOverlay)) {
+        if (templateEditorImageOverlay.parentElement !== overlayContainer) {
           overlayContainer.append(templateEditorImageOverlay);
         }
 
@@ -145,6 +145,7 @@
 
       overlayElement.className = "template-editor-image-selection hidden";
       overlayElement.setAttribute("aria-hidden", "true");
+      overlayElement.setAttribute("contenteditable", "false");
       ensureTemplateEditorImageResizeHandles(overlayElement);
       overlayContainer.append(overlayElement);
       templateEditorImageOverlay = overlayElement;

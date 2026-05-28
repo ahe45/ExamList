@@ -5,6 +5,7 @@ import {
   getPdfGenerationRevealedFilterSteps,
   isPdfGenerationCreateConditionComplete,
   normalizePdfGenerationSelectedFilterKeys,
+  pdfGenerationCreateRequiredFilterKeys,
 } from "./pdf-generation-flow.js";
 import {
   formatGenerationUnitLabel,
@@ -58,16 +59,18 @@ function renderTemplateOptions(templates = [], selectedTemplateId = "") {
 function renderTemplateField({ isBusy, modal, selectedTemplate, templates }) {
   const hasSelection = Boolean(selectedTemplate);
   const isPreviewLoading = Boolean(modal.templatePreview?.isLoading);
+  const isDisabled = Boolean(modal.isLoadingOptions || isBusy);
 
   return `
     <div class="form-field pdf-generation-filter-field pdf-generation-template-field ${hasSelection ? "is-selected" : "is-pending"}">
-      <label class="pdf-generation-step-label" for="pdfGenerationTemplateSelect">
+      <label class="pdf-generation-step-label ${isDisabled ? "is-disabled" : ""}" for="pdfGenerationTemplateSelect">
         <span>양식</span>
       </label>
-      <div class="pdf-generation-template-control-row">
-        <select id="pdfGenerationTemplateSelect" name="templateId" data-pdf-generation-template-select required ${modal.isLoadingOptions || isBusy ? "disabled" : ""}>
+      <div class="pdf-generation-template-control-row ${isDisabled ? "is-disabled" : ""}">
+        <select id="pdfGenerationTemplateSelect" name="templateId" data-pdf-generation-template-select required ${isDisabled ? "disabled" : ""}>
           ${renderTemplateOptions(templates, String(modal.selectedTemplateId || ""))}
         </select>
+        <span class="field-required-badge">필수</span>
         <button
           class="icon-button pdf-generation-template-preview-button"
           data-action="open-pdf-generation-template-preview"
@@ -276,19 +279,24 @@ function renderFilterField({ filters, isBusy, modal, selectedFilterKeys, selecte
   const optionList = getOptionList(modal, step.key);
   const hasSelection = selectedFilterKeys.includes(step.key);
   const isEnabled = Boolean(selectedTemplate) && (step.key !== "series" || selectedFilterKeys.includes("admission"));
+  const isRequired = pdfGenerationCreateRequiredFilterKeys.includes(step.key);
+  const isDisabled = Boolean(modal.isLoadingOptions || isBusy || !isEnabled);
 
   return `
-    <label class="form-field pdf-generation-filter-field ${hasSelection ? "is-selected" : "is-pending"}">
-      <span class="pdf-generation-step-label">
+    <label class="form-field pdf-generation-filter-field ${hasSelection ? "is-selected" : "is-pending"} ${isRequired ? "is-required" : ""}">
+      <span class="pdf-generation-step-label ${isDisabled ? "is-disabled" : ""}">
         <span>${escapeHtml(step.label)}</span>
       </span>
-      <select
-        name="${escapeHtml(step.key)}"
-        data-pdf-generation-modal-filter="${escapeHtml(step.key)}"
-        ${modal.isLoadingOptions || isBusy || !isEnabled ? "disabled" : ""}
-      >
-        ${renderFilterOptions(optionList, selectedValue, hasSelection)}
-      </select>
+      <div class="field-control-with-required ${isRequired ? "has-required-badge" : ""} ${isDisabled ? "is-disabled" : ""}">
+        <select
+          name="${escapeHtml(step.key)}"
+          data-pdf-generation-modal-filter="${escapeHtml(step.key)}"
+          ${isDisabled ? "disabled" : ""}
+        >
+          ${renderFilterOptions(optionList, selectedValue, hasSelection)}
+        </select>
+        ${isRequired ? '<span class="field-required-badge">필수</span>' : ""}
+      </div>
     </label>
   `;
 }

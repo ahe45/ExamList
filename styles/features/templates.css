@@ -513,10 +513,21 @@
   background: rgba(248, 250, 252, 0.78);
   border: 1px dashed rgba(148, 163, 184, 0.78);
   box-sizing: border-box;
+  line-height: calc(1em + 1pt);
   min-height: 0;
   min-width: 0;
   overflow: hidden;
   padding: 0;
+}
+
+.template-card-candidate-block-grid .examlist-candidate-block p,
+.template-card-candidate-block-grid .examlist-candidate-block h1,
+.template-card-candidate-block-grid .examlist-candidate-block h2,
+.template-card-candidate-block-grid .examlist-candidate-block h3,
+.template-card-candidate-block-grid .examlist-candidate-block div,
+.template-card-candidate-block-grid .examlist-candidate-block li,
+.template-card-candidate-block-grid .examlist-candidate-block blockquote {
+  line-height: calc(1em + 1pt);
 }
 
 .template-card-candidate-block-grid .examlist-candidate-block.has-candidate-block-table {
@@ -541,6 +552,7 @@
 
 .template-card-candidate-block-grid .examlist-candidate-block table th,
 .template-card-candidate-block-grid .examlist-candidate-block table td {
+  line-height: calc(1em + 1pt);
   min-height: 0;
   min-width: 0;
   overflow: hidden;

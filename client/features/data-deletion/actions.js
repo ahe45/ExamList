@@ -61,9 +61,18 @@ export function setupDataDeletionActions({
     appState.dataDeletion = {
       activeScope: "",
       isDeleting: false,
+      progressOverlay: {
+        message: "",
+        stageLabel: "",
+      },
       statusMessage: "",
       statusType: "",
       ...(appState.dataDeletion || {}),
+    };
+    appState.dataDeletion.progressOverlay = {
+      message: "",
+      stageLabel: "",
+      ...(appState.dataDeletion.progressOverlay || {}),
     };
 
     return appState.dataDeletion;
@@ -78,6 +87,7 @@ export function setupDataDeletionActions({
       errorMessage: "",
       filters: createEmptyDataDeletionFilters(),
       isOpen: false,
+      isDeleting: false,
       isLoadingOptions: false,
       isLoadingSummary: false,
       options: {},
@@ -218,6 +228,7 @@ export function setupDataDeletionActions({
     hasPermission,
     onStateChange,
     refreshAfterDeletion,
+    refreshModalAfterDeletion: loadDataDeletionModalData,
   });
 
   const {

@@ -192,15 +192,77 @@ async function insertCandidateBlockToolbarTable(client, { columns, rows } = {}) 
   await dispatchBrowserMouseClick(client, '#templateEditorToolbarHost [data-template-insert="table-confirm"]');
 }
 
+async function assertCandidateBlockDefaultLineSpacing(client, selector, label) {
+  await waitForCondition(
+    client,
+    `
+      (() => {
+        const element = document.querySelector(${JSON.stringify(selector)});
+        const style = element ? getComputedStyle(element) : null;
+        const lineHeight = Number.parseFloat(style?.lineHeight || '');
+        const fontSize = Number.parseFloat(style?.fontSize || '');
+        const spacingPt = (lineHeight - fontSize) * 0.75;
+
+        return Boolean(
+          element &&
+            Number.isFinite(lineHeight) &&
+            Number.isFinite(fontSize) &&
+            Math.abs(spacingPt - 1) <= 0.15
+        );
+      })()
+    `,
+    label,
+  );
+}
+
+async function assertCandidateBlockTableCellDefaultPadding(client, selector, label) {
+  await waitForCondition(
+    client,
+    `
+      (() => {
+        const element = document.querySelector(${JSON.stringify(selector)});
+        const style = element ? getComputedStyle(element) : null;
+        const paddings = [
+          Number.parseFloat(style?.paddingTop || ''),
+          Number.parseFloat(style?.paddingRight || ''),
+          Number.parseFloat(style?.paddingBottom || ''),
+          Number.parseFloat(style?.paddingLeft || '')
+        ];
+
+        return Boolean(
+          element &&
+            paddings.every((padding) => Number.isFinite(padding) && Math.abs(padding) <= 0.1)
+        );
+      })()
+    `,
+    label,
+  );
+}
+
 async function runTallCandidateBlockTableInsertionRegression(client) {
   await configureCandidateBlockGridForTableSmoke(client, { columns: 2, rows: 10, columnGap: 4, rowGap: 4 });
   await openCandidateBlockFocusEditor(client);
   await placeCandidateBlockTableInsertionCaret(client);
+  await assertCandidateBlockDefaultLineSpacing(
+    client,
+    '#templateEditorSurface [data-candidate-block-modal-editor-surface] #candidateBlockToolbarTableAnchor',
+    "수험생 데이터 블록 기본 줄 간격",
+  );
   await insertCandidateBlockToolbarTable(client, { columns: 4, rows: 4 });
   await waitForCondition(
     client,
     `Boolean(document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface] table'))`,
     "수험생 데이터 블록 10행 기준 표 삽입",
+  );
+  await assertCandidateBlockDefaultLineSpacing(
+    client,
+    '#templateEditorSurface [data-candidate-block-modal-editor-surface] table td',
+    "수험생 데이터 블록 표 셀 기본 줄 간격",
+  );
+  await assertCandidateBlockTableCellDefaultPadding(
+    client,
+    '#templateEditorSurface [data-candidate-block-modal-editor-surface] table td',
+    "수험생 데이터 블록 표 셀 기본 여백",
   );
   await evaluate(
     client,

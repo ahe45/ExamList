@@ -180,6 +180,10 @@ export function resetDataDeletionState(appState) {
       summary: null,
       summaryErrorMessage: "",
     },
+    progressOverlay: {
+      message: "",
+      stageLabel: "",
+    },
     statusMessage: "",
     statusType: "",
   };
@@ -191,7 +195,16 @@ export function resetSchoolState(appState) {
   appState.schoolSettings.schoolId = "";
   appState.schoolSettings.schoolName = "";
   appState.schools.detail = null;
+  appState.schools.deletingSchoolId = "";
+  appState.schools.deletionProgress = {
+    candidateCount: 0,
+    message: "",
+    schoolName: "",
+    stageLabel: "",
+    templateCount: 0,
+  };
   appState.schools.items = [];
+  appState.schools.isDeleting = false;
   appState.schools.total = 0;
   appState.schools.errorMessage = "";
   appState.schools.modal = {

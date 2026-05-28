@@ -37,7 +37,7 @@ function createDataDeletionService({
   const {
     deletePdfGenerationData,
     getPdfGenerationDataCounts,
-  } = createPdfGenerationDeleteService();
+  } = createPdfGenerationDeleteService({ pathModule, rootDir });
   const {
     deleteTemplateData,
     getTemplateDataCounts,

@@ -147,6 +147,10 @@ export function renderDataDeletionTemplateList({ isBusy, isLoading, selectedTemp
 
   return `
     <div class="data-deletion-template-list">
+      <div class="data-deletion-template-required-header">
+        <span>삭제할 양식</span>
+        <span class="field-required-badge">필수</span>
+      </div>
       <label class="data-deletion-template-select-all-row">
         <input
           type="checkbox"

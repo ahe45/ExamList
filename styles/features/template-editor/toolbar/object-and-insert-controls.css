@@ -243,7 +243,9 @@
 
 .template-toolbar-table-insert-popover.open,
 .template-toolbar-color-picker.open,
-.template-toolbar-font-size-combo.open {
+.template-toolbar-font-family-combo.open,
+.template-toolbar-font-size-combo.open,
+.template-toolbar-line-height-combo.open {
   z-index: 20;
 }
 

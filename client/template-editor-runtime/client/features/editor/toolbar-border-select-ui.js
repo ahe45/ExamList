@@ -8,6 +8,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
   function createEditorToolbarBorderSelectUiController({
     closeAllEditorToolbarColorPanels,
+    closeAllEditorToolbarFontFamilyMenus,
     closeAllEditorToolbarFontSizeMenus,
     closeAllEditorToolbarTableInsertPanels,
     updateEditorToolbarFloatingPanelPlacement,
@@ -114,6 +115,7 @@
       if (nextVisible) {
         closeAllEditorToolbarBorderSelectMenus(inputId);
         closeAllEditorToolbarTableInsertPanels();
+        closeAllEditorToolbarFontFamilyMenus();
         closeAllEditorToolbarFontSizeMenus();
         closeAllEditorToolbarColorPanels();
         syncEditorToolbarBorderSelectControl(selectElement);

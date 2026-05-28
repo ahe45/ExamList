@@ -1,7 +1,112 @@
 let lastTextControlSelectionRange = null;
+let lastTextControlSelectionSnapshot = null;
+
+function getTextControlSelectionNodePath(surfaceElement, node) {
+  if (!surfaceElement || !node) {
+    return null;
+  }
+
+  const path = [];
+  let currentNode = node;
+
+  while (currentNode && currentNode !== surfaceElement) {
+    const parentNode = currentNode.parentNode;
+
+    if (!parentNode) {
+      return null;
+    }
+
+    path.unshift(Array.prototype.indexOf.call(parentNode.childNodes, currentNode));
+    currentNode = parentNode;
+  }
+
+  return currentNode === surfaceElement ? path : null;
+}
+
+function resolveTextControlSelectionNodePath(surfaceElement, path) {
+  if (!surfaceElement || !Array.isArray(path)) {
+    return null;
+  }
+
+  let currentNode = surfaceElement;
+
+  for (const index of path) {
+    currentNode = currentNode?.childNodes?.[index] || null;
+
+    if (!currentNode) {
+      return null;
+    }
+  }
+
+  return currentNode;
+}
+
+function getTextControlNodeMaxOffset(node) {
+  if (!node) {
+    return 0;
+  }
+
+  return node.nodeType === Node.TEXT_NODE ? node.textContent.length : node.childNodes.length;
+}
+
+function createTextControlSelectionSnapshot(surfaceElement, range) {
+  if (!surfaceElement || !range) {
+    return null;
+  }
+
+  const startPath = getTextControlSelectionNodePath(surfaceElement, range.startContainer);
+  const endPath = getTextControlSelectionNodePath(surfaceElement, range.endContainer);
+
+  if (!startPath || !endPath) {
+    return null;
+  }
+
+  return {
+    collapsed: range.collapsed,
+    endOffset: range.endOffset,
+    endPath,
+    startOffset: range.startOffset,
+    startPath,
+  };
+}
+
+function createTextControlRangeFromSnapshot(surfaceElement, snapshot) {
+  if (!surfaceElement || !snapshot) {
+    return null;
+  }
+
+  const startNode = resolveTextControlSelectionNodePath(surfaceElement, snapshot.startPath);
+  const endNode = resolveTextControlSelectionNodePath(surfaceElement, snapshot.endPath);
+
+  if (!startNode || !endNode) {
+    return null;
+  }
+
+  const range = document.createRange();
+
+  try {
+    range.setStart(startNode, Math.min(snapshot.startOffset, getTextControlNodeMaxOffset(startNode)));
+    range.setEnd(endNode, Math.min(snapshot.endOffset, getTextControlNodeMaxOffset(endNode)));
+  } catch (_error) {
+    return null;
+  }
+
+  return range;
+}
+
+function isSurfaceRootTextControlRange(surfaceElement, range) {
+  return Boolean(
+    surfaceElement &&
+      range &&
+      (range.startContainer === surfaceElement ||
+        range.endContainer === surfaceElement ||
+        range.commonAncestorContainer === surfaceElement),
+  );
+}
 
 export function resetEditorTextControlSelection() {
   lastTextControlSelectionRange = null;
+  lastTextControlSelectionSnapshot = null;
 }
 
 export function getSelectionRangeInsideSurface(surfaceElement) {
@@ -29,26 +134,50 @@ export function rememberEditorTextControlSelection(surfaceElement) {
 
   if (range) {
     lastTextControlSelectionRange = range.cloneRange();
+    lastTextControlSelectionSnapshot = createTextControlSelectionSnapshot(surfaceElement, range);
   }
 }
 
 export function canRestoreEditorTextControlSelection(surfaceElement) {
-  return Boolean(
+  const snapshotRange = createTextControlRangeFromSnapshot(surfaceElement, lastTextControlSelectionSnapshot);
+
+  if (
     surfaceElement &&
       lastTextControlSelectionRange &&
       lastTextControlSelectionRange.startContainer?.isConnected &&
       lastTextControlSelectionRange.endContainer?.isConnected &&
       surfaceElement.contains(lastTextControlSelectionRange.startContainer) &&
-      surfaceElement.contains(lastTextControlSelectionRange.endContainer),
-  );
+      surfaceElement.contains(lastTextControlSelectionRange.endContainer) &&
+      !(snapshotRange && isSurfaceRootTextControlRange(surfaceElement, lastTextControlSelectionRange))
+  ) {
+    return true;
+  }
+
+  return Boolean(snapshotRange);
 }
 
 export function getRestorableEditorTextControlSelection(surfaceElement) {
-  return canRestoreEditorTextControlSelection(surfaceElement) ? lastTextControlSelectionRange : null;
+  const snapshotRange = createTextControlRangeFromSnapshot(surfaceElement, lastTextControlSelectionSnapshot);
+
+  if (
+    surfaceElement &&
+    lastTextControlSelectionRange &&
+    lastTextControlSelectionRange.startContainer?.isConnected &&
+    lastTextControlSelectionRange.endContainer?.isConnected &&
+    surfaceElement.contains(lastTextControlSelectionRange.startContainer) &&
+    surfaceElement.contains(lastTextControlSelectionRange.endContainer) &&
+    !(snapshotRange && isSurfaceRootTextControlRange(surfaceElement, lastTextControlSelectionRange))
+  ) {
+    return lastTextControlSelectionRange;
+  }
+
+  return snapshotRange;
 }
 
 export function restoreEditorTextControlSelection(surfaceElement) {
-  if (!canRestoreEditorTextControlSelection(surfaceElement)) {
+  const range = getRestorableEditorTextControlSelection(surfaceElement);
+
+  if (!range) {
     return false;
   }
 
@@ -59,7 +188,9 @@ export function restoreEditorTextControlSelection(surfaceElement) {
   }
 
   selection.removeAllRanges();
-  selection.addRange(lastTextControlSelectionRange);
+  selection.addRange(range);
+  lastTextControlSelectionRange = range.cloneRange();
+  lastTextControlSelectionSnapshot = createTextControlSelectionSnapshot(surfaceElement, range);
   surfaceElement.focus();
   return true;
 }

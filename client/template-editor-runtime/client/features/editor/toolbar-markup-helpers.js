@@ -123,6 +123,34 @@
       `).join("");
     }
 
+    function getEditorToolbarFontFamilyLabel(value = "") {
+      const normalizedValue = String(value || "").trim();
+      const matchingOption = EDITOR_TOOLBAR_FONT_OPTIONS.find((option) => option.value === normalizedValue);
+
+      return matchingOption?.label || EDITOR_TOOLBAR_FONT_OPTIONS[0]?.label || "";
+    }
+
+    function renderEditorToolbarFontFamilyOptionButtons(selectedValue = "") {
+      const normalizedSelectedValue = String(selectedValue || "").trim();
+
+      return EDITOR_TOOLBAR_FONT_OPTIONS.map((option) => {
+        const isActive = option.value === normalizedSelectedValue;
+
+        return `
+          <button
+            class="template-toolbar-combo-option${isActive ? " active" : ""}"
+            data-editor-font-family-option="${escapeEditorToolbarAttribute(option.value)}"
+            data-editor-font-family-label="${escapeEditorToolbarAttribute(option.label)}"
+            type="button"
+            role="option"
+            aria-selected="${isActive ? "true" : "false"}"
+          >
+            ${escapeEditorToolbarHtml(option.label)}
+          </button>
+        `;
+      }).join("");
+    }
+
     function renderEditorToolbarFontSizeOptionButtons(selectedValue = 11) {
       const normalizedSelectedValue = Math.round(Number(selectedValue));
       const activeValue = Number.isFinite(normalizedSelectedValue) && isEditorToolbarPresetFontSize(normalizedSelectedValue)
@@ -312,6 +340,8 @@
       renderEditorToolbarCellSplitPopover,
       renderEditorToolbarColorPickerSection,
       renderEditorToolbarFontOptions,
+      getEditorToolbarFontFamilyLabel,
+      renderEditorToolbarFontFamilyOptionButtons,
       renderEditorToolbarFontSizeOptionButtons,
       renderEditorToolbarIconButton,
       renderEditorToolbarImageInsertPopover,

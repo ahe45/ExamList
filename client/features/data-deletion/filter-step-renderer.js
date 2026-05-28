@@ -1,6 +1,9 @@
 import { escapeHtml } from "../../app/html-utils.js";
 import { formatCount } from "../../app/number-format.js";
-import { getPdfGenerationVisibleFilterSteps } from "../pdf-generations/pdf-generation-flow.js";
+import {
+  getPdfGenerationVisibleFilterSteps,
+  pdfGenerationCreateRequiredFilterKeys,
+} from "../pdf-generations/pdf-generation-flow.js";
 import { dataDeletionGenerationUnit } from "./constants.js";
 
 const unselectedFilterValue = "__pdf_generation_unselected__";
@@ -39,17 +42,24 @@ function renderDataDeletionFilterField({ filters, isBusy, isLoadingOptions, moda
   const selectedValue = String(filters[step.key] || "");
   const optionList = getDataDeletionOptionList(modal, step.key);
   const hasSelection = selectedFilterKeys.includes(step.key);
+  const isRequired = pdfGenerationCreateRequiredFilterKeys.includes(step.key);
+  const isDisabled = Boolean(isLoadingOptions || isBusy);
 
   return `
-    <label class="form-field data-deletion-filter-field ${hasSelection ? "is-selected" : "is-pending"}">
-      <span>${escapeHtml(step.label)}</span>
-      <select
-        name="${escapeHtml(step.key)}"
-        data-data-deletion-modal-filter="${escapeHtml(step.key)}"
-        ${isLoadingOptions || isBusy ? "disabled" : ""}
-      >
-        ${renderDataDeletionFilterOptions(optionList, selectedValue, hasSelection)}
-      </select>
+    <label class="form-field data-deletion-filter-field ${hasSelection ? "is-selected" : "is-pending"} ${isRequired ? "is-required" : ""}">
+      <span class="${isDisabled ? "is-disabled" : ""}">
+        <span>${escapeHtml(step.label)}</span>
+      </span>
+      <div class="field-control-with-required ${isRequired ? "has-required-badge" : ""} ${isDisabled ? "is-disabled" : ""}">
+        <select
+          name="${escapeHtml(step.key)}"
+          data-data-deletion-modal-filter="${escapeHtml(step.key)}"
+          ${isDisabled ? "disabled" : ""}
+        >
+          ${renderDataDeletionFilterOptions(optionList, selectedValue, hasSelection)}
+        </select>
+        ${isRequired ? '<span class="field-required-badge">필수</span>' : ""}
+      </div>
     </label>
   `;
 }

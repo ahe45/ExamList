@@ -1,17 +1,6 @@
 export const documentToolbarFontSizeOptions = Object.freeze([
-  8,
-  9,
-  10,
-  11,
-  12,
-  14,
-  16,
-  18,
-  20,
-  22,
-  24,
-  26,
-  28,
+  ...Array.from({ length: 28 }, (_value, index) => index + 1),
+  30,
   32,
   36,
   40,
@@ -19,6 +8,14 @@ export const documentToolbarFontSizeOptions = Object.freeze([
   56,
   64,
   72,
+]);
+
+export const documentToolbarFontFamilyOptions = Object.freeze([
+  Object.freeze({ label: "기본", value: "'Noto Sans KR', sans-serif" }),
+  Object.freeze({ label: "맑은 고딕", value: "'Malgun Gothic', sans-serif" }),
+  Object.freeze({ label: "나눔고딕", value: "'Nanum Gothic', sans-serif" }),
+  Object.freeze({ label: "나눔명조", value: "'Nanum Myeongjo', serif" }),
+  Object.freeze({ label: "바탕", value: "'Batang', serif" }),
 ]);
 
 export const documentToolbarTextColorPresets = Object.freeze([
@@ -32,6 +29,19 @@ export const documentToolbarTextColorPresets = Object.freeze([
   Object.freeze({ label: "빨강", value: "#b91c1c" }),
   Object.freeze({ label: "보라", value: "#7c3aed" }),
   Object.freeze({ label: "흰색", value: "#ffffff" }),
+]);
+
+export const documentToolbarShadingColorPresets = Object.freeze([
+  Object.freeze({ label: "노랑", value: "#fff59d" }),
+  Object.freeze({ label: "하늘", value: "#bfdbfe" }),
+  Object.freeze({ label: "민트", value: "#bbf7d0" }),
+  Object.freeze({ label: "분홍", value: "#fbcfe8" }),
+  Object.freeze({ label: "연보라", value: "#ddd6fe" }),
+  Object.freeze({ label: "살구", value: "#fed7aa" }),
+  Object.freeze({ label: "회색", value: "#e2e8f0" }),
+  Object.freeze({ label: "연청록", value: "#ccfbf1" }),
+  Object.freeze({ label: "연빨강", value: "#fecaca" }),
+  Object.freeze({ label: "색 없음", value: "transparent", noColor: true }),
 ]);
 
 export const documentToolbarIconMarkup = Object.freeze({

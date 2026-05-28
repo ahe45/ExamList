@@ -142,18 +142,38 @@ async function runCandidateBlockGridSaveHydrateDeleteScenario(context) {
       `,
       "저장 후 수험생 데이터 블록 외곽선 클릭 선택",
     );
+    const deleteRecreateSourceBlockPoint = await getBrowserPoint(
+      client,
+      `(() => {
+        const block = document.querySelector('#templateEditorSurface [data-candidate-block-instance]');
+        const rect = block?.getBoundingClientRect();
+
+        if (!rect) {
+          return null;
+        }
+
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      })()`,
+      "수험생 데이터 블록 삭제 전 확대 편집 시작",
+    );
+    await dispatchBrowserMouseClickAtPoint(client, deleteRecreateSourceBlockPoint);
+    await waitForCondition(
+      client,
+      `Boolean(document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface]'))`,
+      "수험생 데이터 블록 삭제 전 확대 편집 표시",
+    );
     await evaluate(
       client,
       `
         (() => {
-          const firstBlock = document.querySelector('#templateEditorSurface [data-candidate-block-instance]');
+          const modalSurface = document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface]');
 
-          if (!firstBlock) {
+          if (!modalSurface) {
             return false;
           }
 
-          firstBlock.innerHTML = '<p>삭제 후 재생성 검증</p>';
-          firstBlock.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: '삭제 후 재생성 검증' }));
+          modalSurface.innerHTML = '<p>삭제 후 재생성 검증</p>';
+          modalSurface.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: '삭제 후 재생성 검증' }));
           return true;
         })()
       `,
@@ -162,7 +182,7 @@ async function runCandidateBlockGridSaveHydrateDeleteScenario(context) {
       client,
       `
         (() => {
-          const blocks = [...document.querySelectorAll('#templateEditorSurface [data-candidate-block-instance]')];
+          const blocks = [...document.querySelectorAll('#templateEditorSurface [data-candidate-block-instance]:not([data-candidate-block-modal-editor-surface])')];
 
           return Boolean(
             blocks.length === 4 &&
@@ -171,6 +191,12 @@ async function runCandidateBlockGridSaveHydrateDeleteScenario(context) {
         })()
       `,
       "수험생 데이터 블록 삭제 전 템플릿 동기화",
+    );
+    await dispatchBrowserMouseClick(client, "[data-candidate-block-focus-close]");
+    await waitForCondition(
+      client,
+      `!document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface]') && !document.querySelector('[data-candidate-block-focus-layer]')`,
+      "수험생 데이터 블록 삭제 전 확대 편집 닫기",
     );
     await dispatchBrowserMouseClickAtPoint(client, savedCandidateBlockBorderPoint);
     await waitForCondition(

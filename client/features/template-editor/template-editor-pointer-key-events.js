@@ -3,6 +3,8 @@ import { splitCurrentDocumentCell } from "./document-table-actions.js";
 const DOCUMENT_TOOLBAR_ACTION_SELECTOR = [
   "[data-action='apply-document-command']",
   "[data-action='insert-data-tag']",
+  "[data-action='toggle-document-font-family-menu']",
+  "[data-action='set-document-font-family-option']",
   "[data-action='toggle-document-font-size-menu']",
   "[data-action='set-document-font-size-option']",
   "[data-action='toggle-document-color-panel']",
@@ -214,6 +216,7 @@ export function bindTemplateEditorPointerKeyEvents({
   releaseDocumentImageMoveSession,
   releaseDocumentImageResizeSession,
   selectDocumentImage,
+  setDocumentFontFamilyMenuVisibility,
   setDocumentFontSizeMenuVisibility,
   setDocumentPopoverVisibility,
   startDocumentImageMoveSession,
@@ -361,6 +364,11 @@ export function bindTemplateEditorPointerKeyEvents({
 
     if (event.key === "Escape" && appState.templateEditor.selectedImageElement) {
       clearDocumentImageSelection();
+    }
+
+    if (event.key === "Escape") {
+      setDocumentFontFamilyMenuVisibility?.("templateEditorFontFamily", false);
+      setDocumentFontSizeMenuVisibility?.("templateEditorFontSize", false);
     }
   });
 

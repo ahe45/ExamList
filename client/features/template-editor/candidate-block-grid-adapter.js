@@ -150,12 +150,33 @@ function isCandidateBlockGridKeyboardDeleteTarget(event, surfaceElement, gridEle
   const activeGridElement = activeElement?.closest?.("[data-candidate-block-grid]") || null;
   const targetSurfaceElement = target?.closest?.("[data-editor-document-surface]") || null;
   const activeSurfaceElement = activeElement?.closest?.("[data-editor-document-surface]") || null;
+  const isEditingControl = (element) => {
+    if (element instanceof Element && !element.isConnected) {
+      return false;
+    }
+
+    const control = element?.closest?.("input, textarea, select, button, [contenteditable='true']") || null;
+
+    return Boolean(
+      control &&
+        control !== gridElement &&
+        !gridElement.contains(control) &&
+        control.closest?.("[data-editor-document-surface]") !== surfaceElement
+    );
+  };
+
+  if (isEditingControl(target) || isEditingControl(activeElement)) {
+    return false;
+  }
 
   return (
     targetGridElement === gridElement ||
     activeGridElement === gridElement ||
     targetSurfaceElement === surfaceElement ||
-    activeSurfaceElement === surfaceElement
+    activeSurfaceElement === surfaceElement ||
+    target === gridElement.ownerDocument?.body ||
+    activeElement === gridElement.ownerDocument?.body ||
+    activeElement === gridElement.ownerDocument?.documentElement
   );
 }
 

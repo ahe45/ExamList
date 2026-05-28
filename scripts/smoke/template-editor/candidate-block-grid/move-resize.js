@@ -5,6 +5,241 @@ const {
   waitForCondition
 } = require("../../../smoke-browser-cdp");
 
+async function assertTableBelowCandidateBlockKeepsExplicitBottomPosition(client) {
+  const result = JSON.parse(
+    await evaluate(
+      client,
+      `
+        (async () => JSON.stringify(await (async () => {
+          const editor = window.ExamListTemplateEditorRuntime;
+          const { syncTemplateEditorObjectFlowObjects } = await import('/client/features/template-editor/object-flow-reflow.js');
+          const documentElement = document.querySelector('#templateEditorSurface .template-doc');
+          const originalHtml = editor?.getHtml?.() || "";
+
+          try {
+            if (!editor || !documentElement || typeof syncTemplateEditorObjectFlowObjects !== 'function') {
+              return { ok: false, reason: 'missing-editor-runtime' };
+            }
+
+            documentElement.innerHTML = '';
+
+            const grid = document.createElement('div');
+            grid.className = 'examlist-candidate-block-grid';
+            grid.dataset.candidateBlockGrid = 'true';
+            grid.dataset.candidateBlockColumns = '2';
+            grid.dataset.candidateBlockRows = '8';
+            grid.dataset.candidateBlockVariant = 'photo';
+            grid.dataset.candidateBlockObject = 'true';
+            grid.setAttribute('contenteditable', 'false');
+            grid.style.position = 'absolute';
+            grid.style.left = '0px';
+            grid.style.top = '104px';
+            grid.style.width = '720px';
+            grid.style.height = '824px';
+            grid.style.display = 'grid';
+            grid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+            grid.style.gridTemplateRows = 'repeat(8, minmax(52px, 1fr))';
+            grid.style.gap = '4pt 4pt';
+            grid.style.margin = '0';
+
+            for (let index = 0; index < 16; index += 1) {
+              const block = document.createElement('div');
+
+              block.className = 'examlist-candidate-block';
+              block.dataset.candidateBlockInstance = String(index + 1);
+              block.innerHTML = '<p><br></p>';
+              grid.append(block);
+            }
+
+            const table = document.createElement('table');
+
+            table.innerHTML = '<tbody><tr><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td></tr></tbody>';
+            table.style.width = '720px';
+            table.style.height = '58px';
+            table.style.borderCollapse = 'collapse';
+            table.style.tableLayout = 'fixed';
+            table.style.position = 'absolute';
+            table.style.left = '0px';
+            table.style.top = '888px';
+            table.style.margin = '0';
+            table.style.maxWidth = 'none';
+            table.style.zIndex = '2';
+            table.querySelectorAll('td').forEach((cell) => {
+              cell.style.border = '1px solid #111';
+              cell.style.height = '28px';
+              cell.style.padding = '0';
+            });
+
+            documentElement.append(grid, table);
+            syncTemplateEditorObjectFlowObjects(documentElement);
+
+            const beforeMoveTop = Number.parseFloat(table.style.top || '0') || 0;
+            const tableHeight = Math.round(table.getBoundingClientRect().height || 58);
+            const expectedTop = Math.max(0, documentElement.clientHeight - tableHeight - 6);
+
+            table.style.top = expectedTop + 'px';
+            syncTemplateEditorObjectFlowObjects(documentElement);
+
+            const afterSyncTop = Number.parseFloat(table.style.top || '0') || 0;
+
+            return {
+              afterSyncTop,
+              beforeMoveTop,
+              expectedTop,
+              ok: Math.abs(afterSyncTop - expectedTop) <= 1 && Math.abs(afterSyncTop - beforeMoveTop) > 1,
+            };
+          } finally {
+            if (editor && originalHtml) {
+              editor.setHtml(originalHtml, { resetHistory: false, notify: false });
+            }
+          }
+        })()))()
+      `,
+    ),
+  );
+
+  if (!result.ok) {
+    throw new Error(`데이터블록 하단 표 위치 유지 회귀 실패: ${JSON.stringify(result)}`);
+  }
+}
+
+async function assertTableObjectMoveDoesNotSplitCandidateBlockGrid(client) {
+  const result = JSON.parse(
+    await evaluate(
+      client,
+      `
+        (async () => JSON.stringify(await (async () => {
+          const editor = window.ExamListTemplateEditorRuntime;
+          const runtimeReflow = window.ExamListTemplateEditorObjectFlowReflow?.reflowTemplateEditorObjectRows;
+          const appModule = await import('/client/features/template-editor/object-flow-reflow.js');
+          const documentElement = document.querySelector('#templateEditorSurface .template-doc');
+          const originalHtml = editor?.getHtml?.() || "";
+
+          const createFixture = () => {
+            documentElement.innerHTML = '';
+
+            const grid = document.createElement('div');
+            grid.className = 'examlist-candidate-block-grid';
+            grid.dataset.candidateBlockGrid = 'true';
+            grid.dataset.candidateBlockColumns = '2';
+            grid.dataset.candidateBlockRows = '8';
+            grid.dataset.candidateBlockVariant = 'photo';
+            grid.dataset.candidateBlockObject = 'true';
+            grid.setAttribute('contenteditable', 'false');
+            grid.style.position = 'relative';
+            grid.style.width = '720px';
+            grid.style.height = '760px';
+            grid.style.display = 'grid';
+            grid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+            grid.style.gridTemplateRows = 'repeat(8, minmax(52px, 1fr))';
+            grid.style.gap = '4pt 4pt';
+            grid.style.margin = '0';
+
+            for (let index = 0; index < 16; index += 1) {
+              const block = document.createElement('div');
+
+              block.className = 'examlist-candidate-block';
+              block.dataset.candidateBlockInstance = String(index + 1);
+              block.innerHTML = '<p><br></p>';
+              grid.append(block);
+            }
+
+            const table = document.createElement('table');
+
+            table.innerHTML = '<tbody><tr><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td></tr></tbody>';
+            table.style.width = '720px';
+            table.style.height = '58px';
+            table.style.borderCollapse = 'collapse';
+            table.style.tableLayout = 'fixed';
+            table.style.position = 'absolute';
+            table.style.left = '0px';
+            table.style.top = '820px';
+            table.style.margin = '0';
+            table.style.maxWidth = 'none';
+            table.style.zIndex = '2';
+            table.querySelectorAll('td').forEach((cell) => {
+              cell.style.border = '1px solid #111';
+              cell.style.height = '28px';
+              cell.style.padding = '0';
+            });
+
+            documentElement.append(grid, table);
+            return { grid, table };
+          };
+
+          const runCase = (name, reflow) => {
+            if (typeof reflow !== 'function') {
+              return { name, ok: false, reason: 'missing-reflow' };
+            }
+
+            const { grid, table } = createFixture();
+
+            reflow(table, {
+              activeHeight: 58,
+              activeTop: 820,
+              documentElement,
+              minimumHeight: 5,
+              movementY: 0,
+              reorderByPosition: false,
+            });
+            table.style.top = '80px';
+            reflow(table, {
+              activeHeight: 58,
+              activeTop: 80,
+              documentElement,
+              minimumHeight: 5,
+              movementY: -740,
+              reorderByPosition: false,
+            });
+
+            const grids = [...documentElement.querySelectorAll('[data-candidate-block-grid]')];
+            const childOrder = [...documentElement.children]
+              .slice(0, 8)
+              .map((child) => child.matches('[data-template-object-flow-spacer]')
+                ? 'spacer'
+                : child.matches('[data-candidate-block-grid]')
+                  ? 'candidate-grid'
+                  : child.tagName.toLowerCase());
+
+            return {
+              name,
+              blockCount: grid.querySelectorAll('[data-candidate-block-instance]').length,
+              childOrder,
+              gridCount: grids.length,
+              gridConnected: grid.isConnected,
+              ok: grid.isConnected &&
+                grids.length === 1 &&
+                grid.querySelectorAll('[data-candidate-block-instance]').length === 16 &&
+                table.isConnected,
+            };
+          };
+
+          try {
+            if (!editor || !documentElement) {
+              return { ok: false, results: [{ name: 'setup', ok: false, reason: 'missing-editor-runtime' }] };
+            }
+
+            const results = [
+              runCase('runtime-global', runtimeReflow),
+              runCase('app-module', appModule.reflowTemplateEditorObjectRows),
+            ];
+
+            return { ok: results.every((entry) => entry.ok), results };
+          } finally {
+            if (editor && originalHtml) {
+              editor.setHtml(originalHtml, { resetHistory: false, notify: false });
+            }
+          }
+        })()))()
+      `,
+    ),
+  );
+
+  if (!result.ok) {
+    throw new Error(`표 이동 중 데이터블록 분해 회귀 실패: ${JSON.stringify(result)}`);
+  }
+}
+
 async function runCandidateBlockGridMoveResizeScenario(context) {
   const { client } = context;
     await evaluate(
@@ -376,6 +611,8 @@ async function runCandidateBlockGridMoveResizeScenario(context) {
       `,
       "수험생 데이터 블록 아래 텍스트 입력 후 개체 핸들 표시",
     );
+    await assertTableBelowCandidateBlockKeepsExplicitBottomPosition(client);
+    await assertTableObjectMoveDoesNotSplitCandidateBlockGrid(client);
 }
 
 module.exports = { runCandidateBlockGridMoveResizeScenario };

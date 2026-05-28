@@ -1,5 +1,9 @@
 import { escapeHtml } from "../../app/html-utils.js";
-import { documentToolbarFontSizeOptions, documentToolbarIconMarkup } from "./document-toolbar-config.js";
+import {
+  documentToolbarFontFamilyOptions,
+  documentToolbarFontSizeOptions,
+  documentToolbarIconMarkup,
+} from "./document-toolbar-config.js";
 
 export function renderDocumentToolbarIconButton({
   action = "",
@@ -58,6 +62,37 @@ export function renderDocumentToolbarFontSizeOptionButtons(selectedValue = 11) {
     .join("");
 }
 
+export function getDocumentToolbarFontFamilyLabel(value = "") {
+  const normalizedValue = String(value || "").trim();
+  const matchingOption = documentToolbarFontFamilyOptions.find((option) => option.value === normalizedValue);
+
+  return matchingOption?.label || documentToolbarFontFamilyOptions[0]?.label || "";
+}
+
+export function renderDocumentToolbarFontFamilyOptionButtons(selectedValue = "") {
+  const normalizedSelectedValue = String(selectedValue || "").trim();
+
+  return documentToolbarFontFamilyOptions
+    .map((option) => {
+      const isActive = option.value === normalizedSelectedValue;
+
+      return `
+        <button
+          class="template-toolbar-combo-option${isActive ? " active" : ""}"
+          data-action="set-document-font-family-option"
+          data-font-family-option="${escapeHtml(option.value)}"
+          data-font-family-label="${escapeHtml(option.label)}"
+          type="button"
+          role="option"
+          aria-selected="${isActive ? "true" : "false"}"
+        >
+          ${escapeHtml(option.label)}
+        </button>
+      `;
+    })
+    .join("");
+}
+
 export function renderDocumentToolbarColorPresetButtons({
   inputId = "",
   inputValue = "#ffffff",
@@ -65,26 +100,31 @@ export function renderDocumentToolbarColorPresetButtons({
   colorCommand = "",
   colorTableAction = "",
 }) {
-  const normalizedInputValue = String(inputValue || "#ffffff").trim().toLowerCase();
+  const normalizeNoColorValue = (value = "") => String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+  const inputNoColor = ["transparent", "none", "rgba(0,0,0,0)"].includes(normalizeNoColorValue(inputValue));
+  const normalizedInputValue = inputNoColor ? "transparent" : String(inputValue || "#ffffff").trim().toLowerCase();
 
   return presetColors
     .map((preset) => {
-      const normalizedPresetValue = String(preset.value || "#ffffff").trim().toLowerCase();
-      const isActive = normalizedPresetValue === normalizedInputValue;
+      const presetNoColor = Boolean(preset.noColor) || ["transparent", "none", "rgba(0,0,0,0)"].includes(normalizeNoColorValue(preset.value));
+      const normalizedPresetValue = presetNoColor ? "transparent" : String(preset.value || "#ffffff").trim().toLowerCase();
+      const isActive = presetNoColor ? inputNoColor : normalizedPresetValue === normalizedInputValue;
+      const swatchClassName = `template-toolbar-color-swatch${presetNoColor ? " is-no-color" : ""}${isActive ? " active" : ""}`;
 
       return `
         <button
-          class="template-toolbar-color-swatch${isActive ? " active" : ""}"
+          class="${swatchClassName}"
           data-action="apply-document-color-preset"
           data-color-input="${escapeHtml(inputId)}"
           data-color-preset="${escapeHtml(normalizedPresetValue)}"
+          ${presetNoColor ? 'data-color-none="true"' : ""}
           ${colorCommand ? `data-color-command="${escapeHtml(colorCommand)}"` : ""}
           ${colorTableAction ? `data-color-table-action="${escapeHtml(colorTableAction)}"` : ""}
           type="button"
           aria-label="${escapeHtml(preset.label)}"
           aria-pressed="${isActive ? "true" : "false"}"
           title="${escapeHtml(preset.label)}"
-          style="--editor-toolbar-swatch-color: ${escapeHtml(normalizedPresetValue)};"
+          style="--editor-toolbar-swatch-color: ${escapeHtml(presetNoColor ? "#ffffff" : normalizedPresetValue)};"
         >
           <span class="sr-only">${escapeHtml(preset.label)}</span>
         </button>
@@ -106,9 +146,12 @@ export function renderDocumentToolbarColorPickerSection({
   triggerLabel = "선택",
 }) {
   const panelId = `${inputId}Panel`;
-  const normalizedInputValue = String(inputValue || fallbackValue).trim().toLowerCase();
+  const normalizedRawInputValue = String(inputValue || "").trim().toLowerCase().replace(/\s+/g, "");
+  const inputNoColor = ["transparent", "none", "rgba(0,0,0,0)"].includes(normalizedRawInputValue);
+  const normalizedInputValue = inputNoColor ? "transparent" : String(inputValue || fallbackValue).trim().toLowerCase();
+  const colorInputValue = inputNoColor ? String(fallbackValue || "#ffffff").trim().toLowerCase() : normalizedInputValue;
   const sectionClassNames = ["template-toolbar-section", sectionClassName].filter(Boolean).join(" ");
-  const pickerClassNames = ["template-toolbar-color-picker", pickerClassName].filter(Boolean).join(" ");
+  const pickerClassNames = ["template-toolbar-color-picker", inputNoColor ? "is-no-color" : "", pickerClassName].filter(Boolean).join(" ");
 
   return `
     <div class="${sectionClassNames}">
@@ -161,7 +204,7 @@ export function renderDocumentToolbarColorPickerSection({
               ${colorCommand ? `data-color-command="${escapeHtml(colorCommand)}"` : ""}
               ${colorTableAction ? `data-color-table-action="${escapeHtml(colorTableAction)}"` : ""}
               type="color"
-              value="${escapeHtml(normalizedInputValue)}"
+              value="${escapeHtml(colorInputValue)}"
               tabindex="-1"
               aria-hidden="true"
             />
@@ -253,15 +296,7 @@ export function renderDocumentToolbarCellSplitPopover() {
 }
 
 export function renderFontFamilyOptions(selectedValue = "") {
-  const fontOptions = [
-    { label: "기본", value: "'Noto Sans KR', sans-serif" },
-    { label: "맑은 고딕", value: "'Malgun Gothic', sans-serif" },
-    { label: "나눔고딕", value: "'Nanum Gothic', sans-serif" },
-    { label: "나눔명조", value: "'Nanum Myeongjo', serif" },
-    { label: "바탕", value: "'Batang', serif" },
-  ];
-
-  return fontOptions
+  return documentToolbarFontFamilyOptions
     .map(
       (option) => `
         <option value="${escapeHtml(option.value)}" ${selectedValue === option.value ? "selected" : ""}>

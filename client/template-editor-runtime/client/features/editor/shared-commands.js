@@ -13,8 +13,15 @@
     normalizeEditorToolbarColorValue,
     normalizeTemplateEditorFontNodes,
     normalizeTemplateEditorInlineFontSizeStyles,
+    syncEditorToolbarFontFamilyControls,
     syncEditorToolbarFontSizeControls,
   }) {
+    function isSharedEditorNoColorValue(value = "") {
+      const normalizedValue = String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+
+      return normalizedValue === "transparent" || normalizedValue === "none" || normalizedValue === "rgba(0,0,0,0)";
+    }
+
     function applySharedEditorCommand({
       rootElement = null,
       focusElement = null,
@@ -92,6 +99,8 @@
         const commandValue =
           command === "fontName"
             ? String(value || defaultFontFamily).trim()
+            : command === "hiliteColor" && isSharedEditorNoColorValue(value)
+              ? "transparent"
             : command === "hiliteColor" || command === "foreColor"
               ? normalizeEditorToolbarColorValue(value || "", getEditorToolbarColorFallback(command))
               : command === "formatBlock" && value
@@ -104,7 +113,11 @@
           normalizeTemplateEditorFontNodes(rootElement);
 
           if (fontFamilyElement) {
-            fontFamilyElement.value = commandValue;
+            if (typeof syncEditorToolbarFontFamilyControls === "function") {
+              syncEditorToolbarFontFamilyControls(fontFamilyElement, commandValue);
+            } else {
+              fontFamilyElement.value = commandValue;
+            }
           }
         }
 
@@ -135,7 +148,11 @@
 
       if (applyTableSelectionFontFamily?.(fontFamily)) {
         if (fontFamilyElement) {
-          fontFamilyElement.value = fontFamily;
+          if (typeof syncEditorToolbarFontFamilyControls === "function") {
+            syncEditorToolbarFontFamilyControls(fontFamilyElement, fontFamily);
+          } else {
+            fontFamilyElement.value = fontFamily;
+          }
         }
         return;
       }

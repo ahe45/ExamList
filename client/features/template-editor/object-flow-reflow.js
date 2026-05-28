@@ -19,6 +19,12 @@ const transientSelector = [
   "[data-candidate-block-focus-layer]",
   ".examlist-candidate-block-focus-layer",
 ].join(",");
+const nonSplittableFlowTextBlockSelector = [
+  "[data-candidate-block-grid]",
+  ".examlist-candidate-block-grid",
+  "[data-candidate-block-instance]",
+  ".examlist-candidate-block",
+].join(",");
 let objectFlowReflowIdCounter = 0;
 const flowObjectLayoutState = new WeakMap();
 
@@ -370,7 +376,9 @@ function isSplittableFlowTextBlock(element, documentElement, activeElement, acti
   return (
     (tagName === "P" || tagName === "DIV") &&
     !element.matches("[data-template-object-flow-spacer]") &&
+    !element.matches(nonSplittableFlowTextBlockSelector) &&
     !element.matches(flowObjectSelector) &&
+    !element.querySelector(nonSplittableFlowTextBlockSelector) &&
     !element.querySelector(flowObjectSelector) &&
     Boolean(element.querySelector("br"))
   );
@@ -510,10 +518,18 @@ function syncAbsoluteFlowObjectToSpacer(objectElement, documentElement, options 
   const spacerTop = Math.max(0, spacerRect.top - documentRect.top);
   const metrics = getFlowObjectMetrics(objectElement, documentElement, {}, options.minimumHeight);
   const rememberedState = flowObjectLayoutState.get(objectElement);
-  const fallbackOffset = metrics.top < spacerTop - 1
-    ? 0
-    : Math.max(0, metrics.top - spacerTop);
-  const offsetTop = Number.isFinite(Number(rememberedState?.offsetTop))
+  const styleTop = parsePixelValue(objectElement.style.top, metrics.top);
+  const rememberedObjectTop = Number(rememberedState?.objectTop);
+  const hasExplicitMovedTop =
+    Number.isFinite(styleTop) &&
+    Number.isFinite(rememberedObjectTop) &&
+    Math.abs(styleTop - rememberedObjectTop) > 1;
+  const fallbackOffset = hasExplicitMovedTop
+    ? styleTop - spacerTop
+    : metrics.top < spacerTop - 1
+      ? 0
+      : Math.max(0, metrics.top - spacerTop);
+  const offsetTop = Number.isFinite(Number(rememberedState?.offsetTop)) && !hasExplicitMovedTop
     ? Number(rememberedState.offsetTop)
     : fallbackOffset;
   const nextTop = Math.max(0, Math.round(spacerTop + offsetTop));

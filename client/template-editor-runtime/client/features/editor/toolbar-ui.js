@@ -26,11 +26,14 @@
     const closeAllEditorToolbarTableInsertPanels = (...args) =>
       tableInsertController?.closeAllEditorToolbarTableInsertPanels(...args) || false;
     const closeAllEditorToolbarFontSizeMenus = (...args) => fontSizeController?.closeAllEditorToolbarFontSizeMenus(...args) || false;
+    const closeAllEditorToolbarFontFamilyMenus = (...args) =>
+      fontSizeController?.closeAllEditorToolbarFontFamilyMenus(...args) || false;
     const closeAllEditorToolbarBorderSelectMenus = (...args) =>
       borderSelectController?.closeAllEditorToolbarBorderSelectMenus(...args) || false;
 
     colorController = colorUi.createEditorToolbarColorUiController({
       closeAllEditorToolbarBorderSelectMenus,
+      closeAllEditorToolbarFontFamilyMenus,
       closeAllEditorToolbarFontSizeMenus,
       closeAllEditorToolbarTableInsertPanels,
       normalizeEditorToolbarColorValue: deps.normalizeEditorToolbarColorValue,
@@ -39,6 +42,7 @@
     tableInsertController = tableInsertUi.createEditorToolbarTableInsertUiController({
       closeAllEditorToolbarBorderSelectMenus,
       closeAllEditorToolbarColorPanels,
+      closeAllEditorToolbarFontFamilyMenus,
       closeAllEditorToolbarFontSizeMenus,
     });
     fontSizeController = fontSizeUi.createEditorToolbarFontSizeUiController({
@@ -49,6 +53,7 @@
     });
     borderSelectController = borderSelectUi.createEditorToolbarBorderSelectUiController({
       closeAllEditorToolbarColorPanels,
+      closeAllEditorToolbarFontFamilyMenus,
       closeAllEditorToolbarFontSizeMenus,
       closeAllEditorToolbarTableInsertPanels,
       updateEditorToolbarFloatingPanelPlacement,

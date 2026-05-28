@@ -31,6 +31,7 @@ test("deleteProjectData deletes all project data for a school without deleting t
       existsSync: (filePath) => [
         "C:\\pdf\\school-1.pdf",
         "C:\\pdf\\school-1.zip",
+        path.join(rootDir, "storage", "pdf-generations", "merged", "pdf-merged-1.pdf"),
         path.join(rootDir, "storage", "candidate-photos", "A001.jpg"),
       ].includes(filePath),
       promises: {
@@ -53,6 +54,13 @@ test("deleteProjectData deletes all project data for a school without deleting t
 
       if (compactSql.includes("FROM pdf_generation_batches WHERE school_id = ?")) {
         return [{ archiveFilePath: "C:\\pdf\\school-1.zip", archiveId: "archive-1", id: "batch-1" }];
+      }
+
+      if (compactSql.includes("FROM pdf_audit_logs WHERE entity_type = 'pdf_generation_merged'")) {
+        return [
+          { entityId: "pdf-merged-1", id: "audit-merged-created", metadataJson: "{}" },
+          { entityId: "pdf-merged-1", id: "audit-merged-downloaded", metadataJson: "{}" },
+        ];
       }
 
       if (compactSql.includes("COUNT(*) AS total FROM pdf_audit_logs")) {
@@ -89,11 +97,12 @@ test("deleteProjectData deletes all project data for a school without deleting t
   assert.equal(result.deletedCandidatePhotos, 1);
   assert.equal(result.deletedPdfGenerationHistories, 1);
   assert.equal(result.deletedPdfGenerationBatches, 1);
-  assert.equal(result.deletedPdfAuditLogs, 3);
+  assert.equal(result.deletedPdfAuditLogs, 5);
   assert.equal(result.deletedPdfTemplates, 1);
-  assert.equal(result.deletedPdfFiles, 2);
+  assert.equal(result.deletedPdfFiles, 3);
   assert.equal(result.deletedCandidatePhotoFiles, 1);
   assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM pdf_generation_histories WHERE school_id = ?")));
+  assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM pdf_audit_logs WHERE id IN")));
   assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM candidate_records WHERE school_id = ?")));
   assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM pdf_templates WHERE school_id = ?")));
   assert.ok(executedSql.some((sql) => sql.includes("UPDATE schools SET updated_at = CURRENT_TIMESTAMP WHERE id = ?")));
@@ -103,6 +112,7 @@ test("deleteProjectData deletes all project data for a school without deleting t
     [
       "C:\\pdf\\school-1.pdf",
       "C:\\pdf\\school-1.zip",
+      path.join(rootDir, "storage", "pdf-generations", "merged", "pdf-merged-1.pdf"),
       path.join(rootDir, "storage", "candidate-photos", "A001.jpg"),
       path.join(rootDir, "storage", "candidate-photos", "A001.jpeg"),
       path.join(rootDir, "storage", "candidate-photos", "A001.png"),
@@ -213,10 +223,15 @@ test("deleteProjectData deletes only candidate rows matching deletion unit filte
 test("deleteProjectData deletes filtered PDF histories and only fully matched batches", async () => {
   const queries = [];
   const removedFiles = [];
+  const rootDir = path.join("C:\\", "examlist");
   const service = createDataDeletionService({
     createHttpError,
     fs: {
-      existsSync: (filePath) => ["C:\\pdf\\selected.pdf", "C:\\pdf\\selected.zip"].includes(filePath),
+      existsSync: (filePath) => [
+        "C:\\pdf\\selected.pdf",
+        "C:\\pdf\\selected.zip",
+        path.join(rootDir, "storage", "pdf-generations", "merged", "pdf-merged-selected.pdf"),
+      ].includes(filePath),
       promises: {
         rm: async (filePath) => {
           removedFiles.push(filePath);
@@ -264,6 +279,22 @@ test("deleteProjectData deletes filtered PDF histories and only fully matched ba
         ];
       }
 
+      if (compactSql.includes("FROM pdf_audit_logs WHERE entity_type = 'pdf_generation_merged'")) {
+        return [
+          {
+            entityId: "pdf-merged-selected",
+            id: "audit-merged-created",
+            metadataJson: JSON.stringify({ generationIds: ["generation-1"], schoolIds: ["school-1"] }),
+          },
+          { entityId: "pdf-merged-selected", id: "audit-merged-downloaded", metadataJson: "{}" },
+          {
+            entityId: "pdf-merged-other",
+            id: "audit-merged-other",
+            metadataJson: JSON.stringify({ generationIds: ["generation-2"], schoolIds: ["school-1"] }),
+          },
+        ];
+      }
+
       if (compactSql.includes("COUNT(*) AS total FROM pdf_audit_logs")) {
         return [{ total: 2 }];
       }
@@ -278,6 +309,7 @@ test("deleteProjectData deletes filtered PDF histories and only fully matched ba
 
       return { affectedRows: 1 };
     },
+    rootDir,
   });
 
   const result = await service.deleteProjectData("pdf-generations", {
@@ -297,10 +329,14 @@ test("deleteProjectData deletes filtered PDF histories and only fully matched ba
 
   assert.equal(result.deletedPdfGenerationHistories, 1);
   assert.equal(result.deletedPdfGenerationBatches, 1);
-  assert.equal(result.deletedPdfAuditLogs, 2);
+  assert.equal(result.deletedPdfAuditLogs, 4);
   assert.deepEqual(historyDeleteQuery.params, ["generation-1"]);
   assert.deepEqual(batchDeleteQuery.params, ["batch-1"]);
-  assert.deepEqual(removedFiles, ["C:\\pdf\\selected.pdf", "C:\\pdf\\selected.zip"]);
+  assert.deepEqual(removedFiles, [
+    "C:\\pdf\\selected.pdf",
+    "C:\\pdf\\selected.zip",
+    path.join(rootDir, "storage", "pdf-generations", "merged", "pdf-merged-selected.pdf"),
+  ]);
 });
 
 test("deleteProjectData deletes only selected templates for template scope", async () => {
@@ -376,6 +412,17 @@ test("getProjectDataDeletionSummary returns delete scope counts", async () => {
         return [{ archiveFilePath: "C:\\pdf\\archive.zip", archiveId: "archive-1", id: "batch-1" }];
       }
 
+      if (compactSql.includes("FROM pdf_audit_logs WHERE entity_type = 'pdf_generation_merged'")) {
+        return [
+          {
+            entityId: "pdf-merged-summary",
+            id: "audit-merged-created",
+            metadataJson: JSON.stringify({ generationIds: ["generation-1"], schoolIds: ["school-1"] }),
+          },
+          { entityId: "pdf-merged-summary", id: "audit-merged-downloaded", metadataJson: "{}" },
+        ];
+      }
+
       if (compactSql.includes("COUNT(*) AS total FROM pdf_audit_logs")) {
         return [{ total: 4 }];
       }
@@ -410,12 +457,12 @@ test("getProjectDataDeletionSummary returns delete scope counts", async () => {
   assert.equal(summary.counts.candidatePhotos, 2);
   assert.equal(summary.counts.pdfGenerationHistories, 2);
   assert.equal(summary.counts.pdfGenerationBatches, 1);
-  assert.equal(summary.counts.pdfFiles, 3);
-  assert.equal(summary.counts.pdfAuditLogs, 4);
+  assert.equal(summary.counts.pdfFiles, 4);
+  assert.equal(summary.counts.pdfAuditLogs, 6);
   assert.equal(summary.counts.pdfTemplates, 2);
   assert.equal(templateScope.items.find((item) => item.key === "pdfTemplateElements").count, 7);
-  assert.equal(pdfScope.totalCount, 10);
-  assert.equal(allScope.totalCount, 31);
+  assert.equal(pdfScope.totalCount, 13);
+  assert.equal(allScope.totalCount, 34);
 });
 
 test("getProjectDataDeletionSummary returns template list and counts selected templates only", async () => {

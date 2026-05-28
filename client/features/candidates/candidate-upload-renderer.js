@@ -12,16 +12,13 @@ function clampUploadPercent(value = 0) {
   return Math.min(100, Math.max(0, Math.round(numericValue)));
 }
 
-function renderUploadProgressBar(percent = 0, options = {}) {
+function renderBusyProgressBar(percent = 0, options = {}) {
   const normalizedPercent = clampUploadPercent(percent);
   const isIndeterminate = Boolean(options.isIndeterminate);
 
   return `
-    <div class="candidate-upload-progress-track ${isIndeterminate ? "is-indeterminate" : ""}" aria-hidden="true">
-      <span
-        class="candidate-upload-progress-value ${isIndeterminate ? "is-indeterminate" : ""}"
-        ${isIndeterminate ? "" : `style="width: ${normalizedPercent}%"`}
-      ></span>
+    <div class="progress-bar ${isIndeterminate ? "is-indeterminate" : ""}" aria-hidden="true">
+      <span ${isIndeterminate ? "" : `style="width: ${normalizedPercent}%"`}></span>
     </div>
   `;
 }
@@ -35,15 +32,20 @@ function renderPreviewProgressOverlay(progress = {}) {
   const isIndeterminate = Boolean(progress.isIndeterminate);
 
   return `
-    <div class="candidate-preview-progress-overlay">
-      <div class="candidate-preview-progress-card">
-        <div class="candidate-preview-progress-copy">
-          <strong>${escapeHtml(progress.message || "미리보기를 계산하는 중입니다.")}</strong>
-          <span>${escapeHtml(progress.detail || "선택한 파일을 처리하고 있습니다.")}</span>
+    <div class="busy-overlay candidate-preview-progress-overlay" role="status" aria-live="polite" aria-busy="true">
+      <div class="busy-overlay-backdrop"></div>
+      <section class="busy-overlay-panel">
+        <div class="busy-spinner" aria-hidden="true"></div>
+        <strong>${escapeHtml(progress.message || "미리보기를 계산하는 중입니다.")}</strong>
+        <small class="busy-overlay-detail">${escapeHtml(progress.detail || "선택한 파일을 처리하고 있습니다.")}</small>
+        <div class="busy-overlay-progress" aria-label="수험생 업로드 파일 처리 진행 상태">
+          <div class="busy-overlay-progress-meta">
+            <span>${isIndeterminate ? "서버 처리 상태" : "파일 처리율"}</span>
+            <span class="busy-overlay-progress-value">${isIndeterminate ? "처리 중" : `${percent}%`}</span>
+          </div>
+          ${renderBusyProgressBar(percent, { isIndeterminate })}
         </div>
-        ${renderUploadProgressBar(percent, { isIndeterminate })}
-        <span class="candidate-upload-progress-percent">${isIndeterminate ? "처리 중" : `${percent}%`}</span>
-      </div>
+      </section>
     </div>
   `;
 }
@@ -180,7 +182,6 @@ function renderWorkbookUploadPanel(upload = {}) {
     </div>
     <section class="upload-preview-section ${isPreviewBusy ? "is-busy" : ""}" aria-busy="${isPreviewBusy ? "true" : "false"}">
       ${renderUploadPreview(upload.preview)}
-      ${renderPreviewProgressOverlay(upload.previewProgress)}
     </section>
     ${renderUploadPolicyOptions(upload.existingDataPolicy)}
   `;
@@ -198,7 +199,6 @@ function renderPhotoArchiveUploadPanel(upload = {}) {
     </div>
     <section class="upload-preview-section ${isPreviewBusy ? "is-busy" : ""}" aria-busy="${isPreviewBusy ? "true" : "false"}">
       ${renderPhotoArchivePreview(upload.photoPreview)}
-      ${renderPreviewProgressOverlay(upload.previewProgress)}
     </section>
     ${renderUploadPolicyOptions(upload.existingDataPolicy)}
   `;
@@ -215,20 +215,22 @@ export function renderCandidateUploadProgressOverlay(candidates = {}) {
   const isIndeterminate = Boolean(progress.isIndeterminate);
 
   return `
-    <div class="candidate-upload-progress-overlay" role="status" aria-live="polite">
-      <div class="candidate-upload-progress-card">
-        <div class="candidate-upload-progress-head">
-          <span>${escapeHtml(progress.stageLabel || "진행 중")}</span>
-          <strong>${escapeHtml(progress.title || "데이터 업로드")}</strong>
-        </div>
+    <div class="busy-overlay candidate-upload-progress-overlay" role="status" aria-live="polite" aria-busy="true">
+      <div class="busy-overlay-backdrop"></div>
+      <section class="busy-overlay-panel">
+        <div class="busy-spinner" aria-hidden="true"></div>
+        <span class="busy-overlay-kicker">${escapeHtml(progress.stageLabel || "진행 중")}</span>
+        <strong>${escapeHtml(progress.title || "데이터 업로드")}</strong>
         <p>${escapeHtml(progress.message || "업로드를 처리하고 있습니다.")}</p>
-        ${progress.detail ? `<small>${escapeHtml(progress.detail)}</small>` : ""}
-        ${renderUploadProgressBar(percent, { isIndeterminate })}
-        <div class="candidate-upload-progress-meta">
-          <span>${isIndeterminate ? "서버 처리 상태" : "파일 크기 기준"}</span>
-          <strong>${isIndeterminate ? "처리 중" : `${percent}%`}</strong>
+        ${progress.detail ? `<small class="busy-overlay-detail">${escapeHtml(progress.detail)}</small>` : ""}
+        <div class="busy-overlay-progress" aria-label="수험생 데이터 업로드 진행 상태">
+          <div class="busy-overlay-progress-meta">
+            <span>${isIndeterminate ? "서버 처리 상태" : "파일 크기 기준"}</span>
+            <span class="busy-overlay-progress-value">${isIndeterminate ? "처리 중" : `${percent}%`}</span>
+          </div>
+          ${renderBusyProgressBar(percent, { isIndeterminate })}
         </div>
-      </div>
+      </section>
     </div>
   `;
 }
@@ -278,6 +280,7 @@ export function renderCandidateUploadModal(candidates = {}) {
           </button>
         </div>
       </div>
+      ${renderPreviewProgressOverlay(upload.previewProgress)}
     </div>
   `;
 }

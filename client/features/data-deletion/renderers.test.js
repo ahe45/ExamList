@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   DATA_DELETION_CONFIRMATION_PHRASE,
   renderDataDeletionModal,
+  renderDataDeletionProgressOverlay,
   renderDataDeletionView,
 } from "./renderers.js";
 
@@ -124,6 +125,12 @@ const templateSummary = Object.freeze({
   },
 });
 
+function getDataDeletionFilterFieldHtml(html, key) {
+  return html.match(
+    new RegExp(`<label\\b(?:(?!</label>)[\\s\\S])*data-data-deletion-modal-filter="${key}"(?:(?!</label>)[\\s\\S])*</label>`),
+  )?.[0] || "";
+}
+
 test("data deletion view renders scoped delete cards with data summaries", () => {
   const html = renderDataDeletionView({
     access,
@@ -214,6 +221,10 @@ test("data deletion modal renders one-screen unit selection with target counts",
   assert.match(html, /data-data-deletion-modal-filter="admission"/);
   assert.match(html, /data-data-deletion-modal-filter="series"/);
   assert.match(html, /data-data-deletion-modal-filter="room"/);
+  assert.match(getDataDeletionFilterFieldHtml(html, "campus"), /<\/select>\s*<span class="field-required-badge">필수<\/span>/);
+  assert.match(getDataDeletionFilterFieldHtml(html, "track"), /<\/select>\s*<span class="field-required-badge">필수<\/span>/);
+  assert.match(getDataDeletionFilterFieldHtml(html, "admission"), /<\/select>\s*<span class="field-required-badge">필수<\/span>/);
+  assert.doesNotMatch(getDataDeletionFilterFieldHtml(html, "series"), /field-required-badge/);
   const seriesSelect = html.match(/<select\s+name="series"[\s\S]*?>/)?.[0] || "";
   assert.doesNotMatch(seriesSelect, /disabled/);
   assert.doesNotMatch(html, /data-data-deletion-modal-scope-select/);
@@ -277,6 +288,31 @@ test("data deletion confirmation popup requires phrase for all data", () => {
   assert.match(html, /type="submit" disabled>\s*삭제 실행/);
 });
 
+test("data deletion progress overlay shows target counts while deleting", () => {
+  const html = renderDataDeletionProgressOverlay({
+    activeScope: "pdf-generations",
+    isDeleting: true,
+    modal: {
+      selectedScope: "pdf-generations",
+      summary,
+    },
+    progressOverlay: {
+      message: "삭제 결과를 현재 화면에 반영하고 있습니다.",
+      stageLabel: "화면 갱신",
+    },
+  });
+
+  assert.match(html, /busy-overlay data-deletion-progress-overlay/);
+  assert.match(html, /data-data-deletion-progress-overlay/);
+  assert.match(html, /생성 PDF 데이터 삭제 중/);
+  assert.match(html, /총 10건/);
+  assert.match(html, /PDF 생성 이력/);
+  assert.match(html, /2건/);
+  assert.match(html, /PDF 작업 로그/);
+  assert.match(html, /4건/);
+  assert.match(html, /progress-bar is-indeterminate/);
+});
+
 test("template data deletion modal renders templates as selectable deletion units", () => {
   const html = renderDataDeletionModal(
     {
@@ -303,6 +339,8 @@ test("template data deletion modal renders templates as selectable deletion unit
 
   assert.match(html, /data-data-deletion-template-id="template-1"/);
   assert.match(html, /data-deletion-modal-content-grid is-template-scope/);
+  assert.match(html, /삭제할 양식/);
+  assert.match(html, /<span class="field-required-badge">필수<\/span>/);
   assert.match(html, /data-data-deletion-template-id="template-2"/);
   assert.match(html, /data-data-deletion-template-select-all/);
   assert.match(html, /data-deletion-template-select-all-row/);

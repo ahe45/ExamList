@@ -246,10 +246,14 @@
         return null;
       }
 
-      const shadingValue = normalizeTemplateEditorColorValue(
-        colorValue || getTemplateEditorCellShadingInput()?.value || "",
-        "#ffffff",
-      );
+      const rawShadingValue = String(colorValue || getTemplateEditorCellShadingInput()?.value || "").trim();
+      const normalizedRawShadingValue = rawShadingValue.toLowerCase().replace(/\s+/g, "");
+      const shadingValue =
+        normalizedRawShadingValue === "transparent" ||
+        normalizedRawShadingValue === "none" ||
+        normalizedRawShadingValue === "rgba(0,0,0,0)"
+          ? "transparent"
+          : normalizeTemplateEditorColorValue(rawShadingValue, "#ffffff");
       const targetCells = getTemplateEditorShadingTargetCells(selectedCell);
 
       if (targetCells.length === 0) {

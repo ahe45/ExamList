@@ -1,7 +1,11 @@
 import { renderAccountManagementView } from "../features/accounts/renderers.js";
 import { renderAuthStatus } from "../features/auth/renderers.js";
 import { renderCandidateView } from "../features/candidates/renderers.js";
-import { renderDataDeletionModal, renderDataDeletionView } from "../features/data-deletion/renderers.js";
+import {
+  renderDataDeletionModal,
+  renderDataDeletionProgressOverlay,
+  renderDataDeletionView,
+} from "../features/data-deletion/renderers.js";
 import {
   renderPdfGenerationCreateModal,
   renderPdfGenerationDeleteConfirmModal,
@@ -92,6 +96,7 @@ export function createAppRenderer({ appState, dom, getEditorActions, renderModal
           access: appState.summary.access,
           school: appState.schools.detail,
         }),
+        renderDataDeletionProgressOverlay(appState.dataDeletion),
         renderModalClosePrompt(appState.ui.modalClosePrompt),
       ].join("");
     }

@@ -1,13 +1,18 @@
 import { hasAccess } from "../../app/access.js";
-import { documentToolbarIconMarkup, documentToolbarTextColorPresets } from "./document-toolbar-config.js";
 import {
+  documentToolbarIconMarkup,
+  documentToolbarShadingColorPresets,
+  documentToolbarTextColorPresets,
+} from "./document-toolbar-config.js";
+import {
+  getDocumentToolbarFontFamilyLabel,
   renderDocumentToolbarCellSplitPopover,
   renderDocumentToolbarColorPickerSection,
+  renderDocumentToolbarFontFamilyOptionButtons,
   renderDocumentToolbarFontSizeOptionButtons,
   renderDocumentToolbarIconButton,
   renderDocumentToolbarTableInsertPopover,
   renderDocumentToolbarTextButton,
-  renderFontFamilyOptions,
 } from "./document-toolbar-controls-renderer.js";
 
 export { renderDocumentToolbarIconButton } from "./document-toolbar-controls-renderer.js";
@@ -31,20 +36,25 @@ export function renderDocumentToolbar(access) {
         <div class="template-toolbar-section template-toolbar-section-compact">
           <span class="template-toolbar-section-label">글꼴</span>
           <div class="template-toolbar-group-controls">
-            <span class="template-toolbar-select-wrap">
-              <select class="template-toolbar-select template-toolbar-select-wide" id="templateEditorFontFamily" data-editor-document-command-select="fontName">
-                ${renderFontFamilyOptions("'Noto Sans KR', sans-serif")}
-              </select>
-              <span class="template-toolbar-select-caret" aria-hidden="true"></span>
-            </span>
+            <div class="template-toolbar-font-family-combo" data-editor-font-family-combo="templateEditorFontFamily">
+              <input class="template-toolbar-font-family-input" id="templateEditorFontFamily" type="hidden" value="'Noto Sans KR', sans-serif" aria-hidden="true" tabindex="-1" data-editor-document-command-select="fontName" />
+              <button class="template-toolbar-combo-value template-toolbar-font-family-value" data-action="toggle-document-font-family-menu" data-font-family-input="templateEditorFontFamily" type="button" aria-label="글꼴 목록 열기" aria-expanded="false" aria-controls="templateEditorFontFamilyMenu">
+                <span data-editor-font-family-current>${getDocumentToolbarFontFamilyLabel("'Noto Sans KR', sans-serif")}</span>
+                <span class="template-toolbar-combo-caret" aria-hidden="true"></span>
+              </button>
+              <div class="template-toolbar-combo-menu hidden" id="templateEditorFontFamilyMenu" data-editor-font-family-menu-for="templateEditorFontFamily" role="listbox" aria-label="글꼴 목록">
+                ${renderDocumentToolbarFontFamilyOptionButtons("'Noto Sans KR', sans-serif")}
+              </div>
+            </div>
           </div>
         </div>
         <div class="template-toolbar-section template-toolbar-section-compact">
           <span class="template-toolbar-section-label">크기</span>
           <div class="template-toolbar-group-controls template-toolbar-font-size-controls">
             <div class="template-toolbar-font-size-combo" data-editor-font-size-combo="templateEditorFontSize">
-              <input class="template-toolbar-number template-toolbar-font-size-input" id="templateEditorFontSize" type="text" inputmode="numeric" autocomplete="off" value="11" aria-label="글꼴 크기 직접 입력" />
-              <button class="template-toolbar-combo-toggle" data-action="toggle-document-font-size-menu" data-font-size-input="templateEditorFontSize" type="button" aria-label="글꼴 크기 목록 열기" aria-expanded="false" aria-controls="templateEditorFontSizeMenu">
+              <input class="template-toolbar-font-size-input" id="templateEditorFontSize" type="hidden" value="11" aria-hidden="true" tabindex="-1" />
+              <button class="template-toolbar-combo-value template-toolbar-font-size-value" data-action="toggle-document-font-size-menu" data-font-size-input="templateEditorFontSize" type="button" aria-label="글꼴 크기 목록 열기" aria-expanded="false" aria-controls="templateEditorFontSizeMenu">
+                <span data-editor-font-size-current>11</span>
                 <span class="template-toolbar-combo-caret" aria-hidden="true"></span>
               </button>
               <div class="template-toolbar-combo-menu hidden" id="templateEditorFontSizeMenu" data-editor-font-size-menu-for="templateEditorFontSize" role="listbox" aria-label="글꼴 크기 목록">
@@ -88,7 +98,7 @@ export function renderDocumentToolbar(access) {
           sectionLabel: "음영",
           inputId: "templateEditorTextShading",
           inputValue: "#fff59d",
-          presetColors: documentToolbarTextColorPresets,
+          presetColors: documentToolbarShadingColorPresets,
           colorCommand: "hiliteColor",
           fallbackValue: "#fff59d",
           sectionClassName: "template-toolbar-section-compact",
@@ -143,7 +153,7 @@ export function renderDocumentToolbar(access) {
         sectionLabel: "음영",
         inputId: "templateEditorCellShading",
         inputValue: "#ffffff",
-        presetColors: documentToolbarTextColorPresets,
+        presetColors: documentToolbarShadingColorPresets,
         colorTableAction: "apply-cell-shading",
         fallbackValue: "#ffffff",
       })}

@@ -15,19 +15,8 @@
   ]);
 
   const EDITOR_TOOLBAR_FONT_SIZE_OPTIONS = Object.freeze([
-    8,
-    9,
-    10,
-    11,
-    12,
-    14,
-    16,
-    18,
-    20,
-    22,
-    24,
-    26,
-    28,
+    ...Array.from({ length: 28 }, (_value, index) => index + 1),
+    30,
     32,
     36,
     40,
@@ -49,6 +38,18 @@
     Object.freeze({ label: "빨강", value: "#b91c1c" }),
     Object.freeze({ label: "보라", value: "#7c3aed" }),
     Object.freeze({ label: "흰색", value: "#ffffff" }),
+  ]);
+  const EDITOR_TOOLBAR_SHADING_COLOR_PRESETS = Object.freeze([
+    Object.freeze({ label: "노랑", value: "#fff59d" }),
+    Object.freeze({ label: "하늘", value: "#bfdbfe" }),
+    Object.freeze({ label: "민트", value: "#bbf7d0" }),
+    Object.freeze({ label: "분홍", value: "#fbcfe8" }),
+    Object.freeze({ label: "연보라", value: "#ddd6fe" }),
+    Object.freeze({ label: "살구", value: "#fed7aa" }),
+    Object.freeze({ label: "회색", value: "#e2e8f0" }),
+    Object.freeze({ label: "연청록", value: "#ccfbf1" }),
+    Object.freeze({ label: "연빨강", value: "#fecaca" }),
+    Object.freeze({ label: "색 없음", value: "transparent", noColor: true }),
   ]);
 
   const EDITOR_TOOLBAR_ICON_MARKUP = Object.freeze({
@@ -258,6 +259,7 @@
     EDITOR_TOOLBAR_FONT_OPTIONS,
     EDITOR_TOOLBAR_FONT_SIZE_OPTIONS,
     EDITOR_TOOLBAR_ICON_MARKUP,
+    EDITOR_TOOLBAR_SHADING_COLOR_PRESETS,
     EDITOR_TOOLBAR_TEXT_COLOR_PRESETS,
   });
 });

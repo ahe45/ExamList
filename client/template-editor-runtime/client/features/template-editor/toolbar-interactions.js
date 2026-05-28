@@ -24,6 +24,7 @@
     TEMPLATE_EDITOR_DEFAULT_FONT_FAMILY,
     TEMPLATE_EDITOR_DEFAULT_FONT_SIZE,
     applyTemplateEditorCommand,
+    applyTemplateEditorFontFamily,
     applyTemplateEditorFontSize,
     applyTemplateTableSize,
     escapeAttribute,
@@ -82,6 +83,8 @@
 
       const fontSizeToggleTrigger = target.closest("[data-editor-font-size-toggle]");
       const fontSizeOptionTrigger = target.closest("[data-editor-font-size-option]");
+      const fontFamilyToggleTrigger = target.closest("[data-editor-font-family-toggle]");
+      const fontFamilyOptionTrigger = target.closest("[data-editor-font-family-option]");
       const borderSelectToggleTrigger = target.closest("[data-editor-border-select-toggle]");
       const borderSelectOptionTrigger = target.closest("[data-editor-border-select-option]");
       const colorToggleTrigger = target.closest("[data-editor-color-toggle]");
@@ -99,6 +102,33 @@
       const openImageTrigger = target.closest("[data-template-open-image]");
       const imageInsertToggleTrigger = target.closest("[data-template-image-insert-toggle]");
       const schoolLogoTrigger = target.closest("[data-template-insert-school-logo]");
+
+      if (fontFamilyToggleTrigger) {
+        const inputId = fontFamilyToggleTrigger.dataset.editorFontFamilyToggle;
+        const comboElement = fontFamilyToggleTrigger.closest(".template-toolbar-font-family-combo");
+        const menuElement = comboElement?.querySelector(".template-toolbar-combo-menu");
+        toolbar.setEditorToolbarFontFamilyMenuVisibility?.(inputId, menuElement?.classList.contains("hidden") ?? true);
+        return;
+      }
+
+      if (fontFamilyOptionTrigger) {
+        const comboMenu = fontFamilyOptionTrigger.closest(".template-toolbar-combo-menu");
+        const inputId = comboMenu?.dataset.editorFontFamilyMenuFor || "";
+        const fontFamily = fontFamilyOptionTrigger.dataset.editorFontFamilyOption || "";
+        const inputElement = getElementById(inputId);
+
+        if (inputElement) {
+          inputElement.value = fontFamily;
+          toolbar.syncEditorToolbarFontFamilyControls?.(inputElement, fontFamily);
+        }
+
+        if (inputId === toolbarIds.fontFamily) {
+          applyTemplateEditorFontFamily(fontFamily);
+        }
+
+        toolbar.setEditorToolbarFontFamilyMenuVisibility?.(inputId, false);
+        return;
+      }
 
       if (fontSizeToggleTrigger) {
         const inputId = fontSizeToggleTrigger.dataset.editorFontSizeToggle;

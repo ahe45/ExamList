@@ -56,6 +56,7 @@ export function createClosedDataDeletionModalState() {
     errorMessage: "",
     filters: createEmptyDataDeletionFilters(),
     isOpen: false,
+    isDeleting: false,
     isLoadingOptions: false,
     isLoadingSummary: false,
     options: {},

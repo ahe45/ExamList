@@ -16,6 +16,12 @@ function normalizeMergedPdfFileName(fileName, fallbackName = "pdf-generations") 
   return `${normalizedFileName || "pdf-generations"}.pdf`;
 }
 
+function createUniqueStringList(values = []) {
+  return [...new Set((Array.isArray(values) ? values : [])
+    .map((value) => String(value || "").trim())
+    .filter(Boolean))];
+}
+
 function createPdfGenerationArchiveService({
   createHttpError,
   ensureStorageDirectories,
@@ -31,6 +37,7 @@ function createPdfGenerationArchiveService({
       `
         SELECT
           id,
+          school_id AS schoolId,
           file_name AS fileName,
           file_path AS filePath,
           purged_at AS purgedAt,
@@ -64,6 +71,7 @@ function createPdfGenerationArchiveService({
         fileName: generationRow.fileName,
         filePath,
         generationId,
+        schoolId: generationRow.schoolId,
       });
     }
 
@@ -112,6 +120,8 @@ function createPdfGenerationArchiveService({
       entityType: "pdf_generation_archive",
       metadata: {
         generationCount: archiveEntries.length,
+        generationIds: createUniqueStringList(generationFiles.map((generationFile) => generationFile.generationId)),
+        schoolIds: createUniqueStringList(generationFiles.map((generationFile) => generationFile.schoolId)),
       },
       status: "completed",
     });
@@ -165,6 +175,8 @@ function createPdfGenerationArchiveService({
       entityType: "pdf_generation_merged",
       metadata: {
         generationCount: generationFiles.length,
+        generationIds: createUniqueStringList(generationFiles.map((generationFile) => generationFile.generationId)),
+        schoolIds: createUniqueStringList(generationFiles.map((generationFile) => generationFile.schoolId)),
       },
       status: "completed",
     });

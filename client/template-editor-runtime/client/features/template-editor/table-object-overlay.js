@@ -103,13 +103,13 @@
         }
       }
 
-      if (!overlayContainer.contains(overlayElement)) {
+      if (overlayElement.parentElement !== overlayContainer) {
         overlayContainer.append(overlayElement);
       }
 
       ensureTemplateEditorTableObjectOverlayControls(overlayElement);
 
-      if (templateEditorTableSelectionOverlay && overlayContainer.contains(templateEditorTableSelectionOverlay)) {
+      if (templateEditorTableSelectionOverlay?.parentElement === overlayContainer) {
         overlayContainer.append(templateEditorTableSelectionOverlay);
       }
 

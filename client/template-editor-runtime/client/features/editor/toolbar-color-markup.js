@@ -12,6 +12,12 @@
     normalizeEditorToolbarColorValue,
     renderEditorToolbarAttribute,
   }) {
+    function isEditorToolbarNoColorValue(value = "") {
+      const normalizedValue = String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+
+      return normalizedValue === "transparent" || normalizedValue === "none" || normalizedValue === "rgba(0,0,0,0)";
+    }
+
     function renderEditorToolbarColorPresetButtons({
       inputId = "",
       inputValue = "#ffffff",
@@ -20,25 +26,29 @@
       colorTableAction = "",
       fallbackValue = "#ffffff",
     }) {
-      const normalizedSelectedValue = normalizeEditorToolbarColorValue(inputValue, fallbackValue);
+      const selectedNoColor = isEditorToolbarNoColorValue(inputValue);
+      const normalizedSelectedValue = selectedNoColor ? "transparent" : normalizeEditorToolbarColorValue(inputValue, fallbackValue);
 
       return presetColors
         .map((preset) => {
-          const normalizedPresetValue = normalizeEditorToolbarColorValue(preset.value, fallbackValue);
-          const isActive = normalizedPresetValue === normalizedSelectedValue;
+          const isNoColor = Boolean(preset.noColor) || isEditorToolbarNoColorValue(preset.value);
+          const normalizedPresetValue = isNoColor ? "transparent" : normalizeEditorToolbarColorValue(preset.value, fallbackValue);
+          const isActive = isNoColor ? selectedNoColor : normalizedPresetValue === normalizedSelectedValue;
+          const swatchClassName = `template-toolbar-color-swatch${isNoColor ? " is-no-color" : ""}${isActive ? " active" : ""}`;
 
           return `
             <button
-              class="template-toolbar-color-swatch${isActive ? " active" : ""}"
+              class="${swatchClassName}"
               data-editor-color-input="${escapeEditorToolbarAttribute(inputId)}"
               data-editor-color-preset="${escapeEditorToolbarAttribute(normalizedPresetValue)}"
+              ${isNoColor ? 'data-editor-color-none="true"' : ""}
               ${colorCommand ? renderEditorToolbarAttribute("data-editor-color-command", colorCommand) : ""}
               ${colorTableAction ? renderEditorToolbarAttribute("data-editor-color-table-action", colorTableAction) : ""}
               type="button"
               aria-label="${escapeEditorToolbarAttribute(preset.label)}"
               aria-pressed="${isActive ? "true" : "false"}"
               title="${escapeEditorToolbarAttribute(preset.label)}"
-              style="--editor-toolbar-swatch-color: ${escapeEditorToolbarAttribute(normalizedPresetValue)};"
+              style="--editor-toolbar-swatch-color: ${escapeEditorToolbarAttribute(isNoColor ? "#ffffff" : normalizedPresetValue)};"
             >
               <span class="sr-only">${escapeEditorToolbarHtml(preset.label)}</span>
             </button>
@@ -60,9 +70,11 @@
       triggerLabel = "선택",
     } = {}) {
       const panelId = `${inputId}Panel`;
-      const normalizedInputValue = normalizeEditorToolbarColorValue(inputValue, fallbackValue);
+      const inputNoColor = isEditorToolbarNoColorValue(inputValue);
+      const normalizedInputValue = inputNoColor ? "transparent" : normalizeEditorToolbarColorValue(inputValue, fallbackValue);
+      const colorInputValue = inputNoColor ? normalizeEditorToolbarColorValue(fallbackValue, "#ffffff") : normalizedInputValue;
       const sectionClassNames = ["template-toolbar-section", sectionClassName].filter(Boolean).join(" ");
-      const pickerClassNames = ["template-toolbar-color-picker", pickerClassName].filter(Boolean).join(" ");
+      const pickerClassNames = ["template-toolbar-color-picker", inputNoColor ? "is-no-color" : "", pickerClassName].filter(Boolean).join(" ");
 
       return `
         <div class="${escapeEditorToolbarAttribute(sectionClassNames)}">
@@ -114,7 +126,7 @@
                   ${colorCommand ? renderEditorToolbarAttribute("data-editor-color-command", colorCommand) : ""}
                   ${colorTableAction ? renderEditorToolbarAttribute("data-editor-color-table-action", colorTableAction) : ""}
                   type="color"
-                  value="${escapeEditorToolbarAttribute(normalizedInputValue)}"
+                  value="${escapeEditorToolbarAttribute(colorInputValue)}"
                   tabindex="-1"
                   aria-hidden="true"
                 />

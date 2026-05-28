@@ -17,18 +17,21 @@
     EDITOR_TOOLBAR_FONT_OPTIONS,
     EDITOR_TOOLBAR_FONT_SIZE_OPTIONS,
     EDITOR_TOOLBAR_ICON_MARKUP,
+    EDITOR_TOOLBAR_SHADING_COLOR_PRESETS,
     EDITOR_TOOLBAR_TEXT_COLOR_PRESETS,
     isEditorToolbarPresetFontSize,
     normalizeEditorToolbarColorValue,
   }) {
     const {
       escapeEditorToolbarAttribute,
+      escapeEditorToolbarHtml,
       renderEditorToolbarAttribute,
       renderEditorToolbarBorderSection,
       renderEditorToolbarCellPaddingSection,
       renderEditorToolbarCellSplitPopover,
       renderEditorToolbarColorPickerSection,
-      renderEditorToolbarFontOptions,
+      getEditorToolbarFontFamilyLabel,
+      renderEditorToolbarFontFamilyOptionButtons,
       renderEditorToolbarFontSizeOptionButtons,
       renderEditorToolbarIconButton,
       renderEditorToolbarImageInsertPopover,
@@ -118,7 +121,7 @@
         sectionLabel: "음영",
         inputId: cellShadingId,
         inputValue: cellShadingValue,
-        presetColors: EDITOR_TOOLBAR_TEXT_COLOR_PRESETS,
+        presetColors: EDITOR_TOOLBAR_SHADING_COLOR_PRESETS,
         colorTableAction: "apply-cell-shading",
         fallbackValue: "#ffffff",
         sectionClassName: useNoticeTableLayout ? "" : "template-toolbar-section-compact",
@@ -148,20 +151,25 @@
             <div class="template-toolbar-section template-toolbar-section-compact">
               <span class="template-toolbar-section-label">글꼴</span>
               <div class="template-toolbar-group-controls">
-                <span class="template-toolbar-select-wrap">
-                  <select class="template-toolbar-select template-toolbar-select-wide" id="${escapeEditorToolbarAttribute(fontFamilyId)}"${renderEditorToolbarAttribute(commandSelectAttr, "fontName")}>
-                    ${renderEditorToolbarFontOptions(fontFamilyValue)}
-                  </select>
-                  <span class="template-toolbar-select-caret" aria-hidden="true"></span>
-                </span>
+                <div class="template-toolbar-font-family-combo" data-editor-font-family-combo="${escapeEditorToolbarAttribute(fontFamilyId)}">
+                  <input class="template-toolbar-font-family-input" id="${escapeEditorToolbarAttribute(fontFamilyId)}" type="hidden" value="${escapeEditorToolbarAttribute(fontFamilyValue)}" aria-hidden="true" tabindex="-1"${renderEditorToolbarAttribute(commandSelectAttr, "fontName")} />
+                  <button class="template-toolbar-combo-value template-toolbar-font-family-value" data-editor-font-family-toggle="${escapeEditorToolbarAttribute(fontFamilyId)}" type="button" aria-label="글꼴 목록 열기" aria-expanded="false" aria-controls="${escapeEditorToolbarAttribute(fontFamilyId)}Menu">
+                    <span data-editor-font-family-current>${escapeEditorToolbarHtml(getEditorToolbarFontFamilyLabel(fontFamilyValue))}</span>
+                    <span class="template-toolbar-combo-caret" aria-hidden="true"></span>
+                  </button>
+                  <div class="template-toolbar-combo-menu hidden" id="${escapeEditorToolbarAttribute(fontFamilyId)}Menu" data-editor-font-family-menu-for="${escapeEditorToolbarAttribute(fontFamilyId)}" role="listbox" aria-label="글꼴 목록">
+                    ${renderEditorToolbarFontFamilyOptionButtons(fontFamilyValue)}
+                  </div>
+                </div>
               </div>
             </div>
             <div class="template-toolbar-section template-toolbar-section-compact">
               <span class="template-toolbar-section-label">크기</span>
               <div class="template-toolbar-group-controls template-toolbar-font-size-controls">
                 <div class="template-toolbar-font-size-combo" data-editor-font-size-combo="${escapeEditorToolbarAttribute(fontSizeId)}">
-                  <input class="template-toolbar-number template-toolbar-font-size-input" id="${escapeEditorToolbarAttribute(fontSizeId)}" type="text" inputmode="numeric" autocomplete="off" value="${escapeEditorToolbarAttribute(String(fontSizeValue))}" aria-label="글꼴 크기 직접 입력" />
-                  <button class="template-toolbar-combo-toggle" data-editor-font-size-toggle="${escapeEditorToolbarAttribute(fontSizeId)}" type="button" aria-label="글꼴 크기 목록 열기" aria-expanded="false" aria-controls="${escapeEditorToolbarAttribute(resolvedFontSizeMenuId)}">
+                  <input class="template-toolbar-font-size-input" id="${escapeEditorToolbarAttribute(fontSizeId)}" type="hidden" value="${escapeEditorToolbarAttribute(String(fontSizeValue))}" aria-hidden="true" tabindex="-1" />
+                  <button class="template-toolbar-combo-value template-toolbar-font-size-value" data-editor-font-size-toggle="${escapeEditorToolbarAttribute(fontSizeId)}" type="button" aria-label="글꼴 크기 목록 열기" aria-expanded="false" aria-controls="${escapeEditorToolbarAttribute(resolvedFontSizeMenuId)}">
+                    <span data-editor-font-size-current>${escapeEditorToolbarHtml(String(fontSizeValue))}</span>
                     <span class="template-toolbar-combo-caret" aria-hidden="true"></span>
                   </button>
                   <div class="template-toolbar-combo-menu hidden" id="${escapeEditorToolbarAttribute(resolvedFontSizeMenuId)}" data-editor-font-size-menu-for="${escapeEditorToolbarAttribute(fontSizeId)}" role="listbox" aria-label="글꼴 크기 목록">
@@ -192,7 +200,7 @@
           </div>
           <div class="template-toolbar-section-row template-toolbar-section-row-stack">
             ${renderEditorToolbarColorPickerSection({ sectionLabel: "글자색", inputId: textColorId, inputValue: textColorValue, presetColors: EDITOR_TOOLBAR_TEXT_COLOR_PRESETS, colorCommand: "foreColor", fallbackValue: EDITOR_TOOLBAR_DEFAULT_TEXT_COLOR, sectionClassName: "template-toolbar-section-compact", pickerClassName: "template-toolbar-color-picker-compact" })}
-            ${renderEditorToolbarColorPickerSection({ sectionLabel: "음영", inputId: textShadingId, inputValue: textShadingValue, presetColors: EDITOR_TOOLBAR_TEXT_COLOR_PRESETS, colorCommand: "hiliteColor", fallbackValue: "#fff59d", sectionClassName: "template-toolbar-section-compact", pickerClassName: "template-toolbar-color-picker-compact" })}
+            ${renderEditorToolbarColorPickerSection({ sectionLabel: "음영", inputId: textShadingId, inputValue: textShadingValue, presetColors: EDITOR_TOOLBAR_SHADING_COLOR_PRESETS, colorCommand: "hiliteColor", fallbackValue: "#fff59d", sectionClassName: "template-toolbar-section-compact", pickerClassName: "template-toolbar-color-picker-compact" })}
           </div>
         </div>
         <div class="template-toolbar-group">

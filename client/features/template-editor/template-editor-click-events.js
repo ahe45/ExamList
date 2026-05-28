@@ -23,6 +23,7 @@ export function bindTemplateEditorClickEvents({
   appState,
   applyDocumentColor,
   applyDocumentCommand,
+  applyDocumentFontFamily,
   applyDocumentFontSize,
   closeDataTagSampleModal,
   closeGenerationUnitSettingsModal,
@@ -46,6 +47,7 @@ export function bindTemplateEditorClickEvents({
   saveDataTagSampleModal,
   setDocumentColorPanelVisibility,
   setDocumentColorValue,
+  setDocumentFontFamilyMenuVisibility,
   setDocumentFontSizeMenuVisibility,
   setDocumentPopoverVisibility,
   setSelectedPage,
@@ -133,6 +135,23 @@ export function bindTemplateEditorClickEvents({
 
     if (actionName === "apply-document-command") {
       applyDocumentCommand(actionTarget.dataset.command || "", actionTarget.dataset.commandValue || "");
+      return;
+    }
+
+    if (actionName === "toggle-document-font-family-menu") {
+      const inputId = actionTarget.dataset.fontFamilyInput || "";
+      const comboElement = actionTarget.closest(".template-toolbar-font-family-combo");
+      const nextOpen = comboElement?.querySelector(".template-toolbar-combo-menu")?.classList.contains("hidden") ?? true;
+
+      setDocumentFontFamilyMenuVisibility(inputId, nextOpen);
+      return;
+    }
+
+    if (actionName === "set-document-font-family-option") {
+      const fontFamilyValue = actionTarget.dataset.fontFamilyOption || "";
+
+      applyDocumentFontFamily(fontFamilyValue);
+      setDocumentFontFamilyMenuVisibility("templateEditorFontFamily", false);
       return;
     }
 

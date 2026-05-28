@@ -23,6 +23,7 @@
     EDITOR_TOOLBAR_FONT_OPTIONS,
     normalizeEditorToolbarColorValue,
     syncEditorToolbarColorControls,
+    syncEditorToolbarFontFamilyControls,
     syncEditorToolbarFontSizeControls,
   }) {
     function isEditorToolbarTransparentColor(rawValue) {
@@ -125,6 +126,12 @@
         const tagName = String(currentElement.tagName || "").toUpperCase();
 
         if (!["TD", "TH", "TR", "TABLE", "TBODY", "THEAD", "TFOOT", "COLGROUP", "COL"].includes(tagName)) {
+          const inlineBackgroundColor = String(currentElement.style.backgroundColor || "").trim().toLowerCase().replace(/\s+/g, "");
+
+          if (inlineBackgroundColor === "transparent" || inlineBackgroundColor === "rgba(0,0,0,0)") {
+            return "transparent";
+          }
+
           const rawBackgroundColor = currentElement.style.backgroundColor || window.getComputedStyle(currentElement).backgroundColor;
 
           if (!isEditorToolbarTransparentColor(rawBackgroundColor)) {
@@ -211,7 +218,11 @@
       const resolvedToolbarElement = toolbarElement || fontFamilyElement?.closest(".editor-toolbar") || fontSizeElement?.closest(".editor-toolbar");
 
       if (fontFamilyElement) {
-        fontFamilyElement.value = resolvedFontFamily;
+        if (typeof syncEditorToolbarFontFamilyControls === "function") {
+          syncEditorToolbarFontFamilyControls(fontFamilyElement, resolvedFontFamily);
+        } else {
+          fontFamilyElement.value = resolvedFontFamily;
+        }
       }
 
       if (fontSizeElement) {

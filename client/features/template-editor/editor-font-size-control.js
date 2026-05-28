@@ -1,7 +1,4 @@
 import {
-  fontSizeMaximum,
-  fontSizeMinimum,
-  fontSizeStep,
   normalizeFontSizeValue,
 } from "./editor-text-control-config.js";
 import {
@@ -10,7 +7,6 @@ import {
   getSelectedTableCells,
   getSelectionRangeInsideSurface,
   rememberEditorTextControlSelection,
-  restoreEditorTextControlSelection,
 } from "./editor-text-selection.js";
 import { positionFontSizeSection } from "./editor-text-toolbar-layout.js";
 
@@ -76,88 +72,36 @@ export function bindFontSizeStepper({ editor, surfaceElement, toolbarHost }) {
 
   fontSizeCombo.querySelector(".examlist-font-size-stepper-controls")?.remove();
   fontSizeCombo.classList.add("examlist-font-size-combo");
-  fontSizeInput.type = "number";
-  fontSizeInput.min = String(fontSizeMinimum);
-  fontSizeInput.max = String(fontSizeMaximum);
-  fontSizeInput.step = String(fontSizeStep);
-  fontSizeInput.classList.remove("template-toolbar-number-stepper-input");
 
-  let isSyncingFontSizeInput = false;
-  let lastPointerValue = "";
-
-  const syncFontSizeInputMenu = () => {
-    isSyncingFontSizeInput = true;
-    fontSizeInput.dispatchEvent(new Event("input", { bubbles: true }));
-    isSyncingFontSizeInput = false;
-  };
-  const applyFontSizeFromInput = (rawFontSizeValue = fontSizeInput.value) => {
-    restoreEditorTextControlSelection(surfaceElement);
+  const syncFontSizeControlValue = (rawFontSizeValue = fontSizeInput.value) => {
     const fontSizeValue = normalizeFontSizeValue(rawFontSizeValue, getCurrentFontSizeValue(surfaceElement, fontSizeInput));
-    const syncAppliedFontSizeValue = () => {
-      fontSizeInput.value = fontSizeValue;
-      fontSizeInput.dataset.templateEditorCurrentFontSize = `${fontSizeValue}pt`;
-      syncFontSizeInputMenu();
-    };
+    const valueElement = fontSizeCombo.querySelector("[data-editor-font-size-current]");
 
-    syncAppliedFontSizeValue();
-    editor.applyCommand?.("fontSizePx", fontSizeValue);
-    syncAppliedFontSizeValue();
-    window.requestAnimationFrame(syncAppliedFontSizeValue);
-    rememberEditorTextControlSelection(surfaceElement);
-  };
-  const isFontSizeStepperInputEvent = (event) => {
-    const inputType = String(event?.inputType || "").trim();
+    fontSizeInput.value = fontSizeValue;
+    fontSizeInput.dataset.templateEditorCurrentFontSize = `${fontSizeValue}pt`;
 
-    return !inputType;
+    if (valueElement) {
+      valueElement.textContent = fontSizeValue;
+    }
+
+    fontSizeCombo.querySelectorAll("[data-editor-font-size-option], [data-font-size-option]").forEach((optionElement) => {
+      const optionValue = optionElement.dataset.editorFontSizeOption || optionElement.dataset.fontSizeOption || "";
+      const isActive = optionValue === fontSizeValue;
+
+      optionElement.classList.toggle("active", isActive);
+      optionElement.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
   };
   const handlePointerDown = () => {
     rememberEditorTextControlSelection(surfaceElement);
-    fontSizeInput.value = getCurrentFontSizeValue(surfaceElement, fontSizeInput);
-    lastPointerValue = fontSizeInput.value;
-  };
-  const handlePointerUp = () => {
-    const nextFontSizeValue = fontSizeInput.value;
-
-    window.requestAnimationFrame(() => {
-      if (nextFontSizeValue !== lastPointerValue) {
-        applyFontSizeFromInput(nextFontSizeValue);
-      }
-    });
-  };
-  const handleInput = (event) => {
-    if (isSyncingFontSizeInput || !isFontSizeStepperInputEvent(event)) {
-      return;
-    }
-
-    const nextFontSizeValue = fontSizeInput.value;
-
-    window.requestAnimationFrame(() => applyFontSizeFromInput(nextFontSizeValue));
-  };
-  const handleKeyUp = (event) => {
-    if (!["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(event.key)) {
-      return;
-    }
-
-    const nextFontSizeValue = fontSizeInput.value;
-
-    window.requestAnimationFrame(() => applyFontSizeFromInput(nextFontSizeValue));
-  };
-  const handleChange = () => {
-    applyFontSizeFromInput();
+    syncFontSizeControlValue(getCurrentFontSizeValue(surfaceElement, fontSizeInput));
   };
 
-  fontSizeInput.addEventListener("pointerdown", handlePointerDown, true);
-  fontSizeInput.addEventListener("pointerup", handlePointerUp, true);
-  fontSizeInput.addEventListener("input", handleInput);
-  fontSizeInput.addEventListener("keyup", handleKeyUp);
-  fontSizeInput.addEventListener("change", handleChange);
+  fontSizeCombo.addEventListener("pointerdown", handlePointerDown, true);
+  syncFontSizeControlValue(fontSizeInput.value);
 
   return () => {
-    fontSizeInput.removeEventListener("pointerdown", handlePointerDown, true);
-    fontSizeInput.removeEventListener("pointerup", handlePointerUp, true);
-    fontSizeInput.removeEventListener("input", handleInput);
-    fontSizeInput.removeEventListener("keyup", handleKeyUp);
-    fontSizeInput.removeEventListener("change", handleChange);
+    fontSizeCombo.removeEventListener("pointerdown", handlePointerDown, true);
     fontSizeCombo.classList.remove("examlist-font-size-combo");
   };
 }
