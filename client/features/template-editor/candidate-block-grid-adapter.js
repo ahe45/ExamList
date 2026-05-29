@@ -34,6 +34,7 @@ import {
   isCandidateBlockFocusEditorOpen,
   openCandidateBlockFocusEditor,
 } from "./candidate-block-grid-focus-editor.js";
+import { isCandidateBlockGridKeyboardDeleteTarget } from "./candidate-block-grid-keyboard-target.js";
 import {
   clearCandidateBlockGridSelection,
   getSelectedCandidateBlockGridElement,
@@ -134,51 +135,6 @@ function getCandidateBlockGridSettingControl(event) {
   const target = event?.target instanceof Element ? event.target : null;
 
   return target?.closest?.("[data-examlist-block-grid-setting]") || null;
-}
-
-function isCandidateBlockGridKeyboardDeleteTarget(event, surfaceElement, gridElement) {
-  if (!(gridElement instanceof HTMLElement) || !surfaceElement?.contains?.(gridElement)) {
-    return false;
-  }
-
-  if (!gridElement.classList.contains("is-selected-candidate-block-grid")) {
-    return false;
-  }
-
-  const target = event?.target instanceof Element ? event.target : null;
-  const activeElement = gridElement.ownerDocument?.activeElement || null;
-  const targetGridElement = target?.closest?.("[data-candidate-block-grid]") || null;
-  const activeGridElement = activeElement?.closest?.("[data-candidate-block-grid]") || null;
-  const targetSurfaceElement = target?.closest?.("[data-editor-document-surface]") || null;
-  const activeSurfaceElement = activeElement?.closest?.("[data-editor-document-surface]") || null;
-  const isEditingControl = (element) => {
-    if (element instanceof Element && !element.isConnected) {
-      return false;
-    }
-
-    const control = element?.closest?.("input, textarea, select, button, [contenteditable='true']") || null;
-
-    return Boolean(
-      control &&
-        control !== gridElement &&
-        !gridElement.contains(control) &&
-        control.closest?.("[data-editor-document-surface]") !== surfaceElement
-    );
-  };
-
-  if (isEditingControl(target) || isEditingControl(activeElement)) {
-    return false;
-  }
-
-  return (
-    targetGridElement === gridElement ||
-    activeGridElement === gridElement ||
-    targetSurfaceElement === surfaceElement ||
-    activeSurfaceElement === surfaceElement ||
-    target === gridElement.ownerDocument?.body ||
-    activeElement === gridElement.ownerDocument?.body ||
-    activeElement === gridElement.ownerDocument?.documentElement
-  );
 }
 
 function isIgnorableCandidateBlockBoundaryNode(node) {
