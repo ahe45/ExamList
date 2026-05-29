@@ -17,6 +17,31 @@ const defaultTemplateSource = Object.freeze({
   templateName: "기본 템플릿",
 });
 
+function extractQueryRows(queryResult) {
+  if (Array.isArray(queryResult?.[0])) {
+    return queryResult[0];
+  }
+
+  return Array.isArray(queryResult) ? queryResult : [];
+}
+
+async function resolveNextTemplateVersionNo(connection, templateId, latestVersionNo = 0) {
+  const rows = extractQueryRows(
+    await connection.query(
+      `
+        SELECT COALESCE(MAX(version_no), 0) AS maxVersionNo
+        FROM pdf_template_versions
+        WHERE template_id = ?
+      `,
+      [templateId],
+    ),
+  );
+  const currentLatestVersionNo = Number(latestVersionNo) || 0;
+  const maxVersionNo = Number(rows[0]?.maxVersionNo) || 0;
+
+  return Math.max(currentLatestVersionNo, maxVersionNo) + 1;
+}
+
 function createPdfTemplateService({ createHttpError, getDefaultSchoolId = null, getPool, query, renderListThumbnail = null }) {
   async function resolveSchoolId(schoolId = "") {
     const normalizedSchoolId = String(schoolId || "").trim();
@@ -166,7 +191,6 @@ function createPdfTemplateService({ createHttpError, getDefaultSchoolId = null, 
     });
     const schoolId = String(existingTemplate.schoolId || (await resolveSchoolId(payload.schoolId))).trim();
     const metadata = normalizeTemplateMetadata(payload, existingTemplate);
-    const nextVersionNo = (existingTemplate.latestVersionNo || 1) + 1;
     const snapshot = payload.layout
       ? normalizeTemplateLayout(payload.layout, metadata, templateId)
       : applyMetadataToSnapshot(
@@ -178,6 +202,8 @@ function createPdfTemplateService({ createHttpError, getDefaultSchoolId = null, 
 
     try {
       await connection.beginTransaction();
+
+      const nextVersionNo = await resolveNextTemplateVersionNo(connection, templateId, existingTemplate.latestVersionNo);
 
       await connection.query(
         `

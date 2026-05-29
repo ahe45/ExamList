@@ -8,6 +8,10 @@ const roomTagDefinitions = Object.freeze([
   Object.freeze({ key: "room.otherRoom", label: "타고사실", type: "string", example: "" }),
 ]);
 
+const otherTagDefinitions = Object.freeze([
+  Object.freeze({ key: "row.indexInPage", label: "순번", type: "number", example: "1" }),
+]);
+
 const candidateTagOrder = Object.freeze([
   "candidate.admissionYear",
   "candidate.admissionRoundName",
@@ -116,6 +120,10 @@ function buildRoomTags() {
   return roomTagDefinitions.map(freezeTag).filter(isVisibleDataTag);
 }
 
+function buildOtherTags() {
+  return otherTagDefinitions.map(freezeTag).filter(isVisibleDataTag);
+}
+
 function freezeTag(tag) {
   return Object.freeze({
     example: String(tag.example || ""),
@@ -210,6 +218,11 @@ function createPdfDataTagService({ getCandidateFieldMap, getSchoolSettings } = {
           label: "고사장 정보",
           tags: Object.freeze(buildRoomTags()),
         }),
+        Object.freeze({
+          key: "etc",
+          label: "기타",
+          tags: Object.freeze(buildOtherTags()),
+        }),
       ]),
     });
   }
@@ -221,6 +234,7 @@ function createPdfDataTagService({ getCandidateFieldMap, getSchoolSettings } = {
 
 module.exports = {
   buildCandidateTags,
+  buildOtherTags,
   buildRoomTags,
   buildSchoolTags,
   createPdfDataTagService,

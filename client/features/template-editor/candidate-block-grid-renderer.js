@@ -19,13 +19,32 @@ import {
 import { ensureCandidateBlockGridObjectControls } from "./candidate-block-grid-object-controls.js";
 import { applyCandidateBlockTemplateRoles } from "./candidate-block-grid-block-roles.js";
 
+function getColumnMajorGridPosition(slotIndex = 0, config = {}) {
+  const rowCount = Math.max(1, Math.round(Number(config.rows)) || 1);
+  const columnIndex = Math.floor(Math.max(0, slotIndex) / rowCount);
+  const rowIndex = Math.max(0, slotIndex) % rowCount;
+
+  return {
+    column: columnIndex + 1,
+    row: rowIndex + 1,
+  };
+}
+
+function getCandidateBlockGridClassName(config = {}) {
+  return [
+    "examlist-candidate-block-grid",
+    Number(config.gapXPt) === 0 ? "is-candidate-block-zero-gap-x" : "",
+    Number(config.gapYPt) === 0 ? "is-candidate-block-zero-gap-y" : "",
+  ].filter(Boolean).join(" ");
+}
+
 export function createCandidateBlockGridElement(config) {
   const normalizedConfig = normalizeCandidateBlockGridConfig(config);
   const blockTemplateHtml = normalizeCandidateBlockTemplateHtml(normalizedConfig.blockTemplateHtml);
   const gridElement = document.createElement("div");
   const totalBlocks = getCandidateBlockGridTotal(normalizedConfig);
 
-  gridElement.className = "examlist-candidate-block-grid";
+  gridElement.className = getCandidateBlockGridClassName(normalizedConfig);
   gridElement.dataset.candidateBlockGrid = "true";
   gridElement.dataset.candidateBlockColumns = String(normalizedConfig.columns);
   gridElement.dataset.candidateBlockRows = String(normalizedConfig.rows);
@@ -58,8 +77,11 @@ export function createCandidateBlockGridElement(config) {
 
   for (let index = 0; index < totalBlocks; index += 1) {
     const blockElement = document.createElement("div");
+    const gridPosition = getColumnMajorGridPosition(index, normalizedConfig);
 
     blockElement.className = "examlist-candidate-block";
+    blockElement.dataset.candidateBlockGridColumn = String(gridPosition.column);
+    blockElement.dataset.candidateBlockGridRow = String(gridPosition.row);
     blockElement.dataset.candidateBlockInstance = String(index + 1);
     blockElement.innerHTML = blockTemplateHtml;
     normalizeCandidateBlockTables(blockElement);

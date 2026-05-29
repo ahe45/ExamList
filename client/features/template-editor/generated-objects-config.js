@@ -56,6 +56,7 @@ export const generatedObjectPreviewValues = Object.freeze({
   "candidate.temporaryNo": "A001",
   "room.assignedCount": "24",
   "room.otherRoom": "",
+  "row.indexInPage": "1",
   "school.academicYear": "2026학년도",
   "school.code": "SEOUL01",
   "school.name": "한국대학교",

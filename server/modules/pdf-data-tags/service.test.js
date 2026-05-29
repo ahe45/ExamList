@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { buildCandidateTags, createPdfDataTagService } = require("./service");
+const { buildCandidateTags, buildOtherTags, createPdfDataTagService } = require("./service");
 
 test("getCatalog builds tags from school settings and candidate columns", async () => {
   const service = createPdfDataTagService({
@@ -31,8 +31,9 @@ test("getCatalog builds tags from school settings and candidate columns", async 
   const schoolTags = catalog.groups.find((group) => group.key === "school").tags;
   const candidateTags = catalog.groups.find((group) => group.key === "candidate").tags;
   const roomTags = catalog.groups.find((group) => group.key === "room").tags;
+  const otherTags = catalog.groups.find((group) => group.key === "etc").tags;
 
-  assert.deepEqual(groups, ["school", "candidate", "room"]);
+  assert.deepEqual(groups, ["school", "candidate", "room", "etc"]);
   assert.deepEqual(
     schoolTags.map((tag) => tag.key),
     ["school.name", "school.code"],
@@ -70,6 +71,7 @@ test("getCatalog builds tags from school settings and candidate columns", async 
       ["room.otherRoom", "타고사실", "string", ""],
     ],
   );
+  assert.deepEqual(otherTags.map((tag) => [tag.key, tag.label, tag.type, tag.example]), [["row.indexInPage", "순번", "number", "1"]]);
 });
 
 test("buildCandidateTags appends unknown candidate adapter mappings", () => {
@@ -83,4 +85,8 @@ test("buildCandidateTags appends unknown candidate adapter mappings", () => {
     ["candidate.examNo", "candidate.customColumn"],
   );
   assert.equal(tags.find((tag) => tag.key === "candidate.customColumn").label, "custom Column");
+});
+
+test("buildOtherTags exposes the candidate block sequence tag", () => {
+  assert.deepEqual(buildOtherTags().map((tag) => tag.key), ["row.indexInPage"]);
 });

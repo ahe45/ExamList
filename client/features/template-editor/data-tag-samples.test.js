@@ -71,6 +71,8 @@ test("data tag settings modal renders collapsed accordion groups with sample and
   assert.match(html, /class="template-tag-group-count"/);
   assert.match(html, /class="template-tag-button template-tag-accordion-button data-tag-sample-tag"/);
   assert.match(html, /data-data-tag-empty-value-key="school\.name"[\s\S]*value="학교명"/);
+  assert.match(html, /data-data-tag-sample-key="row\.indexInPage"[\s\S]*value="1"/);
+  assert.match(html, /순번/);
   assert.match(
     html,
     /data-tag-sample-tag"[\s\S]*data-data-tag-sample-key="[\s\S]*data-data-tag-empty-value-key="/,

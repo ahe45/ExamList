@@ -276,6 +276,14 @@ function getColumnMajorGridPosition(slotIndex = 0, config = {}) {
   };
 }
 
+function getCandidateBlockGridClassName(config = {}) {
+  return [
+    "preview-candidate-block-grid",
+    Number(config.gapXPt) === 0 ? "is-candidate-block-zero-gap-x" : "",
+    Number(config.gapYPt) === 0 ? "is-candidate-block-zero-gap-y" : "",
+  ].filter(Boolean).join(" ");
+}
+
 function createColumnMajorCandidateBlockEntries(actualRows = [], config = {}) {
   const rowCount = Math.max(1, Math.round(Number(config.rows)) || 1);
   const columnCount = Math.max(1, Math.round(Number(config.columns)) || 1);
@@ -352,7 +360,7 @@ function createCandidateBlockGridRenderer({
 
     return `
       <div
-        class="preview-candidate-block-grid"
+        class="${getCandidateBlockGridClassName(config)}"
         data-candidate-block-grid="true"
         style="grid-auto-flow:column;grid-template-columns:repeat(${config.columns}, minmax(0, 1fr));grid-template-rows:repeat(${config.rows}, minmax(0, 1fr));gap:${formatPtValue(config.gapYPt)}pt ${formatPtValue(config.gapXPt)}pt;${config.xPt > 0 || config.yPt > 0 ? `position:absolute;left:${formatPtValue(config.xPt)}pt;top:${formatPtValue(config.yPt)}pt;` : ""}${config.widthPt > 0 ? `width:${formatPtValue(config.widthPt)}pt;` : ""}${config.heightPt > 0 ? `height:${formatPtValue(config.heightPt)}pt;` : ""}"
       >
@@ -378,7 +386,7 @@ function createCandidateBlockGridRenderer({
             };
 
             return `
-              <div class="preview-candidate-block" data-candidate-block-index="${slotIndex + 1}" style="grid-row:${gridPosition.row};grid-column:${gridPosition.column};">
+              <div class="preview-candidate-block" data-candidate-block-grid-row="${gridPosition.row}" data-candidate-block-grid-column="${gridPosition.column}" data-candidate-block-index="${slotIndex + 1}" style="grid-row:${gridPosition.row};grid-column:${gridPosition.column};">
                 ${renderCandidateBlockTemplateHtml(config.blockTemplateHtml, rowContext, blockSize)}
               </div>
             `;

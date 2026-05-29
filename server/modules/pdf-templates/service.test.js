@@ -100,6 +100,10 @@ function createServiceHarness(options = {}) {
     async query(sql, params = []) {
       connectionQueries.push({ sql, params });
 
+      if (normalizeSql(sql).startsWith("SELECT COALESCE(MAX(version_no), 0) AS maxVersionNo")) {
+        return [[{ maxVersionNo: Number(options.maxVersionNo) || 0 }]];
+      }
+
       if (normalizeSql(sql).startsWith("INSERT INTO pdf_templates")) {
         insertedTemplate = {
           id: params[0],
@@ -542,6 +546,35 @@ test("updateTemplate updates metadata without writing activation state", async (
 
   assert.equal(updatedTemplate.id, "template-existing");
   assert.equal(connectionQueries.some((entry) => normalizeSql(entry.sql).includes("is_active =")), false);
+});
+
+test("updateTemplate uses the stored maximum version number when latest version is stale", async () => {
+  const { connectionQueries, service } = createServiceHarness({
+    latestVersionNo: 1,
+    maxVersionNo: 4,
+    name: "기본 템플릿",
+    schoolId: "school-default",
+    templateId: "template-default",
+  });
+
+  await service.updateTemplate("template-default", {
+    description: "버전 보정 테스트",
+    generationUnit: "room",
+    name: "기본 템플릿",
+    orientation: "portrait",
+    paperPreset: "A4",
+    schoolId: "school-default",
+  });
+
+  const maxVersionQuery = connectionQueries.find((entry) =>
+    normalizeSql(entry.sql).startsWith("SELECT COALESCE(MAX(version_no), 0) AS maxVersionNo"),
+  );
+  const updateQuery = connectionQueries.find((entry) => normalizeSql(entry.sql).startsWith("UPDATE pdf_templates SET"));
+  const versionInsertQuery = connectionQueries.find((entry) => normalizeSql(entry.sql).startsWith("INSERT INTO pdf_template_versions"));
+
+  assert.deepEqual(maxVersionQuery.params, ["template-default"]);
+  assert.equal(updateQuery.params[5], 5);
+  assert.equal(versionInsertQuery.params[2], 5);
 });
 
 test("listTemplates keeps card order stable by creation order", async () => {

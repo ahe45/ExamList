@@ -179,6 +179,19 @@ test("renderPreviewDocument preserves zero candidate block grid gaps", () => {
   assert.match(result.html, /grid-template-columns:repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(result.html, /grid-template-rows:repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(result.html, /gap:0pt 0pt/);
+  assert.match(result.html, /class="preview-candidate-block-grid is-candidate-block-zero-gap-x is-candidate-block-zero-gap-y"/);
+  assert.match(
+    result.html,
+    /data-candidate-block-grid-row="1" data-candidate-block-grid-column="2" data-candidate-block-index="3" style="grid-row:1;grid-column:2;"/,
+  );
+  assert.match(result.html, /clip-path: inset\(-1pt\);/);
+  assert.match(result.html, /overflow: visible;/);
+  assert.match(result.html, /width: 100% !important;/);
+  assert.match(result.html, /height: 100% !important;/);
+  assert.match(result.html, /\.preview-candidate-block-grid\.is-candidate-block-zero-gap-x \.preview-candidate-block:not\(\[data-candidate-block-grid-column="1"\]\) table/);
+  assert.match(result.html, /\.preview-candidate-block-grid\.is-candidate-block-zero-gap-y \.preview-candidate-block:not\(\[data-candidate-block-grid-row="1"\]\) table/);
+  assert.match(result.html, /border-left-width: 0 !important;/);
+  assert.match(result.html, /border-top-width: 0 !important;/);
 });
 
 test("renderPreviewDocument fits candidate photo token to candidate block table cell", () => {
