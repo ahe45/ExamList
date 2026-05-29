@@ -1,22 +1,63 @@
 import {
+  handleGridFilterSearchCompositionEnd,
+  handleGridFilterSearchInput,
+  markGridFilterSearchCompositionStart,
+} from "../../app/grid-filter-search-events.js";
+import {
   resolvePdfGenerationFilterMenuPosition,
-  restorePdfGenerationSearchFocus,
 } from "./pdf-generation-event-utils.js";
+import {
+  renderPdfAuditFilterOptions,
+  renderPdfAuditFilterSelectAll,
+} from "./pdf-generation-audit-log-renderer.js";
 
-export async function handlePdfAuditLogInput(event, context) {
-  const { getPdfAuditLogTableState, onStateChange } = context;
+const pdfAuditFilterSearchInputSelector = "[data-pdf-audit-filter-search-input]";
 
-  if (!event.target.matches("[data-pdf-audit-filter-search-input]")) {
+function refreshPdfAuditFilterMenuOptions(context) {
+  if (typeof document === "undefined") {
     return false;
   }
 
-  const selectionStart = Number.isFinite(event.target.selectionStart) ? event.target.selectionStart : String(event.target.value || "").length;
-  const selectionEnd = Number.isFinite(event.target.selectionEnd) ? event.target.selectionEnd : selectionStart;
+  const tableState = context.getPdfAuditLogTableState();
+  const columnKey = String(tableState.filterMenuKey || "");
+  const menuElement = document.querySelector(".pdf-audit-filter-menu");
+  const selectAllElement = menuElement?.querySelector?.(".table-filter-select-all") || null;
+  const optionListElement = menuElement?.querySelector?.(".table-filter-option-list") || null;
 
-  getPdfAuditLogTableState().filterMenuSearch = event.target.value;
-  await onStateChange();
-  restorePdfGenerationSearchFocus("[data-pdf-audit-filter-search-input]", selectionStart, selectionEnd);
+  if (!columnKey || !selectAllElement || !optionListElement || typeof context.getVisiblePdfAuditLogFilterOptions !== "function") {
+    return false;
+  }
+
+  const visibleOptionValues = context.getVisiblePdfAuditLogFilterOptions(columnKey);
+  const selectedValues = new Set((tableState.filters?.[columnKey] || []).map((value) => String(value || "")));
+  const isAllVisibleSelected =
+    visibleOptionValues.length > 0 && visibleOptionValues.every((value) => selectedValues.has(String(value || "")));
+
+  selectAllElement.innerHTML = renderPdfAuditFilterSelectAll(columnKey, isAllVisibleSelected);
+  optionListElement.innerHTML = renderPdfAuditFilterOptions(columnKey, visibleOptionValues, selectedValues);
   return true;
+}
+
+export async function handlePdfAuditLogInput(event, context) {
+  return handleGridFilterSearchInput(event, {
+    getTableState: context.getPdfAuditLogTableState,
+    onStateChange: context.onStateChange,
+    refreshFilterMenu: () => refreshPdfAuditFilterMenuOptions(context),
+    selector: pdfAuditFilterSearchInputSelector,
+  });
+}
+
+export function handlePdfAuditLogCompositionStart(event) {
+  return markGridFilterSearchCompositionStart(event, pdfAuditFilterSearchInputSelector);
+}
+
+export async function handlePdfAuditLogCompositionEnd(event, context) {
+  return handleGridFilterSearchCompositionEnd(event, {
+    getTableState: context.getPdfAuditLogTableState,
+    onStateChange: context.onStateChange,
+    refreshFilterMenu: () => refreshPdfAuditFilterMenuOptions(context),
+    selector: pdfAuditFilterSearchInputSelector,
+  });
 }
 
 export async function handlePdfAuditLogKeyDown(event, context) {

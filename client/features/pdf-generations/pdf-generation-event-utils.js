@@ -42,20 +42,3 @@ export function clearWindowTextSelection() {
 
   window.getSelection()?.removeAllRanges();
 }
-
-export function restorePdfGenerationSearchFocus(selector, selectionStart = 0, selectionEnd = selectionStart) {
-  if (typeof window === "undefined" || typeof document === "undefined") {
-    return;
-  }
-
-  window.requestAnimationFrame(() => {
-    const inputElement = document.querySelector(selector);
-
-    if (!(inputElement instanceof HTMLInputElement)) {
-      return;
-    }
-
-    inputElement.focus({ preventScroll: true });
-    inputElement.setSelectionRange(selectionStart, selectionEnd);
-  });
-}

@@ -4,6 +4,8 @@ const defaultSeed = require("../db/default-seed.json");
 const { cloneSnapshotWithFreshIds } = require("../server/modules/pdf-templates/defaults");
 const { insertVersionRow, replaceSnapshotRows } = require("../server/modules/pdf-templates/snapshot-store");
 
+const DEFAULT_SCHOOL_CREATED_ACCOUNT = "default";
+
 async function queryRows(connection, sql, params = []) {
   const [rows] = await connection.query(sql, params);
 
@@ -57,7 +59,7 @@ async function ensureInitialDefaultSchool(connection) {
           name = ?,
           description = ?,
           deletion_password_hash = ?,
-          is_active = 1,
+          created_account = ?,
           deleted_at = NULL
         WHERE id = ?
       `,
@@ -66,6 +68,7 @@ async function ensureInitialDefaultSchool(connection) {
         seedSchool.name,
         seedSchool.description,
         seedSchool.deletionPasswordHash || "",
+        seedSchool.createdAccount || DEFAULT_SCHOOL_CREATED_ACCOUNT,
         seedSchool.id,
       ],
     );
@@ -82,7 +85,7 @@ async function ensureInitialDefaultSchool(connection) {
         name,
         description,
         deletion_password_hash,
-        is_active
+        created_account
       )
       VALUES (?, ?, ?, ?, ?, ?)
     `,
@@ -92,7 +95,7 @@ async function ensureInitialDefaultSchool(connection) {
       seedSchool.name,
       seedSchool.description,
       seedSchool.deletionPasswordHash || "",
-      seedSchool.isActive === false ? 0 : 1,
+      seedSchool.createdAccount || DEFAULT_SCHOOL_CREATED_ACCOUNT,
     ],
   );
 }

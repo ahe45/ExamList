@@ -54,6 +54,39 @@ test("PDF generation delete button is enabled only when at least one completed r
   assert.doesNotMatch(selectedDeleteButtonHtml, /disabled/);
 });
 
+test("PDF generation write buttons stay visible but disabled for read-only school access", () => {
+  const html = renderPdfGenerationView({
+    access: {
+      permissions: {
+        downloadPdfs: true,
+        generatePdfs: true,
+      },
+      schoolAccess: {
+        canManage: false,
+        schoolId: "school-readonly",
+      },
+    },
+    pdfGenerations: {
+      items: [{ id: "first", status: "completed", templateName: "A" }],
+      loading: false,
+      rerunningGenerationIds: [],
+      selectedGenerationIds: ["first"],
+      table: {
+        filters: {},
+        page: 1,
+        pageSize: 30,
+        sortRules: [],
+      },
+      total: 1,
+    },
+  });
+  const createButtonHtml = html.match(/<button[\s\S]*?data-action="open-pdf-generation-create-modal"[\s\S]*?<\/button>/)?.[0] || "";
+  const deleteButtonHtml = html.match(/<button[\s\S]*?data-action="open-pdf-generation-delete-confirm"[\s\S]*?<\/button>/)?.[0] || "";
+
+  assert.match(createButtonHtml, /disabled/);
+  assert.match(deleteButtonHtml, /disabled/);
+});
+
 test("PDF generation header keeps only the selected count badge", () => {
   const html = renderViewWithSelection(["first"]);
   const headerActionsHtml = html.match(/<div class="table-header-actions pdf-generation-header-actions">[\s\S]*?<\/div>/)?.[0] || "";

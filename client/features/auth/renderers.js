@@ -83,6 +83,19 @@ function renderCurrentSchoolMeta({ currentView = "", school = null }) {
   `;
 }
 
+function renderCurrentSchoolReadOnlyBadge({ access, currentSchoolMeta = "" }) {
+  if (!currentSchoolMeta) {
+    return "";
+  }
+
+  const schoolAccess = access?.schoolAccess || {};
+  const isReadOnlySchool = String(schoolAccess.schoolId || "").trim() && schoolAccess.canManage === false;
+
+  return isReadOnlySchool
+    ? '<span class="topbar-school-readonly-badge">현재 학교는 읽기 전용입니다.</span>'
+    : "";
+}
+
 function getRoleLabel({ access, auth }) {
   const role = auth?.role || access?.currentRole || "";
 
@@ -126,10 +139,12 @@ function renderAccountMeta({ access, auth, isGuest = false, userId: userIdOverri
 export function renderAuthStatus({ access, auth, currentView = "templateManagement", school = null }) {
   const showTemplateListButton = currentView !== "schoolManagement";
   const currentSchoolMeta = renderCurrentSchoolMeta({ currentView, school });
+  const currentSchoolReadOnlyBadge = renderCurrentSchoolReadOnlyBadge({ access, currentSchoolMeta });
   const schoolAccountSeparator = currentSchoolMeta ? renderTopbarSeparator("school-account") : "";
 
   if (!auth.enabled) {
     return `
+      ${currentSchoolReadOnlyBadge}
       ${currentSchoolMeta}
       ${schoolAccountSeparator}
       ${renderAccountMeta({ access, auth, isGuest: false })}
@@ -145,6 +160,7 @@ export function renderAuthStatus({ access, auth, currentView = "templateManageme
   }
 
   return `
+    ${currentSchoolReadOnlyBadge}
     ${currentSchoolMeta}
     ${schoolAccountSeparator}
     ${renderAccountMeta({ access, auth, isGuest: false })}

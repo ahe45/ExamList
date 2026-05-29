@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess } from "../../app/access.js";
 import { deleteJson, getJson, patchJson, postJson } from "../../app/api-client.js";
 import { getActiveSchoolId, getActiveSchoolRouteKey } from "../../app/school-context.js";
 import { showToast } from "../../app/toast.js";
@@ -20,7 +20,7 @@ function toQueryString(filters = {}) {
 
 export function setupTemplateActions({ appState, dom, navigateToPath, onStateChange }) {
   function hasPermission(permissionKey) {
-    return hasAccess(appState.summary, permissionKey);
+    return canUseAccess(appState.summary, permissionKey);
   }
 
   function getCurrentSchoolId() {

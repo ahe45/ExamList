@@ -5,7 +5,14 @@ function createCandidatePhotoRecordService({
   persistStoredCandidatePhotoFile,
   query,
   readStoredCandidatePhotoFile,
+  resolveSchoolStorageCode = null,
 }) {
+  async function resolvePhotoStorageCode(schoolId = "") {
+    return typeof resolveSchoolStorageCode === "function"
+      ? resolveSchoolStorageCode(schoolId)
+      : String(schoolId || "").trim();
+  }
+
   async function saveCandidatePhoto(candidateId, payload = {}) {
     const normalizedCandidateId = String(candidateId || "").trim();
 
@@ -13,7 +20,11 @@ function createCandidatePhotoRecordService({
       throw createHttpError(400, "수험생 식별자가 필요합니다.", "CANDIDATE_ID_REQUIRED");
     }
 
-    const [existingCandidate] = await query("SELECT id, examinee_no AS examineeNo FROM candidate_records WHERE id = ?", [normalizedCandidateId]);
+    const schoolId = String(payload.schoolId || "").trim();
+    const [existingCandidate] = await query(
+      `SELECT id, school_id AS schoolId, examinee_no AS examineeNo FROM candidate_records WHERE id = ?${schoolId ? " AND school_id = ?" : ""}`,
+      [normalizedCandidateId, ...(schoolId ? [schoolId] : [])],
+    );
 
     if (!existingCandidate) {
       throw createHttpError(404, "수험생 정보를 찾을 수 없습니다.", "CANDIDATE_NOT_FOUND");
@@ -28,7 +39,8 @@ function createCandidatePhotoRecordService({
     const photo = parseCandidatePhotoFile(payload.fileName, Buffer.from(fileContentBase64, "base64"), {
       expectedExamineeNo: existingCandidate.examineeNo,
     });
-    const storedPhotoRecord = buildStoredCandidatePhotoFileRecord(photo);
+    const schoolStorageCode = await resolvePhotoStorageCode(existingCandidate.schoolId || schoolId);
+    const storedPhotoRecord = buildStoredCandidatePhotoFileRecord(photo, { schoolStorageCode });
 
     await persistStoredCandidatePhotoFile(storedPhotoRecord);
     await query(
@@ -38,8 +50,9 @@ function createCandidatePhotoRecordService({
           photo_name = ?,
           photo_mime = ?
         WHERE id = ?
+          ${schoolId ? "AND school_id = ?" : ""}
       `,
-      [storedPhotoRecord.fileName, storedPhotoRecord.mimeType, normalizedCandidateId],
+      [storedPhotoRecord.fileName, storedPhotoRecord.mimeType, normalizedCandidateId, ...(schoolId ? [schoolId] : [])],
     );
 
     return {
@@ -53,6 +66,7 @@ function createCandidatePhotoRecordService({
       `
         SELECT
           id,
+          school_id AS schoolId,
           examinee_no AS examineeNo,
           photo_name AS photoName,
           photo_mime AS photoMime
@@ -66,7 +80,10 @@ function createCandidatePhotoRecordService({
       throw createHttpError(404, "수험생 사진을 찾을 수 없습니다.", "CANDIDATE_PHOTO_NOT_FOUND");
     }
 
-    const storedPhoto = await readStoredCandidatePhotoFile(candidate.examineeNo, candidate.photoName);
+    const schoolStorageCode = await resolvePhotoStorageCode(candidate.schoolId);
+    const storedPhoto = await readStoredCandidatePhotoFile(candidate.examineeNo, candidate.photoName, {
+      schoolStorageCode,
+    });
 
     if (!storedPhoto?.photoBlob) {
       throw createHttpError(404, "수험생 사진을 찾을 수 없습니다.", "CANDIDATE_PHOTO_NOT_FOUND");

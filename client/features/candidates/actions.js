@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess } from "../../app/access.js";
 import { getActiveSchoolId } from "../../app/school-context.js";
 import { bindCandidateEventHandlers } from "./candidate-event-bindings.js";
 import { closeCandidateDetailModal, saveCandidateDetail } from "./candidate-detail-events.js";
@@ -12,7 +12,7 @@ export function setupCandidateActions({ appState, onStateChange }) {
   }
 
   function canManageCandidates() {
-    return hasAccess(appState.summary, "manageCandidates");
+    return canUseAccess(appState.summary, "manageCandidates");
   }
 
   const {

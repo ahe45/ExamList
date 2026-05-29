@@ -24,7 +24,6 @@ function createSchoolsState(overrides = {}) {
       deletionPasswordConfirm: "",
       description: "",
       errorMessage: "",
-      isActive: true,
       isOpen: false,
       isSaving: false,
       logoDataUrl: "",
@@ -116,6 +115,63 @@ test("school management disables delete action for Korea University", () => {
   assert.match(html, /school-settings-button/);
   assert.match(html, /school-delete-button[\s\S]*disabled/);
   assert.match(html, /한국대학교는 삭제할 수 없습니다/);
+});
+
+test("school management disables row edit actions when school access is read-only", () => {
+  const html = renderSchoolManagementView({
+    access: {
+      permissions: {
+        manageAccounts: false,
+        manageTemplates: true,
+      },
+    },
+    schools: createSchoolsState({
+      items: [
+        {
+          canManage: false,
+          candidateCount: 0,
+          code: "SEOUL",
+          id: "school-seoul",
+          name: "서울대학교",
+          templateCount: 1,
+          updatedAt: "2026-05-20T00:00:00.000Z",
+        },
+      ],
+    }),
+  });
+
+  assert.match(html, /school-settings-button[\s\S]*disabled/);
+  assert.match(html, /school-delete-button[\s\S]*disabled/);
+  assert.match(html, /서울대학교/);
+});
+
+test("school management renders creator id badge after updated time", () => {
+  const html = renderSchoolManagementView({
+    access: {
+      permissions: {
+        manageAccounts: false,
+        manageTemplates: true,
+      },
+    },
+    schools: createSchoolsState({
+      items: [
+        {
+          candidateCount: 0,
+          code: "SEOUL",
+          createdAccount: "owner-admin",
+          id: "school-seoul",
+          name: "서울대학교",
+          templateCount: 1,
+          updatedAt: "2026-05-20T00:00:00.000Z",
+        },
+      ],
+    }),
+  });
+
+  assert.match(html, /최종수정일시 :/);
+  assert.match(html, /school-created-account-badge">owner-admin/);
+  assert.doesNotMatch(html, /생성자 ID :/);
+  assert.ok(html.indexOf("최종수정일시 :") < html.indexOf("owner-admin"));
 });
 
 test("school management renders deletion progress overlay with known counts", () => {

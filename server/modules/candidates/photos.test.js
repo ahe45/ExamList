@@ -23,6 +23,7 @@ async function withTempRoot(callback) {
 function createService(rootDir) {
   return createCandidatePhotoService({
     createHttpError,
+    getSchoolById: async () => ({ code: "SEOUL01", id: "school-1" }),
     getPool() {
       throw new Error("getPool should not be used while hydrating photos");
     },
@@ -35,7 +36,7 @@ function createService(rootDir) {
 
 test("hydrateCandidatesWithPhotos fills candidate photo data urls from storage", async () => {
   await withTempRoot(async (rootDir) => {
-    const photoDir = path.join(rootDir, "storage", "candidate-photos");
+    const photoDir = path.join(rootDir, "storage", "SEOUL01", "candidate-photos");
     const photoBytes = Buffer.from("fake-image");
     const service = createService(rootDir);
 
@@ -48,6 +49,7 @@ test("hydrateCandidatesWithPhotos fills candidate photo data urls from storage",
         hasPhoto: true,
         name: "홍길동",
         photoFileId: "260100001.png",
+        schoolId: "school-1",
       },
     ]);
 

@@ -3,7 +3,7 @@ import { showToast } from "../../app/toast.js";
 import { arrayBufferToBase64, getJsonErrorMessage, readFileAsArrayBuffer } from "./candidate-action-utils.js";
 
 export async function handleCandidateDetailPhotoChange(event, context) {
-  const { appState, canManageCandidates, loadCandidates, onStateChange, openCandidateDetail } = context;
+  const { appState, canManageCandidates, getCurrentSchoolId, loadCandidates, onStateChange, openCandidateDetail } = context;
 
   if (!event.target.matches("[data-candidate-detail-photo-file]")) {
     return false;
@@ -33,6 +33,7 @@ export async function handleCandidateDetailPhotoChange(event, context) {
       body: JSON.stringify({
         fileContentBase64: arrayBufferToBase64(await readFileAsArrayBuffer(file)),
         fileName: file.name,
+        schoolId: getCurrentSchoolId(),
       }),
       credentials: "same-origin",
       headers: {

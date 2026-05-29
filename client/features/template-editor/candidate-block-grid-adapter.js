@@ -498,7 +498,15 @@ export function commitCandidateBlockGridControlsToPage({ pagePropertiesHost, sel
   return true;
 }
 
-export function bindCandidateBlockGridControls({ appState = null, editor = null, onDirty = null, pagePropertiesHost, selectedPage, surfaceElement }) {
+export function bindCandidateBlockGridControls({
+  appState = null,
+  editor = null,
+  onDirty = null,
+  pagePropertiesHost,
+  readOnly = false,
+  selectedPage,
+  surfaceElement,
+}) {
   if (!pagePropertiesHost || !selectedPage || !surfaceElement) {
     return null;
   }
@@ -532,6 +540,24 @@ export function bindCandidateBlockGridControls({ appState = null, editor = null,
 
   if (isPhotoCandidateBlockGridPage(initialSelectedPage)) {
     renderCandidateBlockGridOnSurface(surfaceElement, initialSelectedPage);
+  }
+
+  if (readOnly) {
+    sectionElement.querySelectorAll("button, input, select, textarea").forEach((controlElement) => {
+      if ("disabled" in controlElement) {
+        controlElement.disabled = true;
+      }
+
+      controlElement.setAttribute("aria-disabled", "true");
+    });
+
+    return () => {
+      closeCandidateBlockFocusEditor();
+      clearCandidateBlockGridSelection();
+      clearCandidateBlockGridBorderHover(surfaceElement);
+      resetCandidateBlockGridInteractionSessions();
+      sectionElement.remove();
+    };
   }
 
   const markDirty = () => {

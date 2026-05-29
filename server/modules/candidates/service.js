@@ -10,10 +10,11 @@ const { createCandidatePhotoService } = require("./photos");
 const { createCandidateRepository } = require("./repository");
 const { createCandidateWorkbookService } = require("./workbook");
 
-function createCandidateRecordService({ createHttpError, getDefaultSchoolId = null, getPool, query, rootDir }) {
+function createCandidateRecordService({ createHttpError, getDefaultSchoolId = null, getPool, getSchoolById = null, query, rootDir }) {
   const candidateWorkbookService = createCandidateWorkbookService({ createHttpError });
   const candidatePhotoService = createCandidatePhotoService({
     createHttpError,
+    getSchoolById,
     getPool,
     query,
     rootDir,

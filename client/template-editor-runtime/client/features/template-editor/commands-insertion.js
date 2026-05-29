@@ -306,6 +306,13 @@
       const fragment = insertionRange.createContextualFragment(markup);
       const insertionCell = getTemplateEditorInsertionCell(insertionRange, templateEditorSurface);
       const insertionCandidateBlock = getTemplateEditorInsertionCandidateBlock(insertionRange, templateEditorSurface);
+      const hasInsertedTable = Boolean(fragment.querySelector?.("table"));
+      const shouldReplaceBlankCandidateBlockImageHost = Boolean(
+        !insertionCell &&
+          insertionCandidateBlock &&
+          !hasInsertedTable &&
+          fragment.querySelector?.("img"),
+      );
 
       if (
         !fitTemplateEditorTablesToCandidateBlock(
@@ -331,12 +338,16 @@
       applyTemplateEditorInsertedTokenContextStyle(fragment, insertionRange, insertionCell, templateEditorSurface);
       const tableGeometrySnapshot = createTemplateEditorInsertionTableGeometrySnapshot(fragment, insertionCell);
       const lastInsertedNode = fragment.lastChild;
-      const blankInsertionBlock = fragment.querySelector?.("table")
+      const blankInsertionBlock = hasInsertedTable || shouldReplaceBlankCandidateBlockImageHost
         ? getTemplateEditorBlankInsertionBlock(insertionRange, insertionCandidateBlock)
         : null;
 
       if (blankInsertionBlock) {
-        insertionRange.selectNode(blankInsertionBlock);
+        if (shouldReplaceBlankCandidateBlockImageHost) {
+          insertionRange.selectNodeContents(blankInsertionBlock);
+        } else {
+          insertionRange.selectNode(blankInsertionBlock);
+        }
       }
 
       insertionRange.deleteContents();

@@ -56,6 +56,14 @@ export function resetAccountState(appState) {
       userName: "",
     },
     total: 0,
+    uploadModal: {
+      errorMessage: "",
+      file: null,
+      fileName: "",
+      isOpen: false,
+      isUploading: false,
+      result: null,
+    },
   };
 }
 
@@ -217,7 +225,6 @@ export function resetSchoolState(appState) {
     errorMessage: "",
     isOpen: false,
     isSaving: false,
-    isActive: true,
     logoDataUrl: "",
     mode: "create",
     name: "",

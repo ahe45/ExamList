@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess, hasAccess } from "../../app/access.js";
 import {
   documentToolbarIconMarkup,
   documentToolbarShadingColorPresets,
@@ -18,9 +18,10 @@ import {
 export { renderDocumentToolbarIconButton } from "./document-toolbar-controls-renderer.js";
 
 export function renderDocumentToolbar(access) {
-  const canManageTemplates = hasAccess(access, "manageTemplates");
+  const hasTemplateManagement = hasAccess(access, "manageTemplates");
+  const canManageTemplates = canUseAccess(access, "manageTemplates");
 
-  if (!canManageTemplates) {
+  if (!hasTemplateManagement) {
     return `
       <div class="template-toolbar-group editor-panel-block">
         <span class="template-toolbar-group-label">편집</span>
@@ -29,7 +30,7 @@ export function renderDocumentToolbar(access) {
     `;
   }
 
-  return `
+  const toolbarMarkup = `
     <div class="template-toolbar-group editor-panel-block">
       <span class="template-toolbar-group-label">서식</span>
       <div class="template-toolbar-section-row template-toolbar-section-row-dual">
@@ -171,5 +172,15 @@ export function renderDocumentToolbar(access) {
       </div>
     </div>
     <input class="upload-file-input" id="templateEditorImageInput" type="file" accept="image/*" />
+  `;
+
+  if (canManageTemplates) {
+    return toolbarMarkup;
+  }
+
+  return `
+    <fieldset class="template-toolbar-readonly-fieldset" disabled aria-disabled="true">
+      ${toolbarMarkup}
+    </fieldset>
   `;
 }

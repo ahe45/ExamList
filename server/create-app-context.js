@@ -54,6 +54,7 @@ function createAppContext() {
     createHttpError,
     getDefaultSchoolId: () => schoolService.getDefaultSchoolId(),
     getPool,
+    getSchoolById: (schoolId) => schoolService.getSchoolById(schoolId),
     query,
     rootDir: root,
   });
@@ -80,6 +81,7 @@ function createAppContext() {
     candidateService: candidateRecordService,
     createHttpError,
     fs,
+    getSchoolById: (schoolId) => schoolService.getSchoolById(schoolId),
     path,
     pdfPreviewService,
     query,

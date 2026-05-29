@@ -54,6 +54,7 @@ function createCandidateDeletionService({
     return transactionQuery(
       `
         SELECT
+          school_id AS schoolId,
           examinee_no AS examineeNo,
           photo_name AS photoName
         FROM candidate_records
@@ -71,6 +72,7 @@ function createCandidateDeletionService({
       `
         SELECT
           id,
+          school_id AS schoolId,
           examinee_no AS examineeNo,
           photo_name AS photoName
         FROM candidate_records
@@ -98,7 +100,7 @@ function createCandidateDeletionService({
     };
   }
 
-  async function deleteCandidateRecords(transactionQuery, schoolId, filters = {}) {
+  async function deleteCandidateRecords(transactionQuery, schoolId, filters = {}, options = {}) {
     const candidateRows = await collectCandidateRows(transactionQuery, schoolId, false, filters);
     const candidateIds = createUniqueValueList(candidateRows.map((candidate) => candidate.id));
     const remainingPhotoReferenceRows = await findRemainingCandidatePhotoReferences(
@@ -117,13 +119,15 @@ function createCandidateDeletionService({
         pathModule,
         remainingPhotoReferenceRows,
         rootDir,
+        schoolId,
+        schoolStorageCode: options.schoolStorageCode,
       }),
       deletedCandidatePhotos: candidateRows.filter((candidate) => String(candidate.photoName || "").trim()).length,
       deletedCandidateRecords: getAffectedRows(deleteResult, candidateRows.length),
     };
   }
 
-  async function deleteCandidatePhotos(transactionQuery, schoolId, filters = {}) {
+  async function deleteCandidatePhotos(transactionQuery, schoolId, filters = {}, options = {}) {
     const candidateRows = await collectCandidateRows(transactionQuery, schoolId, true, filters);
     const candidateIds = createUniqueValueList(candidateRows.map((candidate) => candidate.id));
     const remainingPhotoReferenceRows = await findRemainingCandidatePhotoReferences(
@@ -164,6 +168,8 @@ function createCandidateDeletionService({
         pathModule,
         remainingPhotoReferenceRows,
         rootDir,
+        schoolId,
+        schoolStorageCode: options.schoolStorageCode,
       }),
       deletedCandidatePhotos: getAffectedRows(updateResult, candidateRows.length),
     };

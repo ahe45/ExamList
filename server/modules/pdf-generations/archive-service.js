@@ -22,13 +22,24 @@ function createUniqueStringList(values = []) {
     .filter(Boolean))];
 }
 
+function parseJsonObject(value = "") {
+  try {
+    const parsedValue = JSON.parse(String(value || "{}"));
+
+    return parsedValue && typeof parsedValue === "object" && !Array.isArray(parsedValue) ? parsedValue : {};
+  } catch (_error) {
+    return {};
+  }
+}
+
 function createPdfGenerationArchiveService({
   createHttpError,
   ensureStorageDirectories,
   fs,
+  legacyStorageRoot,
   path,
   query,
-  storageRoot,
+  resolvePdfStorageRootForSchool,
   writeAuditLog,
 }) {
   async function resolveCompletedGenerationFiles(generationIds, missingMessageCode, missingMessage) {
@@ -36,14 +47,17 @@ function createPdfGenerationArchiveService({
     const rows = await query(
       `
         SELECT
-          id,
+          pdf_generation_histories.id,
           school_id AS schoolId,
+          s.code AS schoolCode,
           file_name AS fileName,
           file_path AS filePath,
           purged_at AS purgedAt,
           status
         FROM pdf_generation_histories
-        WHERE id IN (${placeholders})
+        LEFT JOIN schools s
+          ON s.id = pdf_generation_histories.school_id
+        WHERE pdf_generation_histories.id IN (${placeholders})
       `,
       generationIds,
     );
@@ -71,6 +85,7 @@ function createPdfGenerationArchiveService({
         fileName: generationRow.fileName,
         filePath,
         generationId,
+        schoolCode: generationRow.schoolCode,
         schoolId: generationRow.schoolId,
       });
     }
@@ -79,8 +94,6 @@ function createPdfGenerationArchiveService({
   }
 
   async function createPdfGenerationArchive(request = {}) {
-    await ensureStorageDirectories();
-
     const generationIds = normalizeArchiveGenerationIds(request.generationIds);
 
     if (!generationIds.length) {
@@ -92,6 +105,13 @@ function createPdfGenerationArchiveService({
       "PDF_ARCHIVE_GENERATION_NOT_FOUND",
       "압축할 PDF 생성 이력을 찾을 수 없습니다.",
     );
+    const storageRoot = await resolvePdfStorageRootForSchool(
+      generationFiles[0]?.schoolId,
+      generationFiles[0]?.schoolCode,
+    );
+
+    await ensureStorageDirectories(storageRoot);
+
     const archiveEntries = [];
     const createEntryName = createArchiveEntryNameFactory();
 
@@ -121,6 +141,8 @@ function createPdfGenerationArchiveService({
       metadata: {
         generationCount: archiveEntries.length,
         generationIds: createUniqueStringList(generationFiles.map((generationFile) => generationFile.generationId)),
+        archiveFilePath: archivePath,
+        schoolCodes: createUniqueStringList(generationFiles.map((generationFile) => generationFile.schoolCode)),
         schoolIds: createUniqueStringList(generationFiles.map((generationFile) => generationFile.schoolId)),
       },
       status: "completed",
@@ -136,8 +158,6 @@ function createPdfGenerationArchiveService({
   }
 
   async function createPdfGenerationMergedFile(request = {}) {
-    await ensureStorageDirectories();
-
     const generationIds = normalizeArchiveGenerationIds(request.generationIds);
 
     if (!generationIds.length) {
@@ -150,6 +170,13 @@ function createPdfGenerationArchiveService({
       "PDF_MERGE_GENERATION_NOT_FOUND",
       "병합할 PDF 생성 이력을 찾을 수 없습니다.",
     );
+    const storageRoot = await resolvePdfStorageRootForSchool(
+      generationFiles[0]?.schoolId,
+      generationFiles[0]?.schoolCode,
+    );
+
+    await ensureStorageDirectories(storageRoot);
+
     const mergedDocument = await PDFDocument.create();
 
     for (const generationFile of generationFiles) {
@@ -176,6 +203,8 @@ function createPdfGenerationArchiveService({
       metadata: {
         generationCount: generationFiles.length,
         generationIds: createUniqueStringList(generationFiles.map((generationFile) => generationFile.generationId)),
+        mergedFilePath: mergedPath,
+        schoolCodes: createUniqueStringList(generationFiles.map((generationFile) => generationFile.schoolCode)),
         schoolIds: createUniqueStringList(generationFiles.map((generationFile) => generationFile.schoolId)),
       },
       status: "completed",
@@ -192,7 +221,34 @@ function createPdfGenerationArchiveService({
 
   async function getPdfGenerationArchiveFile(archiveId, requestedFileName = "") {
     const normalizedArchiveId = String(archiveId || "").trim();
-    const archivePath = path.join(storageRoot, "archives", `${normalizedArchiveId}.zip`);
+    const batchRows = normalizedArchiveId
+      ? await query(
+          `
+            SELECT archive_file_path AS archiveFilePath
+            FROM pdf_generation_batches
+            WHERE archive_id = ?
+            LIMIT 1
+          `,
+          [normalizedArchiveId],
+        ).catch(() => [])
+      : [];
+    const auditRows = !batchRows[0]?.archiveFilePath && normalizedArchiveId
+      ? await query(
+          `
+            SELECT metadata_json AS metadataJson
+            FROM pdf_audit_logs
+            WHERE entity_id = ?
+              AND entity_type = 'pdf_generation_archive'
+              AND action = 'pdf_generation_archive_created'
+            ORDER BY created_at DESC
+            LIMIT 1
+          `,
+          [normalizedArchiveId],
+        ).catch(() => [])
+      : [];
+    const metadata = parseJsonObject(auditRows[0]?.metadataJson);
+    const archivePath = String(batchRows[0]?.archiveFilePath || metadata.archiveFilePath || "").trim() ||
+      path.join(legacyStorageRoot, "archives", `${normalizedArchiveId}.zip`);
     const fileExists = await fs.promises
       .access(archivePath, fs.constants.F_OK)
       .then(() => true)
@@ -218,7 +274,23 @@ function createPdfGenerationArchiveService({
 
   async function getPdfGenerationMergedFile(mergedId, requestedFileName = "") {
     const normalizedMergedId = String(mergedId || "").trim();
-    const mergedPath = path.join(storageRoot, "merged", `${normalizedMergedId}.pdf`);
+    const auditRows = normalizedMergedId
+      ? await query(
+          `
+            SELECT metadata_json AS metadataJson
+            FROM pdf_audit_logs
+            WHERE entity_id = ?
+              AND entity_type = 'pdf_generation_merged'
+              AND action = 'pdf_generation_merged_created'
+            ORDER BY created_at DESC
+            LIMIT 1
+          `,
+          [normalizedMergedId],
+        ).catch(() => [])
+      : [];
+    const metadata = parseJsonObject(auditRows[0]?.metadataJson);
+    const mergedPath = String(metadata.mergedFilePath || "").trim() ||
+      path.join(legacyStorageRoot, "merged", `${normalizedMergedId}.pdf`);
     const fileExists = await fs.promises
       .access(mergedPath, fs.constants.F_OK)
       .then(() => true)

@@ -13,11 +13,77 @@ const defaultAccountModal = Object.freeze({
   userId: "",
   userName: "",
 });
+const defaultAccountUploadModal = Object.freeze({
+  errorMessage: "",
+  file: null,
+  fileName: "",
+  isOpen: false,
+  isUploading: false,
+  result: null,
+});
+
+function readFileAsArrayBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.addEventListener("error", () => reject(new Error("파일을 읽는 중 오류가 발생했습니다.")));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = "";
+
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    const chunk = bytes.subarray(offset, offset + chunkSize);
+
+    binary += String.fromCharCode(...chunk);
+  }
+
+  return window.btoa(binary);
+}
+
+function triggerBlobDownload(blob, fileName) {
+  const downloadUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.href = downloadUrl;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+}
+
+async function fetchBlob(url, fallbackMessage = "파일을 다운로드할 수 없습니다.") {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+  });
+  const contentType = response.headers.get("content-type") || "";
+
+  if (!response.ok) {
+    const payload = contentType.includes("application/json") ? await response.json() : await response.text();
+
+    throw new Error(payload?.message || payload?.error || fallbackMessage);
+  }
+
+  return response.blob();
+}
 
 export function setupAccountActions({ appState, onStateChange }) {
   function resetAccountModal(overrides = {}) {
     appState.accounts.modal = {
       ...defaultAccountModal,
+      ...overrides,
+    };
+  }
+
+  function resetAccountUploadModal(overrides = {}) {
+    appState.accounts.uploadModal = {
+      ...defaultAccountUploadModal,
       ...overrides,
     };
   }
@@ -32,6 +98,7 @@ export function setupAccountActions({ appState, onStateChange }) {
       appState.accounts.total = 0;
       appState.accounts.errorMessage = "";
       resetAccountModal();
+      resetAccountUploadModal();
       return;
     }
 
@@ -54,6 +121,91 @@ export function setupAccountActions({ appState, onStateChange }) {
       showToast(appState.accounts.errorMessage, { tone: "error" });
     } finally {
       appState.accounts.loading = false;
+      await onStateChange();
+    }
+  }
+
+  function openAccountUploadModal() {
+    if (!canManageAccounts()) {
+      return false;
+    }
+
+    resetAccountUploadModal({
+      isOpen: true,
+    });
+    return true;
+  }
+
+  async function downloadAccountTemplate() {
+    if (!canManageAccounts()) {
+      return false;
+    }
+
+    try {
+      triggerBlobDownload(
+        await fetchBlob("/api/accounts/template.xlsx", "계정 업로드 양식을 다운로드할 수 없습니다."),
+        "계정 업로드 양식.xlsx",
+      );
+      return true;
+    } catch (error) {
+      appState.accounts.errorMessage = error.message;
+      showToast(appState.accounts.errorMessage, { tone: "error" });
+      await onStateChange();
+      return false;
+    }
+  }
+
+  async function uploadAccountWorkbook() {
+    const uploadModal = appState.accounts.uploadModal || {};
+
+    if (!canManageAccounts() || uploadModal.isUploading) {
+      return false;
+    }
+
+    if (!uploadModal.file) {
+      uploadModal.errorMessage = "업로드할 엑셀 파일을 선택하세요.";
+      showToast(uploadModal.errorMessage, { tone: "warning" });
+      await onStateChange();
+      return false;
+    }
+
+    if (!String(uploadModal.file.name || "").toLowerCase().endsWith(".xlsx")) {
+      uploadModal.errorMessage = "계정 업로드는 XLSX 파일만 지원합니다.";
+      showToast(uploadModal.errorMessage, { tone: "warning" });
+      await onStateChange();
+      return false;
+    }
+
+    uploadModal.isUploading = true;
+    uploadModal.errorMessage = "";
+    uploadModal.result = null;
+    await onStateChange();
+
+    try {
+      const fileContentBase64 = arrayBufferToBase64(await readFileAsArrayBuffer(uploadModal.file));
+      const result = await postJson("/api/accounts/import", {
+        fileContentBase64,
+        fileName: uploadModal.file.name,
+      });
+      const errorCount = Array.isArray(result?.errors) ? result.errors.length : 0;
+
+      uploadModal.file = null;
+      uploadModal.fileName = "";
+      uploadModal.result = result || null;
+      showToast(
+        `계정 업로드 완료: 추가 ${result?.created || 0}개, 수정 ${result?.updated || 0}개, 실패 ${errorCount}개`,
+        { tone: errorCount ? "warning" : "success" },
+      );
+      await loadAccounts({ silent: true });
+      await onStateChange();
+      return true;
+    } catch (error) {
+      uploadModal.errorMessage = error.message;
+      showToast(uploadModal.errorMessage, { tone: "error" });
+      await onStateChange();
+      return false;
+    } finally {
+      uploadModal.isUploading = false;
       await onStateChange();
     }
   }
@@ -190,6 +342,10 @@ export function setupAccountActions({ appState, onStateChange }) {
 
   document.addEventListener("submit", async (event) => {
     if (!event.target.matches("[data-account-form]")) {
+      if (event.target.matches("[data-account-upload-form]")) {
+        event.preventDefault();
+        await uploadAccountWorkbook();
+      }
       return;
     }
 
@@ -210,6 +366,18 @@ export function setupAccountActions({ appState, onStateChange }) {
   });
 
   document.addEventListener("change", (event) => {
+    if (event.target?.matches?.("[data-account-upload-file]")) {
+      const [file] = event.target.files || [];
+      const uploadModal = appState.accounts.uploadModal || {};
+
+      uploadModal.file = file || null;
+      uploadModal.fileName = file?.name || "";
+      uploadModal.errorMessage = "";
+      uploadModal.result = null;
+      void onStateChange();
+      return;
+    }
+
     const accountModalField = event.target.closest("[data-account-modal-field]");
 
     if (!accountModalField || !appState.accounts.modal?.isOpen) {
@@ -244,6 +412,23 @@ export function setupAccountActions({ appState, onStateChange }) {
       return;
     }
 
+    if (actionTarget.dataset.action === "open-account-upload-modal") {
+      openAccountUploadModal();
+      await onStateChange();
+      return;
+    }
+
+    if (actionTarget.dataset.action === "close-account-upload-modal") {
+      resetAccountUploadModal();
+      await onStateChange();
+      return;
+    }
+
+    if (actionTarget.dataset.action === "download-account-template") {
+      await downloadAccountTemplate();
+      return;
+    }
+
     if (actionTarget.dataset.action === "open-account-edit-modal") {
       openEditAccountModal(actionTarget.dataset.accountId || "");
       await onStateChange();
@@ -264,5 +449,6 @@ export function setupAccountActions({ appState, onStateChange }) {
   return Object.freeze({
     loadAccounts,
     resetAccountModal,
+    resetAccountUploadModal,
   });
 }

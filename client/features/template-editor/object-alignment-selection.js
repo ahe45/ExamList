@@ -87,10 +87,12 @@ export function syncObjectAlignmentMutation(editor, surfaceElement, selectedElem
       syncObjectAlignmentTableFlow(element, surfaceElement);
     });
   applyObjectAlignmentSelection(editor, surfaceElement, selectedElements);
-  surfaceElement?.dispatchEvent(new Event("input", { bubbles: true }));
+  // Object toolbar mutations call editor.sync directly. Keep this update local so
+  // app-level document normalization does not strip the visual object selection.
+  surfaceElement?.dispatchEvent(new Event("input"));
 
   if (typeof editor?.sync === "function") {
-    editor.sync({ preserveSelection: true });
+    editor.sync({ preserveSelection: false });
   }
 
   window.requestAnimationFrame(() => {

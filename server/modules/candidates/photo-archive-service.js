@@ -7,7 +7,14 @@ function createCandidatePhotoArchiveService({
   photoArchiveSessionStore = null,
   persistStoredCandidatePhotoFile,
   query,
+  resolveSchoolStorageCode = null,
 }) {
+  async function resolvePhotoStorageCode(schoolId = "") {
+    return typeof resolveSchoolStorageCode === "function"
+      ? resolveSchoolStorageCode(schoolId)
+      : String(schoolId || "").trim();
+  }
+
   function createServiceError(statusCode, message, errorCode) {
     if (typeof createHttpError === "function") {
       return createHttpError(statusCode, message, errorCode);
@@ -16,9 +23,10 @@ function createCandidatePhotoArchiveService({
     return Object.assign(new Error(message), { errorCode, statusCode });
   }
 
-  async function previewParsedCandidatePhotos({ duplicateEntries = 0, photos, skippedEntries = 0, totalEntries = 0 } = {}) {
+  async function previewParsedCandidatePhotos({ duplicateEntries = 0, photos, skippedEntries = 0, totalEntries = 0 } = {}, options = {}) {
     const duplicateCount = Number(duplicateEntries || 0);
     const invalidEntryCount = Number(skippedEntries || 0);
+    const schoolId = String(options.schoolId || "").trim();
     const examineeNos = Array.from(
       new Set(
         (Array.isArray(photos) ? photos : [])
@@ -28,7 +36,10 @@ function createCandidatePhotoArchiveService({
     );
     const existingRows =
       examineeNos.length > 0
-        ? await query("SELECT examinee_no AS examineeNo FROM candidate_records WHERE examinee_no IN (?)", [examineeNos])
+        ? await query(
+            `SELECT examinee_no AS examineeNo FROM candidate_records WHERE examinee_no IN (?)${schoolId ? " AND school_id = ?" : ""}`,
+            [examineeNos, ...(schoolId ? [schoolId] : [])],
+          )
         : [];
     const existingExamineeNos = new Set(existingRows.map((row) => String(row?.examineeNo || "").trim()));
     const matchedCount = (Array.isArray(photos) ? photos : []).filter((photo) =>
@@ -52,9 +63,15 @@ function createCandidatePhotoArchiveService({
     };
   }
 
-  async function previewCandidatePhotoArchiveBuffer(fileBuffer) {
-    const preview = await previewParsedCandidatePhotos(parseCandidatePhotoArchivePreviewBuffer(fileBuffer));
-    const session = await photoArchiveSessionStore?.createSession?.(fileBuffer);
+  async function previewCandidatePhotoArchiveBuffer(fileBuffer, options = {}) {
+    const preview = await previewParsedCandidatePhotos(parseCandidatePhotoArchivePreviewBuffer(fileBuffer), options);
+    const schoolId = String(options.schoolId || "").trim();
+    const schoolStorageCode = schoolId ? await resolvePhotoStorageCode(schoolId) : "";
+    const session = await photoArchiveSessionStore?.createSession?.(
+      fileBuffer,
+      { schoolId, schoolStorageCode },
+      { schoolStorageCode },
+    );
 
     if (!session?.token) {
       return preview;
@@ -68,22 +85,35 @@ function createCandidatePhotoArchiveService({
     };
   }
 
-  async function saveParsedCandidatePhotos({ duplicateEntries = 0, photos, skippedEntries = 0 } = {}) {
+  async function saveParsedCandidatePhotos({ duplicateEntries = 0, photos, skippedEntries = 0 } = {}, options = {}) {
+    const schoolId = String(options.schoolId || "").trim();
     const examineeNos = (Array.isArray(photos) ? photos : []).map((photo) => photo.examineeNo);
     const existingRows =
       examineeNos.length > 0
-        ? await query("SELECT id, examinee_no AS examineeNo FROM candidate_records WHERE examinee_no IN (?)", [examineeNos])
+        ? await query(
+            `SELECT id, school_id AS schoolId, examinee_no AS examineeNo FROM candidate_records WHERE examinee_no IN (?)${schoolId ? " AND school_id = ?" : ""}`,
+            [examineeNos, ...(schoolId ? [schoolId] : [])],
+          )
         : [];
-    const candidateIdsByNo = new Map(existingRows.map((row) => [String(row.examineeNo || "").trim(), String(row.id || "")]));
-    const matchedPhotos = (Array.isArray(photos) ? photos : []).filter((photo) => candidateIdsByNo.has(String(photo.examineeNo || "").trim()));
+    const candidateRowsByNo = new Map(
+      existingRows.map((row) => [String(row.examineeNo || "").trim(), row]),
+    );
+    const matchedPhotos = (Array.isArray(photos) ? photos : []).filter((photo) => candidateRowsByNo.has(String(photo.examineeNo || "").trim()));
     const unmatchedPhotos = Math.max(0, (Array.isArray(photos) ? photos.length : 0) - matchedPhotos.length);
 
     if (matchedPhotos.length > 0) {
-      const storedPhotoRecords = matchedPhotos.map((photo) => ({
-        ...buildStoredCandidatePhotoFileRecord(photo),
-        candidateId: candidateIdsByNo.get(String(photo.examineeNo || "").trim()),
-      }));
+      const storedPhotoRecords = [];
       const connection = await getPool().getConnection();
+
+      for (const photo of matchedPhotos) {
+        const candidateRow = candidateRowsByNo.get(String(photo.examineeNo || "").trim());
+        const schoolStorageCode = await resolvePhotoStorageCode(candidateRow?.schoolId || schoolId);
+
+        storedPhotoRecords.push({
+          ...buildStoredCandidatePhotoFileRecord(photo, { schoolStorageCode }),
+          candidateId: String(candidateRow?.id || ""),
+        });
+      }
 
       try {
         await connection.beginTransaction();
@@ -117,19 +147,21 @@ function createCandidatePhotoArchiveService({
     };
   }
 
-  async function saveCandidatePhotoArchiveBuffer(fileBuffer) {
-    return saveParsedCandidatePhotos(parseCandidatePhotoArchiveBuffer(fileBuffer));
+  async function saveCandidatePhotoArchiveBuffer(fileBuffer, options = {}) {
+    return saveParsedCandidatePhotos(parseCandidatePhotoArchiveBuffer(fileBuffer), options);
   }
 
-  async function saveCandidatePhotoArchiveSession(previewToken = "") {
+  async function saveCandidatePhotoArchiveSession(previewToken = "", options = {}) {
     if (!photoArchiveSessionStore?.readSessionBuffer) {
       throw createServiceError(410, "사진 ZIP 미리보기 세션을 찾을 수 없습니다. ZIP 파일을 다시 선택해 주세요.", "CANDIDATE_PHOTO_ARCHIVE_SESSION_UNAVAILABLE");
     }
 
-    const fileBuffer = await photoArchiveSessionStore.readSessionBuffer(previewToken);
-    const result = await saveCandidatePhotoArchiveBuffer(fileBuffer);
+    const schoolId = String(options.schoolId || "").trim();
+    const schoolStorageCode = schoolId ? await resolvePhotoStorageCode(schoolId) : "";
+    const fileBuffer = await photoArchiveSessionStore.readSessionBuffer(previewToken, { schoolStorageCode });
+    const result = await saveCandidatePhotoArchiveBuffer(fileBuffer, options);
 
-    await photoArchiveSessionStore.deleteSession?.(previewToken);
+    await photoArchiveSessionStore.deleteSession?.(previewToken, { schoolStorageCode });
     return result;
   }
 

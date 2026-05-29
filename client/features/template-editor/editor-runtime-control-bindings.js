@@ -40,8 +40,10 @@ export function orderContentPagePropertySections({ pagePropertiesHost, selectedP
 export function createEditorRuntimeDisposerState() {
   return {
     candidateBlockGrid: null,
+    candidateBlockGridReadOnly: null,
     coverPage: null,
     documentWrapper: null,
+    formatToolbar: null,
     fontSize: null,
     generatedObjectSource: null,
     lineHeight: null,
@@ -51,6 +53,117 @@ export function createEditorRuntimeDisposerState() {
     pageNumber: null,
     recognitionMarks: null,
     templateMetadata: null,
+  };
+}
+
+function getEditorFormatToolbarGroup(toolbarHost) {
+  return (
+    toolbarHost?.querySelector?.("[data-editor-format-toolbar-group]") ||
+    Array.from(toolbarHost?.querySelectorAll?.(".template-toolbar-group") || []).find(
+      (groupElement) => groupElement.querySelector?.(".template-toolbar-group-label")?.textContent.trim() === "서식",
+    ) ||
+    null
+  );
+}
+
+function hasEditorObjectSelection(surfaceElement) {
+  const ownerDocument = surfaceElement?.ownerDocument || (typeof document !== "undefined" ? document : null);
+  const selectedObjectSelector = [
+    "img.is-selected-object",
+    "table.is-selected-object",
+    "table.is-selected-table-object",
+    "[data-candidate-block-grid].is-selected-candidate-block-grid",
+    ".examlist-candidate-block-grid.is-selected-candidate-block-grid",
+  ].join(",");
+  const selectedModalObjectSelector = [
+    "[data-candidate-block-modal-editor-surface] img.is-selected-object",
+    "[data-candidate-block-modal-editor-surface] table.is-selected-object",
+    "[data-candidate-block-modal-editor-surface] table.is-selected-table-object",
+  ].join(",");
+
+  return Boolean(
+    surfaceElement?.querySelector?.(selectedObjectSelector) ||
+      ownerDocument?.querySelector?.(selectedModalObjectSelector),
+  );
+}
+
+function closeEditorFormatToolbarPanels(formatGroupElement) {
+  formatGroupElement
+    ?.querySelectorAll?.(".template-toolbar-combo-menu:not(.hidden), .template-toolbar-color-panel:not(.hidden)")
+    .forEach((panelElement) => {
+      panelElement.classList.add("hidden");
+    });
+
+  formatGroupElement
+    ?.querySelectorAll?.(".template-toolbar-font-family-combo.open, .template-toolbar-font-size-combo.open, .template-toolbar-color-picker.open")
+    .forEach((panelHostElement) => {
+      panelHostElement.classList.remove("open");
+    });
+
+  formatGroupElement
+    ?.querySelectorAll?.("[aria-expanded='true']")
+    .forEach((expandedElement) => {
+      expandedElement.setAttribute("aria-expanded", "false");
+    });
+}
+
+function setEditorFormatToolbarDisabled(formatGroupElement, isDisabled) {
+  if (!formatGroupElement) {
+    return;
+  }
+
+  formatGroupElement.classList.toggle("is-disabled", isDisabled);
+  formatGroupElement.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+
+  formatGroupElement.querySelectorAll("button, input, select, textarea").forEach((controlElement) => {
+    if ("disabled" in controlElement) {
+      controlElement.disabled = isDisabled;
+    }
+
+    controlElement.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+  });
+
+  if (isDisabled) {
+    closeEditorFormatToolbarPanels(formatGroupElement);
+  }
+}
+
+function bindFormatToolbarObjectSelectionState({ surfaceElement, toolbarHost }) {
+  const ownerDocument = surfaceElement?.ownerDocument || (typeof document !== "undefined" ? document : null);
+  const ownerWindow = ownerDocument?.defaultView || (typeof window !== "undefined" ? window : null);
+  let frameId = 0;
+
+  const syncFormatToolbarState = () => {
+    frameId = 0;
+    setEditorFormatToolbarDisabled(getEditorFormatToolbarGroup(toolbarHost), hasEditorObjectSelection(surfaceElement));
+  };
+  const scheduleSync = () => {
+    if (frameId) {
+      return;
+    }
+
+    frameId = ownerWindow?.requestAnimationFrame
+      ? ownerWindow.requestAnimationFrame(syncFormatToolbarState)
+      : setTimeout(syncFormatToolbarState, 0);
+  };
+
+  syncFormatToolbarState();
+  surfaceElement?.addEventListener?.("pointerdown", scheduleSync, true);
+  surfaceElement?.addEventListener?.("click", scheduleSync, true);
+  ownerDocument?.addEventListener?.("selectionchange", scheduleSync);
+
+  return () => {
+    if (frameId) {
+      if (ownerWindow?.cancelAnimationFrame) {
+        ownerWindow.cancelAnimationFrame(frameId);
+      } else {
+        clearTimeout(frameId);
+      }
+    }
+
+    surfaceElement?.removeEventListener?.("pointerdown", scheduleSync, true);
+    surfaceElement?.removeEventListener?.("click", scheduleSync, true);
+    ownerDocument?.removeEventListener?.("selectionchange", scheduleSync);
   };
 }
 
@@ -64,6 +177,7 @@ export function disposeEditorRuntimeControls(disposers) {
 
 export function ensureEditorRuntimeControls({
   appState,
+  canEdit = true,
   disposers,
   editor,
   onDirty,
@@ -75,6 +189,10 @@ export function ensureEditorRuntimeControls({
 }) {
   if (!disposers.documentWrapper) {
     disposers.documentWrapper = bindDocumentWrapperNormalization({ editor, surfaceElement });
+  }
+
+  if (!disposers.formatToolbar) {
+    disposers.formatToolbar = bindFormatToolbarObjectSelectionState({ surfaceElement, toolbarHost });
   }
 
   if (!disposers.lineHeight) {
@@ -128,15 +246,25 @@ export function ensureEditorRuntimeControls({
     });
   }
 
+  const candidateBlockGridReadOnly = !canEdit;
+
+  if (disposers.candidateBlockGrid && disposers.candidateBlockGridReadOnly !== candidateBlockGridReadOnly) {
+    disposers.candidateBlockGrid();
+    disposers.candidateBlockGrid = null;
+    disposers.candidateBlockGridReadOnly = null;
+  }
+
   if (!disposers.candidateBlockGrid) {
     disposers.candidateBlockGrid = bindCandidateBlockGridControls({
       appState,
       editor,
       onDirty,
       pagePropertiesHost,
+      readOnly: candidateBlockGridReadOnly,
       selectedPage,
       surfaceElement,
     });
+    disposers.candidateBlockGridReadOnly = candidateBlockGridReadOnly;
   }
 
   if (!disposers.generatedObjectSource) {
@@ -149,7 +277,13 @@ export function ensureEditorRuntimeControls({
   }
 
   if (!disposers.objectSize) {
-    disposers.objectSize = bindObjectSizeControls({ editor, surfaceElement, toolbarHost });
+    disposers.objectSize = bindObjectSizeControls({
+      editor,
+      onDirty,
+      selectedPage,
+      surfaceElement,
+      toolbarHost,
+    });
   }
 
   if (!disposers.objectAlignment) {

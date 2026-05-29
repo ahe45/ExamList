@@ -4,13 +4,13 @@ CREATE TABLE IF NOT EXISTS schools (
   name VARCHAR(200) NOT NULL COMMENT '학교명',
   description VARCHAR(255) NOT NULL DEFAULT '' COMMENT '학교 설명',
   deletion_password_hash VARCHAR(255) NOT NULL DEFAULT '' COMMENT '학교 삭제 비밀번호 해시',
-  is_active TINYINT(1) NOT NULL DEFAULT 1 COMMENT '학교 사용 여부',
+  created_account VARCHAR(100) NOT NULL DEFAULT 'system' COMMENT '학교 생성 계정 ID',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성 일시',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 일시',
   deleted_at DATETIME NULL COMMENT '삭제 일시',
   PRIMARY KEY (id),
   UNIQUE KEY uniq_schools_code (code),
-  KEY idx_schools_active (is_active, deleted_at),
+  KEY idx_schools_created_account (created_account, deleted_at),
   KEY idx_schools_name (name)
 ) COMMENT='학교 기본 정보';
 

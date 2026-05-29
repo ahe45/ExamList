@@ -8,6 +8,7 @@ import {
 export function createCandidatePhotoArchivePreviewActions({
   appState,
   ensureCandidateUploadState,
+  getCurrentSchoolId = () => "",
   onStateChange,
   setCandidatePreviewProgress,
   waitForProgressPaint,
@@ -53,8 +54,10 @@ export function createCandidatePhotoArchivePreviewActions({
     await waitForProgressPaint();
 
     try {
+      const schoolId = String(getCurrentSchoolId() || "").trim();
+      const queryString = schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : "";
       const previewRequest = postBinaryJsonWithProgress(
-        "/api/candidates/photo-archive/preview",
+        `/api/candidates/photo-archive/preview${queryString}`,
         file,
         "수험생 사진 미리보기를 생성할 수 없습니다.",
         {

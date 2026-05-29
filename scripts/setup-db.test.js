@@ -57,14 +57,14 @@ function createSeedPool(initialState = {}) {
       }
 
       if (compactSql.startsWith("UPDATE schools SET")) {
-        const school = state.schools.find((item) => item.id === params[4]);
+        const school = state.schools.find((item) => item.id === params[5]);
 
         if (school) {
           school.code = params[0];
           school.name = params[1];
           school.description = params[2];
           school.deletionPasswordHash = params[3];
-          school.isActive = 1;
+          school.createdAccount = params[4];
           school.deletedAt = null;
         }
 
@@ -76,8 +76,8 @@ function createSeedPool(initialState = {}) {
           code: params[1],
           description: params[3],
           deletionPasswordHash: params[4],
+          createdAccount: params[5],
           id: params[0],
-          isActive: params[5],
           name: params[2],
         });
         return [{ affectedRows: 1 }];
@@ -216,12 +216,13 @@ test("setup-db seeds 한국대학교 and 기본 템플릿 when missing", async (
   assert.equal(state.didBegin, true);
   assert.equal(state.didCommit, true);
   assert.equal(state.didRelease, true);
+  assert.equal(defaultSeed.school.createdAccount, "default");
   assert.deepEqual(state.schools[0], {
     code: defaultSeed.school.code,
     description: defaultSeed.school.description,
+    createdAccount: defaultSeed.school.createdAccount,
     deletionPasswordHash: defaultSeed.school.deletionPasswordHash,
     id: defaultSeed.school.id,
-    isActive: 1,
     name: defaultSeed.school.name,
   });
   assert.equal(state.settings[0].id, defaultSeed.schoolSettings.id);
@@ -260,10 +261,10 @@ test("setup-db does not duplicate an existing 기본 템플릿", async () => {
     schools: [
       {
         code: "LEGACY",
+        createdAccount: "legacy-admin",
         deletedAt: "2026-01-01",
         description: "old",
         id: "school-default",
-        isActive: 0,
         name: "이전 학교명",
       },
     ],
@@ -285,7 +286,7 @@ test("setup-db does not duplicate an existing 기본 템플릿", async () => {
   assert.equal(state.schools[0].code, defaultSeed.school.code);
   assert.equal(state.schools[0].name, "한국대학교");
   assert.equal(state.schools[0].description, defaultSeed.school.description);
-  assert.equal(state.schools[0].isActive, 1);
+  assert.equal(state.schools[0].createdAccount, defaultSeed.school.createdAccount);
   assert.equal(state.schools[0].deletedAt, null);
   assert.equal(state.settings[0].academicYear, defaultSeed.schoolSettings.academicYear);
   assert.equal(hashText(state.settings[0].logoDataUrl), hashText(defaultSeed.schoolSettings.logoDataUrl));

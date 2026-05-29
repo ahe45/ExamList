@@ -36,6 +36,25 @@
   padding-top: 14px;
 }
 
+.template-toolbar-readonly-fieldset {
+  border: 0;
+  display: grid;
+  gap: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.template-toolbar-readonly-fieldset .template-toolbar-group {
+  opacity: 0.52;
+}
+
+.template-toolbar-readonly-fieldset .template-toolbar-group + .template-toolbar-group {
+  border-top: 1px solid var(--line);
+  margin-top: 14px;
+  padding-top: 14px;
+}
+
 .template-toolbar-group {
   align-content: start;
   background: transparent;

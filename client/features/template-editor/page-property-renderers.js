@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess, hasAccess } from "../../app/access.js";
 import {
   normalizeTemplateGenerationUnitValue,
   templateGenerationUnitOptions,
@@ -161,9 +161,12 @@ function renderPageFields(selectedPage) {
 export function renderPagePropertyPanel(editor, access) {
   const selectedPage = getSelectedPage(editor);
   const pageSafeArea = getPageSafeArea(selectedPage, editor.template?.layout?.paper?.margin || defaultPageSafeArea);
+  const hasTemplateManagement = hasAccess(access, "manageTemplates");
+  const canManageTemplates = canUseAccess(access, "manageTemplates");
 
   return `
-    ${!hasAccess(access, "manageTemplates") ? '<p class="helper-text">현재 권한은 읽기 전용입니다.</p>' : ""}
+    ${hasTemplateManagement && !canManageTemplates ? '<p class="helper-text">현재 학교는 읽기 전용입니다.</p>' : ""}
+    ${!hasTemplateManagement ? '<p class="helper-text">현재 권한은 읽기 전용입니다.</p>' : ""}
     <section>
       <p class="section-kicker">페이지 선택</p>
       <div class="editor-page-tabs editor-page-tabs-segmented">
@@ -171,7 +174,7 @@ export function renderPagePropertyPanel(editor, access) {
       </div>
     </section>
     ${renderCoverPageEnabledField(selectedPage)}
-    <fieldset ${hasAccess(access, "manageTemplates") ? "" : "disabled"}>
+    <fieldset ${canManageTemplates ? "" : "disabled"}>
       <section>
         <p class="section-kicker">용지 설정</p>
         <div class="editor-inspector-grid">

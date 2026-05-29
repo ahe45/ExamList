@@ -1,7 +1,31 @@
 const fs = require("fs");
 const path = require("path");
 
-function createCandidatePhotoFileStorage({ createHttpError, photoStorageDirectoryPath }) {
+const {
+  resolveLegacyCandidatePhotoDirectoryPath,
+  resolveSchoolCandidatePhotoDirectoryPath,
+} = require("../storage-paths");
+
+function createUniqueList(values = []) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function createCandidatePhotoFileStorage({
+  createHttpError,
+  photoStorageDirectoryPath = "",
+  rootDir = process.cwd(),
+}) {
+  const legacyPhotoStorageDirectoryPath =
+    photoStorageDirectoryPath || resolveLegacyCandidatePhotoDirectoryPath(path, rootDir);
+
+  function resolvePhotoStorageDirectoryPath(options = {}) {
+    const schoolStorageCode = String(options.schoolStorageCode || options.schoolCode || "").trim();
+
+    return schoolStorageCode
+      ? resolveSchoolCandidatePhotoDirectoryPath(path, rootDir, schoolStorageCode)
+      : legacyPhotoStorageDirectoryPath;
+  }
+
   function getCandidatePhotoMimeType(extension) {
     if (extension === ".jpg" || extension === ".jpeg") {
       return "image/jpeg";
@@ -34,9 +58,12 @@ function createCandidatePhotoFileStorage({ createHttpError, photoStorageDirector
     return ".jpg";
   }
 
-  function buildStoredCandidatePhotoFileRecord(photo = {}) {
+  function buildStoredCandidatePhotoFileRecord(photo = {}, options = {}) {
     const normalizedExamineeNo = String(photo.examineeNo || "").trim();
     const fileBuffer = Buffer.isBuffer(photo.fileBuffer) ? photo.fileBuffer : null;
+    const photoStorageDirectoryPath = resolvePhotoStorageDirectoryPath({
+      schoolStorageCode: options.schoolStorageCode || photo.schoolStorageCode || photo.schoolCode,
+    });
 
     if (!normalizedExamineeNo) {
       throw createHttpError(400, "수험번호가 필요합니다.", "CANDIDATE_PHOTO_EXAMINEE_NO_REQUIRED");
@@ -104,28 +131,34 @@ function createCandidatePhotoFileStorage({ createHttpError, photoStorageDirector
     );
   }
 
-  async function readStoredCandidatePhotoFile(examineeNo, photoName = "") {
+  async function readStoredCandidatePhotoFile(examineeNo, photoName = "", options = {}) {
     const candidateFileNames = getStoredCandidatePhotoCandidateFileNames(examineeNo, photoName);
+    const candidateDirectories = createUniqueList([
+      resolvePhotoStorageDirectoryPath(options),
+      legacyPhotoStorageDirectoryPath,
+    ]);
 
-    for (const candidateFileName of candidateFileNames) {
-      const normalizedCandidateFileName = path.basename(candidateFileName);
-      const candidateFilePath = path.join(photoStorageDirectoryPath, normalizedCandidateFileName);
+    for (const candidateDirectoryPath of candidateDirectories) {
+      for (const candidateFileName of candidateFileNames) {
+        const normalizedCandidateFileName = path.basename(candidateFileName);
+        const candidateFilePath = path.join(candidateDirectoryPath, normalizedCandidateFileName);
 
-      try {
-        const photoBlob = await fs.promises.readFile(candidateFilePath);
+        try {
+          const photoBlob = await fs.promises.readFile(candidateFilePath);
 
-        if (Buffer.isBuffer(photoBlob) && photoBlob.length > 0) {
-          const fileExtension = path.extname(normalizedCandidateFileName).toLowerCase();
+          if (Buffer.isBuffer(photoBlob) && photoBlob.length > 0) {
+            const fileExtension = path.extname(normalizedCandidateFileName).toLowerCase();
 
-          return {
-            photoBlob,
-            photoMime: getCandidatePhotoMimeType(fileExtension) || "application/octet-stream",
-            photoName: normalizedCandidateFileName,
-          };
-        }
-      } catch (error) {
-        if (error?.code !== "ENOENT") {
-          throw error;
+            return {
+              photoBlob,
+              photoMime: getCandidatePhotoMimeType(fileExtension) || "application/octet-stream",
+              photoName: normalizedCandidateFileName,
+            };
+          }
+        } catch (error) {
+          if (error?.code !== "ENOENT") {
+            throw error;
+          }
         }
       }
     }

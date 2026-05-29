@@ -73,6 +73,42 @@
       };
     }
 
+    function getTemplateEditorCandidateBlockImageResizeBounds(imageElement) {
+      const blockElement = imageElement?.closest?.("[data-candidate-block-instance].is-candidate-block-focus-editor") || null;
+
+      if (!(blockElement instanceof HTMLElement)) {
+        return null;
+      }
+
+      const blockRect = blockElement.getBoundingClientRect();
+      const visualScale = getTemplateEditorCandidateBlockVisualScale(blockElement);
+      const scaleX = Math.max(visualScale.x || 1, 0.01);
+      const scaleY = Math.max(visualScale.y || 1, 0.01);
+      const logicalWidth =
+        getTemplateEditorFinitePixelValue(blockElement.dataset?.candidateBlockLogicalContentWidth) ||
+        getTemplateEditorFinitePixelValue(blockElement.dataset?.candidateBlockLogicalWidth) ||
+        blockElement.clientWidth ||
+        blockElement.offsetWidth ||
+        (blockRect.width > 0 ? blockRect.width / scaleX : 0);
+      const logicalHeight =
+        getTemplateEditorFinitePixelValue(blockElement.dataset?.candidateBlockLogicalContentHeight) ||
+        getTemplateEditorFinitePixelValue(blockElement.dataset?.candidateBlockLogicalHeight) ||
+        blockElement.clientHeight ||
+        blockElement.offsetHeight ||
+        (blockRect.height > 0 ? blockRect.height / scaleY : 0);
+      const imageRect = imageElement.getBoundingClientRect();
+
+      return {
+        blockElement,
+        height: Math.max(TEMPLATE_EDITOR_IMAGE_MIN_SIZE, Math.floor(logicalHeight || TEMPLATE_EDITOR_IMAGE_MIN_SIZE)),
+        scaleX,
+        scaleY,
+        startLeft: Math.max(0, Math.round(((imageRect.left || blockRect.left) - blockRect.left) / scaleX)),
+        startTop: Math.max(0, Math.round(((imageRect.top || blockRect.top) - blockRect.top) / scaleY)),
+        width: Math.max(TEMPLATE_EDITOR_IMAGE_MIN_SIZE, Math.floor(logicalWidth || TEMPLATE_EDITOR_IMAGE_MIN_SIZE)),
+      };
+    }
+
     function getTemplateEditorCellContentSize(cellElement, minimumSize) {
       const computedStyle = window.getComputedStyle(cellElement);
       const cellRect = cellElement.getBoundingClientRect();
@@ -187,25 +223,49 @@
 
       const imageRect = selectedImage.getBoundingClientRect();
       const documentElement = getTemplateEditorDocumentElement();
-      const maxResizeWidth = cellResizeBounds?.width || documentElement?.clientWidth || Number.POSITIVE_INFINITY;
+      const candidateBlockResizeBounds = cellResizeBounds
+        ? null
+        : getTemplateEditorCandidateBlockImageResizeBounds(selectedImage);
+      const resizeBounds = cellResizeBounds || candidateBlockResizeBounds;
+      const maxResizeWidth = resizeBounds?.width || documentElement?.clientWidth || Number.POSITIVE_INFINITY;
       const maxResizeHeight =
-        cellResizeBounds?.height ||
+        resizeBounds?.height ||
         Math.max(documentElement?.scrollHeight || 0, documentElement?.clientHeight || 0) ||
         Number.POSITIVE_INFINITY;
-      const imageWidth = cellResizeBounds ? imageRect.width / Math.max(cellResizeBounds.scaleX || 1, 0.01) : imageRect.width;
-      const imageHeight = cellResizeBounds ? imageRect.height / Math.max(cellResizeBounds.scaleY || 1, 0.01) : imageRect.height;
+      const imageWidth = resizeBounds ? imageRect.width / Math.max(resizeBounds.scaleX || 1, 0.01) : imageRect.width;
+      const imageHeight = resizeBounds ? imageRect.height / Math.max(resizeBounds.scaleY || 1, 0.01) : imageRect.height;
       const startWidth = Math.min(maxResizeWidth, Math.max(imageWidth, TEMPLATE_EDITOR_IMAGE_MIN_SIZE));
       const startHeight = Math.min(maxResizeHeight, Math.max(imageHeight, TEMPLATE_EDITOR_IMAGE_MIN_SIZE));
-      const startLeft = cellResizeBounds
-        ? 0
-        : selectedImage.style.position === "absolute"
-          ? parseTemplateEditorPixelStyle(selectedImage.style.left, selectedImage.offsetLeft)
-          : Math.max(0, selectedImage.offsetLeft);
-      const startTop = cellResizeBounds
-        ? 0
-        : selectedImage.style.position === "absolute"
-          ? parseTemplateEditorPixelStyle(selectedImage.style.top, selectedImage.offsetTop)
-          : Math.max(0, selectedImage.offsetTop);
+      const startLeft = candidateBlockResizeBounds
+        ? candidateBlockResizeBounds.startLeft
+        : cellResizeBounds
+          ? 0
+          : selectedImage.style.position === "absolute"
+            ? parseTemplateEditorPixelStyle(selectedImage.style.left, selectedImage.offsetLeft)
+            : Math.max(0, selectedImage.offsetLeft);
+      const startTop = candidateBlockResizeBounds
+        ? candidateBlockResizeBounds.startTop
+        : cellResizeBounds
+          ? 0
+          : selectedImage.style.position === "absolute"
+            ? parseTemplateEditorPixelStyle(selectedImage.style.top, selectedImage.offsetTop)
+            : Math.max(0, selectedImage.offsetTop);
+      const startRight = candidateBlockResizeBounds
+        ? startLeft + startWidth
+        : cellResizeBounds
+          ? maxResizeWidth
+          : startLeft + startWidth;
+      const startBottom = candidateBlockResizeBounds
+        ? startTop + startHeight
+        : cellResizeBounds
+          ? maxResizeHeight
+          : startTop + startHeight;
+      const absoluteStartLeft = selectedImage.style.position === "absolute"
+        ? parseTemplateEditorPixelStyle(selectedImage.style.left, selectedImage.offsetLeft)
+        : startLeft;
+      const absoluteStartTop = selectedImage.style.position === "absolute"
+        ? parseTemplateEditorPixelStyle(selectedImage.style.top, selectedImage.offsetTop)
+        : startTop;
 
       if (cellResizeBounds) {
         const didClampCellImage =
@@ -221,6 +281,12 @@
         selectedImage.style.height = `${Math.round(startHeight)}px`;
       }
 
+      if (candidateBlockResizeBounds) {
+        applyTemplateEditorCellImageResizeStyle(selectedImage);
+        selectedImage.style.width = `${Math.round(startWidth)}px`;
+        selectedImage.style.height = `${Math.round(startHeight)}px`;
+      }
+
       state.templateEditor.imageResizeSession = {
         corner: normalizedCorner,
         directionX: directions.x,
@@ -229,25 +295,26 @@
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
-        startLeft,
-        startTop,
-        startRight: cellResizeBounds ? maxResizeWidth : startLeft + startWidth,
-        startBottom: cellResizeBounds ? maxResizeHeight : startTop + startHeight,
+        startLeft: absoluteStartLeft,
+        startTop: absoluteStartTop,
+        startRight,
+        startBottom,
         startWidth,
         startHeight,
-        lastLeft: startLeft,
-        lastTop: startTop,
+        lastLeft: absoluteStartLeft,
+        lastTop: absoluteStartTop,
         lastWidth: Math.max(Math.round(startWidth), TEMPLATE_EDITOR_IMAGE_MIN_SIZE),
         lastHeight: Math.max(Math.round(startHeight), TEMPLATE_EDITOR_IMAGE_MIN_SIZE),
         maxDocumentWidth: maxResizeWidth,
         maxDocumentHeight: maxResizeHeight,
-        scaleX: cellResizeBounds?.scaleX || 1,
-        scaleY: cellResizeBounds?.scaleY || 1,
+        scaleX: resizeBounds?.scaleX || 1,
+        scaleY: resizeBounds?.scaleY || 1,
         isCellObject: Boolean(cellResizeBounds),
+        isCandidateBlockObject: Boolean(candidateBlockResizeBounds),
         cellElement: cellResizeBounds?.cellElement || null,
         cellHeightLocked: false,
         didChange: Boolean(
-          cellResizeBounds &&
+          resizeBounds &&
             (Math.round(imageWidth) !== Math.round(startWidth) ||
               Math.round(imageHeight) !== Math.round(startHeight)),
         ),

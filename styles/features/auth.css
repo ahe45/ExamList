@@ -92,6 +92,22 @@
   white-space: nowrap;
 }
 
+.topbar-school-readonly-badge {
+  align-items: center;
+  align-self: center;
+  background: var(--danger-soft);
+  border: 1px solid rgba(210, 65, 91, 0.32);
+  border-radius: 999px;
+  color: var(--danger);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 800;
+  min-height: 30px;
+  padding: 5px 11px;
+  white-space: nowrap;
+}
+
 .topbar-separator {
   align-self: center;
   background: rgba(203, 213, 225, 0.86);

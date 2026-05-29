@@ -126,6 +126,30 @@
         });
     }
 
+    function getTemplateEditorCellPaddingElements() {
+      return [
+        getTemplateEditorCellPaddingTopElement?.(),
+        getTemplateEditorCellPaddingRightElement?.(),
+        getTemplateEditorCellPaddingBottomElement?.(),
+        getTemplateEditorCellPaddingLeftElement?.(),
+      ].filter(Boolean);
+    }
+
+    function setTemplateEditorCellPaddingControlsDisabled(isDisabled) {
+      getTemplateEditorCellPaddingElements().forEach((inputElement) => {
+        const controlElement = inputElement.closest?.(".template-toolbar-cell-padding-control") || null;
+
+        if (isDisabled) {
+          inputElement.value = "";
+        }
+
+        inputElement.placeholder = isDisabled ? "-" : "";
+        controlElement?.classList.toggle("is-disabled", isDisabled);
+        controlElement?.classList.toggle("is-empty", isDisabled && !String(inputElement.value || "").trim());
+        controlElement?.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+      });
+    }
+
     function setTemplateTableToolbarDisabled(isDisabled) {
       const tableGroupElement = getTemplateEditorModal()?.querySelector?.("[data-editor-table-toolbar-group]");
 
@@ -143,6 +167,7 @@
 
         controlElement.setAttribute("aria-disabled", isDisabled ? "true" : "false");
       });
+      setTemplateEditorCellPaddingControlsDisabled(isDisabled);
 
       if (isDisabled) {
         closeTemplateTableToolbarPanels(tableGroupElement);

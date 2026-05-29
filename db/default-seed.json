@@ -5,7 +5,7 @@
     "name": "한국대학교",
     "description": "기본값",
     "deletionPasswordHash": "",
-    "isActive": true
+    "createdAccount": "default"
   },
   "schoolSettings": {
     "id": "default",

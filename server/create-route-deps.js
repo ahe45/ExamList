@@ -1,6 +1,7 @@
 const { readBinaryBody, readJsonBody } = require("./http/body");
 const { buildContentDisposition, sendBinary, sendDownload, sendJson } = require("./http/response");
 const { createDashboardService } = require("./modules/dashboard/service");
+const { canManageSchool, getAuthUserId } = require("./modules/schools/access");
 
 function createRouteDeps(appContext) {
   const { services } = appContext;
@@ -9,7 +10,58 @@ function createRouteDeps(appContext) {
     candidateRecordService: services.candidateRecordService,
     permissionService: services.permissionService,
     pdfTemplateService: services.pdfTemplateService,
+    schoolService: services.schoolService,
   });
+
+  function getAuthState(request) {
+    return services.authService.getSessionState(request);
+  }
+
+  function getRequestAccountId(request) {
+    return getAuthUserId(getAuthState(request)) || (services.authService.isEnabled() ? "" : "system");
+  }
+
+  function canManageSchoolRecord(school, request) {
+    const role = services.authService.getRequestRoleForPermission(request);
+
+    return canManageSchool({
+      authState: getAuthState(request),
+      role,
+      school,
+    });
+  }
+
+  function withSchoolAccess(school, request) {
+    if (!school) {
+      return school;
+    }
+
+    return {
+      ...school,
+      canManage: canManageSchoolRecord(school, request),
+    };
+  }
+
+  async function withSchoolListAccess(payload = {}, request) {
+    return {
+      ...payload,
+      items: (Array.isArray(payload.items) ? payload.items : []).map((school) => withSchoolAccess(school, request)),
+    };
+  }
+
+  async function assertSchoolWriteAccess(schoolId, request) {
+    const school = await services.schoolService.getSchoolById(schoolId);
+
+    if (canManageSchoolRecord(school, request)) {
+      return school;
+    }
+
+    throw appContext.createHttpError(
+      403,
+      "이 학교를 생성한 계정 또는 슈퍼 관리자만 변경할 수 있습니다.",
+      "SCHOOL_WRITE_FORBIDDEN",
+    );
+  }
 
   function assertPermission(permissionKey, request) {
     return services.permissionService.assertPermission(
@@ -59,6 +111,7 @@ function createRouteDeps(appContext) {
 
   return Object.freeze({
     assertPermission,
+    buildAccountTemplateBuffer: (...args) => services.authService.buildAccountTemplateBuffer(...args),
     buildCandidateExportBuffer: (...args) => services.candidateRecordService.buildCandidateExportBuffer(...args),
     buildCandidateTemplateBuffer: (...args) => services.candidateRecordService.buildCandidateTemplateBuffer(...args),
     buildContentDisposition,
@@ -83,6 +136,7 @@ function createRouteDeps(appContext) {
     enqueuePdfGenerationBatch: (...args) => services.pdfGenerationService.enqueuePdfGenerationBatch(...args),
     getAccessSummary: (request) => dashboardService.getAuthSessionPayload(request).access,
     getAuthSession: (request) => dashboardService.getAuthSessionPayload(request),
+    getRequestAccountId,
     getCandidateFieldMap: () => services.candidateRecordService.getCandidateFieldMap(),
     getCandidateFilterOptions: (...args) => services.candidateRecordService.findCandidateFilterOptions(...args),
     getCandidatePhoto: (...args) => services.candidateRecordService.getCandidatePhoto(...args),
@@ -101,6 +155,7 @@ function createRouteDeps(appContext) {
     getTemplate: (...args) => services.pdfTemplateService.getTemplateById(...args),
     hasPermission,
     importCandidates: (...args) => services.candidateRecordService.importCandidates(...args),
+    importAccounts: (...args) => services.authService.importAccounts(...args),
     listAccounts: (...args) => services.authService.listAccounts(...args),
     listPdfAuditLogs: (...args) => services.pdfGenerationService.listPdfAuditLogs(...args),
     listPdfGenerationTargets: (...args) => services.pdfGenerationService.listPdfGenerationTargets(...args),
@@ -129,6 +184,9 @@ function createRouteDeps(appContext) {
     updateSchool: (...args) => services.schoolService.updateSchool(...args),
     updateSchoolSettings: (...args) => services.schoolSettingsService.updateSchoolSettings(...args),
     updateTemplate: (...args) => services.pdfTemplateService.updateTemplate(...args),
+    assertSchoolWriteAccess,
+    withSchoolAccess,
+    withSchoolListAccess,
   });
 }
 

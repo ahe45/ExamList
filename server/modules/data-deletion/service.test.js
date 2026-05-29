@@ -32,7 +32,7 @@ test("deleteProjectData deletes all project data for a school without deleting t
         "C:\\pdf\\school-1.pdf",
         "C:\\pdf\\school-1.zip",
         path.join(rootDir, "storage", "pdf-generations", "merged", "pdf-merged-1.pdf"),
-        path.join(rootDir, "storage", "candidate-photos", "A001.jpg"),
+        path.join(rootDir, "storage", "SEOUL01", "candidate-photos", "A001.jpg"),
       ].includes(filePath),
       promises: {
         rm: async (filePath, options) => {
@@ -41,6 +41,7 @@ test("deleteProjectData deletes all project data for a school without deleting t
       },
     },
     getSchoolById: async (schoolId) => ({
+      code: "SEOUL01",
       id: "school-1",
       name: schoolId === "SEOUL01" ? "서울대학교" : "학교",
     }),
@@ -113,8 +114,11 @@ test("deleteProjectData deletes all project data for a school without deleting t
       "C:\\pdf\\school-1.pdf",
       "C:\\pdf\\school-1.zip",
       path.join(rootDir, "storage", "pdf-generations", "merged", "pdf-merged-1.pdf"),
+      path.join(rootDir, "storage", "SEOUL01", "candidate-photos", "A001.jpg"),
       path.join(rootDir, "storage", "candidate-photos", "A001.jpg"),
+      path.join(rootDir, "storage", "SEOUL01", "candidate-photos", "A001.jpeg"),
       path.join(rootDir, "storage", "candidate-photos", "A001.jpeg"),
+      path.join(rootDir, "storage", "SEOUL01", "candidate-photos", "A001.png"),
       path.join(rootDir, "storage", "candidate-photos", "A001.png"),
     ],
   );

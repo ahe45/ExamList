@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess, hasAccess } from "../../app/access.js";
 import { escapeHtml } from "../../app/html-utils.js";
 import { formatCount } from "../../app/number-format.js";
 import {
@@ -15,6 +15,8 @@ export function renderPdfGenerationDetailView({ access, detail, pdfGenerations }
   const item = detail.item;
   const isRerunning = item ? pdfGenerations.rerunningGenerationIds.includes(item.id) : false;
   const lastRerunGeneration = pdfGenerations.lastRerunGeneration;
+  const hasPdfGenerationPermission = hasAccess(access, "generatePdfs");
+  const canGeneratePdfs = canUseAccess(access, "generatePdfs");
 
   if (detail.loading) {
     return `
@@ -78,14 +80,14 @@ export function renderPdfGenerationDetailView({ access, detail, pdfGenerations }
             : ""
         }
         ${
-          item.canRerun && hasAccess(access, "generatePdfs")
+          item.canRerun && hasPdfGenerationPermission
             ? `
               <button
                 class="ghost-button"
                 data-action="rerun-pdf-generation"
                 data-generation-id="${escapeHtml(item.id || "")}"
                 type="button"
-                ${isRerunning ? "disabled" : ""}
+                ${isRerunning || !canGeneratePdfs ? "disabled" : ""}
               >
                 ${isRerunning ? "재생성 중..." : "재생성"}
               </button>

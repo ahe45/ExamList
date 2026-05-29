@@ -2,6 +2,8 @@ import {
   handlePdfAuditLogAction,
   handlePdfAuditLogChange,
   handlePdfAuditLogClick,
+  handlePdfAuditLogCompositionEnd,
+  handlePdfAuditLogCompositionStart,
   handlePdfAuditLogInput,
   handlePdfAuditLogKeyDown,
 } from "./pdf-generation-audit-events.js";
@@ -20,6 +22,8 @@ import {
   handlePdfGenerationListAction,
   handlePdfGenerationListChange,
   handlePdfGenerationListClick,
+  handlePdfGenerationListCompositionEnd,
+  handlePdfGenerationListCompositionStart,
   handlePdfGenerationListInput,
   handlePdfGenerationListKeyDown,
   handlePdfGenerationListMouseDown,
@@ -45,6 +49,22 @@ export function bindPdfGenerationEventHandlers(context) {
     }
 
     await handlePdfAuditLogInput(event, context);
+  });
+
+  document.addEventListener("compositionstart", (event) => {
+    if (handlePdfGenerationListCompositionStart(event)) {
+      return;
+    }
+
+    handlePdfAuditLogCompositionStart(event);
+  });
+
+  document.addEventListener("compositionend", async (event) => {
+    if (await handlePdfGenerationListCompositionEnd(event, context)) {
+      return;
+    }
+
+    await handlePdfAuditLogCompositionEnd(event, context);
   });
 
   document.addEventListener("keydown", async (event) => {

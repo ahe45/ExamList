@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess } from "../../app/access.js";
 import { getActiveSchoolId, getActiveSchoolRouteKey } from "../../app/school-context.js";
 import { getDocumentContentRoot } from "./document-overflow.js";
 import { createDocumentCompositionRuntime } from "./document-composition-runtime.js";
@@ -43,7 +43,7 @@ export function setupTemplateEditorActions({
   };
 
   function hasPermission(permissionKey) {
-    return hasAccess(appState.summary, permissionKey);
+    return canUseAccess(appState.summary, permissionKey);
   }
 
   function getCurrentSchoolId() {

@@ -24,6 +24,54 @@ export function isObjectEditorReadOnly(surfaceElement) {
   return surfaceElement?.getAttribute?.("contenteditable") === "false" || surfaceElement?.classList?.contains("readonly");
 }
 
+function getObjectFinitePixelValue(value) {
+  const numericValue = Number.parseFloat(String(value || "").trim());
+
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+export function getObjectCandidateBlockModalElement(element, surfaceElement) {
+  const modalElement = element?.closest?.("[data-candidate-block-modal-editor-surface]") || null;
+
+  return modalElement instanceof HTMLElement && surfaceElement?.contains?.(modalElement)
+    ? modalElement
+    : null;
+}
+
+export function getObjectCandidateBlockVisualScale(element) {
+  const blockElement = element?.closest?.("[data-candidate-block-instance].is-candidate-block-focus-editor") || null;
+
+  if (!(blockElement instanceof HTMLElement)) {
+    return { x: 1, y: 1 };
+  }
+
+  const blockRect = blockElement.getBoundingClientRect();
+  const computedStyle = window.getComputedStyle(blockElement);
+  const cssScale = getObjectFinitePixelValue(
+    computedStyle.getPropertyValue("--examlist-candidate-block-focus-editor-scale") ||
+      computedStyle.getPropertyValue("--examlist-candidate-block-focus-scale"),
+  );
+  const logicalWidth =
+    getObjectFinitePixelValue(blockElement.dataset?.candidateBlockLogicalWidth) ||
+    blockElement.offsetWidth ||
+    blockElement.clientWidth ||
+    (cssScale > 0 ? blockRect.width / cssScale : 0) ||
+    blockRect.width ||
+    0;
+  const logicalHeight =
+    getObjectFinitePixelValue(blockElement.dataset?.candidateBlockLogicalHeight) ||
+    blockElement.offsetHeight ||
+    blockElement.clientHeight ||
+    (cssScale > 0 ? blockRect.height / cssScale : 0) ||
+    blockRect.height ||
+    0;
+
+  return {
+    x: Math.max(logicalWidth > 0 && blockRect.width > 0 ? blockRect.width / logicalWidth : cssScale || 1, 0.01),
+    y: Math.max(logicalHeight > 0 && blockRect.height > 0 ? blockRect.height / logicalHeight : cssScale || 1, 0.01),
+  };
+}
+
 export function getObjectAlignmentCanvasMetrics(documentElement) {
   const rect = documentElement.getBoundingClientRect();
   const width = documentElement.clientWidth || rect.width || 0;
@@ -55,11 +103,16 @@ export function getObjectAlignmentImageElements(surfaceElement) {
 }
 
 export function isObjectAlignmentTableElement(element, surfaceElement) {
+  const isDocumentTable = Boolean(
+    element?.closest?.(".template-doc") &&
+      !element.closest?.("[data-candidate-block-instance]"),
+  );
+  const isCandidateBlockModalTable = Boolean(getObjectCandidateBlockModalElement(element, surfaceElement));
+
   return Boolean(
     element instanceof HTMLTableElement &&
       surfaceElement?.contains?.(element) &&
-      element.closest?.(".template-doc") &&
-      !element.closest?.("[data-candidate-block-instance]") &&
+      (isDocumentTable || isCandidateBlockModalTable) &&
       !element.closest?.("td, th"),
   );
 }
@@ -216,12 +269,6 @@ export function getObjectTableCellElement(element, surfaceElement) {
     : null;
 }
 
-function getObjectCellFinitePixelValue(value) {
-  const numericValue = Number.parseFloat(String(value || "").trim());
-
-  return Number.isFinite(numericValue) ? numericValue : 0;
-}
-
 export function getObjectTableCellContentSize(element, surfaceElement, minimumSize = templateEditorObjectMinimumSize) {
   const cellElement = getObjectTableCellElement(element, surfaceElement);
 
@@ -231,20 +278,23 @@ export function getObjectTableCellContentSize(element, surfaceElement, minimumSi
 
   const computedStyle = window.getComputedStyle(cellElement);
   const cellRect = cellElement.getBoundingClientRect();
-  const paddingLeft = getObjectCellFinitePixelValue(computedStyle.paddingLeft);
-  const paddingRight = getObjectCellFinitePixelValue(computedStyle.paddingRight);
-  const paddingTop = getObjectCellFinitePixelValue(computedStyle.paddingTop);
-  const paddingBottom = getObjectCellFinitePixelValue(computedStyle.paddingBottom);
-  const borderLeft = getObjectCellFinitePixelValue(computedStyle.borderLeftWidth);
-  const borderRight = getObjectCellFinitePixelValue(computedStyle.borderRightWidth);
-  const borderTop = getObjectCellFinitePixelValue(computedStyle.borderTopWidth);
-  const borderBottom = getObjectCellFinitePixelValue(computedStyle.borderBottomWidth);
+  const visualScale = getObjectCandidateBlockVisualScale(cellElement);
+  const scaleX = Math.max(visualScale.x || 1, 0.01);
+  const scaleY = Math.max(visualScale.y || 1, 0.01);
+  const paddingLeft = getObjectFinitePixelValue(computedStyle.paddingLeft);
+  const paddingRight = getObjectFinitePixelValue(computedStyle.paddingRight);
+  const paddingTop = getObjectFinitePixelValue(computedStyle.paddingTop);
+  const paddingBottom = getObjectFinitePixelValue(computedStyle.paddingBottom);
+  const borderLeft = getObjectFinitePixelValue(computedStyle.borderLeftWidth);
+  const borderRight = getObjectFinitePixelValue(computedStyle.borderRightWidth);
+  const borderTop = getObjectFinitePixelValue(computedStyle.borderTopWidth);
+  const borderBottom = getObjectFinitePixelValue(computedStyle.borderBottomWidth);
   const width = Math.max(
     minimumSize,
     Math.floor(
       Math.max(
         cellElement.clientWidth - paddingLeft - paddingRight,
-        cellRect.width - paddingLeft - paddingRight - borderLeft - borderRight,
+        cellRect.width / scaleX - paddingLeft - paddingRight - borderLeft - borderRight,
         0,
       ),
     ),
@@ -254,7 +304,7 @@ export function getObjectTableCellContentSize(element, surfaceElement, minimumSi
     Math.floor(
       Math.max(
         cellElement.clientHeight - paddingTop - paddingBottom,
-        cellRect.height - paddingTop - paddingBottom - borderTop - borderBottom,
+        cellRect.height / scaleY - paddingTop - paddingBottom - borderTop - borderBottom,
         0,
       ),
     ),
@@ -277,10 +327,13 @@ export function getObjectElementSize(element, surfaceElement) {
   }
 
   const canvasMetrics = getObjectAlignmentCanvasMetrics(documentElement);
+  const candidateBlockScale = getObjectCandidateBlockVisualScale(element);
+  const scaleX = getObjectCandidateBlockModalElement(element, surfaceElement) ? candidateBlockScale.x : canvasMetrics.scaleX;
+  const scaleY = getObjectCandidateBlockModalElement(element, surfaceElement) ? candidateBlockScale.y : canvasMetrics.scaleY;
   const objectRect = element.getBoundingClientRect();
-  const width = roundObjectAlignmentValue(objectRect.width / canvasMetrics.scaleX) ||
+  const width = roundObjectAlignmentValue(objectRect.width / Math.max(scaleX || 1, 0.01)) ||
     parseObjectAlignmentPixelValue(element.style.width, element.offsetWidth || 0);
-  const height = roundObjectAlignmentValue(objectRect.height / canvasMetrics.scaleY) ||
+  const height = roundObjectAlignmentValue(objectRect.height / Math.max(scaleY || 1, 0.01)) ||
     parseObjectAlignmentPixelValue(element.style.height, element.offsetHeight || 0);
 
   return {

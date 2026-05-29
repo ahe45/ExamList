@@ -87,14 +87,13 @@
       `;
     }
 
-    function renderEditorToolbarLabeledControl({ label = "", controlMarkup = "" } = {}) {
+    function renderEditorToolbarLabeledControl({ controlMarkup = "" } = {}) {
       if (!controlMarkup) {
         return "";
       }
 
       return `
         <div class="examlist-object-insert-item">
-          <span class="examlist-object-insert-label">${escapeEditorToolbarHtml(label)}</span>
           ${controlMarkup}
         </div>
       `;

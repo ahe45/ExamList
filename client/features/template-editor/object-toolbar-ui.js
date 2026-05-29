@@ -163,7 +163,6 @@ export function createObjectSizeToolbar() {
           <small data-examlist-object-size-unit="height">px</small>
         </div>
       </label>
-      <button class="template-tool-button examlist-object-size-apply" data-examlist-object-size-apply type="button">적용</button>
     </div>
   `;
 
@@ -197,4 +196,3 @@ export function insertObjectToolbarSection(toolbarHost, sectionElement, previous
 
   objectGroup.append(sectionElement);
 }
-

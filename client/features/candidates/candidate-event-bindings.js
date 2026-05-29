@@ -1,5 +1,7 @@
 import { handleCandidateDetailAction, handleCandidateDetailInput, handleCandidateDetailPhotoChange } from "./candidate-detail-events.js";
 import {
+  handleCandidateFilterCompositionEnd,
+  handleCandidateFilterCompositionStart,
   handleCandidateFilterChange,
   handleCandidateFilterInput,
   handleCandidateTableAction,
@@ -36,6 +38,14 @@ export function bindCandidateEventHandlers(context) {
     }
 
     handleCandidateDetailInput(event, context);
+  });
+
+  document.addEventListener("compositionstart", (event) => {
+    handleCandidateFilterCompositionStart(event);
+  });
+
+  document.addEventListener("compositionend", async (event) => {
+    await handleCandidateFilterCompositionEnd(event, context);
   });
 
   document.addEventListener("click", async (event) => {

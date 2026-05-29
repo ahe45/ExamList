@@ -143,9 +143,31 @@
         cellPaddingBottomId,
         cellPaddingLeftId,
       });
+      const objectInsertSectionMarkup = `
+        <div class="template-toolbar-section examlist-object-section examlist-object-insert-control">
+          <span class="template-toolbar-section-label">삽입</span>
+          <div class="template-toolbar-group-controls examlist-object-insert-grid">
+            ${shouldRenderTableInsertInInsertGroup ? renderEditorToolbarLabeledControl({ controlMarkup: tableInsertPopoverMarkup }) : ""}
+            ${renderEditorToolbarLabeledControl({
+              controlMarkup: renderEditorToolbarImageInsertPopover({ panelId: imageInsertPanelId, openImageAttr }),
+            })}
+            ${showLinkAction
+              ? renderEditorToolbarLabeledControl({
+                  controlMarkup: renderEditorToolbarIconButton({ attributeName: actionAttr, attributeValue: linkActionValue, label: "링크 삽입", iconMarkup: EDITOR_TOOLBAR_ICON_MARKUP.link, extraClassName: "examlist-object-insert-button" }),
+                })
+              : ""}
+            ${renderEditorToolbarLabeledControl({
+              controlMarkup: renderEditorToolbarIconButton({ attributeName: insertAttr, attributeValue: "barcode", label: "바코드 삽입", iconMarkup: EDITOR_TOOLBAR_ICON_MARKUP.barcode, extraClassName: "examlist-object-insert-button" }),
+            })}
+            ${renderEditorToolbarLabeledControl({
+              controlMarkup: renderEditorToolbarIconButton({ attributeName: insertAttr, attributeValue: "qrcode", label: "QR코드 삽입", iconMarkup: EDITOR_TOOLBAR_ICON_MARKUP.qrcode, extraClassName: "examlist-object-insert-button" }),
+            })}
+          </div>
+        </div>
+      `;
 
       return `
-        <div class="template-toolbar-group">
+        <div class="template-toolbar-group" data-editor-format-toolbar-group="true">
           <span class="template-toolbar-group-label">서식</span>
           <div class="template-toolbar-section-row template-toolbar-section-row-dual">
             <div class="template-toolbar-section template-toolbar-section-compact">
@@ -202,6 +224,9 @@
             ${renderEditorToolbarColorPickerSection({ sectionLabel: "글자색", inputId: textColorId, inputValue: textColorValue, presetColors: EDITOR_TOOLBAR_TEXT_COLOR_PRESETS, colorCommand: "foreColor", fallbackValue: EDITOR_TOOLBAR_DEFAULT_TEXT_COLOR, sectionClassName: "template-toolbar-section-compact", pickerClassName: "template-toolbar-color-picker-compact" })}
             ${renderEditorToolbarColorPickerSection({ sectionLabel: "음영", inputId: textShadingId, inputValue: textShadingValue, presetColors: EDITOR_TOOLBAR_SHADING_COLOR_PRESETS, colorCommand: "hiliteColor", fallbackValue: "#fff59d", sectionClassName: "template-toolbar-section-compact", pickerClassName: "template-toolbar-color-picker-compact" })}
           </div>
+        </div>
+        <div class="template-toolbar-group examlist-object-insert-group">
+          ${objectInsertSectionMarkup}
         </div>
         <div class="template-toolbar-group template-toolbar-table-group is-disabled" data-editor-table-toolbar-group="true" aria-disabled="true">
           <span class="template-toolbar-group-label">표</span>
@@ -271,35 +296,7 @@
             `}
         </div>
         <div class="template-toolbar-group examlist-object-control">
-          <span class="template-toolbar-group-label">개체</span>
-          <div class="template-toolbar-section examlist-object-section examlist-object-insert-control">
-            <span class="template-toolbar-section-label">삽입</span>
-            <div class="template-toolbar-group-controls examlist-object-insert-grid">
-              ${shouldRenderTableInsertInInsertGroup ? renderEditorToolbarLabeledControl({ label: "표", controlMarkup: tableInsertPopoverMarkup }) : ""}
-              ${renderEditorToolbarLabeledControl({
-                label: "이미지",
-                controlMarkup: renderEditorToolbarImageInsertPopover({ panelId: imageInsertPanelId, openImageAttr }),
-              })}
-              ${showLinkAction
-                ? renderEditorToolbarLabeledControl({
-                    label: "링크",
-                    controlMarkup: renderEditorToolbarIconButton({ attributeName: actionAttr, attributeValue: linkActionValue, label: "링크 삽입", iconMarkup: EDITOR_TOOLBAR_ICON_MARKUP.link, extraClassName: "examlist-object-insert-button" }),
-                  })
-                : ""}
-              ${renderEditorToolbarLabeledControl({
-                label: "바코드",
-                controlMarkup: renderEditorToolbarIconButton({ attributeName: insertAttr, attributeValue: "barcode", label: "바코드 삽입", iconMarkup: EDITOR_TOOLBAR_ICON_MARKUP.barcode, extraClassName: "examlist-object-insert-button" }),
-              })}
-              ${renderEditorToolbarLabeledControl({
-                label: "QR코드",
-                controlMarkup: renderEditorToolbarIconButton({ attributeName: insertAttr, attributeValue: "qrcode", label: "QR코드 삽입", iconMarkup: EDITOR_TOOLBAR_ICON_MARKUP.qrcode, extraClassName: "examlist-object-insert-button" }),
-              })}
-              ${renderEditorToolbarLabeledControl({
-                label: "구분선",
-                controlMarkup: renderEditorToolbarIconButton({ attributeName: insertAttr, attributeValue: "rule", label: "구분선", iconMarkup: EDITOR_TOOLBAR_ICON_MARKUP.rule, extraClassName: "examlist-object-insert-button" }),
-              })}
-            </div>
-          </div>
+          <span class="template-toolbar-group-label">개체 편집</span>
         </div>
         <input class="upload-file-input" id="${escapeEditorToolbarAttribute(imageInputId)}" type="file" accept="image/*" />
       `;

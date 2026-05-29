@@ -3,9 +3,67 @@ const { createPermissionGuard, decodeRouteParams, readGenerationTargetFilters } 
 
 function createPdfGenerationRoutes(deps) {
   const withPermission = createPermissionGuard(deps);
+  const getUniqueGenerationIds = (generationIds = []) =>
+    Array.from(new Set((Array.isArray(generationIds) ? generationIds : [generationIds])
+      .map((generationId) => String(generationId || "").trim())
+      .filter(Boolean)));
+
+  async function assertGenerationWriteAccess(generationId, request) {
+    const generation = await deps.getPdfGenerationDetail(generationId);
+
+    await deps.assertSchoolWriteAccess(generation?.schoolId || "", request);
+    return generation;
+  }
+
+  async function assertBatchWriteAccess(batchId, request) {
+    const batch = await deps.getPdfGenerationBatch(batchId);
+
+    await deps.assertSchoolWriteAccess(batch?.schoolId || "", request);
+    return batch;
+  }
+
+  async function assertGenerationRequestWriteAccess(body = {}, request) {
+    const schoolId = String(body?.schoolId || "").trim();
+
+    if (schoolId) {
+      await deps.assertSchoolWriteAccess(schoolId, request);
+    }
+
+    const generationIds = getUniqueGenerationIds(body?.generationIds || body?.generationId);
+
+    if (generationIds.length) {
+      const schoolIds = new Set();
+
+      for (const generationId of generationIds) {
+        const generation = await deps.getPdfGenerationDetail(generationId);
+        const generationSchoolId = String(generation?.schoolId || "").trim();
+
+        if (generationSchoolId) {
+          schoolIds.add(generationSchoolId);
+        }
+      }
+
+      for (const generationSchoolId of schoolIds) {
+        await deps.assertSchoolWriteAccess(generationSchoolId, request);
+      }
+      return;
+    }
+
+    if (body?.batchId) {
+      await assertBatchWriteAccess(body.batchId, request);
+      return;
+    }
+
+    if (schoolId) {
+      return;
+    }
+
+    await deps.assertSchoolWriteAccess("", request);
+  }
 
   return [
-    exactRoute("GET", "/api/pdf-generations/targets", withPermission("generatePdfs", async ({ response, searchParams }) => {
+    exactRoute("GET", "/api/pdf-generations/targets", withPermission("generatePdfs", async ({ request, response, searchParams }) => {
+      await deps.assertSchoolWriteAccess(searchParams.get("schoolId") || "", request);
       deps.sendJson(
         response,
         200,
@@ -19,7 +77,10 @@ function createPdfGenerationRoutes(deps) {
     })),
     exactRoute("POST", "/api/pdf-generations/preview", withPermission("generatePdfs", async ({ request, response }) => {
       deps.assertPermission("previewTemplates", request);
-      deps.sendJson(response, 201, await deps.createPdfGenerationPreview(await deps.readJsonBody(request)));
+      const body = await deps.readJsonBody(request);
+
+      await deps.assertSchoolWriteAccess(body?.schoolId || body?.template?.schoolId || "", request);
+      deps.sendJson(response, 201, await deps.createPdfGenerationPreview(body));
     })),
     exactRoute("GET", "/api/pdf-generations", withPermission("viewGenerations", async ({ response, searchParams }) => {
       deps.sendJson(
@@ -37,7 +98,10 @@ function createPdfGenerationRoutes(deps) {
       );
     })),
     exactRoute("DELETE", "/api/pdf-generations", withPermission("generatePdfs", async ({ request, response }) => {
-      deps.sendJson(response, 200, await deps.deletePdfGenerations(await deps.readJsonBody(request)));
+      const body = await deps.readJsonBody(request);
+
+      await assertGenerationRequestWriteAccess(body, request);
+      deps.sendJson(response, 200, await deps.deletePdfGenerations(body));
     })),
     exactRoute("GET", "/api/pdf-generations/audit-logs", withPermission("viewGenerations", async ({ response, searchParams }) => {
       deps.sendJson(
@@ -59,7 +123,8 @@ function createPdfGenerationRoutes(deps) {
     regexRoute(
       "POST",
       /^\/api\/pdf-generations\/batches\/(?<batchId>[^/]+)\/cancel$/,
-      withPermission("generatePdfs", async ({ response, params }) => {
+      withPermission("generatePdfs", async ({ request, response, params }) => {
+        await assertBatchWriteAccess(params.batchId, request);
         deps.sendJson(response, 200, await deps.cancelPdfGenerationBatch(params.batchId));
       }),
       { getParams: (match) => decodeRouteParams(match.groups) },
@@ -73,16 +138,28 @@ function createPdfGenerationRoutes(deps) {
       { getParams: (match) => decodeRouteParams(match.groups) },
     ),
     exactRoute("POST", "/api/pdf-generations/jobs", withPermission("generatePdfs", async ({ request, response }) => {
-      deps.sendJson(response, 202, await deps.enqueuePdfGeneration(await deps.readJsonBody(request)));
+      const body = await deps.readJsonBody(request);
+
+      await assertGenerationRequestWriteAccess(body, request);
+      deps.sendJson(response, 202, await deps.enqueuePdfGeneration(body));
     })),
     exactRoute("POST", "/api/pdf-generations/batch/jobs", withPermission("generatePdfs", async ({ request, response }) => {
-      deps.sendJson(response, 202, await deps.enqueuePdfGenerationBatch(await deps.readJsonBody(request)));
+      const body = await deps.readJsonBody(request);
+
+      await assertGenerationRequestWriteAccess(body, request);
+      deps.sendJson(response, 202, await deps.enqueuePdfGenerationBatch(body));
     })),
     exactRoute("POST", "/api/pdf-generations", withPermission("generatePdfs", async ({ request, response }) => {
-      deps.sendJson(response, 201, await deps.createPdfGeneration(await deps.readJsonBody(request)));
+      const body = await deps.readJsonBody(request);
+
+      await assertGenerationRequestWriteAccess(body, request);
+      deps.sendJson(response, 201, await deps.createPdfGeneration(body));
     })),
     exactRoute("POST", "/api/pdf-generations/retention/cleanup", withPermission("generatePdfs", async ({ request, response }) => {
-      deps.sendJson(response, 200, await deps.cleanupExpiredPdfGenerations(await deps.readJsonBody(request)));
+      const body = await deps.readJsonBody(request);
+
+      await assertGenerationRequestWriteAccess(body, request);
+      deps.sendJson(response, 200, await deps.cleanupExpiredPdfGenerations(body));
     })),
     exactRoute("POST", "/api/pdf-generations/archive", withPermission("downloadPdfs", async ({ request, response }) => {
       deps.sendJson(response, 201, await deps.createPdfGenerationArchive(await deps.readJsonBody(request)));
@@ -91,15 +168,22 @@ function createPdfGenerationRoutes(deps) {
       deps.sendJson(response, 201, await deps.createPdfGenerationMergedFile(await deps.readJsonBody(request)));
     })),
     exactRoute("POST", "/api/pdf-generations/batch", withPermission("generatePdfs", async ({ request, response }) => {
-      deps.sendJson(response, 201, await deps.createPdfGenerationBatch(await deps.readJsonBody(request)));
+      const body = await deps.readJsonBody(request);
+
+      await assertGenerationRequestWriteAccess(body, request);
+      deps.sendJson(response, 201, await deps.createPdfGenerationBatch(body));
     })),
     exactRoute("POST", "/api/pdf-generations/rerun-batch", withPermission("generatePdfs", async ({ request, response }) => {
-      deps.sendJson(response, 201, await deps.rerunPdfGenerationBatch(await deps.readJsonBody(request)));
+      const body = await deps.readJsonBody(request);
+
+      await assertGenerationRequestWriteAccess(body, request);
+      deps.sendJson(response, 201, await deps.rerunPdfGenerationBatch(body));
     })),
     regexRoute(
       "POST",
       /^\/api\/pdf-generations\/(?<generationId>[^/]+)\/retry$/,
-      withPermission("generatePdfs", async ({ response, params }) => {
+      withPermission("generatePdfs", async ({ request, response, params }) => {
+        await assertGenerationWriteAccess(params.generationId, request);
         deps.sendJson(response, 202, await deps.retryPdfGeneration(params.generationId));
       }),
       { getParams: (match) => decodeRouteParams(match.groups) },
@@ -107,7 +191,8 @@ function createPdfGenerationRoutes(deps) {
     regexRoute(
       "POST",
       /^\/api\/pdf-generations\/(?<generationId>[^/]+)\/rerun$/,
-      withPermission("generatePdfs", async ({ response, params }) => {
+      withPermission("generatePdfs", async ({ request, response, params }) => {
+        await assertGenerationWriteAccess(params.generationId, request);
         deps.sendJson(response, 201, await deps.rerunPdfGeneration(params.generationId));
       }),
       { getParams: (match) => decodeRouteParams(match.groups) },

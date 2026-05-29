@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess } from "../../app/access.js";
 import { getActiveSchoolId, getActiveSchoolRouteKey } from "../../app/school-context.js";
 import {
   getPdfGenerationSelectedFilterKeysAfterSelection,
@@ -125,7 +125,7 @@ export function setupDataDeletionActions({
   }
 
   function hasPermission(permissionKey) {
-    return hasAccess(appState.summary, permissionKey);
+    return canUseAccess(appState.summary, permissionKey);
   }
 
   function getDataDeletionSelectedFilterKeys() {

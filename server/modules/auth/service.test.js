@@ -1,5 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const ExcelJS = require("exceljs");
 
 const {
   createPasswordHash,
@@ -203,6 +204,52 @@ test("auth service creates, updates, lists, and deletes database accounts", asyn
       assert.equal(store.accounts.some((account) => account.user_id === "kim"), false);
     },
   );
+});
+
+test("auth service imports accounts from an XLSX workbook", async () => {
+  const store = createAccountQueryStore([
+    {
+      id: "acct_super",
+      is_active: 1,
+      password_hash: createPasswordHash("1234"),
+      role: "super_admin",
+      user_id: "admin",
+      user_name: "관리자",
+    },
+    {
+      id: "acct_kim",
+      is_active: 1,
+      password_hash: createPasswordHash("old"),
+      role: "user",
+      user_id: "kim",
+      user_name: "김성준",
+    },
+  ]);
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("계정등록");
+
+  worksheet.addRow(["아이디", "이름", "비밀번호", "권한"]);
+  worksheet.addRow(["kim", "김성준 수정", "", "관리자"]);
+  worksheet.addRow(["lee", "이민수", "pass1234", "사용자"]);
+
+  const authService = createAuthService({
+    createHttpError,
+    query: store.query,
+  });
+  const result = await authService.importAccounts({
+    fileContentBase64: Buffer.from(await workbook.xlsx.writeBuffer()).toString("base64"),
+  });
+  const kim = store.accounts.find((account) => account.user_id === "kim");
+  const lee = store.accounts.find((account) => account.user_id === "lee");
+
+  assert.equal(result.created, 1);
+  assert.equal(result.updated, 1);
+  assert.equal(result.errors.length, 0);
+  assert.equal(kim.user_name, "김성준 수정");
+  assert.equal(kim.role, "admin");
+  assert.equal(verifyPassword("old", kim.password_hash), true);
+  assert.equal(lee.role, "user");
+  assert.equal(verifyPassword("pass1234", lee.password_hash), true);
 });
 
 test("auth service protects the last active super administrator account", async () => {

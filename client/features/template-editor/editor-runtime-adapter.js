@@ -4,6 +4,7 @@ import {
   resetCandidateBlockGridState,
   syncCandidateBlockTemplateFromSurface,
 } from "./candidate-block-grid-adapter.js";
+import { canUseAccess } from "../../app/access.js";
 import {
   flattenTemplateTags,
   normalizeTokenLabels,
@@ -390,7 +391,7 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
   }
 
   const nextMountedKey = `${template.id || ""}:${selectedPage.id || ""}`;
-  const canEdit = access?.permissions?.manageTemplates !== false;
+  const canEdit = canUseAccess(access, "manageTemplates");
 
   if (mountedEditor && mountedRoot === rootElement && mountedKey === nextMountedKey) {
     mountedTagDefinitions = getMountedTagDefinitions(appState);
@@ -400,6 +401,7 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
     prependPageSwitcher(pagePropertiesHost, appState.templateEditor);
     mountedControlDisposers = ensureEditorRuntimeControls({
       appState,
+      canEdit,
       disposers: mountedControlDisposers,
       editor: mountedEditor,
       onDirty: () => markTemplateEditorDirty(appState),
@@ -470,6 +472,7 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
   mountedDataTagViewOptionsDisposer = bindDataTagViewOptionsChanges(surfaceElement);
   mountedControlDisposers = bindEditorRuntimeControls({
     appState,
+    canEdit,
     editor,
     onDirty: () => markTemplateEditorDirty(appState),
     pagePropertiesHost,

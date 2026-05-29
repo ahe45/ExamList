@@ -1,7 +1,31 @@
-async function ensureSchoolColumns(connection, { ensureColumn }) {
+async function ensureSchoolColumns(connection, { dropIndexIfExists, ensureColumn, ensureIndex, hasColumn }) {
   await ensureColumn(connection, {
     columnName: "deletion_password_hash",
     definition: "deletion_password_hash VARCHAR(255) NOT NULL DEFAULT '' COMMENT '학교 삭제 비밀번호 해시' AFTER description",
+    tableName: "schools",
+  });
+  await ensureColumn(connection, {
+    columnName: "created_account",
+    definition: "created_account VARCHAR(100) NOT NULL DEFAULT 'system' COMMENT '학교 생성 계정 ID' AFTER deletion_password_hash",
+    tableName: "schools",
+  });
+  await connection.query(
+    `
+      UPDATE \`schools\`
+      SET \`created_account\` = 'system'
+      WHERE \`created_account\` = ''
+    `,
+  );
+  await dropIndexIfExists(connection, {
+    indexName: "idx_schools_active",
+    tableName: "schools",
+  });
+  if (await hasColumn(connection, { columnName: "is_active", tableName: "schools" })) {
+    await connection.query("ALTER TABLE `schools` DROP COLUMN `is_active`");
+  }
+  await ensureIndex(connection, {
+    definition: "KEY idx_schools_created_account (created_account, deleted_at)",
+    indexName: "idx_schools_created_account",
     tableName: "schools",
   });
 }

@@ -50,10 +50,17 @@ function renderSchoolRows(schools = [], access = null, schoolState = {}) {
   return schools
     .map(
       (school) => {
-        const canManageSchool = hasAccess(access, "manageTemplates");
+        const hasSchoolManagement = hasAccess(access, "manageTemplates");
+        const canManageSchool = hasSchoolManagement && school.canManage !== false;
         const isDeleting = Boolean(schoolState?.isDeleting);
         const isDeletingThisSchool = isDeleting && String(schoolState?.deletingSchoolId || "") === String(school.id || "");
-        const isDeleteDisabled = isProtectedSchool(school) || isDeleting;
+        const isSettingsDisabled = !canManageSchool || isDeleting;
+        const isDeleteDisabled = !canManageSchool || isProtectedSchool(school) || isDeleting;
+        const deleteTitle = !canManageSchool
+          ? "이 학교는 생성자 또는 슈퍼 관리자만 삭제할 수 있습니다."
+          : isProtectedSchool(school)
+            ? "한국대학교는 삭제할 수 없습니다."
+            : "삭제";
 
         return `
         <article
@@ -71,13 +78,14 @@ function renderSchoolRows(schools = [], access = null, schoolState = {}) {
               <span class="school-meta-badge">양식 ${formatCount(school.templateCount)}개</span>
               <span class="school-meta-badge">수험생 ${formatCount(school.candidateCount)}건</span>
               <span class="school-meta-badge">최종수정일시 : ${escapeHtml(formatUpdatedAtLabel(school.updatedAt))}</span>
+              <span class="school-meta-badge school-created-account-badge">${escapeHtml(school.createdAccount || "-")}</span>
             </span>
           </button>
           ${
-            canManageSchool
+            hasSchoolManagement
               ? `
                 <div class="school-list-side">
-                  <button class="school-icon-action school-settings-button" data-action="open-school-edit-modal" data-school-id="${escapeHtml(school.id)}" type="button" aria-label="${escapeHtml(school.name)} 설정" title="설정" ${isDeleting ? "disabled" : ""}>
+                  <button class="school-icon-action school-settings-button" data-action="open-school-edit-modal" data-school-id="${escapeHtml(school.id)}" type="button" aria-label="${escapeHtml(school.name)} 설정" title="설정" ${isSettingsDisabled ? "disabled" : ""}>
                     ${schoolActionIcons.settings}
                   </button>
                   <button
@@ -86,7 +94,7 @@ function renderSchoolRows(schools = [], access = null, schoolState = {}) {
                     data-school-id="${escapeHtml(school.id)}"
                     type="button"
                     aria-label="${escapeHtml(school.name)} 삭제"
-                    title="${isDeleteDisabled ? "한국대학교는 삭제할 수 없습니다." : "삭제"}"
+                    title="${escapeHtml(deleteTitle)}"
                     ${isDeleteDisabled ? "disabled" : ""}
                   >
                     ${schoolActionIcons.trash}

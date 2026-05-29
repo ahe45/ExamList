@@ -4,24 +4,40 @@ const { createCandidatePhotoFileStorage } = require("./photo-file-storage");
 const { createCandidatePhotoParser } = require("./photo-parser");
 const { createCandidatePhotoRecordService } = require("./photo-record-service");
 const { createCandidatePhotoArchiveSessionStore } = require("./photo-archive-session-store");
+const {
+  resolveSchoolStorageRoot,
+  resolveStorageBaseRoot,
+} = require("../storage-paths");
 
 function createCandidatePhotoService({
   createHttpError,
+  getSchoolById = null,
   getPool,
-  photoStorageDirName = "storage/candidate-photos",
   query,
   rootDir = process.cwd(),
 }) {
-  const photoStorageDirectoryPath = path.join(rootDir, photoStorageDirName);
   const photoArchiveSessionTtlMinutes = Number(process.env.EXAMLIST_PHOTO_ARCHIVE_SESSION_TTL_MINUTES) || 30;
+  const schoolStorageCodeCache = new Map();
+  const legacyPhotoArchiveSessionDirectoryPath = path.join(
+    resolveStorageBaseRoot(path, rootDir),
+    "tmp",
+    "candidate-photo-archives",
+  );
   const photoArchiveSessionStore = createCandidatePhotoArchiveSessionStore({
     createHttpError,
-    directoryPath: path.join(rootDir, "storage", "tmp", "candidate-photo-archives"),
+    directoryPath: legacyPhotoArchiveSessionDirectoryPath,
+    resolveDirectoryPath: ({ schoolStorageCode } = {}) => {
+      const normalizedSchoolStorageCode = String(schoolStorageCode || "").trim();
+
+      return normalizedSchoolStorageCode
+        ? path.join(resolveSchoolStorageRoot(path, rootDir, normalizedSchoolStorageCode), "tmp", "candidate-photo-archives")
+        : legacyPhotoArchiveSessionDirectoryPath;
+    },
     ttlMs: photoArchiveSessionTtlMinutes * 60 * 1000,
   });
   const photoStorage = createCandidatePhotoFileStorage({
     createHttpError,
-    photoStorageDirectoryPath,
+    rootDir,
   });
   const photoParser = createCandidatePhotoParser({
     createHttpError,
@@ -36,6 +52,7 @@ function createCandidatePhotoService({
     photoArchiveSessionStore,
     persistStoredCandidatePhotoFile: photoStorage.persistStoredCandidatePhotoFile,
     query,
+    resolveSchoolStorageCode,
   });
   const photoRecordService = createCandidatePhotoRecordService({
     buildStoredCandidatePhotoFileRecord: photoStorage.buildStoredCandidatePhotoFileRecord,
@@ -44,7 +61,32 @@ function createCandidatePhotoService({
     persistStoredCandidatePhotoFile: photoStorage.persistStoredCandidatePhotoFile,
     query,
     readStoredCandidatePhotoFile: photoStorage.readStoredCandidatePhotoFile,
+    resolveSchoolStorageCode,
   });
+
+  async function resolveSchoolStorageCode(schoolId = "") {
+    const normalizedSchoolId = String(schoolId || "").trim() || "school-default";
+
+    if (!schoolStorageCodeCache.has(normalizedSchoolId)) {
+      schoolStorageCodeCache.set(
+        normalizedSchoolId,
+        (async () => {
+          if (typeof getSchoolById === "function") {
+            const school = await getSchoolById(normalizedSchoolId).catch(() => null);
+            const schoolCode = String(school?.code || "").trim();
+
+            if (schoolCode) {
+              return schoolCode;
+            }
+          }
+
+          return normalizedSchoolId;
+        })(),
+      );
+    }
+
+    return schoolStorageCodeCache.get(normalizedSchoolId);
+  }
 
   function resolveCandidateExamineeNo(candidate = {}) {
     return String(candidate.examineeNo || candidate.examNo || "").trim();
@@ -74,6 +116,7 @@ function createCandidatePhotoService({
     }
 
     const examineeNo = resolveCandidateExamineeNo(candidate);
+    const schoolStorageCode = await resolveSchoolStorageCode(candidate.schoolId);
 
     if (!examineeNo) {
       return candidate;
@@ -82,6 +125,7 @@ function createCandidatePhotoService({
     const storedPhoto = await photoStorage.readStoredCandidatePhotoFile(
       examineeNo,
       resolveCandidatePhotoName(candidate),
+      { schoolStorageCode },
     );
     const photoUrl = createPhotoDataUrl(storedPhoto);
 

@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess, hasAccess } from "../../app/access.js";
 import { escapeHtml } from "../../app/html-utils.js";
 import { formatCount } from "../../app/number-format.js";
 import {
@@ -9,6 +9,8 @@ import {
 
 export function renderGenerationOperations(pdfGenerations, access) {
   const auditLogs = Array.isArray(pdfGenerations.auditLogs) ? pdfGenerations.auditLogs : [];
+  const hasPdfGenerationPermission = hasAccess(access, "generatePdfs");
+  const canGeneratePdfs = canUseAccess(access, "generatePdfs");
 
   return `
     <section class="generation-operations-panel">
@@ -19,13 +21,13 @@ export function renderGenerationOperations(pdfGenerations, access) {
             <h3>만료 PDF 파일 정리</h3>
           </div>
           ${
-            hasAccess(access, "generatePdfs")
+            hasPdfGenerationPermission
               ? `
                 <button
                   class="ghost-button"
                   data-action="cleanup-expired-pdf-generations"
                   type="button"
-                  ${pdfGenerations.isCleaningRetention ? "disabled" : ""}
+                  ${pdfGenerations.isCleaningRetention || !canGeneratePdfs ? "disabled" : ""}
                 >
                   ${pdfGenerations.isCleaningRetention ? "정리 중..." : "만료 파일 정리"}
                 </button>

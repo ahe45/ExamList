@@ -30,7 +30,6 @@ function normalizeSchoolPayload(payload = {}, createHttpError) {
   return {
     code,
     description,
-    isActive: payload.isActive === false ? false : true,
     name,
   };
 }
@@ -54,9 +53,9 @@ function mapSchoolRow(row = {}) {
   return {
     candidateCount: Number(row.candidateCount) || 0,
     code: String(row.code || ""),
+    createdAccount: String(row.createdAccount || ""),
     description: String(row.description || ""),
     id: String(row.id || ""),
-    isActive: Boolean(row.isActive),
     name: String(row.name || ""),
     templateCount: Number(row.templateCount) || 0,
     updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt || ""),

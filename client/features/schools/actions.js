@@ -15,6 +15,10 @@ export function setupSchoolActions({ appState, navigateToPath, onStateChange }) 
     return hasAccess(appState.summary, "manageTemplates");
   }
 
+  function canManageSchoolRecord(school = null) {
+    return canManageSchools() && school?.canManage !== false;
+  }
+
   function canDeleteSchoolsWithoutPassword() {
     return hasAccess(appState.summary, "deleteSchoolsWithoutPassword");
   }
@@ -52,6 +56,11 @@ export function setupSchoolActions({ appState, navigateToPath, onStateChange }) 
     }
 
     const school = appState.schools.items.find((item) => String(item.id || "") === normalizedSchoolId) || null;
+
+    if (!canManageSchoolRecord(school)) {
+      showToast("이 학교를 생성한 계정 또는 슈퍼 관리자만 삭제할 수 있습니다.", { tone: "warning" });
+      return;
+    }
 
     if (!window.confirm(`"${school?.name || "선택한 학교"}"을 삭제하시겠습니까?\n연결된 수험생 데이터, 양식, PDF 생성 이력과 파일, 학교 설정도 함께 삭제됩니다.`)) {
       return;

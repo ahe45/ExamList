@@ -34,3 +34,30 @@ test("candidate photo archive session store writes and deletes preview ZIP sessi
     await fs.promises.rm(directoryPath, { force: true, recursive: true });
   }
 });
+
+test("candidate photo archive session store cleans dynamic school directories in place", async () => {
+  const rootDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "examlist-photo-session-dynamic-"));
+  const defaultDirectoryPath = path.join(rootDir, "default");
+  const store = createCandidatePhotoArchiveSessionStore({
+    createHttpError,
+    directoryPath: defaultDirectoryPath,
+    resolveDirectoryPath: ({ schoolStorageCode } = {}) =>
+      path.join(rootDir, String(schoolStorageCode || "default")),
+    ttlMs: 60 * 1000,
+  });
+  const options = { schoolStorageCode: "SEOUL01" };
+
+  try {
+    const firstSession = await store.createSession(Buffer.from("first"), {}, options);
+    await store.createSession(Buffer.from("second"), {}, options);
+    const restoredBuffer = await store.readSessionBuffer(firstSession.token, options);
+
+    assert.equal(restoredBuffer.toString("utf8"), "first");
+    assert.equal(
+      fs.existsSync(path.join(rootDir, "SEOUL01", `${firstSession.token}.json`)),
+      true,
+    );
+  } finally {
+    await fs.promises.rm(rootDir, { force: true, recursive: true });
+  }
+});

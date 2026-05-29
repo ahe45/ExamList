@@ -3,13 +3,13 @@ import {
   getCandidateTableState,
 } from "./candidate-table-model.js";
 
-export function renderUploadHeaderAction(canManageCandidates) {
+export function renderUploadHeaderAction(hasCandidateManagement, canManageCandidates = hasCandidateManagement) {
   return `
     <div class="table-header-actions">
       <button class="outline-button" data-action="download-candidates" type="button">다운로드</button>
       ${
-        canManageCandidates
-          ? `<button class="primary-button" data-action="open-candidate-upload-modal" type="button">데이터 업로드</button>`
+        hasCandidateManagement
+          ? `<button class="primary-button" data-action="open-candidate-upload-modal" type="button" ${canManageCandidates ? "" : "disabled"}>데이터 업로드</button>`
           : ""
       }
     </div>

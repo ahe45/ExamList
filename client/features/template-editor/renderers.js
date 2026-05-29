@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess, hasAccess } from "../../app/access.js";
 import { escapeHtml } from "../../app/html-utils.js";
 import { getPageDocumentHtml } from "./document-editor.js";
 import { renderDocumentToolbar } from "./document-toolbar-renderer.js";
@@ -11,7 +11,7 @@ const editorCanvasDisplayScale = 4 / 3;
 
 function renderDataTagCatalog(editor, access) {
   const groups = Array.isArray(editor?.dataTags?.groups) ? editor.dataTags.groups : [];
-  const canInsertDataTag = hasAccess(access, "manageTemplates");
+  const canInsertDataTag = canUseAccess(access, "manageTemplates");
   const tags = groups.flatMap((group) => (Array.isArray(group.tags) ? group.tags : [])).filter(isVisibleDataTag);
 
   return `
@@ -55,18 +55,22 @@ function isVisibleDataTag(tag = {}) {
 
 function renderEditorSidebarFooter(editor, access) {
   const actionButtons = [];
+  const hasTemplateManagement = hasAccess(access, "manageTemplates");
+  const canManageTemplates = canUseAccess(access, "manageTemplates");
+  const hasTemplatePreview = hasAccess(access, "previewTemplates");
+  const canPreviewTemplates = canUseAccess(access, "previewTemplates");
 
-  if (hasAccess(access, "manageTemplates")) {
+  if (hasTemplateManagement) {
     actionButtons.push(`
-      <button class="primary-button" data-action="save-template-layout" type="button" ${editor.isSaving ? "disabled" : ""}>
+      <button class="primary-button" data-action="save-template-layout" type="button" ${editor.isSaving || !canManageTemplates ? "disabled" : ""}>
         ${editor.isSaving ? "저장 중..." : "저장"}
       </button>
     `);
   }
 
-  if (hasAccess(access, "previewTemplates")) {
+  if (hasTemplatePreview) {
     actionButtons.push(`
-      <button class="ghost-button" data-action="open-template-preview" type="button" ${editor.isPreviewLoading ? "disabled" : ""}>
+      <button class="ghost-button" data-action="open-template-preview" type="button" ${editor.isPreviewLoading || !canPreviewTemplates ? "disabled" : ""}>
         ${editor.isPreviewLoading ? "미리보기 생성 중..." : "미리보기"}
       </button>
     `);
@@ -138,7 +142,7 @@ export function renderTemplateEditorView({ access, editor }) {
   }
 
   const selectedPage = getSelectedPage(editor);
-  const canManageTemplates = hasAccess(access, "manageTemplates");
+  const canManageTemplates = canUseAccess(access, "manageTemplates");
 
   return `
     <section class="template-editor-shell">

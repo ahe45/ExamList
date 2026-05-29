@@ -1,6 +1,7 @@
 import {
   applyObjectAlignmentSelection,
   clearObjectAlignmentSelection,
+  getObjectCandidateBlockModalElement,
   getObjectAlignmentEventTarget,
   getObjectTableCellElement,
   getSelectedObjectAlignmentElements,
@@ -104,11 +105,16 @@ export function bindObjectAlignmentControls({ editor, surfaceElement, toolbarHos
     const selectedElements = getSelectedObjectAlignmentElements(surfaceElement);
     const selectedCount = selectedElements.length;
     const hasCellContainedObject = selectedElements.some((element) => getObjectTableCellElement(element, surfaceElement));
+    const hasCandidateBlockModalObject = selectedElements.some((element) => getObjectCandidateBlockModalElement(element, surfaceElement));
 
     getOptions().forEach((option) => {
       const command = option.dataset.examlistObjectAlign || "";
       const minimumCount = command.startsWith("distribute-") ? 3 : 1;
-      const disabled = isObjectEditorReadOnly(surfaceElement) || selectedCount < minimumCount || hasCellContainedObject;
+      const disabled =
+        isObjectEditorReadOnly(surfaceElement) ||
+        selectedCount < minimumCount ||
+        hasCellContainedObject ||
+        hasCandidateBlockModalObject;
 
       option.disabled = disabled;
       option.setAttribute("aria-disabled", disabled ? "true" : "false");

@@ -36,10 +36,10 @@
 
       event.preventDefault();
 
-      const deltaX = event.clientX - moveSession.startX;
-      const deltaY = event.clientY - moveSession.startY;
+      const visualDeltaX = event.clientX - moveSession.startX;
+      const visualDeltaY = event.clientY - moveSession.startY;
 
-      if (!moveSession.isActive && Math.hypot(deltaX, deltaY) < 4) {
+      if (!moveSession.isActive && Math.hypot(visualDeltaX, visualDeltaY) < 4) {
         return;
       }
 
@@ -55,6 +55,11 @@
         moveSession.startTop = startingPosition.top;
         moveSession.lastLeft = startingPosition.left;
         moveSession.lastTop = startingPosition.top;
+        moveSession.scaleX = Math.max(Number(startingPosition.scaleX || 1) || 1, 0.01);
+        moveSession.scaleY = Math.max(Number(startingPosition.scaleY || 1) || 1, 0.01);
+        moveSession.boundsWidth = Number(startingPosition.boundsWidth) || 0;
+        moveSession.boundsHeight = Number(startingPosition.boundsHeight) || 0;
+        moveSession.boundsElement = startingPosition.boundsElement || null;
         moveSession.isActive = true;
         templateEditorSurface?.classList.add("is-image-moving");
         moveSession.image.classList.add("is-moving-object");
@@ -62,18 +67,28 @@
 
       const documentElement = getTemplateEditorDocumentElement();
 
-      if (!documentElement) {
+      if (!documentElement && !moveSession.boundsElement) {
         return;
       }
 
       const imageRect = moveSession.image.getBoundingClientRect();
+      const activeScaleX = Math.max(Number(moveSession.scaleX || 1) || 1, 0.01);
+      const activeScaleY = Math.max(Number(moveSession.scaleY || 1) || 1, 0.01);
+      const deltaX = visualDeltaX / activeScaleX;
+      const deltaY = visualDeltaY / activeScaleY;
+      const imageWidth = imageRect.width / activeScaleX;
+      const imageHeight = imageRect.height / activeScaleY;
+      const boundsWidth = moveSession.boundsWidth || documentElement?.clientWidth || 0;
+      const boundsHeight =
+        moveSession.boundsHeight ||
+        Math.max(documentElement?.scrollHeight || 0, documentElement?.clientHeight || 0);
       const nextLeft = geometry.getTemplateEditorBoundedCoordinate(
         moveSession.startLeft + deltaX,
-        documentElement.clientWidth - imageRect.width,
+        boundsWidth - imageWidth,
       );
       const nextTop = geometry.getTemplateEditorBoundedCoordinate(
         moveSession.startTop + deltaY,
-        Math.max(documentElement.scrollHeight, documentElement.clientHeight) - imageRect.height,
+        boundsHeight - imageHeight,
       );
 
       if (nextLeft === moveSession.lastLeft && nextTop === moveSession.lastTop) {
@@ -143,6 +158,11 @@
         startTop: null,
         lastLeft: null,
         lastTop: null,
+        scaleX: 1,
+        scaleY: 1,
+        boundsElement: null,
+        boundsWidth: 0,
+        boundsHeight: 0,
         isActive: false,
         didChange: false,
       };

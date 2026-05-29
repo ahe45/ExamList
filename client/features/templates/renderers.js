@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess, hasAccess } from "../../app/access.js";
 import { escapeHtml } from "../../app/html-utils.js";
 import { formatCount } from "../../app/number-format.js";
 import { renderTemplateCreateModal } from "./template-create-modal-renderer.js";
@@ -60,7 +60,7 @@ function getTemplateCardMetaEditorInputId(templateId = "", field = "") {
   return `templateCardMetaEditor-${templateId}-${field}`;
 }
 
-function renderTemplateCardMetaEditButton(templateId, field, label) {
+function renderTemplateCardMetaEditButton(templateId, field, label, disabled = false) {
   return `
     <button
       class="icon-button template-card-meta-edit-button"
@@ -70,6 +70,7 @@ function renderTemplateCardMetaEditButton(templateId, field, label) {
       type="button"
       aria-label="${escapeHtml(label)}"
       title="${escapeHtml(label)}"
+      ${disabled ? "disabled" : ""}
     >
       ${templateActionIcons.edit}
     </button>
@@ -86,13 +87,14 @@ function renderTemplateCardMetaEditor(item, field, cardEditor = {}, options = {}
   const tagName = options.tagName || "p";
   const inputLabel = options.inputLabel || "";
   const placeholder = options.placeholder || "";
+  const canShowEdit = options.canShowEdit !== false;
   const canEdit = options.canEdit !== false;
 
   if (!isActive) {
     return `
       <div class="template-card-meta-row template-card-meta-row-${escapeHtml(field)}">
         <${tagName}>${escapeHtml(displayValue || fallbackValue)}</${tagName}>
-        ${canEdit ? renderTemplateCardMetaEditButton(item.id, field, inputLabel) : ""}
+        ${canShowEdit ? renderTemplateCardMetaEditButton(item.id, field, inputLabel, !canEdit) : ""}
       </div>
     `;
   }
@@ -142,6 +144,11 @@ function renderTemplateCardMetaEditor(item, field, cardEditor = {}, options = {}
 }
 
 function renderTemplateCards(items = [], access = null, cardEditor = {}) {
+  const hasTemplateManagement = hasAccess(access, "manageTemplates");
+  const canManageTemplates = canUseAccess(access, "manageTemplates");
+  const hasTemplateDeletion = hasAccess(access, "deleteTemplates");
+  const canDeleteTemplates = canUseAccess(access, "deleteTemplates");
+
   if (!items.length) {
     return `
       <div class="template-empty-card">
@@ -161,13 +168,15 @@ function renderTemplateCards(items = [], access = null, cardEditor = {}) {
                 tagName: "h3",
                 inputLabel: "양식명 수정",
                 placeholder: "양식명을 입력하세요.",
-                canEdit: hasAccess(access, "manageTemplates"),
+                canEdit: canManageTemplates,
+                canShowEdit: hasTemplateManagement,
               })}
               ${renderTemplateCardMetaEditor(item, "description", cardEditor, {
                 tagName: "p",
                 inputLabel: "양식 설명 수정",
                 placeholder: "양식 설명을 입력하세요.",
-                canEdit: hasAccess(access, "manageTemplates"),
+                canEdit: canManageTemplates,
+                canShowEdit: hasTemplateManagement,
               })}
             </div>
           </div>
@@ -187,17 +196,17 @@ function renderTemplateCards(items = [], access = null, cardEditor = {}) {
               <span>수정</span>
             </button>
             ${
-              hasAccess(access, "manageTemplates") || hasAccess(access, "deleteTemplates")
+              hasTemplateManagement || hasTemplateDeletion
                 ? `
                   <div class="template-card-action-tools">
                     ${
-                      hasAccess(access, "manageTemplates")
-                        ? `<button class="template-icon-action" data-action="duplicate-template" data-template-id="${escapeHtml(item.id)}" type="button" aria-label="${escapeHtml(item.name)} 복사" title="복사">${templateActionIcons.copy}</button>`
+                      hasTemplateManagement
+                        ? `<button class="template-icon-action" data-action="duplicate-template" data-template-id="${escapeHtml(item.id)}" type="button" aria-label="${escapeHtml(item.name)} 복사" title="복사" ${canManageTemplates ? "" : "disabled"}>${templateActionIcons.copy}</button>`
                         : ""
                     }
                     ${
-                      hasAccess(access, "deleteTemplates")
-                        ? `<button class="template-icon-action danger" data-action="delete-template" data-template-id="${escapeHtml(item.id)}" type="button" aria-label="${escapeHtml(item.name)} 삭제" title="삭제">${templateActionIcons.trash}</button>`
+                      hasTemplateDeletion
+                        ? `<button class="template-icon-action danger" data-action="delete-template" data-template-id="${escapeHtml(item.id)}" type="button" aria-label="${escapeHtml(item.name)} 삭제" title="삭제" ${canDeleteTemplates ? "" : "disabled"}>${templateActionIcons.trash}</button>`
                         : ""
                     }
                   </div>
@@ -212,6 +221,9 @@ function renderTemplateCards(items = [], access = null, cardEditor = {}) {
 }
 
 export function renderTemplateListView({ access, templates }) {
+  const hasTemplateManagement = hasAccess(access, "manageTemplates");
+  const canManageTemplates = canUseAccess(access, "manageTemplates");
+
   return `
     <section class="view-stack table-view-stack template-management-panel">
       <article class="table-card result-grid-card template-management-card">
@@ -223,9 +235,9 @@ export function renderTemplateListView({ access, templates }) {
           <div class="table-header-actions template-management-header-actions">
             <span class="status-badge neutral">총 ${formatCount(Number(templates.total) || (Array.isArray(templates.items) ? templates.items.length : 0))}건</span>
             ${
-              hasAccess(access, "manageTemplates")
+              hasTemplateManagement
                 ? `
-                  <button class="primary-button" data-action="create-template" type="button">
+                  <button class="primary-button" data-action="create-template" type="button" ${canManageTemplates ? "" : "disabled"}>
                     <svg class="button-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M12 5v14"></path>
                       <path d="M5 12h14"></path>

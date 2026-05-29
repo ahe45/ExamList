@@ -1,6 +1,42 @@
+import {
+  handleGridFilterSearchCompositionEnd,
+  handleGridFilterSearchInput,
+  markGridFilterSearchCompositionStart,
+} from "../../app/grid-filter-search-events.js";
 import { showToast } from "../../app/toast.js";
 import { fetchBlob, triggerBlobDownload } from "./candidate-action-utils.js";
+import {
+  renderCandidateFilterOptions,
+  renderCandidateFilterSelectAll,
+} from "./candidate-filter-menu-renderer.js";
 import { getFilteredCandidateRows } from "./renderers.js";
+
+const candidateFilterSearchInputSelector = "[data-candidate-filter-search-input]";
+
+function refreshCandidateFilterMenuOptions(context) {
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const tableState = context.getCandidateTableState();
+  const columnKey = String(tableState.filterMenuKey || "");
+  const menuElement = document.querySelector(".candidate-filter-menu");
+  const selectAllElement = menuElement?.querySelector?.(".table-filter-select-all") || null;
+  const optionListElement = menuElement?.querySelector?.(".table-filter-option-list") || null;
+
+  if (!columnKey || !selectAllElement || !optionListElement || typeof context.getVisibleCandidateFilterOptions !== "function") {
+    return false;
+  }
+
+  const visibleOptionValues = context.getVisibleCandidateFilterOptions(columnKey);
+  const selectedValues = new Set((tableState.filters?.[columnKey] || []).map((value) => String(value || "")));
+  const isAllVisibleSelected =
+    visibleOptionValues.length > 0 && visibleOptionValues.every((value) => selectedValues.has(String(value || "")));
+
+  selectAllElement.innerHTML = renderCandidateFilterSelectAll(columnKey, isAllVisibleSelected);
+  optionListElement.innerHTML = renderCandidateFilterOptions(columnKey, visibleOptionValues, selectedValues);
+  return true;
+}
 
 function resolveCandidateFilterMenuPosition(triggerElement) {
   if (!triggerElement || typeof window === "undefined") {
@@ -23,23 +59,6 @@ function resolveCandidateFilterMenuPosition(triggerElement) {
     left: Math.round(left),
     top: Math.round(top),
   };
-}
-
-function restoreCandidateFilterSearchFocus(selectionStart = 0, selectionEnd = selectionStart) {
-  if (typeof window === "undefined" || typeof document === "undefined") {
-    return;
-  }
-
-  window.requestAnimationFrame(() => {
-    const inputElement = document.querySelector("[data-candidate-filter-search-input]");
-
-    if (!(inputElement instanceof HTMLInputElement)) {
-      return;
-    }
-
-    inputElement.focus({ preventScroll: true });
-    inputElement.setSelectionRange(selectionStart, selectionEnd);
-  });
 }
 
 export async function handleCandidateFilterChange(event, context) {
@@ -103,19 +122,25 @@ export async function handleCandidateTableChange(event, context) {
 }
 
 export async function handleCandidateFilterInput(event, context) {
-  const { getCandidateTableState, onStateChangePreservingCandidateGridScroll } = context;
+  return handleGridFilterSearchInput(event, {
+    getTableState: context.getCandidateTableState,
+    onStateChange: context.onStateChangePreservingCandidateGridScroll,
+    refreshFilterMenu: () => refreshCandidateFilterMenuOptions(context),
+    selector: candidateFilterSearchInputSelector,
+  });
+}
 
-  if (!event.target.matches("[data-candidate-filter-search-input]")) {
-    return false;
-  }
+export function handleCandidateFilterCompositionStart(event) {
+  return markGridFilterSearchCompositionStart(event, candidateFilterSearchInputSelector);
+}
 
-  const selectionStart = Number.isFinite(event.target.selectionStart) ? event.target.selectionStart : String(event.target.value || "").length;
-  const selectionEnd = Number.isFinite(event.target.selectionEnd) ? event.target.selectionEnd : selectionStart;
-
-  getCandidateTableState().filterMenuSearch = event.target.value;
-  await onStateChangePreservingCandidateGridScroll();
-  restoreCandidateFilterSearchFocus(selectionStart, selectionEnd);
-  return true;
+export async function handleCandidateFilterCompositionEnd(event, context) {
+  return handleGridFilterSearchCompositionEnd(event, {
+    getTableState: context.getCandidateTableState,
+    onStateChange: context.onStateChangePreservingCandidateGridScroll,
+    refreshFilterMenu: () => refreshCandidateFilterMenuOptions(context),
+    selector: candidateFilterSearchInputSelector,
+  });
 }
 
 export async function handleCandidateTableKeyDown(event, context) {

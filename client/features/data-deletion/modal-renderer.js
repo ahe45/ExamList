@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess } from "../../app/access.js";
 import { escapeHtml } from "../../app/html-utils.js";
 import { formatCount } from "../../app/number-format.js";
 import {
@@ -40,7 +40,7 @@ export function renderDataDeletionModal(dataDeletion = {}, { access, school } = 
   const isLoadingOptions = Boolean(modal.isLoadingOptions);
   const isLoadingSummary = Boolean(modal.isLoadingSummary);
   const isBusy = isDeleting || isLoadingOptions || isLoadingSummary;
-  const canDeleteData = hasAccess(access, "deleteProjectData");
+  const canDeleteData = canUseAccess(access, "deleteProjectData");
   const hasSchool = Boolean(String(school?.id || "").trim());
   const isAll = selectedItem?.scope === "all";
   const totalCount = Number(scopeSummary?.totalCount) || 0;

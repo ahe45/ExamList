@@ -55,3 +55,35 @@ test("template create modal renders school and template selection for cross-scho
   assert.match(html, /원본 양식/);
   assert.match(html, /value="template-source"\s+checked/);
 });
+
+test("template management buttons stay visible but disabled for read-only school access", () => {
+  const html = renderTemplateListView({
+    access: {
+      permissions: {
+        deleteTemplates: true,
+        manageTemplates: true,
+      },
+      schoolAccess: {
+        canManage: false,
+        schoolId: "school-readonly",
+      },
+    },
+    templates: {
+      cardEditor: {},
+      createModal: { isOpen: false },
+      items: [
+        {
+          description: "읽기 전용",
+          id: "template-1",
+          name: "양식",
+          updatedAt: "2026-05-20T00:00:00.000Z",
+        },
+      ],
+      total: 1,
+    },
+  });
+
+  assert.match(html, /data-action="create-template"[\s\S]*disabled/);
+  assert.match(html, /data-action="duplicate-template"[\s\S]*disabled/);
+  assert.match(html, /data-action="delete-template"[\s\S]*disabled/);
+});

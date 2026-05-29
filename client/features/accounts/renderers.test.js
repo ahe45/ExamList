@@ -36,6 +36,7 @@ test("account management view renders account rows for super administrators", ()
   assert.doesNotMatch(html, /table-column-status/);
   assert.match(html, /data-action="refresh-accounts"/);
   assert.match(html, /data-action="open-account-create-modal"/);
+  assert.match(html, /data-action="open-account-upload-modal"/);
   assert.match(html, /data-action="open-account-edit-modal"/);
   assert.match(html, /data-action="delete-account"/);
   assert.match(html, /table-inline-icon-button/);
@@ -43,6 +44,33 @@ test("account management view renders account rows for super administrators", ()
   assert.match(html, /<div class="table-header-static">삭제<\/div>/);
   assert.match(html, /title="설정"/);
   assert.match(html, /title="삭제"/);
+});
+
+test("account management view renders the excel upload modal", () => {
+  const html = renderAccountManagementView({
+    access: { permissions: { manageAccounts: true } },
+    accounts: {
+      items: [],
+      total: 0,
+      uploadModal: {
+        fileName: "accounts.xlsx",
+        isOpen: true,
+        isUploading: false,
+        result: {
+          created: 2,
+          errors: [],
+          updated: 1,
+        },
+      },
+    },
+  });
+
+  assert.match(html, /계정 엑셀 업로드/);
+  assert.match(html, /data-account-upload-form/);
+  assert.match(html, /data-account-upload-file/);
+  assert.match(html, /업로드 양식/);
+  assert.match(html, /accounts\.xlsx/);
+  assert.match(html, /추가 2개 · 수정 1개 · 실패 0개/);
 });
 
 test("account management view renders the create account modal", () => {

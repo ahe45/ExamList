@@ -11,6 +11,7 @@ const {
   parseConfiguredUsers,
 } = require("./accounts");
 const { createSessionService } = require("./session-service");
+const { createAccountWorkbookService } = require("./workbook");
 const { roleDefinitions } = require("../permissions/service");
 
 const sessionCookieName = "examlist_session";
@@ -37,6 +38,7 @@ function createAuthService({ createHttpError, query }) {
     sessionSecret,
     sessionTtlMs,
   });
+  const accountWorkbookService = createAccountWorkbookService({ createHttpError });
 
   function getDefaultRole() {
     return normalizeConfiguredRole(process.env.EXAMLIST_ROLE || process.env.EXAMLIST_DEFAULT_ROLE || "super_admin", "super_admin");
@@ -174,6 +176,18 @@ function createAuthService({ createHttpError, query }) {
       lastLoginAt: row.lastLoginAt instanceof Date ? row.lastLoginAt.toISOString() : String(row.lastLoginAt || ""),
       updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt || ""),
     });
+  }
+
+  async function getExistingAccountByUserId(userId = "") {
+    try {
+      return await getAccountByIdentifier(userId);
+    } catch (error) {
+      if (error?.statusCode === 404 || error?.errorCode === "ACCOUNT_NOT_FOUND") {
+        return null;
+      }
+
+      throw error;
+    }
   }
 
   async function countActiveSuperAdmins() {
@@ -394,6 +408,62 @@ function createAuthService({ createHttpError, query }) {
     };
   }
 
+  async function buildAccountTemplateBuffer() {
+    return accountWorkbookService.buildAccountTemplateBuffer();
+  }
+
+  async function importAccounts(payload = {}, options = {}) {
+    assertAccountStorageAvailable();
+
+    const rows = await accountWorkbookService.parseAccountWorkbook(payload.fileContentBase64);
+    const result = {
+      created: 0,
+      errors: [],
+      processed: 0,
+      skipped: 0,
+      total: rows.length,
+      updated: 0,
+    };
+
+    for (const row of rows) {
+      try {
+        const existingAccount = await getExistingAccountByUserId(row.userId);
+
+        if (existingAccount) {
+          await updateAccount(existingAccount.id || existingAccount.userId, {
+            password: row.password,
+            role: row.role,
+            userName: row.userName,
+          }, options);
+          result.updated += 1;
+        } else {
+          if (!String(row.password || "").trim()) {
+            throw createHttpError(400, "신규 계정은 비밀번호가 필요합니다.", "ACCOUNT_IMPORT_PASSWORD_REQUIRED");
+          }
+
+          await createAccount({
+            password: row.password,
+            role: row.role,
+            userId: row.userId,
+            userName: row.userName,
+          });
+          result.created += 1;
+        }
+
+        result.processed += 1;
+      } catch (error) {
+        result.errors.push({
+          message: error.message || "계정을 저장하지 못했습니다.",
+          rowNumber: row.rowNumber,
+          userId: row.userId,
+        });
+        result.skipped += 1;
+      }
+    }
+
+    return result;
+  }
+
   async function touchLastLogin(userId) {
     if (!queryDb) {
       return;
@@ -439,9 +509,11 @@ function createAuthService({ createHttpError, query }) {
   return Object.freeze({
     createAccount,
     deleteAccount,
+    buildAccountTemplateBuffer,
     getRequestRoleForPermission: sessionService.getRequestRoleForPermission,
     getSessionState: sessionService.getSessionState,
     isEnabled: () => authEnabled,
+    importAccounts,
     listAccounts,
     login,
     logout: sessionService.logout,

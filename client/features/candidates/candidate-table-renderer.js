@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess, hasAccess } from "../../app/access.js";
 import { candidateGridColumns } from "./candidate-table-model.js";
 import { renderCandidateRows } from "./candidate-table-body-renderer.js";
 import { renderFilterMenu } from "./candidate-filter-menu-renderer.js";
@@ -9,7 +9,8 @@ import {
 } from "./candidate-table-header-renderer.js";
 
 export function renderCandidateTable({ access, candidates }) {
-  const canManageCandidates = hasAccess(access, "manageCandidates");
+  const hasCandidateManagement = hasAccess(access, "manageCandidates");
+  const canManageCandidates = canUseAccess(access, "manageCandidates");
 
   return `
     <article class="table-card result-grid-card candidate-data-table candidate-records-table candidate-registration-table">
@@ -18,7 +19,7 @@ export function renderCandidateTable({ access, candidates }) {
           <h3>수험생 데이터</h3>
           <p>업로드된 수험생 데이터를 확인하고, 개별 정보를 수정하거나 사진을 보완합니다.</p>
         </div>
-        ${renderUploadHeaderAction(canManageCandidates)}
+        ${renderUploadHeaderAction(hasCandidateManagement, canManageCandidates)}
       </div>
       ${
         candidates.loading

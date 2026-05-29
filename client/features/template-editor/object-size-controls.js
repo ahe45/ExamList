@@ -1,8 +1,20 @@
 import { showToast } from "../../app/toast.js";
 import {
+  candidateBlockGridMinimumHeight,
+  candidateBlockGridMinimumRowHeight,
+  candidateBlockGridMinimumWidth,
+} from "./candidate-block-grid-config.js";
+import { writeCandidateBlockGridSizeToConfig } from "./candidate-block-grid-sessions.js";
+import {
+  getCandidateBlockGridTableMinimumSize,
+  normalizeCandidateBlockTables,
+} from "./candidate-block-grid-table-normalizer.js";
+import {
   clampObjectAlignmentValue,
   getObjectAlignmentCanvasMetrics,
   getObjectAlignmentDocumentElement,
+  getObjectCandidateBlockModalElement,
+  getObjectCandidateBlockVisualScale,
   getObjectElementSize,
   getObjectTableCellContentSize,
   getObjectTableCellElement,
@@ -31,14 +43,49 @@ function normalizeObjectSizeInputValue(value) {
   return Math.max(templateEditorObjectMinimumSize, numericValue);
 }
 
+function isCandidateBlockGridSizeElement(element, surfaceElement) {
+  return Boolean(
+    element instanceof HTMLElement &&
+      element.matches?.("[data-candidate-block-grid], .examlist-candidate-block-grid") &&
+      element.classList.contains("is-selected-candidate-block-grid") &&
+      surfaceElement?.contains?.(element) &&
+      element.closest?.(".template-doc") &&
+      !getObjectCandidateBlockModalElement(element, surfaceElement),
+  );
+}
+
+function getSelectedCandidateBlockGridSizeElements(surfaceElement) {
+  if (!surfaceElement?.querySelectorAll) {
+    return [];
+  }
+
+  return Array.from(
+    surfaceElement.querySelectorAll("[data-candidate-block-grid].is-selected-candidate-block-grid, .examlist-candidate-block-grid.is-selected-candidate-block-grid"),
+  ).filter((element) => isCandidateBlockGridSizeElement(element, surfaceElement));
+}
+
+function getObjectSizeSelectedElements(surfaceElement) {
+  return Array.from(
+    new Set([
+      ...getSelectedObjectAlignmentElements(surfaceElement),
+      ...getSelectedCandidateBlockGridSizeElements(surfaceElement),
+    ]),
+  );
+}
+
 function lockObjectTableCellHeight(cellElement) {
   if (!(cellElement instanceof HTMLElement)) {
     return;
   }
 
   const cellRect = cellElement.getBoundingClientRect();
+  const visualScale = getObjectCandidateBlockVisualScale(cellElement);
+  const scaleY = Math.max(visualScale.y || 1, 0.01);
   const rowElement = cellElement.parentElement;
-  const cellHeight = Math.max(templateEditorObjectMinimumSize, Math.round(cellRect.height || cellElement.offsetHeight || 0));
+  const cellHeight = Math.max(
+    templateEditorObjectMinimumSize,
+    Math.round((cellRect.height ? cellRect.height / scaleY : 0) || cellElement.offsetHeight || 0),
+  );
 
   if (cellHeight > 0) {
     cellElement.style.height = `${cellHeight}px`;
@@ -46,7 +93,10 @@ function lockObjectTableCellHeight(cellElement) {
 
   if (rowElement instanceof HTMLTableRowElement && Number(cellElement.rowSpan || 1) <= 1) {
     const rowRect = rowElement.getBoundingClientRect();
-    const rowHeight = Math.max(cellHeight, Math.round(rowRect.height || rowElement.offsetHeight || 0));
+    const rowHeight = Math.max(
+      cellHeight,
+      Math.round((rowRect.height ? rowRect.height / scaleY : 0) || rowElement.offsetHeight || 0),
+    );
 
     if (rowHeight > 0) {
       rowElement.style.height = `${rowHeight}px`;
@@ -103,8 +153,11 @@ function getObjectTableCollapsedBorderAdjustment(tableElement) {
 function getObjectTableRenderedTargetWidth(tableElement, targetWidth) {
   const inlineWidth = parseObjectSizeInlinePixelValue(tableElement?.style?.width, 0);
   const rectWidth = tableElement?.getBoundingClientRect?.().width || 0;
-  const renderedWidthAdjustment = inlineWidth > 0 && rectWidth > inlineWidth
-    ? Math.ceil(rectWidth - inlineWidth)
+  const visualScale = getObjectCandidateBlockVisualScale(tableElement);
+  const scaleX = Math.max(visualScale.x || 1, 0.01);
+  const logicalRectWidth = rectWidth > 0 ? rectWidth / scaleX : 0;
+  const renderedWidthAdjustment = inlineWidth > 0 && logicalRectWidth > inlineWidth
+    ? Math.ceil(logicalRectWidth - inlineWidth)
     : 0;
 
   return Math.max(
@@ -176,24 +229,118 @@ function normalizeObjectTableSegmentSizes(sizes, targetSize, minimumSize = templ
 }
 
 function getObjectTableColumnWidths(tableElement, columns, cellMap, tableUtils) {
+  const visualScale = getObjectCandidateBlockVisualScale(tableElement);
+  const scaleX = Math.max(visualScale.x || 1, 0.01);
+
   return columns.map((columnElement, columnIndex) =>
     Math.max(
       templateEditorObjectMinimumSize,
       parseObjectSizePixelValue(
         columnElement.style.width,
-        Math.round(tableUtils?.getTemplateEditorMeasuredColumnWidth?.(cellMap, columnIndex) || columnElement.getBoundingClientRect?.().width || 0),
+        Math.round(
+          tableUtils?.getTemplateEditorMeasuredColumnWidth?.(cellMap, columnIndex) ||
+            (columnElement.getBoundingClientRect?.().width || 0) / scaleX ||
+            0,
+        ),
       ),
     ),
   );
 }
 
 function getObjectTableRowHeights(tableElement) {
+  const visualScale = getObjectCandidateBlockVisualScale(tableElement);
+  const scaleY = Math.max(visualScale.y || 1, 0.01);
+
   return Array.from(tableElement?.rows || []).map((rowElement) =>
     Math.max(
       templateEditorObjectMinimumSize,
-      parseObjectSizePixelValue(rowElement.style.height, Math.round(rowElement.getBoundingClientRect?.().height || 0)),
+      parseObjectSizePixelValue(
+        rowElement.style.height,
+        Math.round(((rowElement.getBoundingClientRect?.().height || 0) / scaleY) || 0),
+      ),
     ),
   );
+}
+
+function getCandidateBlockModalContentSize(modalSurfaceElement) {
+  if (!(modalSurfaceElement instanceof HTMLElement)) {
+    return null;
+  }
+
+  const modalRect = modalSurfaceElement.getBoundingClientRect();
+  const visualScale = getObjectCandidateBlockVisualScale(modalSurfaceElement);
+  const scaleX = Math.max(visualScale.x || 1, 0.01);
+  const scaleY = Math.max(visualScale.y || 1, 0.01);
+  const width =
+    parseObjectSizePixelValue(modalSurfaceElement.dataset?.candidateBlockLogicalContentWidth, 0) ||
+    parseObjectSizePixelValue(modalSurfaceElement.dataset?.candidateBlockLogicalWidth, 0) ||
+    modalSurfaceElement.clientWidth ||
+    modalSurfaceElement.offsetWidth ||
+    (modalRect.width > 0 ? modalRect.width / scaleX : 0);
+  const height =
+    parseObjectSizePixelValue(modalSurfaceElement.dataset?.candidateBlockLogicalContentHeight, 0) ||
+    parseObjectSizePixelValue(modalSurfaceElement.dataset?.candidateBlockLogicalHeight, 0) ||
+    modalSurfaceElement.clientHeight ||
+    modalSurfaceElement.offsetHeight ||
+    (modalRect.height > 0 ? modalRect.height / scaleY : 0);
+
+  return {
+    height: Math.max(templateEditorObjectMinimumSize, Math.floor(height || templateEditorObjectMinimumSize)),
+    width: Math.max(templateEditorObjectMinimumSize, Math.floor(width || templateEditorObjectMinimumSize)),
+  };
+}
+
+function applyCandidateBlockModalObjectSize(element, surfaceElement, { hasHeight, hasWidth, height = null, width = null } = {}) {
+  const modalSurfaceElement = getObjectCandidateBlockModalElement(element, surfaceElement);
+  const modalSize = getCandidateBlockModalContentSize(modalSurfaceElement);
+
+  if (!(element instanceof HTMLElement) || !modalSize) {
+    return null;
+  }
+
+  const currentSize = getObjectElementSize(element, surfaceElement);
+  const nextWidth = Math.min(
+    modalSize.width,
+    Math.max(templateEditorObjectMinimumSize, hasWidth ? width : currentSize.width),
+  );
+  const nextHeight = Math.min(
+    modalSize.height,
+    Math.max(templateEditorObjectMinimumSize, hasHeight ? height : currentSize.height),
+  );
+
+  element.style.width = `${nextWidth}px`;
+  element.style.height = `${nextHeight}px`;
+  element.style.maxWidth = "100%";
+  element.style.maxHeight = "100%";
+  element.style.margin = "0";
+
+  if (String(element.style.position || "").trim() === "absolute") {
+    const left = parseObjectSizePixelValue(element.style.left, element.offsetLeft || 0);
+    const top = parseObjectSizePixelValue(element.style.top, element.offsetTop || 0);
+
+    element.style.left = `${Math.max(0, Math.min(left, modalSize.width - nextWidth))}px`;
+    element.style.top = `${Math.max(0, Math.min(top, modalSize.height - nextHeight))}px`;
+  } else {
+    element.style.display = "inline-block";
+
+    if (!String(element.style.verticalAlign || "").trim()) {
+      element.style.verticalAlign = "top";
+    }
+  }
+
+  return modalSurfaceElement;
+}
+
+function syncCandidateBlockModalObjectMutations(modalSurfaceElements) {
+  const uniqueModalSurfaceElements = Array.from(new Set(modalSurfaceElements)).filter(Boolean);
+
+  uniqueModalSurfaceElements.forEach((modalSurfaceElement) => {
+    modalSurfaceElement.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+
+  if (uniqueModalSurfaceElements.length && typeof window.ExamListCandidateBlockModalEditor?.syncActiveEditor === "function") {
+    window.ExamListCandidateBlockModalEditor.syncActiveEditor({ markDirty: true });
+  }
 }
 
 function syncObjectTableRowGroupHeights(tableElement, rowHeights) {
@@ -309,8 +456,94 @@ export function applyObjectTableSize(tableElement, { height = null, width = null
   return didApply;
 }
 
-function applyObjectSizeToSelection(editor, surfaceElement, { height = null, width = null } = {}) {
-  const selectedElements = getSelectedObjectAlignmentElements(surfaceElement);
+function getCandidateBlockGridMinimumSize(gridElement) {
+  const tableMinimumSize = getCandidateBlockGridTableMinimumSize(gridElement);
+  const gridStyle = window.getComputedStyle(gridElement);
+  const rowCount = Math.max(1, Math.round(Number(gridElement?.dataset?.candidateBlockRows) || 1));
+  const rowGap = parseObjectSizePixelValue(gridStyle.rowGap || gridStyle.gap, 0);
+  const rowMinimumHeight = Math.ceil(
+    rowCount * candidateBlockGridMinimumRowHeight +
+      Math.max(0, rowCount - 1) * rowGap,
+  );
+
+  return {
+    height: Math.max(candidateBlockGridMinimumHeight, rowMinimumHeight, Math.floor(tableMinimumSize.height || 0)),
+    width: Math.max(candidateBlockGridMinimumWidth, Math.floor(tableMinimumSize.width || 0)),
+  };
+}
+
+function getObjectDocumentLogicalPosition(element, documentElement, canvasMetrics) {
+  if (!(element instanceof HTMLElement) || !(documentElement instanceof HTMLElement)) {
+    return { left: 0, top: 0 };
+  }
+
+  if (String(element.style.position || "").trim() === "absolute") {
+    return {
+      left: parseObjectSizePixelValue(element.style.left, element.offsetLeft || 0),
+      top: parseObjectSizePixelValue(element.style.top, element.offsetTop || 0),
+    };
+  }
+
+  const elementRect = element.getBoundingClientRect();
+  const documentRect = canvasMetrics?.rect || documentElement.getBoundingClientRect();
+  const scaleX = Math.max(canvasMetrics?.scaleX || 1, 0.01);
+  const scaleY = Math.max(canvasMetrics?.scaleY || 1, 0.01);
+
+  return {
+    left: Math.max(0, Math.round((elementRect.left - documentRect.left) / scaleX)),
+    top: Math.max(0, Math.round((elementRect.top - documentRect.top) / scaleY)),
+  };
+}
+
+function applyCandidateBlockGridObjectSize(gridElement, selectedPage, documentElement, canvasMetrics, { hasHeight, hasWidth, height = null, width = null } = {}) {
+  if (!isCandidateBlockGridSizeElement(gridElement, documentElement)) {
+    return false;
+  }
+
+  normalizeCandidateBlockTables(gridElement);
+
+  const currentSize = getObjectElementSize(gridElement, documentElement);
+  const position = getObjectDocumentLogicalPosition(gridElement, documentElement, canvasMetrics);
+  const minimumSize = getCandidateBlockGridMinimumSize(gridElement);
+  const maxWidth = Math.max(minimumSize.width, (documentElement?.clientWidth || canvasMetrics?.width || currentSize.width) - position.left);
+  const maxHeight = Math.max(minimumSize.height, (documentElement?.clientHeight || canvasMetrics?.height || currentSize.height) - position.top);
+  const nextWidth = Math.min(
+    maxWidth,
+    Math.max(minimumSize.width, hasWidth ? width : currentSize.width),
+  );
+  const nextHeight = Math.min(
+    maxHeight,
+    Math.max(minimumSize.height, hasHeight ? height : currentSize.height),
+  );
+
+  if (hasWidth) {
+    gridElement.style.width = `${nextWidth}px`;
+  }
+
+  if (hasHeight) {
+    gridElement.style.height = `${nextHeight}px`;
+  }
+
+  gridElement.style.maxWidth = "none";
+
+  if (minimumSize.height < candidateBlockGridMinimumHeight) {
+    gridElement.style.minHeight = `${minimumSize.height}px`;
+  }
+
+  normalizeCandidateBlockTables(gridElement);
+  writeCandidateBlockGridSizeToConfig(selectedPage, gridElement);
+  const InputEventConstructor = window.InputEvent || window.Event;
+
+  try {
+    gridElement.dispatchEvent(new InputEventConstructor("input", { bubbles: true, inputType: "formatSetBlockTextDirection", data: null }));
+  } catch (_error) {
+    gridElement.dispatchEvent(new window.Event("input", { bubbles: true }));
+  }
+  return true;
+}
+
+function applyObjectSizeToSelection(editor, surfaceElement, selectedPage, { height = null, onDirty = null, width = null } = {}) {
+  const selectedElements = getObjectSizeSelectedElements(surfaceElement);
 
   if (!selectedElements.length) {
     showToast("크기를 변경할 개체를 선택해 주세요.", "warning");
@@ -333,11 +566,30 @@ function applyObjectSizeToSelection(editor, surfaceElement, { height = null, wid
   }
 
   const canvasMetrics = getObjectAlignmentCanvasMetrics(documentElement);
-  const cellElements = selectedElements.filter((element) => getObjectTableCellElement(element, surfaceElement));
-  const canvasElements = selectedElements.filter((element) => !getObjectTableCellElement(element, surfaceElement));
+  const candidateBlockGridElements = selectedElements.filter((element) => isCandidateBlockGridSizeElement(element, surfaceElement));
+  const tableElements = selectedElements.filter((element) => isObjectAlignmentTableElement(element, surfaceElement));
+  const modalTableElements = tableElements.filter((element) => getObjectCandidateBlockModalElement(element, surfaceElement));
+  const cellElements = selectedElements.filter(
+    (element) =>
+      !tableElements.includes(element) &&
+      !candidateBlockGridElements.includes(element) &&
+      getObjectTableCellElement(element, surfaceElement),
+  );
+  const candidateBlockModalElements = selectedElements.filter(
+    (element) =>
+      !tableElements.includes(element) &&
+      !getObjectTableCellElement(element, surfaceElement) &&
+      getObjectCandidateBlockModalElement(element, surfaceElement),
+  );
+  const canvasElements = selectedElements.filter(
+    (element) =>
+      !candidateBlockGridElements.includes(element) &&
+      !getObjectTableCellElement(element, surfaceElement) &&
+      !getObjectCandidateBlockModalElement(element, surfaceElement),
+  );
   const items = prepareObjectAlignmentItems(canvasElements, documentElement, canvasMetrics);
 
-  if (!items.length && !cellElements.length) {
+  if (!items.length && !cellElements.length && !candidateBlockModalElements.length && !modalTableElements.length && !candidateBlockGridElements.length) {
     showToast("크기를 변경할 개체를 선택해 주세요.", "warning");
     return false;
   }
@@ -369,6 +621,37 @@ function applyObjectSizeToSelection(editor, surfaceElement, { height = null, wid
       element.style.verticalAlign = "top";
     }
   });
+
+  const changedModalSurfaceElements = candidateBlockModalElements
+    .map((element) =>
+      applyCandidateBlockModalObjectSize(element, surfaceElement, {
+        hasHeight,
+        hasWidth,
+        height,
+        width,
+      }),
+    )
+    .filter(Boolean);
+
+  const changedModalTableSurfaceElements = modalTableElements
+    .map((tableElement) => {
+      const didApply = applyObjectTableSize(tableElement, {
+        height: hasHeight ? Math.max(templateEditorObjectMinimumSize, height) : null,
+        width: hasWidth ? Math.max(templateEditorObjectMinimumSize, width) : null,
+      });
+
+      return didApply ? getObjectCandidateBlockModalElement(tableElement, surfaceElement) : null;
+    })
+    .filter(Boolean);
+
+  const didApplyCandidateBlockGridSize = candidateBlockGridElements.some((gridElement) =>
+    applyCandidateBlockGridObjectSize(gridElement, selectedPage, documentElement, canvasMetrics, {
+      hasHeight,
+      hasWidth,
+      height,
+      width,
+    }),
+  );
 
   items.forEach((item) => {
     const nextWidth = hasWidth
@@ -402,15 +685,25 @@ function applyObjectSizeToSelection(editor, surfaceElement, { height = null, wid
     });
   });
 
+  syncCandidateBlockModalObjectMutations([
+    ...changedModalSurfaceElements,
+    ...changedModalTableSurfaceElements,
+  ]);
   syncObjectAlignmentMutation(editor, surfaceElement, [
     ...cellElements,
+    ...candidateBlockModalElements,
+    ...modalTableElements,
     ...items.map((item) => item.element),
   ]);
+
+  if (didApplyCandidateBlockGridSize && typeof onDirty === "function") {
+    onDirty();
+  }
   return true;
 }
 
 
-export function bindObjectSizeControls({ editor, surfaceElement, toolbarHost }) {
+export function bindObjectSizeControls({ editor, onDirty = null, selectedPage = null, surfaceElement, toolbarHost }) {
   if (!editor || !surfaceElement || !toolbarHost) {
     return null;
   }
@@ -422,8 +715,32 @@ export function bindObjectSizeControls({ editor, surfaceElement, toolbarHost }) 
 
   const widthInput = sizeToolbar.querySelector('[data-examlist-object-size="width"]');
   const heightInput = sizeToolbar.querySelector('[data-examlist-object-size="height"]');
-  const applyButton = sizeToolbar.querySelector("[data-examlist-object-size-apply]");
+  const manualEditingInputs = new WeakSet();
+  const committedInputValues = new WeakMap();
   const getInputs = () => [widthInput, heightInput].filter(Boolean);
+  const markManualEditingInput = (input) => {
+    if (!input) {
+      return;
+    }
+
+    manualEditingInputs.add(input);
+    window.setTimeout(() => {
+      manualEditingInputs.delete(input);
+    }, 0);
+  };
+  const isManualEditingKey = (event) =>
+    Boolean(
+      event.key === "Backspace" ||
+        event.key === "Delete" ||
+        ((event.ctrlKey || event.metaKey) && ["v", "x"].includes(String(event.key || "").toLowerCase())) ||
+        (!event.ctrlKey && !event.metaKey && !event.altKey && String(event.key || "").length === 1),
+    );
+  const isManualInputEvent = (event) => Boolean(String(event.inputType || ""));
+  const setCommittedInputValue = (input) => {
+    if (input) {
+      committedInputValues.set(input, String(input.value || ""));
+    }
+  };
   const setSizeFieldEmptyState = (input, isEmpty) => {
     const wrap = input?.closest?.(".examlist-object-size-input-wrap") || null;
     const unitElement = wrap?.querySelector("[data-examlist-object-size-unit]") || null;
@@ -436,15 +753,18 @@ export function bindObjectSizeControls({ editor, surfaceElement, toolbarHost }) 
   };
   const setControlDisabled = (isDisabled) => {
     getInputs().forEach((input) => {
-      input.disabled = isDisabled;
-    });
+      const wrap = input?.closest?.(".examlist-object-size-input-wrap") || null;
 
-    if (applyButton) {
-      applyButton.disabled = isDisabled;
-    }
+      input.disabled = isDisabled;
+
+      if (wrap) {
+        wrap.classList.toggle("is-disabled", isDisabled);
+        wrap.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+      }
+    });
   };
   const syncSizeControls = () => {
-    const selectedElements = getSelectedObjectAlignmentElements(surfaceElement);
+    const selectedElements = getObjectSizeSelectedElements(surfaceElement);
     const isDisabled = isObjectEditorReadOnly(surfaceElement) || selectedElements.length === 0;
 
     setControlDisabled(isDisabled);
@@ -453,6 +773,7 @@ export function bindObjectSizeControls({ editor, surfaceElement, toolbarHost }) 
       getInputs().forEach((input) => {
         input.value = "";
         input.placeholder = "-";
+        setCommittedInputValue(input);
         setSizeFieldEmptyState(input, true);
       });
       return;
@@ -470,66 +791,151 @@ export function bindObjectSizeControls({ editor, surfaceElement, toolbarHost }) 
     if (widthInput && document.activeElement !== widthInput) {
       widthInput.value = hasSameWidth ? String(firstSize.width) : "";
       widthInput.placeholder = hasSameWidth ? "px" : "혼합";
+      setCommittedInputValue(widthInput);
     }
 
     if (heightInput && document.activeElement !== heightInput) {
       heightInput.value = hasSameHeight ? String(firstSize.height) : "";
       heightInput.placeholder = hasSameHeight ? "px" : "혼합";
+      setCommittedInputValue(heightInput);
     }
   };
   const scheduleSizeControlSync = () => {
     window.requestAnimationFrame(syncSizeControls);
   };
-  const applyFromControls = (changedInput = null) => {
+  const restoreToolbarFocus = (focusElement, selectionSnapshot) => {
+    if (!focusElement?.isConnected || !sizeToolbar.contains(focusElement)) {
+      return;
+    }
+
+    focusElement.focus?.({ preventScroll: true });
+
+    if (
+      selectionSnapshot &&
+      typeof focusElement.setSelectionRange === "function" &&
+      typeof selectionSnapshot.start === "number" &&
+      typeof selectionSnapshot.end === "number"
+    ) {
+      focusElement.setSelectionRange(selectionSnapshot.start, selectionSnapshot.end);
+    }
+  };
+  const applyFromControls = (changedInput = null, options = {}) => {
     if (isObjectEditorReadOnly(surfaceElement)) {
       return false;
     }
 
+    const preserveToolbarFocus = options.preserveToolbarFocus === true;
+    const focusElement =
+      preserveToolbarFocus && document.activeElement instanceof HTMLElement && sizeToolbar.contains(document.activeElement)
+        ? document.activeElement
+        : null;
+    const selectionSnapshot =
+      focusElement &&
+      typeof focusElement.selectionStart === "number" &&
+      typeof focusElement.selectionEnd === "number"
+        ? {
+            start: focusElement.selectionStart,
+            end: focusElement.selectionEnd,
+          }
+        : null;
     const nextWidth = changedInput === heightInput ? null : normalizeObjectSizeInputValue(widthInput?.value);
     const nextHeight = changedInput === widthInput ? null : normalizeObjectSizeInputValue(heightInput?.value);
-    const didApply = applyObjectSizeToSelection(editor, surfaceElement, {
+    const didApply = applyObjectSizeToSelection(editor, surfaceElement, selectedPage, {
       height: nextHeight,
+      onDirty,
       width: nextWidth,
     });
 
     if (didApply) {
+      if (changedInput) {
+        setCommittedInputValue(changedInput);
+      } else {
+        getInputs().forEach(setCommittedInputValue);
+      }
       scheduleSizeControlSync();
+
+      if (focusElement) {
+        window.requestAnimationFrame(() => {
+          restoreToolbarFocus(focusElement, selectionSnapshot);
+        });
+      }
     }
 
     return didApply;
   };
-  const handleControlChange = (event) => {
+  const commitSizeInput = (input, options = {}) => {
+    if (!input || input.disabled || !sizeToolbar.contains(input)) {
+      return false;
+    }
+
+    const currentValue = String(input.value || "");
+
+    if (options.force !== true && committedInputValues.get(input) === currentValue) {
+      return false;
+    }
+
+    return applyFromControls(input, { preserveToolbarFocus: options.preserveToolbarFocus === true });
+  };
+  const getEventSizeInput = (event) => {
     const input = event.target?.closest?.("[data-examlist-object-size]");
 
     if (!input || !sizeToolbar.contains(input)) {
-      return;
+      return null;
     }
 
-    applyFromControls(input);
+    return input;
   };
-  const handleToolbarClick = (event) => {
-    const button = event.target?.closest?.("[data-examlist-object-size-apply]");
+  const handleControlInput = (event) => {
+    const input = getEventSizeInput(event);
 
-    if (!button || !sizeToolbar.contains(button)) {
+    if (!input) {
       return;
     }
 
-    event.preventDefault();
-    applyFromControls();
+    if (manualEditingInputs.has(input) || isManualInputEvent(event)) {
+      manualEditingInputs.delete(input);
+      return;
+    }
+
+    commitSizeInput(input, { preserveToolbarFocus: true });
+  };
+  const handleControlChange = (event) => {
+    const input = getEventSizeInput(event);
+
+    if (input) {
+      commitSizeInput(input);
+    }
+  };
+  const handleFocusOut = (event) => {
+    const input = getEventSizeInput(event);
+
+    if (input) {
+      manualEditingInputs.delete(input);
+      commitSizeInput(input);
+    }
   };
   const handleKeyDown = (event) => {
-    const input = event.target?.closest?.("[data-examlist-object-size]");
+    const input = getEventSizeInput(event);
 
-    if (!input || !sizeToolbar.contains(input) || event.key !== "Enter") {
+    if (!input) {
+      return;
+    }
+
+    if (event.key !== "Enter") {
+      if (isManualEditingKey(event)) {
+        markManualEditingInput(input);
+      }
       return;
     }
 
     event.preventDefault();
-    applyFromControls(input);
+    manualEditingInputs.delete(input);
+    commitSizeInput(input, { force: true, preserveToolbarFocus: true });
   };
 
+  sizeToolbar.addEventListener("input", handleControlInput);
   sizeToolbar.addEventListener("change", handleControlChange);
-  sizeToolbar.addEventListener("click", handleToolbarClick);
+  sizeToolbar.addEventListener("focusout", handleFocusOut);
   sizeToolbar.addEventListener("keydown", handleKeyDown);
   surfaceElement.addEventListener("pointerdown", scheduleSizeControlSync, true);
   surfaceElement.addEventListener("input", scheduleSizeControlSync);
@@ -541,8 +947,9 @@ export function bindObjectSizeControls({ editor, surfaceElement, toolbarHost }) 
   syncSizeControls();
 
   return () => {
+    sizeToolbar.removeEventListener("input", handleControlInput);
     sizeToolbar.removeEventListener("change", handleControlChange);
-    sizeToolbar.removeEventListener("click", handleToolbarClick);
+    sizeToolbar.removeEventListener("focusout", handleFocusOut);
     sizeToolbar.removeEventListener("keydown", handleKeyDown);
     surfaceElement.removeEventListener("pointerdown", scheduleSizeControlSync, true);
     surfaceElement.removeEventListener("input", scheduleSizeControlSync);

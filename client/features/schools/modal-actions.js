@@ -23,7 +23,6 @@ export function createSchoolModalActions({
       deletionPassword: String(modal.deletionPassword || "").trim(),
       deletionPasswordConfirm: String(modal.deletionPasswordConfirm || "").trim(),
       description: String(modal.description || "").trim(),
-      isActive: modal.isActive !== false,
       logoDataUrl: String(modal.logoDataUrl || "").trim(),
       name: normalizeSchoolNameInputValue(modal.name),
     };
@@ -40,7 +39,6 @@ export function createSchoolModalActions({
       initialSnapshot: null,
       isOpen: false,
       isSaving: false,
-      isActive: true,
       logoDataUrl: "",
       mode: "create",
       name: "",
@@ -121,7 +119,6 @@ export function createSchoolModalActions({
         deletionPassword,
         deletionPasswordConfirm,
         description: appState.schools.modal.description,
-        isActive: appState.schools.modal.isActive !== false,
         name: schoolName,
       });
       const settings = await saveSchoolModalSettings(school?.id || "");
@@ -166,7 +163,6 @@ export function createSchoolModalActions({
       const school = await patchJson(`/api/schools/${encodeURIComponent(schoolId)}`, {
         code: appState.schools.modal.code,
         description: appState.schools.modal.description,
-        isActive: appState.schools.modal.isActive !== false,
         name: schoolName,
       });
       const settings = await saveSchoolModalSettings(school.id || schoolId);
@@ -204,12 +200,17 @@ export function createSchoolModalActions({
       return false;
     }
 
+    if (school.canManage === false) {
+      appState.schools.errorMessage = "이 학교를 생성한 계정 또는 슈퍼 관리자만 수정할 수 있습니다.";
+      showToast(appState.schools.errorMessage, { tone: "warning" });
+      return false;
+    }
+
     const modalSchoolId = String(school.id || schoolId || "");
 
     resetSchoolModal({
       code: String(school.code || ""),
       description: String(school.description || ""),
-      isActive: school.isActive !== false,
       isOpen: true,
       mode: "edit",
       name: normalizeSchoolNameInputValue(school.name),

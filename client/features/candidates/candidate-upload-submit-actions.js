@@ -64,7 +64,7 @@ export function createCandidateUploadSubmitActions({
         }
 
         await setCandidateUploadProgressOverlay({
-          detail: "미리보기 때 전송한 ZIP 파일을 서버에서 다시 사용합니다.",
+          detail: "사진 데이터 ZIP파일 압축을 해제하고 서버에 등록합니다.",
           isIndeterminate: true,
           isOpen: true,
           message: "사진 데이터를 저장하는 중입니다.",
@@ -74,7 +74,10 @@ export function createCandidateUploadSubmitActions({
 
         result = await postJsonWithProgress(
           "/api/candidates/photo-archive",
-          { previewToken },
+          {
+            previewToken,
+            schoolId: getCurrentSchoolId(),
+          },
           "사진 ZIP을 업로드할 수 없습니다.",
         );
       } else {

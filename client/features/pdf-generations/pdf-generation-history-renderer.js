@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess, hasAccess } from "../../app/access.js";
 import { escapeHtml } from "../../app/html-utils.js";
 import { formatCount } from "../../app/number-format.js";
 import { renderGenerationRows } from "./pdf-generation-rows-renderer.js";
@@ -32,6 +32,8 @@ export function renderPdfGenerationView({ access, pdfGenerations }) {
   const selectedFilteredDownloadableCount = filteredCompletedRows.filter((item) =>
     pdfGenerations.selectedGenerationIds.includes(String(item.id || "")),
   ).length;
+  const hasPdfGenerationPermission = hasAccess(access, "generatePdfs");
+  const canGeneratePdfs = canUseAccess(access, "generatePdfs");
 
   return `
     <section class="view-stack table-view-stack pdf-generation-management-panel">
@@ -58,9 +60,9 @@ export function renderPdfGenerationView({ access, pdfGenerations }) {
                 : ""
             }
             ${
-              hasAccess(access, "generatePdfs")
+              hasPdfGenerationPermission
                 ? `
-                  <button class="primary-button" data-action="open-pdf-generation-create-modal" type="button">
+                  <button class="primary-button" data-action="open-pdf-generation-create-modal" type="button" ${canGeneratePdfs ? "" : "disabled"}>
                     <svg class="button-icon" viewBox="0 0 20 20" fill="none" focusable="false" aria-hidden="true">
                       <path d="M10 4v12M4 10h12" />
                     </svg>
@@ -72,7 +74,7 @@ export function renderPdfGenerationView({ access, pdfGenerations }) {
                     type="button"
                     aria-label="선택 PDF 삭제"
                     title="선택 PDF 삭제"
-                    ${!selectedDownloadableCount ? "disabled" : ""}
+                    ${!selectedDownloadableCount || !canGeneratePdfs ? "disabled" : ""}
                   >
                     <svg class="button-icon" viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true">
                       <path d="M3 6h18"></path>

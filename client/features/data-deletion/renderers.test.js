@@ -180,6 +180,28 @@ test("data deletion view disables actions without permission", () => {
   assert.match(html, /data-data-deletion-scope="all"[\s\S]*disabled/);
 });
 
+test("data deletion view keeps actions visible but disabled for read-only school access", () => {
+  const html = renderDataDeletionView({
+    access: {
+      permissions: {
+        deleteProjectData: true,
+      },
+      schoolAccess: {
+        canManage: false,
+        schoolId: "school-readonly",
+      },
+    },
+    dataDeletion: {},
+    school: {
+      id: "school-readonly",
+      name: "서울대학교",
+    },
+  });
+
+  assert.doesNotMatch(html, /현재 학교는 읽기 전용입니다/);
+  assert.match(html, /data-data-deletion-scope="all"[\s\S]*disabled/);
+});
+
 test("data deletion modal renders one-screen unit selection with target counts", () => {
   const html = renderDataDeletionModal(
     {

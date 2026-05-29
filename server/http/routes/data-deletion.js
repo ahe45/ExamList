@@ -16,7 +16,8 @@ function createDataDeletionRoutes(deps) {
     exactRoute(
       "GET",
       "/api/data-deletion/summary",
-      withPermission("deleteProjectData", async ({ response, searchParams }) => {
+      withPermission("deleteProjectData", async ({ request, response, searchParams }) => {
+        await deps.assertSchoolWriteAccess(searchParams.get("schoolId") || searchParams.get("school_id") || "", request);
         deps.sendJson(response, 200, await deps.getProjectDataDeletionSummary({
           filters: readGenerationTargetFilters(searchParams),
           schoolId: searchParams.get("schoolId") || searchParams.get("school_id") || "",
@@ -28,7 +29,10 @@ function createDataDeletionRoutes(deps) {
       "DELETE",
       /^\/api\/data-deletion\/(?<scope>all|candidates|photos|candidate-photos|pdf-generations|templates)$/,
       withPermission("deleteProjectData", async ({ request, response, params }) => {
-        deps.sendJson(response, 200, await deps.deleteProjectData(params.scope, await deps.readJsonBody(request)));
+        const body = await deps.readJsonBody(request);
+
+        await deps.assertSchoolWriteAccess(body?.schoolId || "", request);
+        deps.sendJson(response, 200, await deps.deleteProjectData(params.scope, body));
       }),
       { getParams: (match) => decodeRouteParams(match.groups) },
     ),

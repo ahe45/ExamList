@@ -156,6 +156,72 @@ function renderAccountModal(accounts = {}) {
   `;
 }
 
+function renderAccountUploadResult(result = null) {
+  if (!result) {
+    return "";
+  }
+
+  const errors = Array.isArray(result.errors) ? result.errors : [];
+
+  return `
+    <div class="info-banner account-upload-result">
+      <strong>
+        추가 ${formatCount(result.created || 0)}개 · 수정 ${formatCount(result.updated || 0)}개 · 실패 ${formatCount(errors.length)}개
+      </strong>
+      ${
+        errors.length
+          ? `
+            <ul class="account-upload-error-list">
+              ${errors.slice(0, 5).map((error) => `
+                <li>${escapeHtml(error.rowNumber ? `${error.rowNumber}행 ` : "")}${escapeHtml(error.userId || "")} ${escapeHtml(error.message || "")}</li>
+              `).join("")}
+            </ul>
+          `
+          : ""
+      }
+    </div>
+  `;
+}
+
+function renderAccountUploadModal(accounts = {}) {
+  const modal = accounts.uploadModal || {};
+
+  if (!modal.isOpen) {
+    return "";
+  }
+
+  return `
+    <div class="modal-overlay account-upload-modal-overlay">
+      <div class="modal-card account-modal-card">
+        <div class="modal-header">
+          <div>
+            <p class="modal-kicker">계정 관리</p>
+            <h2>계정 엑셀 업로드</h2>
+          </div>
+          <button class="icon-button" data-action="close-account-upload-modal" type="button" aria-label="닫기" ${modal.isUploading ? "disabled" : ""}>×</button>
+        </div>
+        <form class="modal-form account-upload-form" data-account-upload-form>
+          <label class="form-field">
+            <span>엑셀 파일</span>
+            <input accept=".xlsx" data-account-upload-file type="file" ${modal.isUploading ? "disabled" : ""} />
+          </label>
+          <p class="helper-text">아이디, 이름, 비밀번호, 권한 컬럼을 사용합니다. 기존 계정은 같은 아이디 기준으로 수정됩니다.</p>
+          ${modal.fileName ? `<p class="helper-text">선택 파일: ${escapeHtml(modal.fileName)}</p>` : ""}
+          ${renderAccountUploadResult(modal.result)}
+          ${modal.errorMessage ? `<p class="error-banner">${escapeHtml(modal.errorMessage)}</p>` : ""}
+          <div class="modal-actions">
+            <button class="ghost-button" data-action="download-account-template" type="button" ${modal.isUploading ? "disabled" : ""}>업로드 양식</button>
+            <button class="ghost-button" data-action="close-account-upload-modal" type="button" ${modal.isUploading ? "disabled" : ""}>취소</button>
+            <button class="primary-button" type="submit" ${modal.file && !modal.isUploading ? "" : "disabled"}>
+              ${modal.isUploading ? "업로드 중..." : "업로드"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
 export function renderAccountManagementView({ access, accounts }) {
   const canManageAccounts = hasAccess(access, "manageAccounts");
 
@@ -183,6 +249,7 @@ export function renderAccountManagementView({ access, accounts }) {
           <div class="table-header-actions">
             <span class="status-badge neutral">총 ${formatCount(accounts.total || accounts.items?.length || 0)}개</span>
             <button class="primary-button" data-action="open-account-create-modal" type="button">계정 추가</button>
+            <button class="ghost-button" data-action="open-account-upload-modal" type="button">엑셀 업로드</button>
             <button class="ghost-button" data-action="refresh-accounts" type="button">새로고침</button>
             <button class="ghost-button" data-go-view="schoolManagement" type="button">학교 목록</button>
           </div>
@@ -207,6 +274,7 @@ export function renderAccountManagementView({ access, accounts }) {
         </div>
       </article>
       ${renderAccountModal(accounts)}
+      ${renderAccountUploadModal(accounts)}
     </section>
   `;
 }

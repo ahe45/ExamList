@@ -41,21 +41,26 @@ const {
   defaultBrowserPaths,
   renderHtmlToPdf,
   resolveBrowserExecutable,
-  resolveStorageRoot,
 } = require("./browser-renderer");
 const { createPdfGenerationHistoryService } = require("./history-service");
 const { renderPreviewDocument } = require("../pdf-preview/renderer");
+const {
+  resolveLegacyPdfStorageRoot,
+  resolveSchoolPdfStorageRoot,
+} = require("../storage-paths");
 
 function createPdfGenerationService({
   candidateService,
   createHttpError,
   fs,
+  getSchoolById = null,
   path,
   pdfPreviewService,
   query,
   root,
 }) {
-  const storageRoot = resolveStorageRoot(path, root);
+  const legacyStorageRoot = resolveLegacyPdfStorageRoot(path, root);
+  const schoolStorageCodeCache = new Map();
   const pdfGenerationRepository = createPdfGenerationRepository({ query });
   const {
     cancelBatchGenerationRows,
@@ -73,9 +78,10 @@ function createPdfGenerationService({
     createHttpError,
     ensureStorageDirectories,
     fs,
+    legacyStorageRoot,
     path,
     query,
-    storageRoot,
+    resolvePdfStorageRootForSchool,
     writeAuditLog,
   });
   const {
@@ -118,7 +124,39 @@ function createPdfGenerationService({
     rerunPdfGenerationBatch,
   } = pdfGenerationHistoryService;
 
-  async function ensureStorageDirectories() {
+  async function resolveSchoolStorageCode(schoolId = "") {
+    const normalizedSchoolId = String(schoolId || "").trim() || "school-default";
+
+    if (!schoolStorageCodeCache.has(normalizedSchoolId)) {
+      schoolStorageCodeCache.set(
+        normalizedSchoolId,
+        (async () => {
+          if (typeof getSchoolById === "function") {
+            const school = await getSchoolById(normalizedSchoolId).catch(() => null);
+            const schoolCode = String(school?.code || "").trim();
+
+            if (schoolCode) {
+              return schoolCode;
+            }
+          }
+
+          return normalizedSchoolId;
+        })(),
+      );
+    }
+
+    return schoolStorageCodeCache.get(normalizedSchoolId);
+  }
+
+  async function resolvePdfStorageRootForSchool(schoolId = "", schoolCode = "") {
+    return resolveSchoolPdfStorageRoot(
+      path,
+      root,
+      String(schoolCode || "").trim() || await resolveSchoolStorageCode(schoolId),
+    );
+  }
+
+  async function ensureStorageDirectories(storageRoot = legacyStorageRoot) {
     await fs.promises.mkdir(path.join(storageRoot, "archives"), { recursive: true });
     await fs.promises.mkdir(path.join(storageRoot, "files"), { recursive: true });
     await fs.promises.mkdir(path.join(storageRoot, "merged"), { recursive: true });
@@ -185,7 +223,7 @@ function createPdfGenerationService({
     return /^pdf-generation-preview-[a-f0-9-]+$/i.test(previewId) ? previewId : "";
   }
 
-  async function cleanupExpiredPdfGenerationPreviews(maxAgeMs = 2 * 60 * 60 * 1000) {
+  async function cleanupExpiredPdfGenerationPreviews(maxAgeMs = 2 * 60 * 60 * 1000, storageRoot = legacyStorageRoot) {
     const previewDir = path.join(storageRoot, "previews");
     const entries = await fs.promises.readdir(previewDir, { withFileTypes: true }).catch(() => []);
     const cutoffMs = Date.now() - maxAgeMs;
@@ -205,10 +243,6 @@ function createPdfGenerationService({
   }
 
   async function createPdfGenerationPreview(request = {}) {
-    await ensureStorageDirectories();
-    await fs.promises.mkdir(path.join(storageRoot, "previews"), { recursive: true });
-    await cleanupExpiredPdfGenerationPreviews();
-
     const previewRequest = await resolveFirstPreviewTargetRequest(request);
     const previewId = `pdf-generation-preview-${randomUUID()}`;
     const generatedAt = new Date();
@@ -222,6 +256,13 @@ function createPdfGenerationService({
     if (!previewPayload.candidates.length) {
       throw createHttpError(400, "PDF 미리보기를 생성할 수험생 데이터가 없습니다.", "PDF_PREVIEW_CANDIDATES_REQUIRED");
     }
+
+    const previewSchoolId = String(previewRequest.schoolId || previewPayload.template.schoolId || "school-default").trim() || "school-default";
+    const storageRoot = await resolvePdfStorageRootForSchool(previewSchoolId);
+
+    await ensureStorageDirectories(storageRoot);
+    await fs.promises.mkdir(path.join(storageRoot, "previews"), { recursive: true });
+    await cleanupExpiredPdfGenerationPreviews(2 * 60 * 60 * 1000, storageRoot);
 
     const previewDocument = renderPreviewDocument({
       candidates: previewPayload.candidates,
@@ -266,8 +307,9 @@ function createPdfGenerationService({
         entityId: previewId,
         metadata: {
           candidateCount: previewPayload.candidates.length,
+          filePath: pdfFilePath,
           pageCount: previewDocument.pageCount,
-          schoolId: String(previewRequest.schoolId || previewPayload.template.schoolId || ""),
+          schoolId: previewSchoolId,
           templateId: String(previewPayload.template.id || ""),
         },
         status: "completed",
@@ -296,7 +338,23 @@ function createPdfGenerationService({
       throw createHttpError(404, "PDF 미리보기 파일을 찾을 수 없습니다.", "PDF_PREVIEW_NOT_FOUND");
     }
 
-    const filePath = path.join(storageRoot, "previews", `${normalizedPreviewId}.pdf`);
+    const auditRows = normalizedPreviewId
+      ? await query(
+          `
+            SELECT metadata_json AS metadataJson
+            FROM pdf_audit_logs
+            WHERE entity_id = ?
+              AND entity_type = 'pdf_generation'
+              AND action = 'pdf_generation_preview_created'
+            ORDER BY created_at DESC
+            LIMIT 1
+          `,
+          [normalizedPreviewId],
+        ).catch(() => [])
+      : [];
+    const metadata = parseJsonObject(auditRows[0]?.metadataJson);
+    const filePath = String(metadata.filePath || "").trim() ||
+      path.join(legacyStorageRoot, "previews", `${normalizedPreviewId}.pdf`);
 
     if (!fs.existsSync(filePath)) {
       throw createHttpError(404, "PDF 미리보기 파일이 존재하지 않습니다.", "PDF_PREVIEW_FILE_MISSING");
@@ -333,7 +391,7 @@ function createPdfGenerationService({
     path,
     pdfPreviewService,
     refreshPdfGenerationBatch,
-    storageRoot,
+    resolvePdfStorageRootForSchool,
     updateHistoryRow,
     writeAuditLog,
   });
@@ -426,3 +484,12 @@ module.exports = {
   restoreGenerationRequestFromHistory,
   sanitizeFileName,
 };
+  function parseJsonObject(value = "") {
+    try {
+      const parsedValue = JSON.parse(String(value || "{}"));
+
+      return parsedValue && typeof parsedValue === "object" && !Array.isArray(parsedValue) ? parsedValue : {};
+    } catch (_error) {
+      return {};
+    }
+  }

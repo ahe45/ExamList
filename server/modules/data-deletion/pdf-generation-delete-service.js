@@ -10,6 +10,7 @@ const {
   createUniqueValueList,
   parseJsonColumn,
 } = require("./utils");
+const { resolveLegacyPdfStorageRoot } = require("../storage-paths");
 
 async function collectPdfGenerationRows(queryFn, schoolId) {
   return queryFn(
@@ -88,7 +89,7 @@ function resolveMergedPdfFilePath(pathModule, rootDir, mergedId = "") {
     return "";
   }
 
-  return pathModule.join(rootDir, "storage", "pdf-generations", "merged", `${normalizedMergedId}.pdf`);
+  return pathModule.join(resolveLegacyPdfStorageRoot(pathModule, rootDir), "merged", `${normalizedMergedId}.pdf`);
 }
 
 function selectPdfMergedAuditData({
@@ -115,6 +116,7 @@ function selectPdfMergedAuditData({
   });
 
   const selectedEntityIds = [];
+  const filePathsByEntityId = new Map();
 
   rowsByEntityId.forEach((rows, entityId) => {
     let hasScopedMetadata = false;
@@ -122,7 +124,12 @@ function selectPdfMergedAuditData({
 
     rows.forEach((row) => {
       const metadata = parseJsonColumn(row.metadataJson, {});
+      const metadataFilePath = String(metadata.mergedFilePath || metadata.filePath || "").trim();
       const { generationIds, schoolIds } = getMergedAuditMetadataScope(metadata);
+
+      if (metadataFilePath && !filePathsByEntityId.has(entityId)) {
+        filePathsByEntityId.set(entityId, metadataFilePath);
+      }
 
       if (generationIds.length || schoolIds.length) {
         hasScopedMetadata = true;
@@ -148,7 +155,7 @@ function selectPdfMergedAuditData({
   return {
     auditIds: createUniqueValueList(selectedAuditRows.map((row) => row.id)),
     filePaths: createUniqueValueList([...selectedEntityIdSet].map((entityId) =>
-      resolveMergedPdfFilePath(pathModule, rootDir, entityId),
+      filePathsByEntityId.get(entityId) || resolveMergedPdfFilePath(pathModule, rootDir, entityId),
     )),
     rows: selectedAuditRows,
   };

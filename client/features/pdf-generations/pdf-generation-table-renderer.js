@@ -106,7 +106,6 @@ export function renderPdfGenerationFilterMenu(pdfGenerations = {}) {
 
   const optionValues = getPdfGenerationFilterOptionValues(pdfGenerations, columnKey);
   const visibleOptionValues = filterPdfGenerationFilterOptionValues(optionValues, tableState.filterMenuSearch);
-  const numericDisplayKeys = new Set(["candidateCount", "pageCount", "sequenceNumber"]);
   const selectedValues = new Set((tableState.filters?.[columnKey] || []).map((value) => String(value || "")));
   const isAllVisibleSelected =
     visibleOptionValues.length > 0 && visibleOptionValues.every((value) => selectedValues.has(String(value || "")));
@@ -135,41 +134,10 @@ export function renderPdfGenerationFilterMenu(pdfGenerations = {}) {
         />
       </label>
       <div class="table-filter-select-all">
-        <label class="table-filter-option table-filter-option-all table-filter-option-select-all">
-          <input
-            data-pdf-generation-filter-select-all
-            data-filter-key="${escapeHtml(columnKey)}"
-            ${isAllVisibleSelected ? "checked" : ""}
-            type="checkbox"
-          />
-          <span>전체 선택</span>
-        </label>
+        ${renderPdfGenerationFilterSelectAll(columnKey, isAllVisibleSelected)}
       </div>
       <div class="table-filter-options table-filter-option-list">
-        ${
-          visibleOptionValues.length
-            ? visibleOptionValues
-                .map(
-                  (value) => {
-                    const displayValue = numericDisplayKeys.has(columnKey) ? formatCount(value) : value;
-
-                    return `
-                    <label class="table-filter-option">
-                      <input
-                        data-pdf-generation-filter-option
-                        data-filter-key="${escapeHtml(columnKey)}"
-                        data-filter-value="${escapeHtml(value)}"
-                        ${selectedValues.has(String(value || "")) ? "checked" : ""}
-                        type="checkbox"
-                      />
-                      <span>${escapeHtml(displayValue)}</span>
-                    </label>
-                  `;
-                  },
-                )
-                .join("")
-            : `<p class="table-filter-empty">표시할 필터 값이 없습니다.</p>`
-        }
+        ${renderPdfGenerationFilterOptions(columnKey, visibleOptionValues, selectedValues)}
       </div>
       <div class="table-filter-menu-footer">
         <button
@@ -184,6 +152,47 @@ export function renderPdfGenerationFilterMenu(pdfGenerations = {}) {
       </div>
     </div>
   `;
+}
+
+export function renderPdfGenerationFilterSelectAll(columnKey = "", isAllVisibleSelected = false) {
+  return `
+    <label class="table-filter-option table-filter-option-all table-filter-option-select-all">
+      <input
+        data-pdf-generation-filter-select-all
+        data-filter-key="${escapeHtml(columnKey)}"
+        ${isAllVisibleSelected ? "checked" : ""}
+        type="checkbox"
+      />
+      <span>전체 선택</span>
+    </label>
+  `;
+}
+
+export function renderPdfGenerationFilterOptions(columnKey = "", visibleOptionValues = [], selectedValues = new Set()) {
+  const numericDisplayKeys = new Set(["candidateCount", "pageCount", "sequenceNumber"]);
+
+  return visibleOptionValues.length
+    ? visibleOptionValues
+        .map(
+          (value) => {
+            const displayValue = numericDisplayKeys.has(columnKey) ? formatCount(value) : value;
+
+            return `
+              <label class="table-filter-option">
+                <input
+                  data-pdf-generation-filter-option
+                  data-filter-key="${escapeHtml(columnKey)}"
+                  data-filter-value="${escapeHtml(value)}"
+                  ${selectedValues.has(String(value || "")) ? "checked" : ""}
+                  type="checkbox"
+                />
+                <span>${escapeHtml(displayValue)}</span>
+              </label>
+            `;
+          },
+        )
+        .join("")
+    : `<p class="table-filter-empty">표시할 필터 값이 없습니다.</p>`;
 }
 
 export function renderPdfGenerationPagination(pdfGenerations = {}) {

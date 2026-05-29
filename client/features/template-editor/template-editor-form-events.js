@@ -43,6 +43,88 @@ function isTemplateEditorControlTarget(target) {
   );
 }
 
+function createTemplateEditorObjectSelectionSnapshot(documentSurface) {
+  if (!documentSurface?.querySelectorAll) {
+    return null;
+  }
+
+  const runtime = typeof window !== "undefined" ? window.ExamListTemplateEditorRuntime || null : null;
+  const runtimeState = runtime?.state?.templateEditor || null;
+  const selectedElements = Array.from(
+    documentSurface.querySelectorAll("img.is-selected-object, table.is-selected-object, table.is-selected-table-object"),
+  );
+  const selectedImageElement = runtimeState?.selectedImageElement || null;
+  const selectedTableElement = runtimeState?.selectedTableElement || null;
+
+  if (!selectedElements.length && !selectedImageElement && !selectedTableElement) {
+    return null;
+  }
+
+  return {
+    runtime,
+    selectedElements,
+    selectedImageElement,
+    selectedTableElement,
+  };
+}
+
+function restoreTemplateEditorObjectSelectionSnapshot(snapshot, documentSurface) {
+  if (!snapshot || !documentSurface?.contains) {
+    return;
+  }
+
+  const runtimeState = snapshot.runtime?.state?.templateEditor || null;
+  let didRestore = false;
+
+  snapshot.selectedElements.forEach((element) => {
+    if (!documentSurface.contains(element)) {
+      return;
+    }
+
+    if (element instanceof HTMLImageElement) {
+      element.classList.add("template-editor-image-object", "is-selected-object");
+      element.classList.toggle("is-cell-contained-object", Boolean(element.closest("td, th")));
+      didRestore = true;
+      return;
+    }
+
+    if (element instanceof HTMLTableElement) {
+      element.classList.add("is-selected-object", "is-selected-table-object");
+      didRestore = true;
+    }
+  });
+
+  if (snapshot.selectedImageElement instanceof HTMLImageElement && documentSurface.contains(snapshot.selectedImageElement)) {
+    snapshot.selectedImageElement.classList.add("template-editor-image-object", "is-selected-object");
+    snapshot.selectedImageElement.classList.toggle(
+      "is-cell-contained-object",
+      Boolean(snapshot.selectedImageElement.closest("td, th")),
+    );
+
+    if (runtimeState) {
+      runtimeState.selectedImageElement = snapshot.selectedImageElement;
+    }
+
+    snapshot.runtime?.updateImageSelectionOverlay?.();
+    didRestore = true;
+  }
+
+  if (snapshot.selectedTableElement instanceof HTMLTableElement && documentSurface.contains(snapshot.selectedTableElement)) {
+    snapshot.selectedTableElement.classList.add("is-selected-object", "is-selected-table-object");
+
+    if (runtimeState) {
+      runtimeState.selectedTableElement = snapshot.selectedTableElement;
+    }
+
+    snapshot.runtime?.updateTableObjectOverlay?.();
+    didRestore = true;
+  }
+
+  if (didRestore) {
+    documentSurface.dispatchEvent(new Event("input"));
+  }
+}
+
 export function bindTemplateEditorFormEvents({
   applyDocumentColor,
   applyDocumentFontFamily,
@@ -211,6 +293,10 @@ export function bindTemplateEditorFormEvents({
 
     if (documentSurface) {
       const pageId = getDocumentSurfacePageId(documentSurface);
+      const shouldRestoreObjectSelection = isTemplateEditorControlTarget(event.relatedTarget);
+      const objectSelectionSnapshot = shouldRestoreObjectSelection
+        ? createTemplateEditorObjectSelectionSnapshot(documentSurface)
+        : null;
 
       if (isDocumentSurfaceComposing(documentSurface, pageId)) {
         scheduleDocumentCompositionSync(setDocumentCompositionState(documentSurface, false));
@@ -223,6 +309,7 @@ export function bindTemplateEditorFormEvents({
         render: false,
         revertOnOverflow: true,
       });
+      restoreTemplateEditorObjectSelectionSnapshot(objectSelectionSnapshot, documentSurface);
     }
   });
 

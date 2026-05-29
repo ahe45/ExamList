@@ -119,13 +119,17 @@ function createDataDeletionService({
       }
 
       if (normalizedScope === "all" || normalizedScope === "candidates") {
-        const candidateDeletion = await deleteCandidateRecords(transactionQuery, school.id, filters);
+        const candidateDeletion = await deleteCandidateRecords(transactionQuery, school.id, filters, {
+          schoolStorageCode: school.code,
+        });
 
         counts.candidatePhotos += candidateDeletion.deletedCandidatePhotos;
         counts.candidateRecords += candidateDeletion.deletedCandidateRecords;
         candidatePhotoFilePaths.push(...candidateDeletion.candidatePhotoFilePaths);
       } else if (normalizedScope === "photos") {
-        const photoDeletion = await deleteCandidatePhotos(transactionQuery, school.id, filters);
+        const photoDeletion = await deleteCandidatePhotos(transactionQuery, school.id, filters, {
+          schoolStorageCode: school.code,
+        });
 
         counts.candidatePhotos += photoDeletion.deletedCandidatePhotos;
         candidatePhotoFilePaths.push(...photoDeletion.candidatePhotoFilePaths);

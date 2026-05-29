@@ -33,13 +33,11 @@ function createPdfGenerationRunner({
   path,
   pdfPreviewService,
   refreshPdfGenerationBatch,
-  storageRoot,
+  resolvePdfStorageRootForSchool,
   updateHistoryRow,
   writeAuditLog,
 }) {
   async function createPdfGeneration(request = {}, options = {}) {
-    await ensureStorageDirectories();
-
     const generationId = String(options.generationId || `pdf-generation-${randomUUID()}`);
     const startedAt = options.startedAt || new Date();
     const maxAttempts = normalizeRetryAttempts(options.maxAttempts, normalizeRetryAttempts(process.env.PDF_QUEUE_MAX_ATTEMPTS, 2));
@@ -75,6 +73,11 @@ function createPdfGenerationRunner({
       sampleLimit: request.sampleLimit || request.chunk?.chunkSize || 5000,
     });
     const schoolId = String(request.schoolId || previewPayload.template.schoolId || "school-default").trim() || "school-default";
+    const storageRoot = typeof resolvePdfStorageRootForSchool === "function"
+      ? await resolvePdfStorageRootForSchool(schoolId)
+      : "";
+
+    await ensureStorageDirectories(storageRoot);
     await reportProgress(25);
 
     if (!previewPayload.candidates.length) {

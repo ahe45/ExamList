@@ -1,4 +1,4 @@
-import { hasAccess } from "../../app/access.js";
+import { canUseAccess, hasAccess } from "../../app/access.js";
 import { escapeHtml } from "../../app/html-utils.js";
 import { dataDeletionItems } from "./constants.js";
 
@@ -56,7 +56,8 @@ export function renderDataDeletionCard(item, state = {}, options = {}) {
 }
 
 export function renderDataDeletionView({ access, dataDeletion, school }) {
-  const canDeleteData = hasAccess(access, "deleteProjectData");
+  const hasDeleteDataPermission = hasAccess(access, "deleteProjectData");
+  const canDeleteData = canUseAccess(access, "deleteProjectData");
   const hasSchool = Boolean(String(school?.id || "").trim());
   const disabled = !canDeleteData || !hasSchool;
   const statusMessage = String(dataDeletion?.statusMessage || "").trim();
@@ -79,7 +80,7 @@ export function renderDataDeletionView({ access, dataDeletion, school }) {
           </div>
         </div>
         ${
-          !canDeleteData
+          !hasDeleteDataPermission
             ? '<p class="data-deletion-status system-data-delete-status warning">데이터 삭제 권한이 없습니다.</p>'
             : !hasSchool
               ? '<p class="data-deletion-status system-data-delete-status warning">학교를 먼저 선택하세요.</p>'

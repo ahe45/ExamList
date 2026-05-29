@@ -1,10 +1,45 @@
 import {
+  handleGridFilterSearchCompositionEnd,
+  handleGridFilterSearchInput,
+  markGridFilterSearchCompositionStart,
+} from "../../app/grid-filter-search-events.js";
+import {
   clearWindowTextSelection,
   isInteractiveGenerationTarget,
   openPdfGenerationPrintWindow,
   resolvePdfGenerationFilterMenuPosition,
-  restorePdfGenerationSearchFocus,
 } from "./pdf-generation-event-utils.js";
+import {
+  renderPdfGenerationFilterOptions,
+  renderPdfGenerationFilterSelectAll,
+} from "./pdf-generation-table-renderer.js";
+
+const pdfGenerationFilterSearchInputSelector = "[data-pdf-generation-filter-search-input]";
+
+function refreshPdfGenerationFilterMenuOptions(context) {
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const tableState = context.getPdfGenerationTableState();
+  const columnKey = String(tableState.filterMenuKey || "");
+  const menuElement = document.querySelector(".pdf-generation-filter-menu");
+  const selectAllElement = menuElement?.querySelector?.(".table-filter-select-all") || null;
+  const optionListElement = menuElement?.querySelector?.(".table-filter-option-list") || null;
+
+  if (!columnKey || !selectAllElement || !optionListElement || typeof context.getVisiblePdfGenerationFilterOptions !== "function") {
+    return false;
+  }
+
+  const visibleOptionValues = context.getVisiblePdfGenerationFilterOptions(columnKey);
+  const selectedValues = new Set((tableState.filters?.[columnKey] || []).map((value) => String(value || "")));
+  const isAllVisibleSelected =
+    visibleOptionValues.length > 0 && visibleOptionValues.every((value) => selectedValues.has(String(value || "")));
+
+  selectAllElement.innerHTML = renderPdfGenerationFilterSelectAll(columnKey, isAllVisibleSelected);
+  optionListElement.innerHTML = renderPdfGenerationFilterOptions(columnKey, visibleOptionValues, selectedValues);
+  return true;
+}
 
 export async function handlePdfGenerationListSubmit(event, context) {
   const { appState, loadGenerations } = context;
@@ -26,19 +61,25 @@ export async function handlePdfGenerationListSubmit(event, context) {
 }
 
 export async function handlePdfGenerationListInput(event, context) {
-  const { getPdfGenerationTableState, onStateChange } = context;
+  return handleGridFilterSearchInput(event, {
+    getTableState: context.getPdfGenerationTableState,
+    onStateChange: context.onStateChange,
+    refreshFilterMenu: () => refreshPdfGenerationFilterMenuOptions(context),
+    selector: pdfGenerationFilterSearchInputSelector,
+  });
+}
 
-  if (!event.target.matches("[data-pdf-generation-filter-search-input]")) {
-    return false;
-  }
+export function handlePdfGenerationListCompositionStart(event) {
+  return markGridFilterSearchCompositionStart(event, pdfGenerationFilterSearchInputSelector);
+}
 
-  const selectionStart = Number.isFinite(event.target.selectionStart) ? event.target.selectionStart : String(event.target.value || "").length;
-  const selectionEnd = Number.isFinite(event.target.selectionEnd) ? event.target.selectionEnd : selectionStart;
-
-  getPdfGenerationTableState().filterMenuSearch = event.target.value;
-  await onStateChange();
-  restorePdfGenerationSearchFocus("[data-pdf-generation-filter-search-input]", selectionStart, selectionEnd);
-  return true;
+export async function handlePdfGenerationListCompositionEnd(event, context) {
+  return handleGridFilterSearchCompositionEnd(event, {
+    getTableState: context.getPdfGenerationTableState,
+    onStateChange: context.onStateChange,
+    refreshFilterMenu: () => refreshPdfGenerationFilterMenuOptions(context),
+    selector: pdfGenerationFilterSearchInputSelector,
+  });
 }
 
 export async function handlePdfGenerationListKeyDown(event, context) {

@@ -55,3 +55,23 @@ test("candidate grid page-size picker uses the admitcard option set", () => {
   assert.match(html, /모두 표시/);
   assert.doesNotMatch(html, /data-candidate-page-size-option="20"/);
 });
+
+test("candidate upload button stays visible but disabled for read-only school access", () => {
+  const html = renderCandidateTable({
+    access: {
+      permissions: {
+        manageCandidates: true,
+      },
+      schoolAccess: {
+        canManage: false,
+        schoolId: "school-readonly",
+      },
+    },
+    candidates: {
+      items: [],
+      loading: false,
+    },
+  });
+
+  assert.match(html, /data-action="open-candidate-upload-modal"[\s\S]*disabled/);
+});

@@ -2,6 +2,7 @@ import { showToast } from "../../app/toast.js";
 import {
   getObjectAlignmentCanvasMetrics,
   getObjectAlignmentDocumentElement,
+  getObjectCandidateBlockModalElement,
   getObjectTableCellElement,
   getSelectedObjectAlignmentElements,
 } from "./object-alignment-metrics.js";
@@ -24,6 +25,11 @@ export function runObjectAlignmentCommand(editor, surfaceElement, command) {
 
   if (selectedElements.some((element) => getObjectTableCellElement(element, surfaceElement))) {
     showToast("표 셀 안의 개체는 정렬 기능을 사용할 수 없습니다.", "warning");
+    return false;
+  }
+
+  if (selectedElements.some((element) => getObjectCandidateBlockModalElement(element, surfaceElement))) {
+    showToast("데이터 블록 편집 영역 안의 개체는 정렬 기능을 사용할 수 없습니다.", "warning");
     return false;
   }
 

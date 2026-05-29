@@ -167,37 +167,10 @@ function renderPdfAuditFilterMenu(pdfGenerations = {}) {
         />
       </label>
       <div class="table-filter-select-all">
-        <label class="table-filter-option table-filter-option-all table-filter-option-select-all">
-          <input
-            data-pdf-audit-filter-select-all
-            data-filter-key="${escapeHtml(columnKey)}"
-            ${isAllVisibleSelected ? "checked" : ""}
-            type="checkbox"
-          />
-          <span>전체 선택</span>
-        </label>
+        ${renderPdfAuditFilterSelectAll(columnKey, isAllVisibleSelected)}
       </div>
       <div class="table-filter-options table-filter-option-list">
-        ${
-          visibleOptionValues.length
-            ? visibleOptionValues
-              .map(
-                (value) => `
-                  <label class="table-filter-option">
-                    <input
-                      data-pdf-audit-filter-option
-                      data-filter-key="${escapeHtml(columnKey)}"
-                      data-filter-value="${escapeHtml(value)}"
-                      ${selectedValues.has(String(value || "")) ? "checked" : ""}
-                      type="checkbox"
-                    />
-                    <span>${escapeHtml(value)}</span>
-                  </label>
-                `,
-              )
-              .join("")
-            : `<p class="table-filter-empty">표시할 필터 값이 없습니다.</p>`
-        }
+        ${renderPdfAuditFilterOptions(columnKey, visibleOptionValues, selectedValues)}
       </div>
       <div class="table-filter-menu-footer">
         <button
@@ -212,6 +185,41 @@ function renderPdfAuditFilterMenu(pdfGenerations = {}) {
       </div>
     </div>
   `;
+}
+
+export function renderPdfAuditFilterSelectAll(columnKey = "", isAllVisibleSelected = false) {
+  return `
+    <label class="table-filter-option table-filter-option-all table-filter-option-select-all">
+      <input
+        data-pdf-audit-filter-select-all
+        data-filter-key="${escapeHtml(columnKey)}"
+        ${isAllVisibleSelected ? "checked" : ""}
+        type="checkbox"
+      />
+      <span>전체 선택</span>
+    </label>
+  `;
+}
+
+export function renderPdfAuditFilterOptions(columnKey = "", visibleOptionValues = [], selectedValues = new Set()) {
+  return visibleOptionValues.length
+    ? visibleOptionValues
+        .map(
+          (value) => `
+            <label class="table-filter-option">
+              <input
+                data-pdf-audit-filter-option
+                data-filter-key="${escapeHtml(columnKey)}"
+                data-filter-value="${escapeHtml(value)}"
+                ${selectedValues.has(String(value || "")) ? "checked" : ""}
+                type="checkbox"
+              />
+              <span>${escapeHtml(value)}</span>
+            </label>
+          `,
+        )
+        .join("")
+    : `<p class="table-filter-empty">표시할 필터 값이 없습니다.</p>`;
 }
 
 function renderPdfAuditPagePicker(currentPage, totalPages) {

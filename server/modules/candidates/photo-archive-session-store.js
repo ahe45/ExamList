@@ -32,6 +32,7 @@ function normalizeSessionToken(token = "") {
 function createCandidatePhotoArchiveSessionStore({
   createHttpError,
   directoryPath,
+  resolveDirectoryPath = null,
   ttlMs = defaultSessionTtlMs,
 } = {}) {
   const sessionDirectoryPath = String(directoryPath || "").trim();
@@ -41,32 +42,47 @@ function createCandidatePhotoArchiveSessionStore({
     return createStoreError(createHttpError, statusCode, message, errorCode);
   }
 
-  function assertSessionDirectory() {
-    if (!sessionDirectoryPath) {
-      throw createError(500, "사진 ZIP 임시 저장소를 사용할 수 없습니다.", "CANDIDATE_PHOTO_ARCHIVE_SESSION_STORE_UNAVAILABLE");
+  function getSessionDirectoryPath(options = {}) {
+    if (typeof resolveDirectoryPath === "function") {
+      return String(resolveDirectoryPath(options) || "").trim();
     }
+
+    return sessionDirectoryPath;
   }
 
-  function getSessionPaths(token) {
+  function assertSessionDirectory(options = {}) {
+    const directoryPath = getSessionDirectoryPath(options);
+
+    if (!directoryPath) {
+      throw createError(500, "사진 ZIP 임시 저장소를 사용할 수 없습니다.", "CANDIDATE_PHOTO_ARCHIVE_SESSION_STORE_UNAVAILABLE");
+    }
+
+    return directoryPath;
+  }
+
+  function getSessionPaths(token, options = {}) {
     const normalizedToken = normalizeSessionToken(token);
 
     if (!normalizedToken) {
       throw createError(400, "사진 ZIP 미리보기 세션이 올바르지 않습니다.", "CANDIDATE_PHOTO_ARCHIVE_SESSION_INVALID");
     }
 
+    const directoryPath = assertSessionDirectory(options);
+
     return {
-      archivePath: path.join(sessionDirectoryPath, `${normalizedToken}.zip`),
-      metadataPath: path.join(sessionDirectoryPath, `${normalizedToken}.json`),
+      archivePath: path.join(directoryPath, `${normalizedToken}.zip`),
+      directoryPath,
+      metadataPath: path.join(directoryPath, `${normalizedToken}.json`),
       token: normalizedToken,
     };
   }
 
-  async function deleteSession(token) {
-    if (!sessionDirectoryPath) {
+  async function deleteSession(token, options = {}) {
+    if (!getSessionDirectoryPath(options)) {
       return false;
     }
 
-    const { archivePath, metadataPath } = getSessionPaths(token);
+    const { archivePath, metadataPath } = getSessionPaths(token, options);
 
     await Promise.all(
       [archivePath, metadataPath].map((targetPath) =>
@@ -76,15 +92,17 @@ function createCandidatePhotoArchiveSessionStore({
     return true;
   }
 
-  async function cleanupExpiredSessions(now = Date.now()) {
-    if (!sessionDirectoryPath) {
+  async function cleanupExpiredSessions(now = Date.now(), options = {}) {
+    const directoryPath = getSessionDirectoryPath(options);
+
+    if (!directoryPath) {
       return 0;
     }
 
     let entries = [];
 
     try {
-      entries = await fs.promises.readdir(sessionDirectoryPath, { withFileTypes: true });
+      entries = await fs.promises.readdir(directoryPath, { withFileTypes: true });
     } catch (error) {
       if (error?.code === "ENOENT") {
         return 0;
@@ -107,7 +125,7 @@ function createCandidatePhotoArchiveSessionStore({
 
           try {
             const metadata = JSON.parse(
-              await fs.promises.readFile(path.join(sessionDirectoryPath, entry.name), "utf8"),
+              await fs.promises.readFile(path.join(directoryPath, entry.name), "utf8"),
             );
             const expiresAtMs = Date.parse(metadata.expiresAt || "");
 
@@ -118,7 +136,7 @@ function createCandidatePhotoArchiveSessionStore({
             // Corrupt metadata cannot be trusted, so remove the paired files.
           }
 
-          await deleteSession(token);
+          await deleteSession(token, options);
           deletedCount += 1;
         }),
     );
@@ -126,20 +144,20 @@ function createCandidatePhotoArchiveSessionStore({
     return deletedCount;
   }
 
-  async function createSession(fileBuffer, metadata = {}) {
-    assertSessionDirectory();
+  async function createSession(fileBuffer, metadata = {}, options = {}) {
+    const directoryPath = assertSessionDirectory(options);
 
     if (!Buffer.isBuffer(fileBuffer) || fileBuffer.length === 0) {
       throw createError(400, "사진 ZIP 파일 데이터가 없습니다.", "CANDIDATE_PHOTO_ARCHIVE_EMPTY");
     }
 
-    await fs.promises.mkdir(sessionDirectoryPath, { recursive: true });
-    await cleanupExpiredSessions();
+    await fs.promises.mkdir(directoryPath, { recursive: true });
+    await cleanupExpiredSessions(Date.now(), options);
 
     const token = crypto.randomUUID();
     const now = Date.now();
     const expiresAt = new Date(now + sessionTtlMs).toISOString();
-    const { archivePath, metadataPath } = getSessionPaths(token);
+    const { archivePath, metadataPath } = getSessionPaths(token, options);
     const sessionMetadata = {
       createdAt: new Date(now).toISOString(),
       expiresAt,
@@ -158,10 +176,10 @@ function createCandidatePhotoArchiveSessionStore({
     };
   }
 
-  async function readSessionBuffer(token) {
-    assertSessionDirectory();
+  async function readSessionBuffer(token, options = {}) {
+    assertSessionDirectory(options);
 
-    const { archivePath, metadataPath } = getSessionPaths(token);
+    const { archivePath, metadataPath } = getSessionPaths(token, options);
     let metadata = null;
 
     try {
@@ -173,14 +191,14 @@ function createCandidatePhotoArchiveSessionStore({
     const expiresAtMs = Date.parse(metadata.expiresAt || "");
 
     if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
-      await deleteSession(token);
+      await deleteSession(token, options);
       throw createError(410, "사진 ZIP 미리보기 세션이 만료되었습니다. ZIP 파일을 다시 선택해 주세요.", "CANDIDATE_PHOTO_ARCHIVE_SESSION_EXPIRED");
     }
 
     try {
       return await fs.promises.readFile(archivePath);
     } catch (_error) {
-      await deleteSession(token);
+      await deleteSession(token, options);
       throw createError(410, "사진 ZIP 미리보기 세션이 만료되었습니다. ZIP 파일을 다시 선택해 주세요.", "CANDIDATE_PHOTO_ARCHIVE_SESSION_EXPIRED");
     }
   }

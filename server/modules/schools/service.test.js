@@ -23,9 +23,9 @@ test("getSchoolById resolves a school by id or code", async () => {
         {
           candidateCount: 0,
           code: "SEOUL01",
+          createdAccount: "admin",
           description: "",
           id: "school-1",
-          isActive: 1,
           name: "서울대학교",
           templateCount: 0,
           updatedAt: "2026-05-13T00:00:00.000Z",
@@ -38,6 +38,7 @@ test("getSchoolById resolves a school by id or code", async () => {
 
   assert.equal(school.id, "school-1");
   assert.equal(school.code, "SEOUL01");
+  assert.equal(school.createdAccount, "admin");
   assert.deepEqual(queries[0].params, ["SEOUL01", "SEOUL01"]);
   assert.match(queries[0].sql, /s\.id = \? OR s\.code = \?/);
 });
@@ -57,9 +58,9 @@ test("listSchools derives updatedAt from related school data", async () => {
         {
           candidateCount: 3,
           code: "SEOUL01",
+          createdAccount: "admin",
           description: "",
           id: "school-1",
-          isActive: 1,
           name: "서울대학교",
           templateCount: 2,
           updatedAt: new Date("2026-05-15T01:02:03.000Z"),
@@ -95,7 +96,8 @@ test("deleteSchool deletes a school and its related data", async () => {
       existsSync: (filePath) => [
         "C:\\pdf\\school-1.pdf",
         "C:\\pdf\\school-1.zip",
-        path.join(rootDir, "storage", "candidate-photos", "A001.jpg"),
+        path.join(rootDir, "storage", "pdf-generations", "merged", "pdf-merged-school-1.pdf"),
+        path.join(rootDir, "storage", "SEOUL01", "candidate-photos", "A001.jpg"),
       ].includes(filePath),
       promises: {
         rm: async (filePath, options) => {
@@ -112,9 +114,9 @@ test("deleteSchool deletes a school and its related data", async () => {
           {
             candidateCount: 3,
             code: "SEOUL01",
+            createdAccount: "admin",
             description: "",
             id: "school-1",
-            isActive: 1,
             name: "서울대학교",
             templateCount: 2,
             updatedAt: "2026-05-13T00:00:00.000Z",
@@ -142,6 +144,31 @@ test("deleteSchool deletes a school and its related data", async () => {
         return [{ archiveFilePath: "C:\\pdf\\school-1.zip", archiveId: "archive-1", id: "batch-1" }];
       }
 
+      if (compactSql.includes("FROM pdf_audit_logs WHERE entity_type = 'pdf_generation_merged'")) {
+        return [
+          {
+            entityId: "pdf-merged-school-1",
+            id: "audit-merged-created",
+            metadataJson: JSON.stringify({
+              generationIds: ["generation-1"],
+              schoolIds: ["school-1"],
+            }),
+          },
+          {
+            entityId: "pdf-merged-school-1",
+            id: "audit-merged-downloaded",
+            metadataJson: JSON.stringify({
+              generationIds: ["generation-1"],
+              schoolIds: ["school-1"],
+            }),
+          },
+        ];
+      }
+
+      if (compactSql.includes("COUNT(*) AS total FROM pdf_audit_logs")) {
+        return [{ total: 3 }];
+      }
+
       if (compactSql.includes("FROM school_settings WHERE school_id = ?")) {
         return [{ id: "settings-1" }];
       }
@@ -158,11 +185,11 @@ test("deleteSchool deletes a school and its related data", async () => {
   assert.equal(result.id, "school-1");
   assert.equal(result.name, "서울대학교");
   assert.deepEqual(result.relatedDeleted, {
-    auditLogs: 3,
+    auditLogs: 5,
     candidatePhotoFiles: 1,
-    candidatePhotoFilesMissing: 2,
+    candidatePhotoFilesMissing: 5,
     candidateRecords: 1,
-    pdfFiles: 2,
+    pdfFiles: 3,
     pdfFilesMissing: 0,
     pdfGenerationBatches: 1,
     pdfGenerationHistories: 1,
@@ -171,6 +198,7 @@ test("deleteSchool deletes a school and its related data", async () => {
   });
   assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM pdf_generation_histories WHERE school_id = ?")));
   assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM pdf_generation_batches WHERE school_id = ?")));
+  assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM pdf_audit_logs WHERE id IN")));
   assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM candidate_records WHERE school_id = ?")));
   assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM pdf_templates WHERE school_id = ?")));
   assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM school_settings WHERE school_id = ?")));
@@ -181,8 +209,12 @@ test("deleteSchool deletes a school and its related data", async () => {
     [
       "C:\\pdf\\school-1.pdf",
       "C:\\pdf\\school-1.zip",
+      path.join(rootDir, "storage", "pdf-generations", "merged", "pdf-merged-school-1.pdf"),
+      path.join(rootDir, "storage", "SEOUL01", "candidate-photos", "A001.jpg"),
       path.join(rootDir, "storage", "candidate-photos", "A001.jpg"),
+      path.join(rootDir, "storage", "SEOUL01", "candidate-photos", "A001.jpeg"),
       path.join(rootDir, "storage", "candidate-photos", "A001.jpeg"),
+      path.join(rootDir, "storage", "SEOUL01", "candidate-photos", "A001.png"),
       path.join(rootDir, "storage", "candidate-photos", "A001.png"),
     ],
   );
@@ -233,6 +265,49 @@ test("createSchool rejects mismatched deletion password confirmation", async () 
   );
 });
 
+test("createSchool stores the creating account id", async () => {
+  const queries = [];
+  const service = createSchoolService({
+    createHttpError,
+    query: async (sql, params = []) => {
+      queries.push({ params, sql });
+
+      if (sql.includes("FROM schools s")) {
+        return [
+          {
+            candidateCount: 0,
+            code: "SEOUL01",
+            createdAccount: "owner-admin",
+            description: "",
+            id: params[0],
+            name: "서울대학교",
+            templateCount: 0,
+            updatedAt: "2026-05-13T00:00:00.000Z",
+          },
+        ];
+      }
+
+      return { affectedRows: 1 };
+    },
+  });
+
+  const school = await service.createSchool(
+    {
+      code: "SEOUL01",
+      name: "서울대학교",
+    },
+    {
+      createdAccount: "owner-admin",
+    },
+  );
+  const insertSchoolQuery = queries.find((query) => query.sql.includes("INSERT INTO schools"));
+
+  assert.ok(insertSchoolQuery);
+  assert.match(insertSchoolQuery.sql, /created_account/);
+  assert.equal(insertSchoolQuery.params[5], "owner-admin");
+  assert.equal(school.createdAccount, "owner-admin");
+});
+
 test("deleteSchool validates the configured deletion password for managers", async () => {
   const deletionPasswordHash = createPasswordHash("delete-me", "salt");
   const service = createSchoolService({
@@ -245,9 +320,9 @@ test("deleteSchool validates the configured deletion password for managers", asy
           {
             candidateCount: 0,
             code: "SEOUL01",
+            createdAccount: "admin",
             description: "",
             id: "school-1",
-            isActive: 1,
             name: "서울대학교",
             templateCount: 0,
             updatedAt: "2026-05-13T00:00:00.000Z",

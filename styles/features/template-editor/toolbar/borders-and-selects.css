@@ -220,6 +220,11 @@
   min-width: 0;
 }
 
+.template-toolbar-cell-padding-control.is-disabled,
+.template-toolbar-cell-padding-control[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 .template-toolbar-cell-padding-input {
   -moz-appearance: auto;
   -webkit-appearance: auto;
@@ -229,6 +234,29 @@
   padding-right: 2px;
   text-align: right;
   width: 100%;
+}
+
+.template-toolbar-cell-padding-input::placeholder {
+  color: #69788f;
+  font-weight: 900;
+  opacity: 1;
+}
+
+.template-toolbar-cell-padding-input:disabled {
+  background: #f8fbff;
+  border-color: rgba(203, 213, 225, 0.78);
+  color: rgba(105, 120, 143, 0.58);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.template-toolbar-cell-padding-control.is-empty .template-toolbar-cell-padding-input {
+  text-align: center;
+}
+
+.template-toolbar-cell-padding-control.is-disabled > span,
+.template-toolbar-cell-padding-control[aria-disabled="true"] > span {
+  color: rgba(105, 120, 143, 0.58);
 }
 
 .template-toolbar-cell-padding-input::-webkit-inner-spin-button,

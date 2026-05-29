@@ -117,7 +117,10 @@ test("candidate photo archive submit reuses preview token instead of reuploading
   assert.equal(requests.length, 1);
   assert.equal(requests[0].url, "/api/candidates/photo-archive");
   assert.equal(requests[0].options.headers["Content-Type"], "application/json");
-  assert.deepEqual(JSON.parse(requests[0].options.body), { previewToken: "preview-token" });
+  assert.deepEqual(JSON.parse(requests[0].options.body), {
+    previewToken: "preview-token",
+    schoolId: "school-1",
+  });
   assert.equal(upload.photoFile, null);
   assert.equal(upload.photoPreview, null);
   assert.equal(upload.photoPreviewToken, "");

@@ -5,6 +5,7 @@ const { createPasswordHash, verifyPassword } = require("../auth/service");
 const { resolveOrphanedCandidatePhotoFilePaths } = require("../data-deletion/candidate-photos");
 const { deleteRowsByIds } = require("../data-deletion/counts");
 const { deleteFiles } = require("../data-deletion/file-delete");
+const { createPdfGenerationDeleteService } = require("../data-deletion/pdf-generation-delete-service");
 const {
   createSqlPlaceholders,
   createUniqueValueList,
@@ -114,6 +115,8 @@ function createSchoolService({
   query,
   rootDir = process.cwd(),
 }) {
+  const { deletePdfGenerationData } = createPdfGenerationDeleteService({ pathModule, rootDir });
+
   async function runTransaction(callback) {
     if (typeof getPool !== "function") {
       return callback(query);
@@ -167,6 +170,7 @@ function createSchoolService({
     return transactionQuery(
       `
         SELECT
+          school_id AS schoolId,
           examinee_no AS examineeNo,
           photo_name AS photoName
         FROM candidate_records
@@ -190,7 +194,7 @@ function createSchoolService({
           s.code,
           s.name,
           s.description,
-          s.is_active AS isActive,
+          s.created_account AS createdAccount,
           ${relatedSchoolUpdatedAtExpression} AS updatedAt,
           COALESCE(template_stats.templateCount, 0) AS templateCount,
           COALESCE(candidate_stats.candidateCount, 0) AS candidateCount
@@ -247,7 +251,7 @@ function createSchoolService({
           s.code,
           s.name,
           s.description,
-          s.is_active AS isActive,
+          s.created_account AS createdAccount,
           ${relatedSchoolUpdatedAtExpression} AS updatedAt,
           COALESCE(template_stats.templateCount, 0) AS templateCount,
           COALESCE(candidate_stats.candidateCount, 0) AS candidateCount
@@ -272,6 +276,7 @@ function createSchoolService({
     const school = normalizeSchoolPayload(payload, createHttpError);
     const schoolId = `school-${randomUUID()}`;
     const code = school.code || `SCHOOL-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const createdAccount = String(options.createdAccount || "system").trim() || "system";
     const deletionPassword = normalizeSchoolDeletionPassword(payload.deletionPassword);
     const deletionPasswordConfirm = normalizeSchoolDeletionPassword(payload.deletionPasswordConfirm);
     const deletionPasswordHash = deletionPassword ? createPasswordHash(deletionPassword) : "";
@@ -292,10 +297,10 @@ function createSchoolService({
           name,
           description,
           deletion_password_hash,
-          is_active
+          created_account
         ) VALUES (?, ?, ?, ?, ?, ?)
       `,
-      [schoolId, code, school.name, school.description, deletionPasswordHash, school.isActive ? 1 : 0],
+      [schoolId, code, school.name, school.description, deletionPasswordHash, createdAccount],
     );
 
     await query(
@@ -334,12 +339,11 @@ function createSchoolService({
           code = ?,
           name = ?,
           description = ?,
-          is_active = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
           AND deleted_at IS NULL
       `,
-      [school.code || `SCHOOL-${normalizedSchoolId.slice(-8).toUpperCase()}`, school.name, school.description, school.isActive ? 1 : 0, normalizedSchoolId],
+      [school.code || `SCHOOL-${normalizedSchoolId.slice(-8).toUpperCase()}`, school.name, school.description, normalizedSchoolId],
     );
 
     await query(
@@ -394,30 +398,10 @@ function createSchoolService({
         `
           SELECT
             id,
+            school_id AS schoolId,
             examinee_no AS examineeNo,
             photo_name AS photoName
           FROM candidate_records
-          WHERE school_id = ?
-        `,
-        [existingSchool.id],
-      );
-      const generationRows = await transactionQuery(
-        `
-          SELECT
-            id,
-            file_path AS filePath
-          FROM pdf_generation_histories
-          WHERE school_id = ?
-        `,
-        [existingSchool.id],
-      );
-      const batchRows = await transactionQuery(
-        `
-          SELECT
-            id,
-            archive_id AS archiveId,
-            archive_file_path AS archiveFilePath
-          FROM pdf_generation_batches
           WHERE school_id = ?
         `,
         [existingSchool.id],
@@ -426,28 +410,14 @@ function createSchoolService({
         "SELECT id FROM school_settings WHERE school_id = ?",
         [existingSchool.id],
       );
+      const pdfDeletion = await deletePdfGenerationData(transactionQuery, existingSchool.id);
       const remainingPhotoReferenceRows = await findRemainingCandidatePhotoReferences(
         transactionQuery,
         existingSchool.id,
         candidateRows,
       );
       const templateIds = templateRows.map((row) => row.id);
-      const generationIds = generationRows.map((row) => row.id);
-      const batchIds = batchRows.map((row) => row.id);
-      const archiveIds = batchRows.map((row) => row.archiveId);
-      const auditEntityIds = createUniqueValueList([
-        ...generationIds,
-        ...batchIds,
-        ...archiveIds,
-      ]);
 
-      await deleteRowsByIds(
-        transactionQuery,
-        "DELETE FROM pdf_audit_logs WHERE entity_id IN",
-        auditEntityIds,
-      );
-      await transactionQuery("DELETE FROM pdf_generation_histories WHERE school_id = ?", [existingSchool.id]);
-      await transactionQuery("DELETE FROM pdf_generation_batches WHERE school_id = ?", [existingSchool.id]);
       await transactionQuery("DELETE FROM candidate_records WHERE school_id = ?", [existingSchool.id]);
 
       if (templateIds.length) {
@@ -473,31 +443,26 @@ function createSchoolService({
       await transactionQuery("DELETE FROM schools WHERE id = ? AND deleted_at IS NULL", [existingSchool.id]);
 
       return {
-        batchArchiveFilePaths: batchRows.map((row) => row.archiveFilePath),
         candidatePhotoFilePaths: resolveOrphanedCandidatePhotoFilePaths({
           candidateRows,
           pathModule,
           remainingPhotoReferenceRows,
           rootDir,
+          schoolId: existingSchool.id,
+          schoolStorageCode: existingSchool.code,
         }),
         counts: {
-          auditLogs: auditEntityIds.length,
+          auditLogs: pdfDeletion.deletedPdfAuditLogs,
           candidateRecords: candidateRows.length,
-          pdfGenerationBatches: batchRows.length,
-          pdfGenerationHistories: generationRows.length,
+          pdfGenerationBatches: pdfDeletion.deletedPdfGenerationBatches,
+          pdfGenerationHistories: pdfDeletion.deletedPdfGenerationHistories,
           pdfTemplates: templateRows.length,
           schoolSettings: settingRows.length,
         },
-        pdfFilePaths: generationRows.map((row) => row.filePath),
+        pdfFilePaths: pdfDeletion.pdfFilePaths,
       };
     });
-    const pdfFileDeleteResult = await deleteFiles(
-      fileSystem,
-      [
-        ...deletion.pdfFilePaths,
-        ...deletion.batchArchiveFilePaths,
-      ],
-    );
+    const pdfFileDeleteResult = await deleteFiles(fileSystem, deletion.pdfFilePaths);
     const candidatePhotoDeleteResult = await deleteFiles(fileSystem, deletion.candidatePhotoFilePaths);
 
     return {

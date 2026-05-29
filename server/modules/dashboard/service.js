@@ -1,3 +1,5 @@
+const { applySchoolAccessToSummary, canManageSchool } = require("../schools/access");
+
 function getEmptyDashboardSummary(accessSummary, warnings = []) {
   return {
     access: accessSummary,
@@ -17,6 +19,7 @@ function createDashboardService({
   candidateRecordService,
   permissionService,
   pdfTemplateService,
+  schoolService = null,
 }) {
   function getAuthSessionPayload(request) {
     const authState = authService.getSessionState(request);
@@ -30,7 +33,7 @@ function createDashboardService({
 
   async function getDashboardSummary(request, options = {}) {
     const authPayload = getAuthSessionPayload(request);
-    const accessSummary = authPayload.access;
+    let accessSummary = authPayload.access;
     const schoolId = String(options.schoolId || "").trim();
 
     if (authPayload.enabled && !authPayload.authenticated) {
@@ -43,6 +46,20 @@ function createDashboardService({
           user: authPayload.user,
         },
       };
+    }
+
+    if (schoolId && schoolService?.getSchoolById) {
+      const school = await schoolService.getSchoolById(schoolId);
+
+      accessSummary = applySchoolAccessToSummary(accessSummary, {
+        canManage: canManageSchool({
+          authState: authPayload,
+          role: authPayload.role,
+          school,
+        }),
+        createdAccount: school.createdAccount,
+        schoolId: school.id,
+      });
     }
 
     const [templateResult, candidateResult] = await Promise.allSettled([

@@ -30,6 +30,7 @@ export function createCandidateUploadActions({
   const { previewPhotoArchiveFile } = createCandidatePhotoArchivePreviewActions({
     appState,
     ensureCandidateUploadState,
+    getCurrentSchoolId,
     onStateChange,
     setCandidatePreviewProgress,
     waitForProgressPaint,

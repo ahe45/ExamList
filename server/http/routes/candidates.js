@@ -68,38 +68,56 @@ function createCandidateRoutes(deps) {
     }),
     exactRoute("POST", "/api/candidates/import/preview", async ({ request, response }) => {
       deps.assertPermission("manageCandidates", request);
-      deps.sendJson(response, 200, await deps.previewCandidateImport(await deps.readJsonBody(request)));
+      const body = await deps.readJsonBody(request);
+
+      await deps.assertSchoolWriteAccess(body?.schoolId || "", request);
+      deps.sendJson(response, 200, await deps.previewCandidateImport(body));
     }),
     exactRoute("POST", "/api/candidates/import", async ({ request, response }) => {
       deps.assertPermission("manageCandidates", request);
-      deps.sendJson(response, 200, await deps.importCandidates(await deps.readJsonBody(request)));
+      const body = await deps.readJsonBody(request);
+
+      await deps.assertSchoolWriteAccess(body?.schoolId || "", request);
+      deps.sendJson(response, 200, await deps.importCandidates(body));
     }),
-    exactRoute("POST", "/api/candidates/photo-archive/preview", async ({ request, response }) => {
+    exactRoute("POST", "/api/candidates/photo-archive/preview", async ({ request, response, searchParams }) => {
       deps.assertPermission("manageCandidates", request);
+      const schoolId = searchParams.get("schoolId") || "";
+
+      await deps.assertSchoolWriteAccess(schoolId, request);
       deps.sendJson(
         response,
         200,
-        await deps.previewCandidatePhotoArchiveBuffer(await deps.readBinaryBody(request, photoArchiveReadOptions)),
+        await deps.previewCandidatePhotoArchiveBuffer(await deps.readBinaryBody(request, photoArchiveReadOptions), {
+          schoolId,
+        }),
       );
     }),
-    exactRoute("POST", "/api/candidates/photo-archive", async ({ request, response }) => {
+    exactRoute("POST", "/api/candidates/photo-archive", async ({ request, response, searchParams }) => {
       deps.assertPermission("manageCandidates", request);
 
       if (isJsonRequest(request)) {
         const body = await deps.readJsonBody(request);
+        await deps.assertSchoolWriteAccess(body?.schoolId || "", request);
 
         deps.sendJson(
           response,
           200,
-          await deps.saveCandidatePhotoArchiveSession(body?.previewToken || body?.uploadSessionId || ""),
+          await deps.saveCandidatePhotoArchiveSession(body?.previewToken || body?.uploadSessionId || "", {
+            schoolId: body?.schoolId || "",
+          }),
         );
         return;
       }
 
+      const schoolId = searchParams.get("schoolId") || "";
+      await deps.assertSchoolWriteAccess(schoolId, request);
       deps.sendJson(
         response,
         200,
-        await deps.saveCandidatePhotoArchiveBuffer(await deps.readBinaryBody(request, photoArchiveReadOptions)),
+        await deps.saveCandidatePhotoArchiveBuffer(await deps.readBinaryBody(request, photoArchiveReadOptions), {
+          schoolId,
+        }),
       );
     }),
     exactRoute("GET", "/api/candidates/filter-options", async ({ request, response, searchParams }) => {
@@ -109,6 +127,7 @@ function createCandidateRoutes(deps) {
         schoolId: searchParams.get("schoolId") || "",
       };
 
+      await deps.assertSchoolWriteAccess(filters.schoolId || "", request);
       deps.sendJson(response, 200, {
         filters,
         options: await deps.getCandidateFilterOptions(filters, searchParams.get("fields") || ""),
@@ -139,7 +158,10 @@ function createCandidateRoutes(deps) {
       /^\/api\/candidates\/(?<candidateId>[^/]+)\/photo$/,
       async ({ request, response, params }) => {
         deps.assertPermission("manageCandidates", request);
-        deps.sendJson(response, 200, await deps.saveCandidatePhoto(params.candidateId, await deps.readJsonBody(request)));
+        const body = await deps.readJsonBody(request);
+
+        await deps.assertSchoolWriteAccess(body?.schoolId || "", request);
+        deps.sendJson(response, 200, await deps.saveCandidatePhoto(params.candidateId, body));
       },
       { getParams: (match) => decodeRouteParams(match.groups) },
     ),
@@ -149,6 +171,7 @@ function createCandidateRoutes(deps) {
       async ({ request, response, params }) => {
         deps.assertPermission("manageCandidates", request);
         const body = await deps.readJsonBody(request);
+        await deps.assertSchoolWriteAccess(body?.schoolId || "", request);
         deps.sendJson(response, 200, await deps.updateCandidate(params.candidateId, body, {
           schoolId: body?.schoolId || "",
         }));
