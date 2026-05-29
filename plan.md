@@ -1212,15 +1212,16 @@ npm run smoke:ui
 - host toolbar 상태 계산은 runtime이 selection을 임시 보존 중인 상태를 무시하면 안 된다.
 - smoke 실패가 나오면 리팩토링 확장보다 실패 원인 분류를 먼저 한다.
 
-## 20. 다음 체크포인트
+## 20. 체크포인트 상태
 
-다음 작업으로 바로 큰 구조 변경을 시작하지 않는다.
+1차 작업 체크포인트는 완료되었다.
 
-먼저 해야 할 일:
+체크포인트 커밋:
 
-- 현재 1차 작업 변경분을 체크포인트 커밋으로 고정한다.
-- 커밋 전 `git status --short`로 포함 파일을 확인한다.
-- 커밋 전 마지막으로 통과한 검증 결과를 작업 기록에 남긴다.
+- `a94a29b refactor: extract candidate block focus layout helpers`
+- `a282876 fix: stabilize template editor focus and cell object sizing`
+- `fb23e3f test: harden template editor browser smoke flows`
+- `54d11d9 docs: record template editor refactor checkpoint`
 
 2차 리팩토링 후보:
 
@@ -1242,7 +1243,62 @@ npm run smoke:ui
 - host/runtime 경계 변경
 - CSS 구조 변경
 
-## 21. 결론
+## 21. 2차 첫 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- 2차 첫 작업 완료
+- 수험생 블록 선택 후 rAF refocus 판단 규칙을 별도 helper로 분리
+- DOM focus 실행 순서와 public entry point는 유지
+
+작업 범위:
+
+- `candidate-block-grid-selection.js` 안에 있던 refocus 판단 규칙을 `candidate-block-grid-selection-focus.js`로 이동했다.
+- `selectCandidateBlockGridElement`의 focus 실행, requestAnimationFrame 호출, selection state 관리는 변경하지 않았다.
+- 외부 input, textarea, select, button, contenteditable에 focus가 있는 경우 grid refocus가 focus를 빼앗지 않는 규칙을 테스트로 고정했다.
+- body/documentElement/null처럼 수동 복구가 필요한 focus 상태에서는 grid refocus를 허용하는 규칙을 테스트로 고정했다.
+- grid 자체 또는 grid 내부 요소가 active element인 경우 refocus를 허용하는 기존 동작을 테스트로 고정했다.
+
+금지 범위 준수:
+
+- focus editor markup 변경 없음
+- modal close 정책 변경 없음
+- 저장 payload shape 변경 없음
+- runtime API 변경 없음
+- host/runtime 경계 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/candidate-block-grid-selection-focus.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- 단일 focus helper 테스트 통과
+- `npm test` 통과, 302개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+2차 다음 후보:
+
+- 수험생 블록 삭제/키보드 처리의 focus guard를 테스트 가능한 단위로 분리한다.
+
+다음 후보 시작 조건:
+
+- `isCandidateBlockGridKeyboardDeleteTarget`처럼 selection/focus/delete를 동시에 판단하는 함수는 높은 위험으로 본다.
+- 삭제 동작 자체를 바꾸지 말고, 먼저 판단 규칙을 테스트로 고정해야 한다.
+- 실제 Backspace/Delete 동작은 browser smoke가 통과해야 한다.
+
+## 22. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
