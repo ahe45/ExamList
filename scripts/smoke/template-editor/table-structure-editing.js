@@ -1,29 +1,40 @@
 const {
+  dispatchBrowserMouseClick,
   evaluate,
   waitForCondition
 } = require("../../smoke-browser-cdp");
 
+const CELL_SPLIT_TOGGLE_SELECTOR = "#templateEditorToolbarHost [data-template-cell-split-toggle]";
+const CELL_SPLIT_CONFIRM_SELECTOR = "#templateEditorToolbarHost [data-template-cell-split-confirm]";
+
 async function ensureCellSplitPanelOpen(client) {
-  await evaluate(
+  await waitForCondition(
     client,
     `
       (() => {
-        const panel = document.querySelector('#templateEditorToolbarHost .template-toolbar-cell-split-panel');
-        const toggle = document.querySelector('#templateEditorToolbarHost [data-template-cell-split-toggle]');
+        const tableGroup = document.querySelector('#templateEditorToolbarHost [data-editor-table-toolbar-group]');
+        const toggle = document.querySelector(${JSON.stringify(CELL_SPLIT_TOGGLE_SELECTOR)});
 
-        if (!panel || !toggle) {
-          return false;
-        }
-
-        if (panel.classList.contains('hidden')) {
-          toggle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
-          toggle.click();
-        }
-
-        return true;
+        return Boolean(
+          tableGroup &&
+            tableGroup.getAttribute('aria-disabled') !== 'true' &&
+            toggle &&
+            !toggle.disabled &&
+            toggle.getAttribute('aria-disabled') !== 'true'
+        );
       })()
     `,
+    "셀 분할 버튼 활성",
   );
+  const isHidden = await evaluate(
+    client,
+    `document.querySelector('#templateEditorToolbarHost .template-toolbar-cell-split-panel')?.classList.contains('hidden') === true`,
+  );
+
+  if (isHidden) {
+    await dispatchBrowserMouseClick(client, CELL_SPLIT_TOGGLE_SELECTOR);
+  }
+
   await waitForCondition(
     client,
     `!document.querySelector('#templateEditorToolbarHost .template-toolbar-cell-split-panel')?.classList.contains('hidden')`,
@@ -38,9 +49,8 @@ async function confirmFirstCellSplit(client) {
       (() => {
         const surface = document.querySelector('#templateEditorSurface');
         const cell = surface?.querySelector('.template-doc table tr:first-child td:first-child');
-        const confirmButton = document.querySelector('#templateEditorToolbarHost [data-template-cell-split-confirm]');
 
-        if (!surface || !cell || !confirmButton) {
+        if (!surface || !cell) {
           return false;
         }
 
@@ -53,31 +63,15 @@ async function confirmFirstCellSplit(client) {
         selection.removeAllRanges();
         selection.addRange(range);
         document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
-        confirmButton.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
-        confirmButton.click();
         return true;
       })()
     `,
   );
+  await dispatchBrowserMouseClick(client, CELL_SPLIT_CONFIRM_SELECTOR);
 }
 
 async function confirmCurrentCellSplit(client) {
-  await evaluate(
-    client,
-    `
-      (() => {
-        const confirmButton = document.querySelector('#templateEditorToolbarHost [data-template-cell-split-confirm]');
-
-        if (!confirmButton) {
-          return false;
-        }
-
-        confirmButton.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
-        confirmButton.click();
-        return true;
-      })()
-    `,
-  );
+  await dispatchBrowserMouseClick(client, CELL_SPLIT_CONFIRM_SELECTOR);
 }
 
 async function runTableStructureEditingScenario(context) {

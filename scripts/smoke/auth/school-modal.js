@@ -61,11 +61,13 @@ async function assertSchoolSettingsModal(context) {
           return false;
         }
 
-        nameInput.focus();
-        nameInput.value = '한국';
-        nameInput.dispatchEvent(new InputEvent('input', { bubbles: true, data: '국', inputType: 'insertText' }));
+        const nextName = nameInput.value === '한국' ? '한국스모크' : '한국';
 
-        return document.activeElement === nameInput && nameInput.value === '한국';
+        nameInput.focus();
+        nameInput.value = nextName;
+        nameInput.dispatchEvent(new InputEvent('input', { bubbles: true, data: nextName.slice(-1), inputType: 'insertText' }));
+
+        return document.activeElement === nameInput && nameInput.value === nextName;
       })()
     `,
     "학교 설정 모달 학교명 입력 중 포커스 유지",
@@ -80,11 +82,13 @@ async function assertSchoolSettingsModal(context) {
           return false;
         }
 
-        academicYearInput.focus();
-        academicYearInput.value = '2027';
-        academicYearInput.dispatchEvent(new InputEvent('input', { bubbles: true, data: '7', inputType: 'insertText' }));
+        const nextAcademicYear = academicYearInput.value === '2027' ? '2028' : '2027';
 
-        return document.activeElement === academicYearInput && academicYearInput.value === '2027';
+        academicYearInput.focus();
+        academicYearInput.value = nextAcademicYear;
+        academicYearInput.dispatchEvent(new InputEvent('input', { bubbles: true, data: nextAcademicYear.slice(-1), inputType: 'insertText' }));
+
+        return document.activeElement === academicYearInput && academicYearInput.value === nextAcademicYear;
       })()
     `,
     "학교 설정 모달 모집년도 숫자 입력 유지",

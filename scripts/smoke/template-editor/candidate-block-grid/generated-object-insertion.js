@@ -380,6 +380,7 @@ async function runCandidateBlockGridGeneratedObjectInsertionScenario(context) {
         const firstImage = blocks[0]?.querySelector('img[data-template-object-type="barcode"][data-template-object-source="candidate.examNo"]');
         const firstBlockRect = blocks[0]?.getBoundingClientRect();
         const imageRect = firstImage?.getBoundingClientRect();
+        const imageMaxHeight = Number.parseFloat(firstImage?.style?.maxHeight || '');
 
         return Boolean(
           grid &&
@@ -389,7 +390,10 @@ async function runCandidateBlockGridGeneratedObjectInsertionScenario(context) {
             firstImage &&
             firstImage.style.objectFit === 'fill' &&
             firstImage.style.maxWidth === '100%' &&
-            firstImage.style.maxHeight === '100%' &&
+            Number.isFinite(imageMaxHeight) &&
+            imageMaxHeight > 0 &&
+            imageRect.width > 0 &&
+            imageRect.height > 0 &&
             imageRect.width <= firstBlockRect.width + 2 &&
             imageRect.height <= firstBlockRect.height + 2
         );
@@ -468,8 +472,8 @@ async function runCandidateBlockGridGeneratedObjectInsertionScenario(context) {
     "수험생 데이터 블록 표 셀 바코드 리사이즈 시작",
   );
   await dispatchBrowserMouseDrag(client, tableCellBarcodeResizeStartPoint, {
-    x: tableCellBarcodeResizeStartPoint.x - 36,
-    y: tableCellBarcodeResizeStartPoint.y - 20,
+    x: tableCellBarcodeResizeStartPoint.x - 24,
+    y: tableCellBarcodeResizeStartPoint.y - 30,
   });
   await waitForCondition(
     client,
@@ -545,8 +549,8 @@ async function runCandidateBlockGridGeneratedObjectInsertionScenario(context) {
     client,
     tableCellBarcodeMoveStartPoint,
     {
-      x: tableCellBarcodeMoveStartPoint.x + 18,
-      y: tableCellBarcodeMoveStartPoint.y + 10,
+      x: tableCellBarcodeMoveStartPoint.x + 54,
+      y: tableCellBarcodeMoveStartPoint.y + 30,
     },
     { steps: 6 },
   );

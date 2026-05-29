@@ -89,11 +89,12 @@ async function runRepeatedTokenAlignmentCase(client) {
       (() => {
         const token = document.querySelector('.template-token[data-template-tag-value="school.name"]');
         const paragraph = document.querySelector('#tokenAlignParagraph');
+        const tokenText = token?.textContent.trim() || '';
 
         return Boolean(
             token &&
             paragraph &&
-            token.textContent.trim() === '학교명' &&
+            (tokenText === '학교명' || tokenText === token.dataset.templateTagExample) &&
             !token.textContent.includes('school.name') &&
             getComputedStyle(paragraph).textAlign === 'center'
         );

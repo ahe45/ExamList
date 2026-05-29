@@ -496,7 +496,7 @@ async function runCandidateBlockGridSetupSelectionScenario(context) {
         (() => {
           const focusedBlock = document.querySelector('#templateEditorSurface .examlist-candidate-block.is-candidate-block-focus-editor');
           const tagButton = [...document.querySelectorAll('#templateTagStrip .template-tag-button')]
-            .find((button) => button.dataset.templateTag === '#캠퍼스명');
+            .find((button) => button.dataset.templateTag === '#조');
 
           if (!focusedBlock || !tagButton) {
             return false;
@@ -525,9 +525,9 @@ async function runCandidateBlockGridSetupSelectionScenario(context) {
           const sourceBlock = grid?.querySelector('[data-candidate-block-template-role="source"]');
           const previewBlocks = canvasBlocks.filter((block) => block.classList.contains('is-candidate-block-template-preview'));
           const oldText = '데이터블록태그치환스모크';
-          const focusedToken = focusedBlock?.querySelector('.template-token[data-template-tag-value="candidate.campusName"]');
-          const sourceToken = sourceBlock?.querySelector('.template-token[data-template-tag-value="candidate.campusName"]');
-          const previewTokens = previewBlocks.map((block) => block.querySelector('.template-token[data-template-tag-value="candidate.campusName"]'));
+          const focusedToken = focusedBlock?.querySelector('.template-token[data-template-tag-value="candidate.groupName"]');
+          const sourceToken = sourceBlock?.querySelector('.template-token[data-template-tag-value="candidate.groupName"]');
+          const previewTokens = previewBlocks.map((block) => block.querySelector('.template-token[data-template-tag-value="candidate.groupName"]'));
 
           return Boolean(
             focusedBlock &&

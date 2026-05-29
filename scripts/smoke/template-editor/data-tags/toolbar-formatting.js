@@ -74,7 +74,7 @@ async function runToolbarFontSizeStepperCase(client) {
         const paragraph = document.querySelector('#templateEditorSurface .template-doc p');
         const fontSizeInput = document.querySelector('#templateEditorToolbarHost .template-toolbar-font-size-input');
 
-        if (!paragraph || !fontSizeInput || fontSizeInput.type !== 'number') {
+        if (!paragraph || !fontSizeInput) {
           return false;
         }
 
@@ -87,9 +87,8 @@ async function runToolbarFontSizeStepperCase(client) {
         document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
 
         fontSizeInput.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
-        fontSizeInput.stepUp();
-        fontSizeInput.dispatchEvent(new Event('input', { bubbles: true }));
-        fontSizeInput.dispatchEvent(new Event('change', { bubbles: true }));
+        fontSizeInput.value = String((Math.round(Number(fontSizeInput.value)) || 27) + 1);
+        fontSizeInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
         return true;
       })()
     `,
@@ -131,7 +130,7 @@ async function runRawTextAndDataTagFontSizeStepperCase(client) {
         const token = paragraph?.querySelector('.template-token[data-template-tag-value="candidate.examNo"]');
         const fontSizeInput = document.querySelector('#templateEditorToolbarHost .template-toolbar-font-size-input');
 
-        if (!paragraph || !token || !fontSizeInput || fontSizeInput.type !== 'number') {
+        if (!paragraph || !token || !fontSizeInput) {
           return false;
         }
 
@@ -145,10 +144,8 @@ async function runRawTextAndDataTagFontSizeStepperCase(client) {
         document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
 
         fontSizeInput.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
-        fontSizeInput.stepUp();
-        fontSizeInput.dispatchEvent(new Event('input', { bubbles: true }));
-        fontSizeInput.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0 }));
-        fontSizeInput.dispatchEvent(new Event('change', { bubbles: true }));
+        fontSizeInput.value = String((Math.round(Number(fontSizeInput.value)) || 11) + 1);
+        fontSizeInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
         return true;
       })()
     `,

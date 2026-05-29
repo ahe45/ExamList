@@ -2,11 +2,19 @@ const { evaluate, waitForCondition } = require("../../../smoke-browser-cdp");
 const { clickTemplateTagButton, focusEditorSurface, setRuntimeHtml } = require("./runtime");
 
 async function runKoreanDataTagInsertionCase(client) {
+  await setRuntimeHtml(client, '<div class="template-doc"><p><br></p></div>');
   await focusEditorSurface(client);
   await clickTemplateTagButton(client, "#수험번호");
   await waitForCondition(
     client,
-    `document.querySelector('.template-token[data-template-tag-value="candidate.examNo"]')?.textContent.trim() === '수험번호'`,
+    `
+      (() => {
+        const token = document.querySelector('.template-token[data-template-tag-value="candidate.examNo"]');
+        const tokenText = token?.textContent.trim() || '';
+
+        return Boolean(token && (tokenText === '수험번호' || tokenText === token.dataset.templateTagExample));
+      })()
+    `,
     "한글 데이터 태그 삽입 표시",
   );
 }

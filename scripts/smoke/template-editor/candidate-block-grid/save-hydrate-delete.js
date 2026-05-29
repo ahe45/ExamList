@@ -9,6 +9,7 @@ const {
 
 async function runCandidateBlockGridSaveHydrateDeleteScenario(context) {
   const { client } = context;
+  const deleteRecreateText = "검증";
     await dispatchBrowserMouseClick(client, '[data-action="save-template-layout"]');
     await waitForCondition(
       client,
@@ -172,8 +173,8 @@ async function runCandidateBlockGridSaveHydrateDeleteScenario(context) {
             return false;
           }
 
-          modalSurface.innerHTML = '<p>삭제 후 재생성 검증</p>';
-          modalSurface.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: '삭제 후 재생성 검증' }));
+          modalSurface.innerHTML = '<p>${deleteRecreateText}</p>';
+          modalSurface.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: '${deleteRecreateText}' }));
           return true;
         })()
       `,
@@ -186,7 +187,7 @@ async function runCandidateBlockGridSaveHydrateDeleteScenario(context) {
 
           return Boolean(
             blocks.length === 4 &&
-              blocks.every((block) => block.textContent.includes('삭제 후 재생성 검증'))
+              blocks.every((block) => block.textContent.includes('${deleteRecreateText}'))
           );
         })()
       `,

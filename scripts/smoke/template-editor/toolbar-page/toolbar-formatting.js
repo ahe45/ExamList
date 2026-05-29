@@ -109,15 +109,24 @@ async function runToolbarColorPickerCase(client) {
         selection.addRange(range);
         document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
 
-        const textColorPicker = [...document.querySelectorAll('#templateEditorToolbarHost .template-toolbar-color-picker')]
-          .find((picker) => picker.querySelector('.template-toolbar-color[data-editor-color-command="foreColor"]'));
-        const toggle = textColorPicker?.querySelector('[data-editor-color-toggle]');
-
-        toggle?.click();
         return true;
       })()
     `,
   );
+  await waitForCondition(
+    client,
+    `
+      (() => {
+        const textColorPicker = [...document.querySelectorAll('#templateEditorToolbarHost .template-toolbar-color-picker')]
+          .find((picker) => picker.querySelector('.template-toolbar-color[data-editor-color-command="foreColor"]'));
+        const toggle = textColorPicker?.querySelector('[data-editor-color-toggle]');
+
+        return Boolean(toggle && !toggle.disabled && toggle.getAttribute('aria-disabled') !== 'true');
+      })()
+    `,
+    "글자색 직접 선택 버튼 활성",
+  );
+  await dispatchBrowserMouseClick(client, '#templateEditorToolbarHost [data-editor-color-toggle$="TextColor"]');
   await waitForCondition(
     client,
     `
