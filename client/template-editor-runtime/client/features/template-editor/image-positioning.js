@@ -66,7 +66,7 @@
       };
     }
 
-    function removeEmptyCandidateBlockImageHost(hostElement, containerElement) {
+    function removeEmptyTemplateEditorImageHost(hostElement, containerElement) {
       if (
         !(hostElement instanceof HTMLElement) ||
         hostElement === containerElement ||
@@ -85,14 +85,145 @@
       }
     }
 
+    function getTemplateEditorTableCellImageContainer(imageElement) {
+      const templateEditorSurface = getTemplateEditorSurface();
+      const cellElement = imageElement?.closest?.("td, th") || null;
+
+      if (!(cellElement instanceof HTMLElement) || !templateEditorSurface?.contains(cellElement)) {
+        return null;
+      }
+
+      const cellRect = cellElement.getBoundingClientRect();
+      const computedStyle = window.getComputedStyle(cellElement);
+      const candidateBlockContainer = getTemplateEditorCandidateBlockImageContainer(imageElement);
+      const scaleX = Math.max(candidateBlockContainer?.scaleX || 1, 0.01);
+      const scaleY = Math.max(candidateBlockContainer?.scaleY || 1, 0.01);
+      const borderLeft = getTemplateEditorFinitePixelValue(computedStyle.borderLeftWidth);
+      const borderRight = getTemplateEditorFinitePixelValue(computedStyle.borderRightWidth);
+      const borderTop = getTemplateEditorFinitePixelValue(computedStyle.borderTopWidth);
+      const borderBottom = getTemplateEditorFinitePixelValue(computedStyle.borderBottomWidth);
+      const paddingBoxWidth = Math.max(
+        cellElement.clientWidth || 0,
+        cellRect.width / scaleX - borderLeft - borderRight,
+        0,
+      );
+      const paddingBoxHeight = Math.max(
+        cellElement.clientHeight || 0,
+        cellRect.height / scaleY - borderTop - borderBottom,
+        0,
+      );
+
+      return {
+        element: cellElement,
+        height: Math.max(TEMPLATE_EDITOR_IMAGE_MIN_SIZE, Math.floor(paddingBoxHeight || TEMPLATE_EDITOR_IMAGE_MIN_SIZE)),
+        rect: {
+          left: cellRect.left + borderLeft * scaleX,
+          top: cellRect.top + borderTop * scaleY,
+        },
+        scaleX,
+        scaleY,
+        width: Math.max(TEMPLATE_EDITOR_IMAGE_MIN_SIZE, Math.floor(paddingBoxWidth || TEMPLATE_EDITOR_IMAGE_MIN_SIZE)),
+      };
+    }
+
+    function lockTemplateEditorImageTableCellSize(cellElement, scaleY = 1) {
+      if (!(cellElement instanceof HTMLElement)) {
+        return;
+      }
+
+      const safeScaleY = Math.max(Number(scaleY) || 1, 0.01);
+      const cellRect = cellElement.getBoundingClientRect();
+      const rowElement = cellElement.parentElement;
+      const measuredCellHeight = cellRect.height > 0 ? cellRect.height / safeScaleY : cellElement.offsetHeight || 0;
+      const cellHeight = Math.max(TEMPLATE_EDITOR_IMAGE_MIN_SIZE, Math.round(measuredCellHeight));
+
+      if (cellHeight > 0) {
+        cellElement.style.height = `${cellHeight}px`;
+      }
+
+      if (rowElement instanceof HTMLTableRowElement && Number(cellElement.rowSpan || 1) <= 1) {
+        const rowRect = rowElement.getBoundingClientRect();
+        const measuredRowHeight = rowRect.height > 0 ? rowRect.height / safeScaleY : rowElement.offsetHeight || 0;
+        const rowHeight = Math.max(cellHeight, Math.round(measuredRowHeight));
+
+        if (rowHeight > 0) {
+          rowElement.style.height = `${rowHeight}px`;
+          Array.from(rowElement.cells || []).forEach((rowCellElement) => {
+            rowCellElement.style.height = `${rowHeight}px`;
+          });
+        }
+      }
+    }
+
     function prepareTemplateEditorImageForMove(imageElement) {
       const documentElement = getTemplateEditorDocumentElement();
       const templateEditorSurface = getTemplateEditorSurface();
+      const cellContainer = getTemplateEditorTableCellImageContainer(imageElement);
       const candidateBlockContainer = getTemplateEditorCandidateBlockImageContainer(imageElement);
-      const containerElement = candidateBlockContainer?.element || documentElement;
+      const containerElement = cellContainer?.element || candidateBlockContainer?.element || documentElement;
 
       if (!containerElement || !templateEditorSurface?.contains(imageElement)) {
         return null;
+      }
+
+      if (cellContainer) {
+        if (window.getComputedStyle(cellContainer.element).position === "static") {
+          cellContainer.element.style.position = "relative";
+        }
+
+        if (imageElement.parentElement === cellContainer.element && imageElement.style.position === "absolute") {
+          imageElement.classList.add("is-floating-object");
+          return {
+            boundsElement: cellContainer.element,
+            boundsHeight: cellContainer.height,
+            boundsWidth: cellContainer.width,
+            left: parseTemplateEditorPixelStyle(imageElement.style.left, imageElement.offsetLeft),
+            scaleX: cellContainer.scaleX,
+            scaleY: cellContainer.scaleY,
+            top: parseTemplateEditorPixelStyle(imageElement.style.top, imageElement.offsetTop),
+          };
+        }
+
+        const imageRect = imageElement.getBoundingClientRect();
+        const imageWidth = Math.max(
+          Math.round(imageRect.width / Math.max(cellContainer.scaleX, 0.01)),
+          TEMPLATE_EDITOR_IMAGE_MIN_SIZE,
+        );
+        const imageHeight = Math.max(
+          Math.round(imageRect.height / Math.max(cellContainer.scaleY, 0.01)),
+          TEMPLATE_EDITOR_IMAGE_MIN_SIZE,
+        );
+        const boundedLeft = geometry.getTemplateEditorBoundedCoordinate(
+          (imageRect.left - cellContainer.rect.left) / Math.max(cellContainer.scaleX, 0.01),
+          cellContainer.width - imageWidth,
+        );
+        const boundedTop = geometry.getTemplateEditorBoundedCoordinate(
+          (imageRect.top - cellContainer.rect.top) / Math.max(cellContainer.scaleY, 0.01),
+          cellContainer.height - imageHeight,
+        );
+        const previousParent = imageElement.parentElement;
+
+        lockTemplateEditorImageTableCellSize(cellContainer.element, cellContainer.scaleY);
+        imageElement.style.width = `${imageWidth}px`;
+        imageElement.style.height = `${imageHeight}px`;
+        imageElement.style.position = "absolute";
+        imageElement.style.left = `${boundedLeft}px`;
+        imageElement.style.top = `${boundedTop}px`;
+        imageElement.style.margin = "0";
+        imageElement.style.zIndex = "2";
+        imageElement.classList.add("is-floating-object");
+        cellContainer.element.append(imageElement);
+        removeEmptyTemplateEditorImageHost(previousParent, cellContainer.element);
+
+        return {
+          boundsElement: cellContainer.element,
+          boundsHeight: cellContainer.height,
+          boundsWidth: cellContainer.width,
+          left: boundedLeft,
+          scaleX: cellContainer.scaleX,
+          scaleY: cellContainer.scaleY,
+          top: boundedTop,
+        };
       }
 
       if (imageElement.parentElement === containerElement && imageElement.style.position === "absolute") {
@@ -141,7 +272,7 @@
       containerElement.append(imageElement);
 
       if (candidateBlockContainer) {
-        removeEmptyCandidateBlockImageHost(previousParent, containerElement);
+        removeEmptyTemplateEditorImageHost(previousParent, containerElement);
       }
 
       return {

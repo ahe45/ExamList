@@ -94,7 +94,7 @@
 }
 
 .template-editor-surface img.template-editor-image-object.is-selected-object.is-cell-contained-object {
-  cursor: pointer;
+  cursor: grab;
 }
 
 .template-editor-surface table.is-selected-object,

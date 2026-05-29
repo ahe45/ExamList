@@ -9,6 +9,11 @@ const {
 
 async function runImageObjectScenario(context) {
   const { client } = context;
+    await waitForCondition(
+      client,
+      `Boolean(window.ExamListTemplateEditorRuntime?.setHtml && document.querySelector('#templateEditorSurface'))`,
+      "이미지 개체 테스트 편집기 준비",
+    );
     await evaluate(
       client,
       `
@@ -163,6 +168,129 @@ async function runImageObjectScenario(context) {
       client,
       `!document.querySelector('#plainImageSmoke')`,
       "선택 이미지 Delete 삭제",
+    );
+
+    await evaluate(
+      client,
+      `
+        (() => {
+          window.ExamListTemplateEditorRuntime?.setHtml?.(
+            '<div class="template-doc">' +
+              '<table id="tableCellImageMoveSmokeTable" style="width:360px;table-layout:fixed;">' +
+                '<tbody><tr style="height:120px;">' +
+                  '<td id="tableCellImageMoveSmokeCell" style="width:220px;height:120px;vertical-align:top;">' +
+                    '<img id="tableCellImageMoveSmoke" src="data:image/png;base64,ZmFrZQ==" alt="셀 이미지" style="width:80px;height:40px;max-width:100%;max-height:100%;display:inline-block;margin:0;vertical-align:top;" />' +
+                  '</td>' +
+                  '<td>비교</td>' +
+                '</tr></tbody>' +
+              '</table>' +
+            '</div>',
+            { resetHistory: false, notify: false }
+          );
+          document.querySelector('#templateEditorSurface')?.focus();
+          return true;
+        })()
+      `,
+    );
+    await waitForCondition(
+      client,
+      `
+        (() => {
+          const image = document.querySelector('#tableCellImageMoveSmoke');
+
+          return Boolean(
+            image &&
+              image.closest('#tableCellImageMoveSmokeCell') &&
+              image.classList.contains('template-editor-image-object')
+          );
+        })()
+      `,
+      "캔버스 표 셀 이미지 이동 준비",
+    );
+    await dispatchBrowserMouseClick(client, '#tableCellImageMoveSmoke');
+    await waitForCondition(
+      client,
+      `document.querySelector('#tableCellImageMoveSmoke')?.classList.contains('is-selected-object')`,
+      "캔버스 표 셀 이미지 선택",
+    );
+    const tableCellImageMoveBefore = JSON.parse(
+      await evaluate(
+        client,
+        `
+          JSON.stringify((() => {
+            const image = document.querySelector('#tableCellImageMoveSmoke');
+            const cell = document.querySelector('#tableCellImageMoveSmokeCell');
+            const imageRect = image?.getBoundingClientRect();
+            const cellRect = cell?.getBoundingClientRect();
+
+            return {
+              imageLeft: Math.round(imageRect?.left || 0),
+              imageTop: Math.round(imageRect?.top || 0),
+              cellLeft: Math.round(cellRect?.left || 0),
+              cellRight: Math.round(cellRect?.right || 0),
+              cellTop: Math.round(cellRect?.top || 0),
+              cellBottom: Math.round(cellRect?.bottom || 0)
+            };
+          })())
+        `,
+      ),
+    );
+    const tableCellImageMoveStartPoint = await getBrowserPoint(
+      client,
+      `(() => {
+        const image = document.querySelector('#tableCellImageMoveSmoke');
+        const rect = image?.getBoundingClientRect();
+
+        if (!rect) {
+          return null;
+        }
+
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      })()`,
+      "캔버스 표 셀 이미지 이동 시작",
+    );
+    await dispatchBrowserMouseDrag(
+      client,
+      tableCellImageMoveStartPoint,
+      {
+        x: tableCellImageMoveStartPoint.x + 24,
+        y: tableCellImageMoveStartPoint.y + 14,
+      },
+      { steps: 6 },
+    );
+    await waitForCondition(
+      client,
+      `
+        (() => {
+          const image = document.querySelector('#tableCellImageMoveSmoke');
+          const cell = document.querySelector('#tableCellImageMoveSmokeCell');
+          const table = document.querySelector('#tableCellImageMoveSmokeTable');
+          const before = ${JSON.stringify(tableCellImageMoveBefore)};
+          const imageRect = image?.getBoundingClientRect();
+          const cellRect = cell?.getBoundingClientRect();
+          const styleLeft = Number.parseFloat(image?.style?.left || '0');
+          const styleTop = Number.parseFloat(image?.style?.top || '0');
+
+          return Boolean(
+            image &&
+              cell &&
+              table?.contains(image) &&
+              image.closest('td, th') === cell &&
+              image.style.position === 'absolute' &&
+              Number.isFinite(styleLeft) &&
+              Number.isFinite(styleTop) &&
+              styleLeft >= 16 &&
+              styleTop >= 8 &&
+              Math.round(imageRect.left) >= before.imageLeft + 16 &&
+              Math.round(imageRect.top) >= before.imageTop + 8 &&
+              imageRect.left >= cellRect.left - 1 &&
+              imageRect.top >= cellRect.top - 1 &&
+              imageRect.right <= cellRect.right + 1 &&
+              imageRect.bottom <= cellRect.bottom + 1
+          );
+        })()
+      `,
+      "캔버스 표 셀 이미지 위치 이동",
     );
 }
 

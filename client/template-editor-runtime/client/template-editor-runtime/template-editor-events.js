@@ -272,9 +272,7 @@
         clearTemplateEditorTableHoverState();
         selectTemplateEditorImage(selectedImage);
 
-        if (!selectedImage.closest("td, th")) {
-          startTemplateEditorImageMoveSession(selectedImage, event);
-        }
+        startTemplateEditorImageMoveSession(selectedImage, event);
 
         return;
       }

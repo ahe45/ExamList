@@ -432,8 +432,10 @@ async function runCandidateBlockGridGeneratedObjectInsertionScenario(context) {
         JSON.stringify((() => {
           const image = document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface] td img[data-template-object-type="barcode"]');
           const modalSurface = image?.closest('[data-candidate-block-modal-editor-surface]');
+          const table = image?.closest('table');
           const imageRect = image?.getBoundingClientRect();
           const modalRect = modalSurface?.getBoundingClientRect();
+          const tableRect = table?.getBoundingClientRect();
           const logicalWidth = Number.parseFloat(modalSurface?.dataset?.candidateBlockLogicalWidth || '0');
           const logicalHeight = Number.parseFloat(modalSurface?.dataset?.candidateBlockLogicalHeight || '0');
 
@@ -443,6 +445,8 @@ async function runCandidateBlockGridGeneratedObjectInsertionScenario(context) {
             scaleY: logicalHeight > 0 && modalRect?.height > 0 ? modalRect.height / logicalHeight : 1,
             styleHeight: Number.parseFloat(image?.style?.height || '0'),
             styleWidth: Number.parseFloat(image?.style?.width || '0'),
+            tableHeight: Math.round(tableRect?.height || 0),
+            tableWidth: Math.round(tableRect?.width || 0),
             width: Math.round(imageRect?.width || 0)
           };
         })())
@@ -472,7 +476,9 @@ async function runCandidateBlockGridGeneratedObjectInsertionScenario(context) {
     `
       (() => {
         const image = document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface] td img[data-template-object-type="barcode"]');
+        const table = image?.closest('table');
         const imageRect = image?.getBoundingClientRect();
+        const tableRect = table?.getBoundingClientRect();
         const before = ${JSON.stringify(tableCellBarcodeResizeBefore)};
         const styleWidth = Number.parseFloat(image?.style?.width || '0');
         const styleHeight = Number.parseFloat(image?.style?.height || '0');
@@ -489,11 +495,99 @@ async function runCandidateBlockGridGeneratedObjectInsertionScenario(context) {
             visualHeightDelta >= 6 &&
             visualHeightDelta <= 36 &&
             Math.abs(visualWidthDelta - (before.styleWidth - styleWidth) * before.scaleX) <= 8 &&
-            Math.abs(visualHeightDelta - (before.styleHeight - styleHeight) * before.scaleY) <= 8
+            Math.abs(visualHeightDelta - (before.styleHeight - styleHeight) * before.scaleY) <= 8 &&
+            Math.abs(Math.round(tableRect?.width || 0) - before.tableWidth) <= 2 &&
+            Math.abs(Math.round(tableRect?.height || 0) - before.tableHeight) <= 2
         );
       })()
     `,
-    "수험생 데이터 블록 표 셀 바코드 논리 좌표 리사이즈",
+    "수험생 데이터 블록 표 셀 바코드 논리 좌표 리사이즈 및 표 크기 유지",
+  );
+  const tableCellBarcodeMoveBefore = JSON.parse(
+    await evaluate(
+      client,
+      `
+        JSON.stringify((() => {
+          const image = document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface] td img[data-template-object-type="barcode"]');
+          const cell = image?.closest('td, th');
+          const imageRect = image?.getBoundingClientRect();
+          const cellRect = cell?.getBoundingClientRect();
+
+          return {
+            imageLeft: Math.round(imageRect?.left || 0),
+            imageTop: Math.round(imageRect?.top || 0),
+            styleLeft: Number.parseFloat(image?.style?.left || '0'),
+            styleTop: Number.parseFloat(image?.style?.top || '0'),
+            cellLeft: Math.round(cellRect?.left || 0),
+            cellRight: Math.round(cellRect?.right || 0),
+            cellTop: Math.round(cellRect?.top || 0),
+            cellBottom: Math.round(cellRect?.bottom || 0)
+          };
+        })())
+      `,
+    ),
+  );
+  const tableCellBarcodeMoveStartPoint = await getBrowserPoint(
+    client,
+    `(() => {
+      const image = document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface] td img[data-template-object-type="barcode"]');
+      const rect = image?.getBoundingClientRect();
+
+      if (!rect) {
+        return null;
+      }
+
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    })()`,
+    "수험생 데이터 블록 표 셀 바코드 이동 시작",
+  );
+  await dispatchBrowserMouseDrag(
+    client,
+    tableCellBarcodeMoveStartPoint,
+    {
+      x: tableCellBarcodeMoveStartPoint.x + 18,
+      y: tableCellBarcodeMoveStartPoint.y + 10,
+    },
+    { steps: 6 },
+  );
+  await waitForCondition(
+    client,
+    `
+      (() => {
+        const focusedImage = document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface] td img[data-template-object-type="barcode"]');
+        const focusedCell = focusedImage?.closest('td, th');
+        const previewImage = document.querySelector('#templateEditorSurface [data-candidate-block-grid] [data-candidate-block-instance] td img[data-template-object-type="barcode"]');
+        const before = ${JSON.stringify(tableCellBarcodeMoveBefore)};
+        const focusedRect = focusedImage?.getBoundingClientRect();
+        const focusedCellRect = focusedCell?.getBoundingClientRect();
+        const styleLeft = Number.parseFloat(focusedImage?.style?.left || '0');
+        const styleTop = Number.parseFloat(focusedImage?.style?.top || '0');
+        const previewLeft = Number.parseFloat(previewImage?.style?.left || '0');
+        const previewTop = Number.parseFloat(previewImage?.style?.top || '0');
+
+        return Boolean(
+          focusedImage &&
+            focusedCell &&
+            previewImage &&
+            focusedImage.closest('td, th') === focusedCell &&
+            focusedImage.style.position === 'absolute' &&
+            previewImage.style.position === 'absolute' &&
+            Number.isFinite(styleLeft) &&
+            Number.isFinite(styleTop) &&
+            styleLeft >= before.styleLeft + 8 &&
+            styleTop >= before.styleTop + 4 &&
+            Math.round(focusedRect.left) >= before.imageLeft + 8 &&
+            Math.round(focusedRect.top) >= before.imageTop + 4 &&
+            focusedRect.left >= focusedCellRect.left - 1 &&
+            focusedRect.top >= focusedCellRect.top - 1 &&
+            focusedRect.right <= focusedCellRect.right + 1 &&
+            focusedRect.bottom <= focusedCellRect.bottom + 1 &&
+            Math.abs(previewLeft - styleLeft) <= 1 &&
+            Math.abs(previewTop - styleTop) <= 1
+        );
+      })()
+    `,
+    "수험생 데이터 블록 표 셀 바코드 위치 이동",
   );
   await evaluate(
     client,

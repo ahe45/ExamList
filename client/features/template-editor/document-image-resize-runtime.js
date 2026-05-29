@@ -38,17 +38,21 @@ export function createDocumentImageResizeRuntime({
       return;
     }
 
-    const deltaX = (event.clientX - resizeSession.startX) / editorCanvasDisplayScale;
-    const deltaY = (event.clientY - resizeSession.startY) / editorCanvasDisplayScale;
+    const scaleX = Math.max(Number(resizeSession.scaleX || editorCanvasDisplayScale) || editorCanvasDisplayScale, 0.01);
+    const scaleY = Math.max(Number(resizeSession.scaleY || editorCanvasDisplayScale) || editorCanvasDisplayScale, 0.01);
+    const deltaX = (event.clientX - resizeSession.startX) / scaleX;
+    const deltaY = (event.clientY - resizeSession.startY) / scaleY;
     const directionX = Number.isFinite(resizeSession.directionX) ? resizeSession.directionX : 1;
     const directionY = Number.isFinite(resizeSession.directionY) ? resizeSession.directionY : 1;
+    const boundsWidth = resizeSession.maxDocumentWidth || documentRoot.clientWidth || 0;
+    const boundsHeight = resizeSession.maxDocumentHeight || documentRoot.clientHeight || 0;
     const maxWidth = Math.max(
       documentObjectMinimumSize,
       directionX === 0
         ? resizeSession.startWidth
         : directionX < 0
           ? resizeSession.startRight
-          : documentRoot.clientWidth - resizeSession.startLeft,
+          : boundsWidth - resizeSession.startLeft,
     );
     const maxHeight = Math.max(
       documentObjectMinimumSize,
@@ -56,7 +60,7 @@ export function createDocumentImageResizeRuntime({
         ? resizeSession.startHeight
         : directionY < 0
           ? resizeSession.startBottom
-          : documentRoot.clientHeight - resizeSession.startTop,
+          : boundsHeight - resizeSession.startTop,
     );
     let nextWidth = directionX === 0
       ? Math.max(documentObjectMinimumSize, Math.round(resizeSession.startWidth))
@@ -108,8 +112,8 @@ export function createDocumentImageResizeRuntime({
     resizeSession.image.style.height = `${nextHeight}px`;
 
     if (resizeSession.image.style.position === "absolute") {
-      resizeSession.image.style.left = `${getDocumentBoundedCoordinate(nextLeft, documentRoot.clientWidth - nextWidth)}px`;
-      resizeSession.image.style.top = `${getDocumentBoundedCoordinate(nextTop, documentRoot.clientHeight - nextHeight)}px`;
+      resizeSession.image.style.left = `${getDocumentBoundedCoordinate(nextLeft, boundsWidth - nextWidth)}px`;
+      resizeSession.image.style.top = `${getDocumentBoundedCoordinate(nextTop, boundsHeight - nextHeight)}px`;
     }
 
     updateDocumentImageSelectionOverlay(resizeSession.pageId);
@@ -142,27 +146,39 @@ export function createDocumentImageResizeRuntime({
   function startDocumentImageResizeSession(event, pageId = appState.templateEditor.selectedPageId, corner = "bottom-right") {
     const selectedImage = appState.templateEditor.selectedImageElement;
     const surface = getDocumentSurfaceByPageId(pageId);
+    const documentRoot = getDocumentContentRoot(surface);
 
-    if (event.button !== 0 || !selectedImage || !surface?.contains(selectedImage)) {
+    if (event.button !== 0 || !selectedImage || !surface?.contains(selectedImage) || !documentRoot) {
       return;
     }
 
     const normalizedCorner = normalizeObjectResizeCorner(corner);
     const directions = getObjectResizeDirections(normalizedCorner);
+    const initialCellElement = selectedImage.closest("td, th");
+    const isCellObject = initialCellElement instanceof HTMLElement && surface.contains(initialCellElement);
+    const cellStartingPosition = isCellObject
+      ? prepareDocumentImageForFloatingPosition(selectedImage, pageId)
+      : null;
 
-    if (directions.x < 0 || directions.y < 0) {
+    if (!isCellObject && (directions.x < 0 || directions.y < 0)) {
       prepareDocumentImageForFloatingPosition(selectedImage, pageId);
     }
 
     const imageRect = selectedImage.getBoundingClientRect();
-    const startWidth = Math.max(imageRect.width / editorCanvasDisplayScale, documentObjectMinimumSize);
-    const startHeight = Math.max(imageRect.height / editorCanvasDisplayScale, documentObjectMinimumSize);
-    const imageLeft =
-      selectedImage.style.position === "absolute"
+    const scaleX = Math.max(Number(cellStartingPosition?.scaleX || editorCanvasDisplayScale) || editorCanvasDisplayScale, 0.01);
+    const scaleY = Math.max(Number(cellStartingPosition?.scaleY || editorCanvasDisplayScale) || editorCanvasDisplayScale, 0.01);
+    const boundsWidth = Number(cellStartingPosition?.boundsWidth) || documentRoot.clientWidth || 0;
+    const boundsHeight = Number(cellStartingPosition?.boundsHeight) || documentRoot.clientHeight || 0;
+    const startWidth = Math.min(boundsWidth, Math.max(imageRect.width / scaleX, documentObjectMinimumSize));
+    const startHeight = Math.min(boundsHeight, Math.max(imageRect.height / scaleY, documentObjectMinimumSize));
+    const imageLeft = cellStartingPosition
+      ? cellStartingPosition.left
+      : selectedImage.style.position === "absolute"
         ? parseDocumentPixelValue(selectedImage.style.left, selectedImage.offsetLeft)
         : Math.max(0, selectedImage.offsetLeft);
-    const imageTop =
-      selectedImage.style.position === "absolute"
+    const imageTop = cellStartingPosition
+      ? cellStartingPosition.top
+      : selectedImage.style.position === "absolute"
         ? parseDocumentPixelValue(selectedImage.style.top, selectedImage.offsetTop)
         : Math.max(0, selectedImage.offsetTop);
 
@@ -176,7 +192,11 @@ export function createDocumentImageResizeRuntime({
       lastLeft: imageLeft,
       lastTop: imageTop,
       lastWidth: Math.max(Math.round(startWidth), documentObjectMinimumSize),
+      maxDocumentHeight: boundsHeight,
+      maxDocumentWidth: boundsWidth,
       pageId,
+      scaleX,
+      scaleY,
       startBottom: imageTop + startHeight,
       startHeight,
       startLeft: imageLeft,

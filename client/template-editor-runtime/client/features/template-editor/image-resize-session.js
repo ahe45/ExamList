@@ -215,7 +215,13 @@
 
       const normalizedCorner = geometry.normalizeTemplateEditorImageResizeCorner(event.currentTarget?.dataset?.templateResizeCorner);
       const directions = geometry.getTemplateEditorImageResizeDirections(normalizedCorner);
-      const cellResizeBounds = getTemplateEditorCellImageResizeBounds(selectedImage, templateEditorSurface);
+      const initialCellElement = getTemplateEditorImageTableCell(selectedImage, templateEditorSurface);
+      const cellStartingPosition = initialCellElement
+        ? prepareTemplateEditorImageForMove(selectedImage)
+        : null;
+      const cellResizeBounds = initialCellElement
+        ? getTemplateEditorCellImageResizeBounds(selectedImage, templateEditorSurface)
+        : null;
 
       if (!cellResizeBounds && (directions.x < 0 || directions.y < 0)) {
         prepareTemplateEditorImageForMove(selectedImage);
@@ -239,26 +245,26 @@
       const startLeft = candidateBlockResizeBounds
         ? candidateBlockResizeBounds.startLeft
         : cellResizeBounds
-          ? 0
+          ? Math.max(0, Math.round(cellStartingPosition?.left || parseTemplateEditorPixelStyle(selectedImage.style.left, selectedImage.offsetLeft)))
           : selectedImage.style.position === "absolute"
             ? parseTemplateEditorPixelStyle(selectedImage.style.left, selectedImage.offsetLeft)
             : Math.max(0, selectedImage.offsetLeft);
       const startTop = candidateBlockResizeBounds
         ? candidateBlockResizeBounds.startTop
         : cellResizeBounds
-          ? 0
+          ? Math.max(0, Math.round(cellStartingPosition?.top || parseTemplateEditorPixelStyle(selectedImage.style.top, selectedImage.offsetTop)))
           : selectedImage.style.position === "absolute"
             ? parseTemplateEditorPixelStyle(selectedImage.style.top, selectedImage.offsetTop)
             : Math.max(0, selectedImage.offsetTop);
       const startRight = candidateBlockResizeBounds
         ? startLeft + startWidth
         : cellResizeBounds
-          ? maxResizeWidth
+          ? startLeft + startWidth
           : startLeft + startWidth;
       const startBottom = candidateBlockResizeBounds
         ? startTop + startHeight
         : cellResizeBounds
-          ? maxResizeHeight
+          ? startTop + startHeight
           : startTop + startHeight;
       const absoluteStartLeft = selectedImage.style.position === "absolute"
         ? parseTemplateEditorPixelStyle(selectedImage.style.left, selectedImage.offsetLeft)
@@ -371,7 +377,7 @@
       resizeSession.image.style.width = `${nextRect.width}px`;
       resizeSession.image.style.height = `${nextRect.height}px`;
 
-      if (!resizeSession.isCellObject && resizeSession.image.style.position === "absolute") {
+      if (resizeSession.image.style.position === "absolute") {
         resizeSession.image.style.left = `${geometry.getTemplateEditorBoundedCoordinate(nextRect.left, resizeSession.maxDocumentWidth - nextRect.width)}px`;
         resizeSession.image.style.top = `${geometry.getTemplateEditorBoundedCoordinate(nextRect.top, resizeSession.maxDocumentHeight - nextRect.height)}px`;
       }

@@ -145,10 +145,6 @@
         return;
       }
 
-      if (imageElement.closest("td, th")) {
-        return;
-      }
-
       state.templateEditor.imageMoveSession = {
         image: imageElement,
         pointerId: event.pointerId,
