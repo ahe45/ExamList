@@ -1,4 +1,11 @@
 import { showToast } from "../../app/toast.js";
+import {
+  calculateCandidateBlockFocusLayout,
+  calculateCanvasBackdropRect,
+  calculateVisibleCanvasRect,
+  parseCssPixelValue,
+  toFinitePixelValue,
+} from "./candidate-block-grid-focus-layout.js";
 import { candidateBlockFocusTableObjectOuterHitSlop } from "./candidate-block-grid-config.js";
 import { normalizeCandidateBlockTables } from "./candidate-block-grid-dom.js";
 import { syncCandidateBlockTemplateFromSurface } from "./candidate-block-grid-surface.js";
@@ -8,7 +15,6 @@ const MODAL_CONTENT_OVERFLOW_TOLERANCE_PX = 2;
 const MODAL_OVERFLOW_MESSAGE = "데이터 블록 영역을 초과했습니다. 닫기 전 내용이나 개체 크기를 조정하세요.";
 const MODAL_OVERFLOW_MESSAGE_INTERVAL_MS = 800;
 const MODAL_CARET_HOST_SELECTOR = "td, th, p, div, li, blockquote, h1, h2, h3";
-const MODAL_LAYER_BORDER_WIDTH = 2;
 const modalCapturedEventOptions = true;
 
 const candidateBlockFocusVariables = Object.freeze([
@@ -43,18 +49,6 @@ function clearDocumentFocusVariables(ownerDocument = document) {
   });
 }
 
-function toFinitePixelValue(value, fallback) {
-  const numericValue = Number(value);
-
-  return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : fallback;
-}
-
-function parseCssPixelValue(value) {
-  const numericValue = Number.parseFloat(String(value || ""));
-
-  return Number.isFinite(numericValue) ? numericValue : 0;
-}
-
 function getElementChromeSize(element) {
   if (!(element instanceof HTMLElement)) {
     return { horizontal: 0, vertical: 0 };
@@ -80,64 +74,22 @@ function getVisibleCanvasRect(surfaceElement) {
   const ownerWindow = getOwnerWindow(surfaceElement);
   const canvasElement = surfaceElement?.closest?.(".template-editor-page") || surfaceElement;
   const canvasRect = canvasElement?.getBoundingClientRect?.();
-  const fallbackWidth = ownerWindow.innerWidth || 1024;
-  const fallbackHeight = ownerWindow.innerHeight || 768;
 
-  if (!canvasRect) {
-    return {
-      bottom: fallbackHeight,
-      height: fallbackHeight,
-      left: 0,
-      right: fallbackWidth,
-      top: 0,
-      width: fallbackWidth,
-    };
-  }
-
-  const left = Math.max(8, canvasRect.left + 12);
-  const top = Math.max(8, canvasRect.top + 12);
-  const right = Math.min(fallbackWidth - 8, canvasRect.right - 12);
-  const bottom = Math.min(fallbackHeight - 8, canvasRect.bottom - 12);
-  const width = Math.max(180, right - left);
-  const height = Math.max(180, bottom - top);
-
-  return {
-    bottom: top + height,
-    height,
-    left,
-    right: left + width,
-    top,
-    width,
-  };
+  return calculateVisibleCanvasRect(canvasRect, {
+    height: ownerWindow.innerHeight,
+    width: ownerWindow.innerWidth,
+  });
 }
 
 function getCanvasBackdropRect(surfaceElement) {
   const ownerWindow = getOwnerWindow(surfaceElement);
   const canvasElement = surfaceElement?.closest?.(".template-editor-page") || surfaceElement;
   const canvasRect = canvasElement?.getBoundingClientRect?.();
-  const fallbackWidth = ownerWindow.innerWidth || 1024;
-  const fallbackHeight = ownerWindow.innerHeight || 768;
 
-  if (!canvasRect) {
-    return {
-      height: fallbackHeight,
-      left: 0,
-      top: 0,
-      width: fallbackWidth,
-    };
-  }
-
-  const left = Math.max(0, canvasRect.left);
-  const top = Math.max(0, canvasRect.top);
-  const right = Math.min(fallbackWidth, canvasRect.right);
-  const bottom = Math.min(fallbackHeight, canvasRect.bottom);
-
-  return {
-    height: Math.max(0, bottom - top),
-    left: Math.round(left),
-    top: Math.round(top),
-    width: Math.max(0, right - left),
-  };
+  return calculateCanvasBackdropRect(canvasRect, {
+    height: ownerWindow.innerHeight,
+    width: ownerWindow.innerWidth,
+  });
 }
 
 function getBlockLogicalSize(blockElement) {
@@ -173,38 +125,9 @@ function getBlockLogicalSize(blockElement) {
 
 function getCandidateBlockFocusLayout(surfaceElement, blockElement, logicalSize = null) {
   const canvasRect = getVisibleCanvasRect(surfaceElement);
-  const { height, width } = logicalSize || getBlockLogicalSize(blockElement);
-  const panelPaddingX = 56;
-  const panelPaddingY = 58;
-  const panelChromeX = panelPaddingX + MODAL_LAYER_BORDER_WIDTH;
-  const panelChromeY = panelPaddingY + MODAL_LAYER_BORDER_WIDTH;
-  const maxVisualWidth = Math.max(160, canvasRect.width - panelChromeX);
-  const maxVisualHeight = Math.max(120, canvasRect.height - panelChromeY);
-  const fitScale = Math.min(maxVisualWidth / width, maxVisualHeight / height);
-  const rawScale = fitScale >= 1.35
-    ? Math.min(6, fitScale)
-    : fitScale >= 1
-      ? fitScale
-      : Math.max(0.5, fitScale);
-  const scale = Math.round(rawScale * 10000) / 10000;
-  const visualWidth = Math.ceil(width * scale);
-  const visualHeight = Math.ceil(height * scale);
-  const panelWidth = visualWidth + panelChromeX;
-  const panelHeight = visualHeight + panelChromeY;
-  const panelLeft = Math.round(canvasRect.left + Math.max(0, (canvasRect.width - panelWidth) / 2));
-  const panelTop = Math.round(canvasRect.top + Math.max(0, (canvasRect.height - panelHeight) / 2));
+  const resolvedLogicalSize = logicalSize || getBlockLogicalSize(blockElement);
 
-  return {
-    editorHeight: height,
-    editorWidth: width,
-    panelHeight,
-    panelLeft,
-    panelTop,
-    panelWidth,
-    scale,
-    visualHeight,
-    visualWidth,
-  };
+  return calculateCandidateBlockFocusLayout(canvasRect, resolvedLogicalSize);
 }
 
 function getCandidateBlockFocusBackdropMarkup() {
