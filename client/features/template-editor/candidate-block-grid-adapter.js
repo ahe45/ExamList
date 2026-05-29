@@ -57,6 +57,10 @@ import {
   isCandidateBlockTemplatePreview,
   isCandidateBlockTemplateSource,
 } from "./candidate-block-grid-block-roles.js";
+import {
+  isBlankCandidateBlockBoundaryHost,
+  isIgnorableCandidateBlockBoundaryNode,
+} from "./candidate-block-grid-boundary.js";
 import { getSelectedPage } from "./state.js";
 
 const candidateBlockPreviewInteractionEvents = Object.freeze([
@@ -135,14 +139,6 @@ function getCandidateBlockGridSettingControl(event) {
   const target = event?.target instanceof Element ? event.target : null;
 
   return target?.closest?.("[data-examlist-block-grid-setting]") || null;
-}
-
-function isIgnorableCandidateBlockBoundaryNode(node) {
-  if (node?.nodeType === Node.TEXT_NODE) {
-    return !String(node.textContent || "").trim();
-  }
-
-  return node instanceof HTMLElement && node.tagName === "BR";
 }
 
 function getAdjacentCandidateBlockBoundaryNode(parentNode, startIndex, direction) {
@@ -267,16 +263,6 @@ function getCandidateBlockBoundaryHostElement(range, surfaceElement) {
   }
 
   return null;
-}
-
-function isBlankCandidateBlockBoundaryHost(element) {
-  const normalizedHtml = String(element?.innerHTML || "")
-    .replace(/<br\s*\/?>/gi, "")
-    .replace(/&nbsp;/gi, "")
-    .replace(/\s+/g, "")
-    .trim();
-
-  return normalizedHtml === "";
 }
 
 function getCandidateBlockGridSibling(element, direction, surfaceElement) {
