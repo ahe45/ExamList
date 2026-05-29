@@ -329,7 +329,7 @@ export function createDocumentInsertionActions({
       imageElement.style.width = `${width}px`;
       imageElement.style.height = `${height}px`;
       imageElement.style.maxWidth = "100%";
-      imageElement.style.maxHeight = "100%";
+      imageElement.style.maxHeight = `${height}px`;
       imageElement.style.display = "inline-block";
       imageElement.style.margin = "0";
       imageElement.style.verticalAlign = "top";

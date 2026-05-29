@@ -115,40 +115,36 @@
       const visualScale = getTemplateEditorCandidateBlockVisualScale(cellElement);
       const scaleX = Math.max(visualScale.x || 1, 0.01);
       const scaleY = Math.max(visualScale.y || 1, 0.01);
-      const paddingLeft = getTemplateEditorFinitePixelValue(computedStyle.paddingLeft);
-      const paddingRight = getTemplateEditorFinitePixelValue(computedStyle.paddingRight);
-      const paddingTop = getTemplateEditorFinitePixelValue(computedStyle.paddingTop);
-      const paddingBottom = getTemplateEditorFinitePixelValue(computedStyle.paddingBottom);
       const borderLeft = getTemplateEditorFinitePixelValue(computedStyle.borderLeftWidth);
       const borderRight = getTemplateEditorFinitePixelValue(computedStyle.borderRightWidth);
       const borderTop = getTemplateEditorFinitePixelValue(computedStyle.borderTopWidth);
       const borderBottom = getTemplateEditorFinitePixelValue(computedStyle.borderBottomWidth);
-      const contentWidth = Math.max(
+      const paddingBoxWidth = Math.max(
         minimumSize,
         Math.floor(
           Math.max(
-            cellElement.clientWidth - paddingLeft - paddingRight,
-            cellRect.width / scaleX - paddingLeft - paddingRight - borderLeft - borderRight,
+            cellElement.clientWidth,
+            cellRect.width / scaleX - borderLeft - borderRight,
             0,
           ),
         ),
       );
-      const contentHeight = Math.max(
+      const paddingBoxHeight = Math.max(
         minimumSize,
         Math.floor(
           Math.max(
-            cellElement.clientHeight - paddingTop - paddingBottom,
-            cellRect.height / scaleY - paddingTop - paddingBottom - borderTop - borderBottom,
+            cellElement.clientHeight,
+            cellRect.height / scaleY - borderTop - borderBottom,
             0,
           ),
         ),
       );
 
       return {
-        height: contentHeight,
+        height: paddingBoxHeight,
         scaleX,
         scaleY,
-        width: contentWidth,
+        width: paddingBoxWidth,
       };
     }
 
@@ -191,11 +187,13 @@
       };
     }
 
-    function applyTemplateEditorCellImageResizeStyle(imageElement) {
+    function applyTemplateEditorCellImageResizeStyle(imageElement, maxHeight = 0) {
       imageElement.style.display = "inline-block";
       imageElement.style.margin = "0";
       imageElement.style.maxWidth = "100%";
-      imageElement.style.maxHeight = "100%";
+      imageElement.style.maxHeight = Number.isFinite(maxHeight) && maxHeight > 0
+        ? `${Math.round(maxHeight)}px`
+        : "none";
 
       if (!String(imageElement.style.verticalAlign || "").trim()) {
         imageElement.style.verticalAlign = "top";
@@ -282,13 +280,13 @@
           lockTemplateEditorImageCellHeight(cellResizeBounds.cellElement);
         }
 
-        applyTemplateEditorCellImageResizeStyle(selectedImage);
+        applyTemplateEditorCellImageResizeStyle(selectedImage, startHeight);
         selectedImage.style.width = `${Math.round(startWidth)}px`;
         selectedImage.style.height = `${Math.round(startHeight)}px`;
       }
 
       if (candidateBlockResizeBounds) {
-        applyTemplateEditorCellImageResizeStyle(selectedImage);
+        applyTemplateEditorCellImageResizeStyle(selectedImage, startHeight);
         selectedImage.style.width = `${Math.round(startWidth)}px`;
         selectedImage.style.height = `${Math.round(startHeight)}px`;
       }
@@ -371,7 +369,7 @@
           resizeSession.cellHeightLocked = true;
         }
 
-        applyTemplateEditorCellImageResizeStyle(resizeSession.image);
+        applyTemplateEditorCellImageResizeStyle(resizeSession.image, nextRect.height);
       }
 
       resizeSession.image.style.width = `${nextRect.width}px`;

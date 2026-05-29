@@ -5,7 +5,31 @@ export function getActiveDocumentTableCell() {
     return null;
   }
 
-  return selection.getRangeAt(0).commonAncestorContainer.parentElement?.closest?.("td, th") || null;
+  const selectionContainer = selection.getRangeAt(0).commonAncestorContainer;
+  const selectionElement =
+    selectionContainer?.nodeType === Node.ELEMENT_NODE
+      ? selectionContainer
+      : selectionContainer?.parentElement || null;
+  const selectionCell = selectionElement?.closest?.("td, th") || null;
+
+  if (selectionCell) {
+    return selectionCell;
+  }
+
+  const runtimeState = window.ExamListTemplateEditorRuntime?.state?.templateEditor || null;
+  const surfaceElement = document.getElementById("templateEditorSurface");
+  const runtimeActiveCell = runtimeState?.activeCellElement || runtimeState?.tableSelection?.anchorCell || null;
+
+  if (
+    runtimeState?.suppressToolbarSelectionChange &&
+    selectionContainer === surfaceElement &&
+    runtimeActiveCell?.nodeType === Node.ELEMENT_NODE &&
+    surfaceElement?.contains(runtimeActiveCell)
+  ) {
+    return runtimeActiveCell;
+  }
+
+  return null;
 }
 
 function getActiveDocumentTableRow() {

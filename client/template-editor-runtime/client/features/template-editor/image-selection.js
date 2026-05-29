@@ -116,7 +116,7 @@
       imageElement.style.display = "inline-block";
       imageElement.style.margin = "0";
       imageElement.style.maxWidth = "100%";
-      imageElement.style.maxHeight = "100%";
+      imageElement.style.maxHeight = `${logicalHeight}px`;
 
       if (!String(imageElement.style.verticalAlign || "").trim()) {
         imageElement.style.verticalAlign = "top";

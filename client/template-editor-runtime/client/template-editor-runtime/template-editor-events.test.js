@@ -316,6 +316,32 @@ test("template editor runtime captures toolbar selection control before browser 
   assert.equal(state.templateEditor.suppressToolbarSelectionChange, true);
 });
 
+test("template editor runtime suppresses toolbar trigger selectionchange before click", () => {
+  let splitToggleElement = null;
+  const { FakeElement, handlePointerDown, handlePointerDownCapture, selectionSaveCalls, state } =
+    createRuntimeEventHarness({
+      modalContains: (target) => target === splitToggleElement,
+    });
+
+  splitToggleElement = new FakeElement();
+  splitToggleElement.closest = (selector) =>
+    String(selector || "").includes("[data-template-cell-split-toggle]") ? splitToggleElement : null;
+
+  handlePointerDownCapture({
+    button: 0,
+    preventDefault: () => {},
+    target: splitToggleElement,
+  });
+  handlePointerDown({
+    button: 0,
+    preventDefault: () => {},
+    target: splitToggleElement,
+  });
+
+  assert.equal(selectionSaveCalls.length, 1);
+  assert.equal(state.templateEditor.suppressToolbarSelectionChange, true);
+});
+
 test("template editor runtime reapplies table selection visual state after toolbar focus", () => {
   let fontFamilyElement = null;
   let selectedCell = null;

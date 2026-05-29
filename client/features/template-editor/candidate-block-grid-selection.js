@@ -6,6 +6,21 @@ import { ensureCandidateBlockGridObjectControls } from "./candidate-block-grid-o
 
 let selectedCandidateBlockGridElement = null;
 
+function shouldRefocusCandidateBlockGridElement(gridElement) {
+  const ownerDocument = gridElement?.ownerDocument || document;
+  const activeElement = ownerDocument.activeElement;
+
+  if (!activeElement || activeElement === ownerDocument.body || activeElement === ownerDocument.documentElement) {
+    return true;
+  }
+
+  if (activeElement === gridElement || gridElement?.contains?.(activeElement)) {
+    return true;
+  }
+
+  return !activeElement.closest?.("input, textarea, select, button, [contenteditable='true']");
+}
+
 export function getSelectedCandidateBlockGridElement() {
   return selectedCandidateBlockGridElement;
 }
@@ -42,7 +57,7 @@ export function selectCandidateBlockGridElement(gridElement, { focus = true } = 
     const ownerWindow = gridElement.ownerDocument?.defaultView || null;
 
     ownerWindow.requestAnimationFrame?.(() => {
-      if (selectedCandidateBlockGridElement === gridElement) {
+      if (selectedCandidateBlockGridElement === gridElement && shouldRefocusCandidateBlockGridElement(gridElement)) {
         gridElement.focus({ preventScroll: true });
       }
     });

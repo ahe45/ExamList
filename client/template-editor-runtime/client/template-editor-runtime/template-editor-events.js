@@ -192,6 +192,12 @@
       saveTemplateEditorSelection();
     }
 
+    function preserveTemplateEditorSelectionForToolbarPointer() {
+      saveTemplateEditorSelectionFromToolbarPointer();
+      state.templateEditor.suppressToolbarSelectionChange = true;
+      scheduleTemplateEditorSelectionVisualStateRefresh();
+    }
+
     function getTemplateEditorToolbarPointerTarget(target) {
       const toolbarTrigger = target.closest(
         "[data-template-command], [data-template-table-action], [data-template-cell-split-step], [data-template-cell-split-toggle], [data-template-cell-split-confirm], [data-template-insert], [data-template-open-image], [data-template-image-insert-toggle], [data-template-insert-school-logo], [data-template-tag], .template-tag-accordion-summary, [data-editor-color-preset], [data-editor-color-apply], [data-editor-color-toggle], [data-editor-color-direct], [data-editor-font-family-toggle], [data-editor-font-family-option], [data-editor-font-size-toggle], [data-editor-font-size-option], [data-template-line-height-toggle], [data-template-line-height-option], [data-editor-border-select-toggle], [data-editor-border-select-option]",
@@ -217,15 +223,13 @@
       }
 
       if (toolbarTrigger) {
-        saveTemplateEditorSelectionFromToolbarPointer();
+        preserveTemplateEditorSelectionForToolbarPointer();
         event.preventDefault();
         return;
       }
 
       if (toolbarSelectionControl) {
-        saveTemplateEditorSelectionFromToolbarPointer();
-        state.templateEditor.suppressToolbarSelectionChange = true;
-        scheduleTemplateEditorSelectionVisualStateRefresh();
+        preserveTemplateEditorSelectionForToolbarPointer();
       }
     }
 
@@ -239,15 +243,13 @@
       const { toolbarSelectionControl, toolbarTrigger } = getTemplateEditorToolbarPointerTarget(target);
 
       if (toolbarTrigger) {
-        saveTemplateEditorSelectionFromToolbarPointer();
+        preserveTemplateEditorSelectionForToolbarPointer();
         event.preventDefault();
         return;
       }
 
       if (toolbarSelectionControl) {
-        saveTemplateEditorSelectionFromToolbarPointer();
-        state.templateEditor.suppressToolbarSelectionChange = true;
-        scheduleTemplateEditorSelectionVisualStateRefresh();
+        preserveTemplateEditorSelectionForToolbarPointer();
         return;
       }
 

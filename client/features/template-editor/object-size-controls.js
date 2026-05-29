@@ -614,7 +614,7 @@ function applyObjectSizeToSelection(editor, surfaceElement, selectedPage, { heig
     element.style.width = `${nextWidth}px`;
     element.style.height = `${nextHeight}px`;
     element.style.maxWidth = "100%";
-    element.style.maxHeight = "100%";
+    element.style.maxHeight = `${nextHeight}px`;
     element.style.margin = "0";
 
     if (!String(element.style.verticalAlign || "").trim()) {
