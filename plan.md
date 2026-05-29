@@ -1518,7 +1518,77 @@ npm run smoke:ui
 - 해당 함수 이동은 지금 바로 진행하지 않는다.
 - 다음 작업은 리뷰와 체크포인트 확인 후 결정한다.
 
-## 26. 결론
+## 26. 2차 작업 전체 리뷰 체크포인트
+
+기준일:
+
+- 2026-05-30
+
+검토 범위:
+
+- 기준 커밋: `54d11d9 docs: record template editor refactor checkpoint`
+- 현재 커밋: `dd07eea docs: record candidate block grid traversal step`
+- 범위: 2차 수험생 블록 리팩토링 5개 코드 단위와 각 문서 기록
+
+검토 결과:
+
+- 즉시 되돌려야 할 문제는 발견하지 않았다.
+- `candidate-block-grid-adapter.js`는 2차 작업 범위에서 1개 파일 기준 105줄 삭제, 6줄 추가로 책임이 줄었다.
+- 현재 파일 라인 수 기준으로 `candidate-block-grid-adapter.js`는 823줄에서 746줄로 감소했다.
+- 새로 분리된 책임은 다음 3개 영역이다.
+  - 선택된 수험생 블록 재포커스 판단: `candidate-block-grid-selection-focus.js`
+  - 선택된 수험생 블록 키보드 삭제 대상 판단: `candidate-block-grid-keyboard-target.js`
+  - 수험생 블록 native deletion boundary 탐색 helper: `candidate-block-grid-boundary.js`
+- 각 분리 파일은 대응 테스트 파일을 갖고 있다.
+  - `candidate-block-grid-selection-focus.test.js`
+  - `candidate-block-grid-keyboard-target.test.js`
+  - `candidate-block-grid-boundary.test.js`
+
+안전성 확인:
+
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+- 수험생 블록 렌더링 HTML 구조 변경 없음
+- `bindCandidateBlockGridControls` 외부 API 변경 없음
+- event listener 등록 순서 변경 없음
+- `handleSurfaceKeyDown`과 `handleDocumentKeyDown`의 실행 흐름 변경 없음
+- `getCandidateBlockGridAdjacentToRange` 이동 없음
+- `shouldPreventCandidateBlockGridNativeDeletion` 이동 없음
+
+검증 이력:
+
+- 2차 각 코드 단위마다 해당 helper 단위 테스트를 실행했다.
+- 2차 각 코드 단위마다 `npm test`를 실행했다.
+- 2차 각 코드 단위마다 `npm run smoke:browser`를 실행했다.
+- 2차 각 코드 단위마다 `npm run smoke:ui`를 실행했다.
+- 마지막 코드 단위 기준 `npm test`는 318개 테스트 통과 상태였다.
+
+남은 위험 지점:
+
+- `getCandidateBlockGridAdjacentToRange`는 DOM `Range.startContainer`, `Range.startOffset`, text node boundary, parent traversal, surface containment를 동시에 다룬다.
+- `shouldPreventCandidateBlockGridNativeDeletion`은 `window.getSelection()`, collapsed range, non-collapsed range, blank boundary host, adjacent grid 판단을 한 함수에서 연결한다.
+- `handleSurfaceKeyDown`과 `handleDocumentKeyDown`은 같은 Backspace/Delete 계열 동작을 나눠 처리하므로, 다음 리팩토링에서 순서나 preventDefault 조건이 바뀌면 회귀 위험이 크다.
+- 현재 helper 단위 테스트는 fake node 중심이다. Range/Selection 자체를 검증하는 테스트는 아직 충분하지 않다.
+
+판단:
+
+- 2차 리팩토링은 여기까지의 범위에서는 안정적으로 완료된 것으로 본다.
+- 다음 작업에서 바로 `getCandidateBlockGridAdjacentToRange`나 `shouldPreventCandidateBlockGridNativeDeletion`을 이동하지 않는다.
+- 다음 안전한 단위는 코드 이동이 아니라 native deletion guard의 Range/Selection 동작을 테스트로 먼저 고정하는 것이다.
+- 테스트 고정 없이 Range/Selection helper를 이동하면 리팩토링 목적과 반대로 버그 발생 가능성이 커진다.
+
+다음 추천 작업:
+
+- `shouldPreventCandidateBlockGridNativeDeletion` 주변 동작을 테스트 가능하게 만들기 위한 최소 구조를 검토한다.
+- 우선 테스트해야 할 케이스는 다음이다.
+  - collapsed range가 일반 텍스트 중간에 있을 때 Backspace/Delete를 막지 않는다.
+  - collapsed range가 수험생 블록 바로 앞이나 뒤에 있을 때 native deletion을 막는다.
+  - 빈 boundary host가 수험생 블록과 인접할 때 native deletion을 막는다.
+  - non-collapsed range가 수험생 블록을 포함할 때 native deletion을 막는다.
+  - selection이 문서 surface 밖이면 native deletion을 막지 않는다.
+- 이 테스트가 먼저 통과한 뒤에만 `getCandidateBlockGridAdjacentToRange` 분리를 다시 검토한다.
+
+## 27. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
