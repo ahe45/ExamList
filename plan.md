@@ -1298,7 +1298,62 @@ npm run smoke:ui
 - 삭제 동작 자체를 바꾸지 말고, 먼저 판단 규칙을 테스트로 고정해야 한다.
 - 실제 Backspace/Delete 동작은 browser smoke가 통과해야 한다.
 
-## 22. 결론
+## 22. 2차 두 번째 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- 2차 두 번째 작업 완료
+- 수험생 블록 Backspace/Delete guard 판단을 별도 helper로 분리
+- 실제 삭제 실행, 재포커스, 저장 sync, dirty 처리 흐름은 유지
+
+작업 범위:
+
+- `candidate-block-grid-adapter.js` 안에 있던 `isCandidateBlockGridKeyboardDeleteTarget` 판단을 `candidate-block-grid-keyboard-target.js`로 이동했다.
+- DOM wrapper는 실제 `event`, `surfaceElement`, `gridElement`, `ownerDocument.activeElement`를 읽고, 조건 평가는 `shouldHandleCandidateBlockGridKeyboardDelete`로 분리했다.
+- 외부 편집 컨트롤에 focus가 있을 때 수험생 블록 삭제가 실행되지 않는 규칙을 테스트로 고정했다.
+- grid 내부 컨트롤, 문서 surface 내부 컨트롤, disconnected element는 외부 편집 컨트롤로 보지 않는 규칙을 테스트로 고정했다.
+- target/active element가 선택 grid, surface, body, documentElement인 경우 기존처럼 삭제 guard가 허용되는 규칙을 테스트로 고정했다.
+
+금지 범위 준수:
+
+- Backspace/Delete 실행 동작 변경 없음
+- 수험생 블록 삭제 방식 변경 없음
+- focus editor close 정책 변경 없음
+- 저장 payload shape 변경 없음
+- runtime API 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/candidate-block-grid-keyboard-target.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- 단일 keyboard guard 테스트 통과
+- `npm test` 통과, 308개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+2차 다음 후보:
+
+- 수험생 블록 boundary deletion 판단 중 DOM traversal이 아닌 작은 조건 helper부터 테스트로 고정한다.
+
+다음 후보 시작 조건:
+
+- `shouldPreventCandidateBlockGridNativeDeletion` 자체는 Range, Selection, DOM tree traversal이 얽혀 있어 한 번에 이동하지 않는다.
+- 먼저 `isIgnorableCandidateBlockBoundaryNode`, blank host 판단처럼 작은 helper만 분리한다.
+- Range 이동, sibling 탐색, native deletion prevent 정책 변경은 별도 고위험 작업으로 둔다.
+
+## 23. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
