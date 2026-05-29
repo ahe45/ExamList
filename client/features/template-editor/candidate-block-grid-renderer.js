@@ -43,7 +43,7 @@ export function createCandidateBlockGridElement(config) {
     gridElement.style.top = `${pointValueToCssPixel(normalizedConfig.yPt)}px`;
     gridElement.style.margin = "0";
     gridElement.style.maxWidth = "none";
-    gridElement.style.zIndex = "2";
+    gridElement.style.zIndex = "0";
   }
 
   if (normalizedConfig.widthPt > 0) {

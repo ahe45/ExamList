@@ -121,7 +121,7 @@ function prepareCandidateBlockGridMove(gridElement) {
   gridElement.style.height = `${height}px`;
   gridElement.style.margin = "0";
   gridElement.style.maxWidth = "none";
-  gridElement.style.zIndex = "30";
+  gridElement.style.zIndex = "0";
 
   return {
     height,

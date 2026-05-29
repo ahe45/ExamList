@@ -600,7 +600,7 @@ async function runCandidateBlockGridMoveResizeScenario(context) {
               gridRect &&
               paperRect &&
               grid.classList.contains('is-selected-candidate-block-grid') &&
-              getComputedStyle(grid).zIndex === '30' &&
+              getComputedStyle(grid).zIndex === '0' &&
               moveHandle &&
               getComputedStyle(moveHandle).display !== 'none' &&
               handles.length === 8 &&

@@ -56,6 +56,7 @@ import {
   isCandidateBlockTemplatePreview,
   isCandidateBlockTemplateSource,
 } from "./candidate-block-grid-block-roles.js";
+import { getSelectedPage } from "./state.js";
 
 const candidateBlockPreviewInteractionEvents = Object.freeze([
   "beforeinput",
@@ -434,6 +435,10 @@ export { buildCandidateBlockGridHtml } from "./candidate-block-grid-renderer.js"
 export { resetCandidateBlockGridState } from "./candidate-block-grid-selection.js";
 export { syncCandidateBlockTemplateFromSurface } from "./candidate-block-grid-surface.js";
 
+function resolveCandidateBlockGridSelectedPage(appState, fallbackPage) {
+  return getSelectedPage(appState?.templateEditor) || fallbackPage || null;
+}
+
 export function commitCandidateBlockGridControlsToPage({ pagePropertiesHost, selectedPage, surfaceElement, syncControls = true } = {}) {
   const sectionElement = pagePropertiesHost?.querySelector?.(".examlist-candidate-block-grid-field") || null;
 
@@ -493,20 +498,27 @@ export function commitCandidateBlockGridControlsToPage({ pagePropertiesHost, sel
   return true;
 }
 
-export function bindCandidateBlockGridControls({ editor = null, onDirty = null, pagePropertiesHost, selectedPage, surfaceElement }) {
+export function bindCandidateBlockGridControls({ appState = null, editor = null, onDirty = null, pagePropertiesHost, selectedPage, surfaceElement }) {
   if (!pagePropertiesHost || !selectedPage || !surfaceElement) {
     return null;
   }
 
   pagePropertiesHost.querySelector(".examlist-candidate-block-grid-field")?.remove();
 
-  if (!isCandidateBlockGridContentPage(selectedPage)) {
+  const getActiveSelectedPage = () => resolveCandidateBlockGridSelectedPage(appState, selectedPage);
+  const getActiveContentPage = () => {
+    const activePage = getActiveSelectedPage();
+    return isCandidateBlockGridContentPage(activePage) ? activePage : null;
+  };
+  const initialSelectedPage = getActiveContentPage();
+
+  if (!initialSelectedPage) {
     return () => {
       pagePropertiesHost.querySelector(".examlist-candidate-block-grid-field")?.remove();
     };
   }
 
-  const sectionElement = createCandidateBlockGridControls(selectedPage);
+  const sectionElement = createCandidateBlockGridControls(initialSelectedPage);
   const recognitionMarksElement = pagePropertiesHost.querySelector(".examlist-recognition-marks-field");
 
   if (recognitionMarksElement) {
@@ -515,11 +527,11 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
     pagePropertiesHost.append(sectionElement);
   }
 
-  syncCandidateBlockGridControls(sectionElement, selectedPage);
+  syncCandidateBlockGridControls(sectionElement, initialSelectedPage);
   hydrateCandidateBlockGridObjects(surfaceElement);
 
-  if (isPhotoCandidateBlockGridPage(selectedPage)) {
-    renderCandidateBlockGridOnSurface(surfaceElement, selectedPage);
+  if (isPhotoCandidateBlockGridPage(initialSelectedPage)) {
+    renderCandidateBlockGridOnSurface(surfaceElement, initialSelectedPage);
   }
 
   const markDirty = () => {
@@ -530,9 +542,16 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
   };
 
   const applyFromControls = () => {
+    const activePage = getActiveContentPage();
+
+    if (!activePage) {
+      return false;
+    }
+
     closeCandidateBlockFocusEditor();
-    commitCandidateBlockGridControlsToPage({ pagePropertiesHost, selectedPage, surfaceElement });
+    commitCandidateBlockGridControlsToPage({ pagePropertiesHost, selectedPage: activePage, surfaceElement });
     markDirty();
+    return true;
   };
 
   const handleControlInput = (event) => {
@@ -543,9 +562,15 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
     }
 
     if (isCandidateBlockGridNumberControl(control)) {
+      const activePage = getActiveContentPage();
+
+      if (!activePage) {
+        return;
+      }
+
       commitCandidateBlockGridControlsToPage({
         pagePropertiesHost,
-        selectedPage,
+        selectedPage: activePage,
         surfaceElement,
         syncControls: false,
       });
@@ -578,14 +603,19 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
       return;
     }
 
-    if (createButton.disabled || !isCandidateBlockGridContentPage(selectedPage)) {
+    const activePage = getActiveContentPage();
+
+    if (createButton.disabled || !activePage) {
       event.preventDefault();
-      syncCandidateBlockGridControls(sectionElement, selectedPage);
+      syncCandidateBlockGridControls(sectionElement, getActiveSelectedPage());
       return;
     }
 
-    applyFromControls();
-    insertCandidateBlockGridAtSelection(surfaceElement, selectedPage);
+    if (!applyFromControls()) {
+      return;
+    }
+
+    insertCandidateBlockGridAtSelection(surfaceElement, activePage);
     markDirty();
   };
   const handleSurfacePointerDown = (event) => {
@@ -605,23 +635,28 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
     const borderGridElement = getCandidateBlockGridBorderEventElement(event, surfaceElement);
     const blockElement = event.target?.closest?.("[data-candidate-block-instance]");
     const sourceBlockElement = getCandidateBlockTemplateSourceElement(gridElement);
+    const activePage = getActiveContentPage();
 
     if (moveHandle && gridElement) {
       closeCandidateBlockFocusEditor();
-      startCandidateBlockGridMoveSession(gridElement, event, selectedPage, markDirty, selectCandidateBlockGridElement);
+      if (activePage) {
+        startCandidateBlockGridMoveSession(gridElement, event, activePage, markDirty, selectCandidateBlockGridElement);
+      }
       return;
     }
 
     if (resizeHandle && gridElement) {
       closeCandidateBlockFocusEditor();
-      startCandidateBlockGridResizeSession(
-        gridElement,
-        event,
-        selectedPage,
-        markDirty,
-        resizeHandle.dataset.candidateBlockGridResizeCorner,
-        selectCandidateBlockGridElement,
-      );
+      if (activePage) {
+        startCandidateBlockGridResizeSession(
+          gridElement,
+          event,
+          activePage,
+          markDirty,
+          resizeHandle.dataset.candidateBlockGridResizeCorner,
+          selectCandidateBlockGridElement,
+        );
+      }
       return;
     }
 
@@ -645,7 +680,11 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
       !isCandidateBlockFocusEditorOpen(sourceBlockElement) &&
       !borderGridElement
     ) {
-      openCandidateBlockFocusEditor({ blockElement: sourceBlockElement, editor, onDirty: markDirty, selectedPage, surfaceElement });
+      if (!activePage) {
+        return;
+      }
+
+      openCandidateBlockFocusEditor({ blockElement: sourceBlockElement, editor, onDirty: markDirty, selectedPage: activePage, surfaceElement });
       clearCandidateBlockGridSelection();
       event.preventDefault();
       event.stopPropagation();
@@ -659,7 +698,11 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
       !isTableObjectBorder &&
       !isTableResizeHover
     ) {
-      openCandidateBlockFocusEditor({ blockElement, editor, onDirty: markDirty, selectedPage, surfaceElement });
+      if (!activePage) {
+        return;
+      }
+
+      openCandidateBlockFocusEditor({ blockElement, editor, onDirty: markDirty, selectedPage: activePage, surfaceElement });
       clearCandidateBlockGridSelection();
       event.preventDefault();
       event.stopPropagation();
@@ -721,9 +764,15 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
     const editedTableBlock = deleteCandidateBlockTableSelection(surfaceElement, editor);
 
     if (editedTableBlock) {
+      const activePage = getActiveContentPage();
+
+      if (!activePage) {
+        return;
+      }
+
       event.preventDefault();
       event.stopPropagation();
-      syncCandidateBlockTemplateFromSurface(surfaceElement, selectedPage, editedTableBlock);
+      syncCandidateBlockTemplateFromSurface(surfaceElement, activePage, editedTableBlock);
       editor?.sync?.({ preserveSelection: true, focusEditor: true });
       markDirty();
       return;
@@ -748,15 +797,23 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
 
     if (
       event.key === "Delete" &&
-      isCandidateBlockGridKeyboardDeleteTarget(event, surfaceElement, selectedGridElement) &&
-      deleteCandidateBlockGridObject(
-        surfaceElement,
-        selectedPage,
-        selectedGridElement,
-        clearCandidateBlockGridSelection,
-        isBlankCandidateBlockGridHost,
-      )
+      isCandidateBlockGridKeyboardDeleteTarget(event, surfaceElement, selectedGridElement)
     ) {
+      const activePage = getActiveContentPage();
+
+      if (
+        !activePage ||
+        !deleteCandidateBlockGridObject(
+          surfaceElement,
+          activePage,
+          selectedGridElement,
+          clearCandidateBlockGridSelection,
+          isBlankCandidateBlockGridHost,
+        )
+      ) {
+        return;
+      }
+
       closeCandidateBlockFocusEditor();
       event.preventDefault();
       event.stopImmediatePropagation?.();
@@ -792,10 +849,13 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
       return;
     }
 
+    const activePage = getActiveContentPage();
+
     if (
+      activePage &&
       deleteCandidateBlockGridObject(
         surfaceElement,
-        selectedPage,
+        activePage,
         selectedGridElement,
         clearCandidateBlockGridSelection,
         isBlankCandidateBlockGridHost,
@@ -831,7 +891,13 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
       return;
     }
 
-    writeCandidateBlockGridSizeToConfig(selectedPage, gridElement);
+    const activePage = getActiveContentPage();
+
+    if (!activePage) {
+      return;
+    }
+
+    writeCandidateBlockGridSizeToConfig(activePage, gridElement);
     markDirty();
   };
   const handleSurfaceInput = (event) => {
@@ -846,7 +912,13 @@ export function bindCandidateBlockGridControls({ editor = null, onDirty = null, 
       return;
     }
 
-    syncCandidateBlockTemplateFromSurface(surfaceElement, selectedPage, editedBlock);
+    const activePage = getActiveContentPage();
+
+    if (!activePage) {
+      return;
+    }
+
+    syncCandidateBlockTemplateFromSurface(surfaceElement, activePage, editedBlock);
     markDirty();
   };
 

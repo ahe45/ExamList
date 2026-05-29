@@ -111,6 +111,7 @@ async function ensureCandidateRecordColumns(
   await connection.query(
     `
       ALTER TABLE \`candidate_records\`
+      MODIFY COLUMN \`exam_date\` VARCHAR(120) NULL COMMENT '시험일',
       MODIFY COLUMN \`designated_sort\` VARCHAR(120) NOT NULL DEFAULT '' COMMENT '지정정렬',
       MODIFY COLUMN \`admission_year\` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '모집년도',
       MODIFY COLUMN \`time\` VARCHAR(40) NOT NULL DEFAULT '' COMMENT '시작시간',
@@ -130,6 +131,7 @@ async function ensureCandidateRecordColumns(
       MODIFY COLUMN \`period\` VARCHAR(120) NOT NULL DEFAULT '' COMMENT '교시명',
       MODIFY COLUMN \`period_code\` VARCHAR(120) NOT NULL DEFAULT '' COMMENT '교시 코드',
       MODIFY COLUMN \`temporary_no\` VARCHAR(120) NOT NULL DEFAULT '' COMMENT '가번호',
+      MODIFY COLUMN \`birth_date\` VARCHAR(120) NULL COMMENT '수험생 생년월일',
       MODIFY COLUMN \`opt1\` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 1',
       MODIFY COLUMN \`opt2\` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 2',
       MODIFY COLUMN \`opt3\` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 3',

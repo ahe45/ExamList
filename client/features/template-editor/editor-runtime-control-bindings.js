@@ -130,6 +130,7 @@ export function ensureEditorRuntimeControls({
 
   if (!disposers.candidateBlockGrid) {
     disposers.candidateBlockGrid = bindCandidateBlockGridControls({
+      appState,
       editor,
       onDirty,
       pagePropertiesHost,

@@ -100,6 +100,55 @@
       return tableSelection.selectedCells.filter((cell) => templateEditorSurface.contains(cell));
     }
 
+    function closeTemplateTableToolbarPanels(tableGroupElement) {
+      tableGroupElement
+        ?.querySelectorAll?.(".template-toolbar-table-insert-popover.open")
+        .forEach((popoverElement) => {
+          popoverElement.classList.remove("open");
+          popoverElement.querySelector(".template-toolbar-table-insert-toggle")?.setAttribute("aria-expanded", "false");
+          popoverElement.querySelector(".template-table-insert-panel")?.classList.add("hidden");
+        });
+
+      tableGroupElement
+        ?.querySelectorAll?.(".template-toolbar-color-picker.open")
+        .forEach((pickerElement) => {
+          pickerElement.classList.remove("open");
+          pickerElement.querySelector(".template-toolbar-color-trigger")?.setAttribute("aria-expanded", "false");
+          pickerElement.querySelector(".template-toolbar-color-panel")?.classList.add("hidden");
+        });
+
+      tableGroupElement
+        ?.querySelectorAll?.(".template-toolbar-icon-select.open")
+        .forEach((selectElement) => {
+          selectElement.classList.remove("open");
+          selectElement.querySelector(".template-toolbar-icon-select-button")?.setAttribute("aria-expanded", "false");
+          selectElement.querySelector(".template-toolbar-icon-select-menu")?.classList.add("hidden");
+        });
+    }
+
+    function setTemplateTableToolbarDisabled(isDisabled) {
+      const tableGroupElement = getTemplateEditorModal()?.querySelector?.("[data-editor-table-toolbar-group]");
+
+      if (!tableGroupElement) {
+        return;
+      }
+
+      tableGroupElement.classList.toggle("is-disabled", isDisabled);
+      tableGroupElement.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+
+      tableGroupElement.querySelectorAll("button, input, select, textarea").forEach((controlElement) => {
+        if ("disabled" in controlElement) {
+          controlElement.disabled = isDisabled;
+        }
+
+        controlElement.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+      });
+
+      if (isDisabled) {
+        closeTemplateTableToolbarPanels(tableGroupElement);
+      }
+    }
+
     function getTemplateEditorBorderControlSide(borderTargetElement) {
       const targetValue = String(borderTargetElement?.value || "").trim();
       return ["top", "right", "bottom", "left"].includes(targetValue) ? targetValue : "top";
@@ -172,6 +221,7 @@
 
     function updateTemplateTableControls() {
       const templateEditorModal = getTemplateEditorModal();
+      const templateEditorSurface = getTemplateEditorSurface();
       const templateEditorBorderColor = getTemplateEditorBorderColorElement?.();
       const templateEditorBorderStyle = getTemplateEditorBorderStyleElement?.();
       const templateEditorBorderTarget = getTemplateEditorBorderTargetElement?.();
@@ -184,6 +234,13 @@
       const templateEditorRowHeight = getTemplateEditorRowHeightElement();
       const templateEditorCellShading = getTemplateEditorCellShadingElement();
       const activeElement = document.activeElement instanceof Element ? document.activeElement : null;
+      const selectedCell = getTemplateEditorSelectedCell();
+      const hasActiveTableCell = Boolean(selectedCell && templateEditorSurface?.contains(selectedCell));
+
+      if (templateEditorModal && !templateEditorModal.classList.contains("hidden")) {
+        setTemplateTableToolbarDisabled(!hasActiveTableCell);
+      }
+
       const isActiveBorderDropdown =
         Boolean(activeElement?.closest(".template-toolbar-icon-select")) ||
         Boolean(templateEditorModal?.querySelector(".template-toolbar-icon-select.open"));
@@ -213,8 +270,6 @@
       ) {
         return;
       }
-
-      const selectedCell = getTemplateEditorSelectedCell();
 
       if (templateEditorCellWidth) {
         templateEditorCellWidth.value = getTemplateEditorPixelValue(selectedCell, "width");

@@ -53,7 +53,7 @@
         tableActionAttr: "data-template-table-action",
         insertAttr: "data-template-insert",
         openImageAttr: "data-template-open-image",
-        tableInsertLocation: "table-add-section",
+        tableInsertLocation: "insert-group",
         tableLayout: "notice",
         fontFamilyId: toolbarIds.fontFamily,
         fontFamilyValue: TEMPLATE_EDITOR_DEFAULT_FONT_FAMILY,

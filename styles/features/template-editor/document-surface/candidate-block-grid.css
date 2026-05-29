@@ -11,7 +11,7 @@
   outline-offset: 2px;
   position: relative;
   width: 100%;
-  z-index: 1;
+  z-index: 0;
 }
 
 .editor-document-surface .examlist-candidate-block-grid.is-candidate-block-grid-border-hover {
@@ -20,7 +20,7 @@
 
 .editor-document-surface .examlist-candidate-block-grid.is-selected-candidate-block-grid {
   outline-color: rgba(45, 99, 245, 0.82);
-  z-index: 30 !important;
+  z-index: 0 !important;
 }
 
 .editor-document-surface .examlist-candidate-block-grid.is-resizing-candidate-block-grid {

@@ -204,7 +204,7 @@ function buildCandidateWhereClause(filter) {
 }
 
 function getCandidateGroupDisplayExpression(columnName) {
-  return columnName === "exam_date" ? "DATE_FORMAT(exam_date, '%Y-%m-%d')" : columnName;
+  return columnName;
 }
 
 function normalizeCandidateGroupFields(groupBy) {
@@ -255,10 +255,7 @@ function buildCandidateOrderByClause(filter = {}) {
   }
 
   const direction = filter.sortDirection === "desc" ? "DESC" : "ASC";
-  const emptyExpression =
-    columnName === "birth_date" || columnName === "exam_date"
-      ? `${columnName} IS NULL`
-      : `${columnName} IS NULL OR ${columnName} = ''`;
+  const emptyExpression = `${columnName} IS NULL OR ${columnName} = ''`;
   const valueExpressions = numericSortColumns.has(columnName)
     ? `CAST(NULLIF(${columnName}, '') AS UNSIGNED) ${direction}, ${columnName} ${direction}`
     : `${columnName} ${direction}`;
@@ -316,10 +313,7 @@ function createCandidateReadRepository({ createHttpError, query }) {
   }
 
   function appendOptionValueCondition(whereClause, columnName) {
-    const valueCondition =
-      columnName === "exam_date"
-        ? `${columnName} IS NOT NULL`
-        : `${columnName} IS NOT NULL AND ${columnName} <> ''`;
+    const valueCondition = `${columnName} IS NOT NULL AND ${columnName} <> ''`;
 
     return whereClause ? `${whereClause} AND ${valueCondition}` : `WHERE ${valueCondition}`;
   }
@@ -477,7 +471,7 @@ function createCandidateReadRepository({ createHttpError, query }) {
 
     for (const field of requestedFields) {
       const columnName = candidateFilterOptionColumns[field];
-      const displayExpression = columnName === "exam_date" ? "DATE_FORMAT(exam_date, '%Y-%m-%d')" : columnName;
+      const displayExpression = columnName;
       const rows = await query(
         `
           SELECT ${displayExpression} AS value, COUNT(*) AS candidateCount
@@ -506,7 +500,7 @@ function createCandidateReadRepository({ createHttpError, query }) {
           id,
           designated_sort AS designatedSort,
           admission_year AS admissionYear,
-          DATE_FORMAT(exam_date, '%Y-%m-%d') AS date,
+          exam_date AS date,
           time,
           end_time AS endTime,
           track,
@@ -530,7 +524,7 @@ function createCandidateReadRepository({ createHttpError, query }) {
           examinee_no AS examineeNo,
           temporary_no AS temporaryNo,
           name,
-          DATE_FORMAT(birth_date, '%Y-%m-%d') AS birth,
+          birth_date AS birth,
           opt1,
           opt2,
           opt3,

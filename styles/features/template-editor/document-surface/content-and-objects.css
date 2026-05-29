@@ -35,6 +35,11 @@
   margin: 0 0 1pt;
 }
 
+.editor-document-surface .template-doc > :not([data-candidate-block-grid], .examlist-candidate-block-grid, [data-template-object-flow-spacer]) {
+  position: relative;
+  z-index: 2;
+}
+
 .editor-document-surface h1 {
   font-size: 20pt;
   font-weight: 800;

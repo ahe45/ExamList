@@ -81,6 +81,11 @@
         return;
       }
 
+      if (target.closest("[data-editor-table-toolbar-group][aria-disabled='true']")) {
+        event.preventDefault();
+        return;
+      }
+
       const fontSizeToggleTrigger = target.closest("[data-editor-font-size-toggle]");
       const fontSizeOptionTrigger = target.closest("[data-editor-font-size-option]");
       const fontFamilyToggleTrigger = target.closest("[data-editor-font-family-toggle]");

@@ -52,6 +52,44 @@ export function createDocumentToolbarActions({
     });
   }
 
+  function closeDocumentTableToolbarPanels(tableGroupElement) {
+    tableGroupElement?.querySelectorAll?.(".template-toolbar-table-insert-popover.open").forEach((popoverElement) => {
+      const panelElement = popoverElement.querySelector(".template-table-insert-panel");
+
+      popoverElement.classList.remove("open");
+      popoverElement.querySelector(".template-toolbar-table-insert-toggle")?.setAttribute("aria-expanded", "false");
+      panelElement?.classList.add("hidden");
+    });
+
+    tableGroupElement?.querySelectorAll?.(".template-toolbar-color-picker.open").forEach((pickerElement) => {
+      pickerElement.classList.remove("open");
+      pickerElement.querySelector(".template-toolbar-color-trigger")?.setAttribute("aria-expanded", "false");
+      pickerElement.querySelector(".template-toolbar-color-panel")?.classList.add("hidden");
+    });
+  }
+
+  function setDocumentTableToolbarDisabled(isDisabled) {
+    const tableGroupElement = document.querySelector("[data-editor-table-toolbar-group]");
+
+    if (!tableGroupElement) {
+      return;
+    }
+
+    tableGroupElement.classList.toggle("is-disabled", isDisabled);
+    tableGroupElement.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+    tableGroupElement.querySelectorAll("button, input, select, textarea").forEach((controlElement) => {
+      if ("disabled" in controlElement) {
+        controlElement.disabled = isDisabled;
+      }
+
+      controlElement.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+    });
+
+    if (isDisabled) {
+      closeDocumentTableToolbarPanels(tableGroupElement);
+    }
+  }
+
   function setDocumentFontFamilyMenuVisibility(inputId, isOpen) {
     const comboElement = document.querySelector(`[data-editor-font-family-combo="${inputId}"]`);
     const menuElement = comboElement?.querySelector(".template-toolbar-combo-menu");
@@ -397,6 +435,9 @@ export function createDocumentToolbarActions({
     const contextElement = getDocumentSelectionContextElement(pageId);
     const activeElement = document.activeElement;
     const fontSizeElement = document.getElementById("templateEditorFontSize");
+    const activeCell = getActiveDocumentTableCell();
+
+    setDocumentTableToolbarDisabled(!(activeCell && surface?.contains(activeCell)));
 
     if (
       !surface ||
@@ -411,7 +452,6 @@ export function createDocumentToolbarActions({
     }
 
     const computedStyle = window.getComputedStyle(contextElement);
-    const activeCell = getActiveDocumentTableCell();
     const verticalAlignValue = activeCell
       ? String(activeCell.style.verticalAlign || window.getComputedStyle(activeCell).verticalAlign || "").trim().toLowerCase()
       : "";

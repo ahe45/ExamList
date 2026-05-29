@@ -37,10 +37,6 @@ function hasResultScopeSnapshot(requestSnapshot) {
 function buildCandidateResultScopeSelectList() {
   return Object.entries(generationResultScopeCandidateColumns)
     .map(([key, columnName]) => {
-      if (columnName === "exam_date") {
-        return `COUNT(DISTINCT ${columnName}) AS ${key}Distinct, DATE_FORMAT(MIN(${columnName}), '%Y-%m-%d') AS ${key}Value`;
-      }
-
       return `COUNT(DISTINCT NULLIF(${columnName}, '')) AS ${key}Distinct, MIN(NULLIF(${columnName}, '')) AS ${key}Value`;
     })
     .join(",\n          ");

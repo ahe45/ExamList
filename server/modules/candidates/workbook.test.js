@@ -45,32 +45,31 @@ test("normalizeCandidateWorkbookInput maps required XLSX fields", () => {
   assert.equal(row.opt1, "");
 });
 
-test("normalizeCandidateWorkbookInput rejects invalid date with row number", () => {
+test("normalizeCandidateWorkbookInput accepts free-form date text", () => {
   const service = createCandidateWorkbookService({ createHttpError });
 
-  assert.throws(
-    () =>
-      service.normalizeCandidateWorkbookInput(
-        {
-          admission: "일반전형",
-          admissionYear: "2026",
-          birth: "2006-01-02",
-          building: "본관",
-          campus: "서울캠퍼스",
-          date: "2026/03/28",
-          examineeNo: "26010001",
-          name: "홍길동",
-          period: "1교시",
-          room: "101",
-          series: "인문",
-          time: "08:40",
-          track: "수시",
-          unit: "국어국문학과",
-        },
-        2,
-      ),
-    /시험날짜 형식은 YYYY-MM-DD여야 합니다. \(4행\)/,
+  const row = service.normalizeCandidateWorkbookInput(
+    {
+      admission: "일반전형",
+      admissionYear: "2026",
+      birth: "2006년 1월 2일",
+      building: "본관",
+      campus: "서울캠퍼스",
+      date: "2026/03/28",
+      examineeNo: "26010001",
+      name: "홍길동",
+      period: "1교시",
+      room: "101",
+      series: "인문",
+      time: "08:40",
+      track: "수시",
+      unit: "국어국문학과",
+    },
+    2,
   );
+
+  assert.equal(row.date, "2026/03/28");
+  assert.equal(row.birth, "2006년 1월 2일");
 });
 
 test("buildCandidateExportBuffer creates XLSX buffer for rows", async () => {

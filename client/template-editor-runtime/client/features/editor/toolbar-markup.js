@@ -203,7 +203,7 @@
             ${renderEditorToolbarColorPickerSection({ sectionLabel: "음영", inputId: textShadingId, inputValue: textShadingValue, presetColors: EDITOR_TOOLBAR_SHADING_COLOR_PRESETS, colorCommand: "hiliteColor", fallbackValue: "#fff59d", sectionClassName: "template-toolbar-section-compact", pickerClassName: "template-toolbar-color-picker-compact" })}
           </div>
         </div>
-        <div class="template-toolbar-group">
+        <div class="template-toolbar-group template-toolbar-table-group is-disabled" data-editor-table-toolbar-group="true" aria-disabled="true">
           <span class="template-toolbar-group-label">표</span>
           <div class="template-toolbar-section">
             <span class="template-toolbar-section-label">추가</span>

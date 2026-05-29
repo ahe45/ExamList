@@ -43,7 +43,7 @@ test("normalizeCandidateRecordInput creates stable project ids from source", () 
   assert.match(record.id, /^candidate-/);
   assert.equal(record.sourceId, "source-1");
   assert.equal(record.sourceType, "xlsx");
-  assert.equal(record.examDate, "2026-10-21");
-  assert.equal(record.birthDate, "2007-03-15");
+  assert.equal(record.examDate, "2026.10.21");
+  assert.equal(record.birthDate, "2007.03.15");
   assert.equal(record.examineeNo, "26010001");
 });

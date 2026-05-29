@@ -106,12 +106,11 @@ export function renderDocumentToolbar(access) {
         })}
       </div>
     </div>
-    <div class="template-toolbar-group editor-panel-block">
+    <div class="template-toolbar-group editor-panel-block template-toolbar-table-group is-disabled" data-editor-table-toolbar-group="true" aria-disabled="true">
       <span class="template-toolbar-group-label">표</span>
       <div class="template-toolbar-section">
         <span class="template-toolbar-section-label">추가</span>
         <div class="template-toolbar-group-controls">
-          ${renderDocumentToolbarTableInsertPopover()}
           ${renderDocumentToolbarIconButton({ action: "apply-document-table-action", label: "위에 행 추가", iconMarkup: documentToolbarIconMarkup.insertRowBefore, extraAttributes: ' data-table-action="insert-row-before"' })}
           ${renderDocumentToolbarIconButton({ action: "apply-document-table-action", label: "아래에 행 추가", iconMarkup: documentToolbarIconMarkup.insertRowAfter, extraAttributes: ' data-table-action="insert-row-after"' })}
           ${renderDocumentToolbarIconButton({ action: "apply-document-table-action", label: "왼쪽에 열 추가", iconMarkup: documentToolbarIconMarkup.insertColumnBefore, extraAttributes: ' data-table-action="insert-column-before"' })}
@@ -163,6 +162,7 @@ export function renderDocumentToolbar(access) {
       <div class="template-toolbar-section">
         <span class="template-toolbar-section-label">개체</span>
         <div class="template-toolbar-group-controls">
+          ${renderDocumentToolbarTableInsertPopover()}
           ${renderDocumentToolbarIconButton({ action: "insert-document-image", label: "이미지 삽입", iconMarkup: documentToolbarIconMarkup.openImage })}
           ${renderDocumentToolbarIconButton({ action: "insert-document-barcode", label: "바코드 삽입", iconMarkup: documentToolbarIconMarkup.barcode })}
           ${renderDocumentToolbarIconButton({ action: "insert-document-qrcode", label: "QR코드 삽입", iconMarkup: documentToolbarIconMarkup.qrcode })}

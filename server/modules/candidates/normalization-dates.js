@@ -8,13 +8,7 @@ function normalizeDateForDb(value) {
   }
 
   const sourceValue = String(value || "").trim();
-  const matchedDate = sourceValue.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);
-
-  if (!matchedDate) {
-    return null;
-  }
-
-  return `${matchedDate[1]}-${matchedDate[2].padStart(2, "0")}-${matchedDate[3].padStart(2, "0")}`;
+  return sourceValue || null;
 }
 
 function formatDateValue(value) {
@@ -26,9 +20,7 @@ function formatDateValue(value) {
     return value.toISOString().slice(0, 10);
   }
 
-  const normalizedDate = normalizeDateForDb(value);
-
-  return normalizedDate || String(value || "").trim();
+  return String(value || "").trim();
 }
 
 module.exports = {

@@ -138,6 +138,10 @@
   width: min(480px, calc(100vw - 32px));
 }
 
+.generation-unit-settings-modal-overlay {
+  z-index: 1690;
+}
+
 .generation-unit-settings-modal-body {
   display: grid;
   gap: 12px;

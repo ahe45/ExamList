@@ -46,6 +46,17 @@
   padding: 0;
 }
 
+.template-toolbar-group.is-disabled {
+  opacity: 0.52;
+}
+
+.template-toolbar-group.is-disabled .template-toolbar-group-controls,
+.template-toolbar-group.is-disabled .template-toolbar-color-picker,
+.template-toolbar-group.is-disabled .template-toolbar-icon-select,
+.template-toolbar-group.is-disabled .template-toolbar-table-insert-popover {
+  pointer-events: none;
+}
+
 .template-toolbar-group-label {
   color: #69788f;
   font-size: 0.68rem;

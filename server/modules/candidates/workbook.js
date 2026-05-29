@@ -27,17 +27,6 @@ function createCandidateWorkbookService({ createHttpError }) {
     return String(value ?? "").trim();
   }
 
-  function normalizeDate(value, fieldName, rowNumber) {
-    const normalizedValue = normalizeText(value, fieldName, rowNumber);
-
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
-      const suffix = Number.isFinite(rowNumber) && rowNumber >= 0 ? ` (${rowNumber}행)` : "";
-      throw createHttpError(400, `${fieldName} 형식은 YYYY-MM-DD여야 합니다.${suffix}`, "CANDIDATE_DATE_INVALID");
-    }
-
-    return normalizedValue;
-  }
-
   function normalizeTime(value, fieldName, rowNumber) {
     const normalizedValue = normalizeText(value, fieldName, rowNumber);
 
@@ -86,12 +75,12 @@ function createCandidateWorkbookService({ createHttpError }) {
       admission: normalizeText(candidateInput.admission ?? candidateInput.exam, "전형명", rowNumber),
       admissionYear: normalizeOptionalText(candidateInput.admissionYear),
       admissionCode: normalizeOptionalText(candidateInput.admissionCode),
-      birth: normalizeDate(candidateInput.birth ?? candidateInput.birthDate, "생년월일", rowNumber),
+      birth: normalizeText(candidateInput.birth ?? candidateInput.birthDate, "생년월일", rowNumber),
       building: normalizeText(candidateInput.building, "고사건물명", rowNumber),
       buildingCode: normalizeOptionalText(candidateInput.buildingCode),
       campus: normalizeText(candidateInput.campus ?? candidateInput.campusName, "캠퍼스명", rowNumber),
       campusCode: normalizeOptionalText(candidateInput.campusCode),
-      date: normalizeDate(candidateInput.date ?? candidateInput.examDate, "시험날짜", rowNumber),
+      date: normalizeText(candidateInput.date ?? candidateInput.examDate, "시험날짜", rowNumber),
       designatedSort: normalizeOptionalText(candidateInput.designatedSort),
       examineeNo: normalizeText(candidateInput.examineeNo ?? candidateInput.examNo, "수험번호", rowNumber),
       group: normalizeOptionalText(candidateInput.group ?? candidateInput.groupName),
