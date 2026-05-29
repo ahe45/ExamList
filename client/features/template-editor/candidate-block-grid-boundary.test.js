@@ -9,6 +9,11 @@ function importClientModule(fileName) {
 
 class FakeHTMLElement {
   constructor(tagName) {
+    this.ownerDocument = {
+      defaultView: {
+        HTMLElement: FakeHTMLElement,
+      },
+    };
     this.tagName = tagName;
   }
 }
@@ -40,4 +45,49 @@ test("candidate block boundary host helper treats line breaks and nonbreaking sp
   assert.equal(isBlankCandidateBlockBoundaryHost({ innerHTML: "<span></span>" }), false);
   assert.equal(isBlankCandidateBlockBoundaryHost({ innerHTML: "text" }), false);
   assert.equal(isBlankCandidateBlockBoundaryHost(null), true);
+});
+
+test("candidate block boundary sibling helper scans forward while skipping ignorable nodes", async () => {
+  const { getAdjacentCandidateBlockBoundaryNode } = await importClientModule("candidate-block-grid-boundary.js");
+  const targetNode = new FakeHTMLElement("DIV");
+  const parentNode = {
+    childNodes: [
+      { nodeType: 3, textContent: " " },
+      new FakeHTMLElement("BR"),
+      targetNode,
+    ],
+  };
+
+  assert.equal(getAdjacentCandidateBlockBoundaryNode(parentNode, 0, "forward"), targetNode);
+  assert.equal(getAdjacentCandidateBlockBoundaryNode(parentNode, 0, ""), targetNode);
+});
+
+test("candidate block boundary sibling helper scans backward while skipping ignorable nodes", async () => {
+  const { getAdjacentCandidateBlockBoundaryNode } = await importClientModule("candidate-block-grid-boundary.js");
+  const targetNode = new FakeHTMLElement("DIV");
+  const parentNode = {
+    childNodes: [
+      targetNode,
+      new FakeHTMLElement("BR"),
+      { nodeType: 3, textContent: " " },
+    ],
+  };
+
+  assert.equal(getAdjacentCandidateBlockBoundaryNode(parentNode, 2, "backward"), targetNode);
+});
+
+test("candidate block boundary sibling helper returns null when no non-ignorable node exists", async () => {
+  const { getAdjacentCandidateBlockBoundaryNode } = await importClientModule("candidate-block-grid-boundary.js");
+  const parentNode = {
+    childNodes: [
+      { nodeType: 3, textContent: " " },
+      new FakeHTMLElement("BR"),
+    ],
+  };
+
+  assert.equal(getAdjacentCandidateBlockBoundaryNode(parentNode, 0, "forward"), null);
+  assert.equal(getAdjacentCandidateBlockBoundaryNode(parentNode, 1, "backward"), null);
+  assert.equal(getAdjacentCandidateBlockBoundaryNode(parentNode, -1, "forward"), null);
+  assert.equal(getAdjacentCandidateBlockBoundaryNode(parentNode, 2, "backward"), null);
+  assert.equal(getAdjacentCandidateBlockBoundaryNode(null, 0, "forward"), null);
 });

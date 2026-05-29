@@ -58,6 +58,7 @@ import {
   isCandidateBlockTemplateSource,
 } from "./candidate-block-grid-block-roles.js";
 import {
+  getAdjacentCandidateBlockBoundaryNode,
   isBlankCandidateBlockBoundaryHost,
   isIgnorableCandidateBlockBoundaryNode,
 } from "./candidate-block-grid-boundary.js";
@@ -139,27 +140,6 @@ function getCandidateBlockGridSettingControl(event) {
   const target = event?.target instanceof Element ? event.target : null;
 
   return target?.closest?.("[data-examlist-block-grid-setting]") || null;
-}
-
-function getAdjacentCandidateBlockBoundaryNode(parentNode, startIndex, direction) {
-  if (!parentNode?.childNodes) {
-    return null;
-  }
-
-  const step = direction === "backward" ? -1 : 1;
-  let index = startIndex;
-
-  while (index >= 0 && index < parentNode.childNodes.length) {
-    const node = parentNode.childNodes[index];
-
-    if (!isIgnorableCandidateBlockBoundaryNode(node)) {
-      return node;
-    }
-
-    index += step;
-  }
-
-  return null;
 }
 
 function getCandidateBlockGridFromBoundaryNode(node, direction) {

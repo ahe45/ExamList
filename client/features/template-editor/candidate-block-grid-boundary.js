@@ -22,6 +22,27 @@ export function isIgnorableCandidateBlockBoundaryNode(
   );
 }
 
+export function getAdjacentCandidateBlockBoundaryNode(parentNode, startIndex, direction) {
+  if (!parentNode?.childNodes) {
+    return null;
+  }
+
+  const step = direction === "backward" ? -1 : 1;
+  let index = startIndex;
+
+  while (index >= 0 && index < parentNode.childNodes.length) {
+    const node = parentNode.childNodes[index];
+
+    if (!isIgnorableCandidateBlockBoundaryNode(node)) {
+      return node;
+    }
+
+    index += step;
+  }
+
+  return null;
+}
+
 export function normalizeCandidateBlockBoundaryHostHtml(value = "") {
   return String(value || "")
     .replace(/<br\s*\/?>/gi, "")
