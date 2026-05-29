@@ -1,4 +1,5 @@
 const TEXT_NODE = 3;
+const CANDIDATE_BLOCK_GRID_SELECTOR = "[data-candidate-block-grid], .examlist-candidate-block-grid";
 
 function getHtmlElementConstructor(node) {
   return (
@@ -38,6 +39,30 @@ export function getAdjacentCandidateBlockBoundaryNode(parentNode, startIndex, di
     }
 
     index += step;
+  }
+
+  return null;
+}
+
+export function getCandidateBlockGridFromBoundaryNode(node, direction) {
+  let currentNode = node || null;
+
+  while (currentNode) {
+    const HtmlElementConstructor = getHtmlElementConstructor(currentNode);
+    const isHtmlElement = Boolean(HtmlElementConstructor && currentNode instanceof HtmlElementConstructor);
+
+    if (isHtmlElement && currentNode.matches(CANDIDATE_BLOCK_GRID_SELECTOR)) {
+      return currentNode;
+    }
+
+    if (!isHtmlElement || !currentNode.childNodes.length) {
+      return null;
+    }
+
+    currentNode =
+      direction === "backward"
+        ? getAdjacentCandidateBlockBoundaryNode(currentNode, currentNode.childNodes.length - 1, "backward")
+        : getAdjacentCandidateBlockBoundaryNode(currentNode, 0, "forward");
   }
 
   return null;

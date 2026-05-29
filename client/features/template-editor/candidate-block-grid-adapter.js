@@ -59,8 +59,8 @@ import {
 } from "./candidate-block-grid-block-roles.js";
 import {
   getAdjacentCandidateBlockBoundaryNode,
+  getCandidateBlockGridFromBoundaryNode,
   isBlankCandidateBlockBoundaryHost,
-  isIgnorableCandidateBlockBoundaryNode,
 } from "./candidate-block-grid-boundary.js";
 import { getSelectedPage } from "./state.js";
 
@@ -140,27 +140,6 @@ function getCandidateBlockGridSettingControl(event) {
   const target = event?.target instanceof Element ? event.target : null;
 
   return target?.closest?.("[data-examlist-block-grid-setting]") || null;
-}
-
-function getCandidateBlockGridFromBoundaryNode(node, direction) {
-  let currentNode = node || null;
-
-  while (currentNode) {
-    if (currentNode instanceof HTMLElement && currentNode.matches("[data-candidate-block-grid], .examlist-candidate-block-grid")) {
-      return currentNode;
-    }
-
-    if (!(currentNode instanceof HTMLElement) || !currentNode.childNodes.length) {
-      return null;
-    }
-
-    currentNode =
-      direction === "backward"
-        ? getAdjacentCandidateBlockBoundaryNode(currentNode, currentNode.childNodes.length - 1, "backward")
-        : getAdjacentCandidateBlockBoundaryNode(currentNode, 0, "forward");
-  }
-
-  return null;
 }
 
 function getCandidateBlockGridAdjacentToRange(range, direction, surfaceElement) {

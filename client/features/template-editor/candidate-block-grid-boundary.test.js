@@ -8,13 +8,19 @@ function importClientModule(fileName) {
 }
 
 class FakeHTMLElement {
-  constructor(tagName) {
+  constructor(tagName, { childNodes = [], isGrid = false } = {}) {
+    this.childNodes = childNodes;
+    this.isGrid = isGrid;
     this.ownerDocument = {
       defaultView: {
         HTMLElement: FakeHTMLElement,
       },
     };
     this.tagName = tagName;
+  }
+
+  matches(selector) {
+    return this.isGrid && selector === "[data-candidate-block-grid], .examlist-candidate-block-grid";
   }
 }
 
@@ -90,4 +96,69 @@ test("candidate block boundary sibling helper returns null when no non-ignorable
   assert.equal(getAdjacentCandidateBlockBoundaryNode(parentNode, -1, "forward"), null);
   assert.equal(getAdjacentCandidateBlockBoundaryNode(parentNode, 2, "backward"), null);
   assert.equal(getAdjacentCandidateBlockBoundaryNode(null, 0, "forward"), null);
+});
+
+test("candidate block boundary grid helper returns the current grid node", async () => {
+  const { getCandidateBlockGridFromBoundaryNode } = await importClientModule("candidate-block-grid-boundary.js");
+  const gridNode = new FakeHTMLElement("DIV", { isGrid: true });
+
+  assert.equal(getCandidateBlockGridFromBoundaryNode(gridNode, "forward"), gridNode);
+  assert.equal(getCandidateBlockGridFromBoundaryNode(gridNode, "backward"), gridNode);
+});
+
+test("candidate block boundary grid helper scans nested nodes forward", async () => {
+  const { getCandidateBlockGridFromBoundaryNode } = await importClientModule("candidate-block-grid-boundary.js");
+  const gridNode = new FakeHTMLElement("DIV", { isGrid: true });
+  const wrapperNode = new FakeHTMLElement("SPAN", {
+    childNodes: [
+      { nodeType: 3, textContent: " " },
+      new FakeHTMLElement("BR"),
+      gridNode,
+    ],
+  });
+  const rootNode = new FakeHTMLElement("DIV", {
+    childNodes: [
+      { nodeType: 3, textContent: " " },
+      wrapperNode,
+    ],
+  });
+
+  assert.equal(getCandidateBlockGridFromBoundaryNode(rootNode, "forward"), gridNode);
+  assert.equal(getCandidateBlockGridFromBoundaryNode(rootNode, ""), gridNode);
+});
+
+test("candidate block boundary grid helper scans nested nodes backward", async () => {
+  const { getCandidateBlockGridFromBoundaryNode } = await importClientModule("candidate-block-grid-boundary.js");
+  const gridNode = new FakeHTMLElement("DIV", { isGrid: true });
+  const wrapperNode = new FakeHTMLElement("SPAN", {
+    childNodes: [
+      gridNode,
+      new FakeHTMLElement("BR"),
+      { nodeType: 3, textContent: " " },
+    ],
+  });
+  const rootNode = new FakeHTMLElement("DIV", {
+    childNodes: [
+      wrapperNode,
+      new FakeHTMLElement("BR"),
+      { nodeType: 3, textContent: " " },
+    ],
+  });
+
+  assert.equal(getCandidateBlockGridFromBoundaryNode(rootNode, "backward"), gridNode);
+});
+
+test("candidate block boundary grid helper stops at non-grid leaf nodes", async () => {
+  const { getCandidateBlockGridFromBoundaryNode } = await importClientModule("candidate-block-grid-boundary.js");
+  const leafNode = new FakeHTMLElement("SPAN");
+  const rootNode = new FakeHTMLElement("DIV", {
+    childNodes: [
+      { nodeType: 3, textContent: " " },
+      leafNode,
+    ],
+  });
+
+  assert.equal(getCandidateBlockGridFromBoundaryNode(rootNode, "forward"), null);
+  assert.equal(getCandidateBlockGridFromBoundaryNode({ nodeType: 3, textContent: "text" }, "forward"), null);
+  assert.equal(getCandidateBlockGridFromBoundaryNode(null, "forward"), null);
 });
