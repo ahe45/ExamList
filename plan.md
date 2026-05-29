@@ -1407,7 +1407,62 @@ npm run smoke:ui
 - 먼저 fake node tree로 현재 동작을 테스트할 수 있는지 확인한다.
 - `getCandidateBlockGridAdjacentToRange`나 `shouldPreventCandidateBlockGridNativeDeletion` 전체 이동은 아직 하지 않는다.
 
-## 24. 결론
+## 24. 2차 네 번째 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- 2차 네 번째 작업 완료
+- 수험생 블록 native deletion boundary sibling 탐색 helper 분리
+- Range traversal, grid adjacency 판단, deletion prevent 정책은 유지
+
+작업 범위:
+
+- `candidate-block-grid-adapter.js` 안에 있던 `getAdjacentCandidateBlockBoundaryNode`를 `candidate-block-grid-boundary.js`로 이동했다.
+- forward 방향에서 blank text node와 `BR`을 건너뛰고 다음 non-ignorable node를 찾는 기존 동작을 테스트로 고정했다.
+- backward 방향에서 blank text node와 `BR`을 건너뛰고 이전 non-ignorable node를 찾는 기존 동작을 테스트로 고정했다.
+- `direction === "backward"`가 아닌 값은 기존처럼 forward 탐색으로 처리되는 동작을 테스트로 고정했다.
+- 범위를 벗어나거나 non-ignorable node가 없으면 `null`을 반환하는 동작을 테스트로 고정했다.
+
+금지 범위 준수:
+
+- `getCandidateBlockGridAdjacentToRange` 이동 없음
+- `shouldPreventCandidateBlockGridNativeDeletion` 이동 없음
+- Range/Selection 접근 방식 변경 없음
+- Backspace/Delete 실행 동작 변경 없음
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/candidate-block-grid-boundary.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- 단일 boundary helper 테스트 통과
+- `npm test` 통과, 314개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+2차 다음 후보:
+
+- `getCandidateBlockGridFromBoundaryNode`를 별도 helper로 분리할지 검토한다.
+
+다음 후보 시작 조건:
+
+- 이 함수는 nested child traversal과 candidate block grid selector 판별을 함께 다루므로 이번 작업보다 위험도가 높다.
+- fake HTMLElement tree로 현재 동작을 먼저 테스트해야 한다.
+- `getCandidateBlockGridAdjacentToRange` 전체 이동은 아직 하지 않는다.
+
+## 25. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
