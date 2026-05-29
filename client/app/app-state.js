@@ -172,6 +172,7 @@ export const appState = {
       photoFileName: "",
       photoFile: null,
       photoPreview: null,
+      photoPreviewToken: "",
       previewProgress: {
         detail: "",
         isIndeterminate: false,

@@ -1,11 +1,21 @@
 function createCandidatePhotoArchiveService({
   buildStoredCandidatePhotoFileRecord,
+  createHttpError,
   getPool,
   parseCandidatePhotoArchiveBuffer,
   parseCandidatePhotoArchivePreviewBuffer = parseCandidatePhotoArchiveBuffer,
+  photoArchiveSessionStore = null,
   persistStoredCandidatePhotoFile,
   query,
 }) {
+  function createServiceError(statusCode, message, errorCode) {
+    if (typeof createHttpError === "function") {
+      return createHttpError(statusCode, message, errorCode);
+    }
+
+    return Object.assign(new Error(message), { errorCode, statusCode });
+  }
+
   async function previewParsedCandidatePhotos({ duplicateEntries = 0, photos, skippedEntries = 0, totalEntries = 0 } = {}) {
     const duplicateCount = Number(duplicateEntries || 0);
     const invalidEntryCount = Number(skippedEntries || 0);
@@ -43,7 +53,19 @@ function createCandidatePhotoArchiveService({
   }
 
   async function previewCandidatePhotoArchiveBuffer(fileBuffer) {
-    return previewParsedCandidatePhotos(parseCandidatePhotoArchivePreviewBuffer(fileBuffer));
+    const preview = await previewParsedCandidatePhotos(parseCandidatePhotoArchivePreviewBuffer(fileBuffer));
+    const session = await photoArchiveSessionStore?.createSession?.(fileBuffer);
+
+    if (!session?.token) {
+      return preview;
+    }
+
+    return {
+      ...preview,
+      previewExpiresAt: session.expiresAt,
+      previewFileSize: session.fileSize,
+      previewToken: session.token,
+    };
   }
 
   async function saveParsedCandidatePhotos({ duplicateEntries = 0, photos, skippedEntries = 0 } = {}) {
@@ -99,8 +121,21 @@ function createCandidatePhotoArchiveService({
     return saveParsedCandidatePhotos(parseCandidatePhotoArchiveBuffer(fileBuffer));
   }
 
+  async function saveCandidatePhotoArchiveSession(previewToken = "") {
+    if (!photoArchiveSessionStore?.readSessionBuffer) {
+      throw createServiceError(410, "사진 ZIP 미리보기 세션을 찾을 수 없습니다. ZIP 파일을 다시 선택해 주세요.", "CANDIDATE_PHOTO_ARCHIVE_SESSION_UNAVAILABLE");
+    }
+
+    const fileBuffer = await photoArchiveSessionStore.readSessionBuffer(previewToken);
+    const result = await saveCandidatePhotoArchiveBuffer(fileBuffer);
+
+    await photoArchiveSessionStore.deleteSession?.(previewToken);
+    return result;
+  }
+
   return Object.freeze({
     previewCandidatePhotoArchiveBuffer,
+    saveCandidatePhotoArchiveSession,
     saveCandidatePhotoArchiveBuffer,
   });
 }

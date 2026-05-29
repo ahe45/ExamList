@@ -2,7 +2,6 @@ import { showToast } from "../../app/toast.js";
 import {
   arrayBufferToBase64,
   createUploadResultMessage,
-  postBinaryJsonWithProgress,
   postJsonWithProgress,
   readFileAsArrayBuffer,
 } from "./candidate-action-utils.js";
@@ -58,39 +57,26 @@ export function createCandidateUploadSubmitActions({
       let result;
 
       if (mode === "photo-archive") {
+        const previewToken = String(upload.photoPreviewToken || upload.photoPreview?.previewToken || "").trim();
+
+        if (!previewToken) {
+          throw new Error("사진 ZIP 미리보기를 먼저 완료해 주세요. 세션이 만료된 경우 ZIP 파일을 다시 선택해 주세요.");
+        }
+
         await setCandidateUploadProgressOverlay({
-          detail: createFileProgressDetail(file, { percent: 0 }),
-          isIndeterminate: false,
+          detail: "미리보기 때 전송한 ZIP 파일을 서버에서 다시 사용합니다.",
+          isIndeterminate: true,
           isOpen: true,
-          message: "사진 ZIP을 서버로 전송하는 중입니다.",
-          percent: 0,
-          stageLabel: "파일 전송",
+          message: "사진 데이터를 저장하는 중입니다.",
+          percent: 100,
+          stageLabel: "데이터 처리 중",
         });
 
-        const uploadRequest = postBinaryJsonWithProgress(
+        result = await postJsonWithProgress(
           "/api/candidates/photo-archive",
-          file,
+          { previewToken },
           "사진 ZIP을 업로드할 수 없습니다.",
-          {
-            onUploadProgress: (progress) => {
-              void setCandidateUploadProgressOverlay(
-                {
-                  detail: createFileProgressDetail(file, progress),
-                  isOpen: true,
-                  isIndeterminate: progress.percent >= 100,
-                  message: progress.percent >= 100
-                    ? "데이터 처리 중입니다."
-                    : "사진 ZIP을 서버로 전송하는 중입니다.",
-                  percent: progress.percent,
-                  stageLabel: progress.percent >= 100 ? "데이터 처리 중" : "파일 전송",
-                },
-                { flush: false },
-              );
-            },
-          },
         );
-
-        result = await uploadRequest;
       } else {
         if (!upload.preview) {
           await setCandidateUploadProgressOverlay({
@@ -173,6 +159,7 @@ export function createCandidateUploadSubmitActions({
       upload.preview = null;
       upload.photoFile = null;
       upload.photoPreview = null;
+      upload.photoPreviewToken = "";
       upload.dataFileName = "";
       upload.photoFileName = "";
       appState.candidates.successMessage = successMessage;
@@ -219,6 +206,7 @@ export function createCandidateUploadSubmitActions({
         upload.photoFile ||
         upload.preview ||
         upload.photoPreview ||
+        upload.photoPreviewToken ||
         upload.dataFileName ||
         upload.photoFileName ||
         upload.existingDataPolicy !== "insert-update",

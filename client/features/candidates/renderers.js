@@ -12,14 +12,16 @@ export {
   normalizeCandidateValue,
 } from "./candidate-table-model.js";
 
-export function renderCandidateView({ access, candidates }) {
+export function renderCandidateView({ access, candidates }, options = {}) {
+  const includeBusyOverlays = options.includeBusyOverlays !== false;
+
   return `
     <section class="view-stack candidate-view-stack table-view-stack">
       ${renderCandidateTable({ access, candidates })}
-      ${renderCandidateUploadModal(candidates)}
+      ${renderCandidateUploadModal(candidates, { includeBusyOverlays })}
       ${renderCandidateDetailModal(candidates)}
       ${renderCandidateDownloadConfirmModal(candidates)}
-      ${renderCandidateUploadProgressOverlay(candidates)}
+      ${includeBusyOverlays ? renderCandidateUploadProgressOverlay(candidates) : ""}
     </section>
   `;
 }

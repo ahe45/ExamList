@@ -209,12 +209,15 @@ Tabs:
 
 API:
 
-- 미리보기: `POST /api/candidates/photo-archive/preview`.
-- 저장: `POST /api/candidates/photo-archive`.
+- 미리보기: `POST /api/candidates/photo-archive/preview`, binary ZIP을 전송하고 서버 임시 업로드 세션 token을 받는다.
+- 저장: `POST /api/candidates/photo-archive`, JSON body의 `previewToken`으로 미리보기 때 전송한 ZIP을 다시 사용한다.
+- 호환용으로 저장 API는 기존 binary ZIP body도 처리할 수 있지만, 화면에서는 `previewToken` 방식을 사용한다.
 
 규칙:
 
-- binary body로 ZIP 업로드.
+- 미리보기 단계에서만 binary body로 ZIP을 업로드한다.
+- 저장 단계는 ZIP을 재전송하지 않고 서버 임시 저장소의 preview ZIP을 반영한다.
+- 임시 업로드 세션 유지 시간은 `EXAMLIST_PHOTO_ARCHIVE_SESSION_TTL_MINUTES`, 기본 30분이다.
 - 파일명에서 수험번호를 추출해 기존 수험생과 매칭.
 - 지원 확장자: JPG, JPEG, PNG.
 - 중복 파일은 duplicate로 집계.

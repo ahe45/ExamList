@@ -23,7 +23,7 @@ function renderBusyProgressBar(percent = 0, options = {}) {
   `;
 }
 
-function renderPreviewProgressOverlay(progress = {}) {
+export function renderCandidatePreviewProgressOverlay(progress = {}) {
   if (!progress.isActive) {
     return "";
   }
@@ -235,13 +235,14 @@ export function renderCandidateUploadProgressOverlay(candidates = {}) {
   `;
 }
 
-export function renderCandidateUploadModal(candidates = {}) {
+export function renderCandidateUploadModal(candidates = {}, options = {}) {
   const upload = candidates.upload || {};
 
   if (!upload.isOpen) {
     return "";
   }
 
+  const includeBusyOverlays = options.includeBusyOverlays !== false;
   const mode = upload.mode === "photo-archive" ? "photo-archive" : "workbook";
 
   return `
@@ -280,7 +281,7 @@ export function renderCandidateUploadModal(candidates = {}) {
           </button>
         </div>
       </div>
-      ${renderPreviewProgressOverlay(upload.previewProgress)}
+      ${includeBusyOverlays ? renderCandidatePreviewProgressOverlay(upload.previewProgress) : ""}
     </div>
   `;
 }

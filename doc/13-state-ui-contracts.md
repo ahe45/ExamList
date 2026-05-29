@@ -414,6 +414,7 @@ Page size option:
 | `existingDataPolicy` | `insert-only`, `insert-update`, `all`. 기본 `insert-update`. |
 | `preview` | XLSX preview 결과. |
 | `photoPreview` | 사진 ZIP preview 결과. |
+| `photoPreviewToken` | 사진 ZIP preview 후 실제 반영에 사용하는 서버 임시 업로드 세션 token. |
 | `isUploading` | 업로드 반영 중. |
 | `errorMessage` | 업로드 오류. |
 | `successMessage` | 업로드 성공 메시지. |

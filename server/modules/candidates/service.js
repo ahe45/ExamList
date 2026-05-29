@@ -30,6 +30,7 @@ function createCandidateRecordService({ createHttpError, getDefaultSchoolId = nu
     previewCandidatePhotoArchiveBuffer,
     saveCandidatePhoto,
     saveCandidatePhotoArchiveBuffer,
+    saveCandidatePhotoArchiveSession,
   } = candidatePhotoService;
   const candidateRepository = createCandidateRepository({
     createHttpError,
@@ -106,6 +107,7 @@ function createCandidateRecordService({ createHttpError, getDefaultSchoolId = nu
     previewCandidatePhotoArchiveBuffer,
     saveCandidatePhoto,
     saveCandidatePhotoArchiveBuffer,
+    saveCandidatePhotoArchiveSession,
     updateCandidate,
   });
 }

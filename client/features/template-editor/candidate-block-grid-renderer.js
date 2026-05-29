@@ -2,6 +2,7 @@ import { getPageDocumentHtml } from "./document-editor.js";
 import { ensureDocumentElement } from "./template-document-normalizer.js";
 import {
   candidateBlockGridDefaults,
+  candidateBlockGridMinimumRowHeight,
   getCandidateBlockGridTotal,
   normalizeCandidateBlockGridConfig,
   normalizeCandidateBlockTemplateHtml,
@@ -35,8 +36,9 @@ export function createCandidateBlockGridElement(config) {
   gridElement.setAttribute("contenteditable", "false");
   gridElement.style.position = normalizedConfig.xPt > 0 || normalizedConfig.yPt > 0 ? "absolute" : "relative";
   gridElement.style.gridTemplateColumns = `repeat(${normalizedConfig.columns}, minmax(0, 1fr))`;
-  gridElement.style.gridTemplateRows = `repeat(${normalizedConfig.rows}, minmax(52px, 1fr))`;
+  gridElement.style.gridTemplateRows = `repeat(${normalizedConfig.rows}, minmax(${candidateBlockGridMinimumRowHeight}px, 1fr))`;
   gridElement.style.gap = `${normalizedConfig.gapYPt}pt ${normalizedConfig.gapXPt}pt`;
+  gridElement.style.minHeight = `calc(${normalizedConfig.rows * candidateBlockGridMinimumRowHeight}px + ${Math.max(0, normalizedConfig.rows - 1) * normalizedConfig.gapYPt}pt)`;
 
   if (normalizedConfig.xPt > 0 || normalizedConfig.yPt > 0) {
     gridElement.style.left = `${pointValueToCssPixel(normalizedConfig.xPt)}px`;

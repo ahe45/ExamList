@@ -245,6 +245,7 @@ PDF preview 파일:
 - 사진 ZIP 또는 개별 업로드를 통해 저장된다.
 - DB에는 `photo_name`, `photo_mime` 등 참조 정보가 저장된다.
 - 실제 파일 삭제는 데이터 삭제와 학교 삭제 시 파일 시스템 삭제 결과로 집계된다.
+- 사진 ZIP 미리보기 파일은 `storage/tmp/candidate-photo-archives`에 임시 세션으로 저장되며, 실제 반영 시 `previewToken`으로 재사용된 뒤 삭제된다.
 
 ## 삭제와 파일 정합성
 

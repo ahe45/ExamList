@@ -1,5 +1,6 @@
 import {
   candidateBlockGridMinimumHeight,
+  candidateBlockGridMinimumRowHeight,
   candidateBlockGridMinimumWidth,
   cssPixelToPointValue,
   objectResizeCorners,
@@ -141,6 +142,13 @@ function normalizeObjectResizeCorner(value) {
 
 function getCandidateBlockGridMinimumSize(gridElement) {
   const tableMinimumSize = getCandidateBlockGridTableMinimumSize(gridElement);
+  const gridStyle = window.getComputedStyle(gridElement);
+  const gridRowCount = Math.max(1, Math.round(Number(gridElement?.dataset?.candidateBlockRows) || 1));
+  const rowGap = parseCandidateBlockPixelValue(gridStyle.rowGap, 0);
+  const rowMinimumHeight = Math.ceil(
+    gridRowCount * candidateBlockGridMinimumRowHeight +
+      Math.max(0, gridRowCount - 1) * rowGap,
+  );
   const tableMinimumHeight = Math.max(
     0,
     Math.floor(tableMinimumSize.height || 0) - candidateBlockGridTableMinimumTolerance,
@@ -151,7 +159,7 @@ function getCandidateBlockGridMinimumSize(gridElement) {
   );
 
   return {
-    height: Math.max(candidateBlockGridMinimumHeight, tableMinimumHeight),
+    height: Math.max(candidateBlockGridMinimumHeight, rowMinimumHeight, tableMinimumHeight),
     width: Math.max(candidateBlockGridMinimumWidth, tableMinimumWidth),
   };
 }

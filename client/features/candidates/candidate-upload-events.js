@@ -53,6 +53,7 @@ export async function handleCandidateUploadAction(actionTarget, action, context)
       photoFileName: "",
       photoFile: null,
       photoPreview: null,
+      photoPreviewToken: "",
       previewProgress: {
         detail: "",
         isIndeterminate: false,

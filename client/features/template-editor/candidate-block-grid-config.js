@@ -1,6 +1,7 @@
 export const templateEditorTableObjectBorderHitSlop = 8;
 export const candidateBlockFocusTableObjectOuterHitSlop = 24;
-export const candidateBlockGridMinimumHeight = 80;
+export const candidateBlockGridMinimumRowHeight = 20;
+export const candidateBlockGridMinimumHeight = candidateBlockGridMinimumRowHeight;
 export const candidateBlockGridMinimumWidth = 120;
 const cssPixelsPerPoint = 96 / 72;
 export const candidateBlockGridDefaults = Object.freeze({

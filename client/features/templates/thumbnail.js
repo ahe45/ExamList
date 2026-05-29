@@ -1,5 +1,6 @@
 import { escapeHtml } from "../../app/html-utils.js";
 import {
+  candidateBlockGridMinimumRowHeight,
   getCandidateBlockGridTotal,
   normalizeCandidateBlockGridConfig,
   pointValueToCssPixel,
@@ -286,7 +287,7 @@ function renderCandidateBlockGrid(config = {}) {
   const hasTable = /<table[\s>]/i.test(blockTemplateHtml);
   const style = [
     `grid-template-columns:repeat(${normalizedConfig.columns}, minmax(0, 1fr))`,
-    `grid-template-rows:repeat(${normalizedConfig.rows}, minmax(52px, 1fr))`,
+    `grid-template-rows:repeat(${normalizedConfig.rows}, minmax(${candidateBlockGridMinimumRowHeight}px, 1fr))`,
     `gap:${normalizedConfig.gapYPt}pt ${normalizedConfig.gapXPt}pt`,
     x > 0 || y > 0 ? `position:absolute;left:${formatPx(x)};top:${formatPx(y)}` : "",
     width > 0 ? `width:${formatPx(width)}` : "",

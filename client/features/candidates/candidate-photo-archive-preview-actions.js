@@ -22,6 +22,7 @@ export function createCandidatePhotoArchivePreviewActions({
     if (!file.name.toLowerCase().endsWith(".zip")) {
       appState.candidates.upload.errorMessage = "수험생 사진은 ZIP 파일로만 업로드할 수 있습니다.";
       appState.candidates.upload.photoPreview = null;
+      appState.candidates.upload.photoPreviewToken = "";
       if (showProgress) {
         ensureCandidateUploadState().previewProgress = { ...emptyCandidatePreviewProgress };
       }
@@ -36,6 +37,7 @@ export function createCandidatePhotoArchivePreviewActions({
     upload.photoFile = file;
     upload.errorMessage = "";
     upload.photoPreview = null;
+    upload.photoPreviewToken = "";
 
     if (showProgress) {
       upload.previewProgress = {
@@ -75,7 +77,10 @@ export function createCandidatePhotoArchivePreviewActions({
         },
       );
 
-      appState.candidates.upload.photoPreview = await previewRequest;
+      const previewResult = await previewRequest;
+
+      appState.candidates.upload.photoPreview = previewResult;
+      appState.candidates.upload.photoPreviewToken = String(previewResult?.previewToken || "");
 
       if (showProgress) {
         await setCandidatePreviewProgress({
@@ -91,6 +96,7 @@ export function createCandidatePhotoArchivePreviewActions({
     } catch (error) {
       appState.candidates.upload.errorMessage = error.message;
       appState.candidates.upload.photoPreview = null;
+      appState.candidates.upload.photoPreviewToken = "";
       showToast(appState.candidates.upload.errorMessage, { tone: "error" });
     }
 

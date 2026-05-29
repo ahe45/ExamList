@@ -102,7 +102,7 @@ function renderSchoolRows(schools = [], access = null, schoolState = {}) {
     .join("");
 }
 
-function renderSchoolDeletionProgressOverlay(schools = {}) {
+export function renderSchoolDeletionProgressOverlay(schools = {}) {
   if (!schools?.isDeleting) {
     return "";
   }
@@ -288,9 +288,10 @@ function renderCreateSchoolModal(schools, access = null) {
   `;
 }
 
-export function renderSchoolManagementView({ access, schools }) {
+export function renderSchoolManagementView({ access, schools }, options = {}) {
   const canManageAccounts = hasAccess(access, "manageAccounts");
   const canManageSchools = hasAccess(access, "manageTemplates");
+  const includeBusyOverlays = options.includeBusyOverlays !== false;
 
   return `
     <section class="surface-panel school-management-panel">
@@ -335,6 +336,6 @@ export function renderSchoolManagementView({ access, schools }) {
       </div>
     </section>
     ${renderCreateSchoolModal(schools, access)}
-    ${renderSchoolDeletionProgressOverlay(schools)}
+    ${includeBusyOverlays ? renderSchoolDeletionProgressOverlay(schools) : ""}
   `;
 }

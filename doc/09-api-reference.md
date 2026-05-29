@@ -61,8 +61,8 @@
 | POST | `/api/candidates/export.xlsx` | `viewCandidates` | XLSX export |
 | POST | `/api/candidates/import/preview` | `manageCandidates` | XLSX 업로드 미리보기 |
 | POST | `/api/candidates/import` | `manageCandidates` | XLSX 업로드 반영 |
-| POST | `/api/candidates/photo-archive/preview` | `manageCandidates` | 사진 ZIP 미리보기 |
-| POST | `/api/candidates/photo-archive` | `manageCandidates` | 사진 ZIP 반영 |
+| POST | `/api/candidates/photo-archive/preview` | `manageCandidates` | 사진 ZIP 미리보기와 업로드 세션 생성 |
+| POST | `/api/candidates/photo-archive` | `manageCandidates` | 사진 ZIP 업로드 세션 반영 |
 | GET | `/api/candidates/filter-options` | `generatePdfs` | PDF 생성/삭제 필터 option |
 | GET | `/api/candidates/:candidateId/photo` | `viewCandidates` | 사진 조회 |
 | PUT | `/api/candidates/:candidateId/photo` | `manageCandidates` | 사진 저장 |

@@ -3,6 +3,7 @@ const { createCandidatePhotoArchiveService } = require("./photo-archive-service"
 const { createCandidatePhotoFileStorage } = require("./photo-file-storage");
 const { createCandidatePhotoParser } = require("./photo-parser");
 const { createCandidatePhotoRecordService } = require("./photo-record-service");
+const { createCandidatePhotoArchiveSessionStore } = require("./photo-archive-session-store");
 
 function createCandidatePhotoService({
   createHttpError,
@@ -12,6 +13,12 @@ function createCandidatePhotoService({
   rootDir = process.cwd(),
 }) {
   const photoStorageDirectoryPath = path.join(rootDir, photoStorageDirName);
+  const photoArchiveSessionTtlMinutes = Number(process.env.EXAMLIST_PHOTO_ARCHIVE_SESSION_TTL_MINUTES) || 30;
+  const photoArchiveSessionStore = createCandidatePhotoArchiveSessionStore({
+    createHttpError,
+    directoryPath: path.join(rootDir, "storage", "tmp", "candidate-photo-archives"),
+    ttlMs: photoArchiveSessionTtlMinutes * 60 * 1000,
+  });
   const photoStorage = createCandidatePhotoFileStorage({
     createHttpError,
     photoStorageDirectoryPath,
@@ -22,9 +29,11 @@ function createCandidatePhotoService({
   });
   const photoArchiveService = createCandidatePhotoArchiveService({
     buildStoredCandidatePhotoFileRecord: photoStorage.buildStoredCandidatePhotoFileRecord,
+    createHttpError,
     getPool,
     parseCandidatePhotoArchiveBuffer: photoParser.parseCandidatePhotoArchiveBuffer,
     parseCandidatePhotoArchivePreviewBuffer: photoParser.parseCandidatePhotoArchivePreviewBuffer,
+    photoArchiveSessionStore,
     persistStoredCandidatePhotoFile: photoStorage.persistStoredCandidatePhotoFile,
     query,
   });
@@ -104,6 +113,7 @@ function createCandidatePhotoService({
     previewCandidatePhotoArchiveBuffer: photoArchiveService.previewCandidatePhotoArchiveBuffer,
     saveCandidatePhoto: photoRecordService.saveCandidatePhoto,
     saveCandidatePhotoArchiveBuffer: photoArchiveService.saveCandidatePhotoArchiveBuffer,
+    saveCandidatePhotoArchiveSession: photoArchiveService.saveCandidatePhotoArchiveSession,
   });
 }
 

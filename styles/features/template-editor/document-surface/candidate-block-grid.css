@@ -2,10 +2,10 @@
   align-items: stretch;
   cursor: pointer;
   display: grid;
-  grid-auto-rows: minmax(52px, 1fr);
+  grid-auto-rows: minmax(20px, 1fr);
   margin: 0;
   max-width: 100%;
-  min-height: 80px;
+  min-height: 20px;
   min-width: 120px;
   outline: 1px solid transparent;
   outline-offset: 2px;

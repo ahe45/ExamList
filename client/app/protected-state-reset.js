@@ -20,6 +20,7 @@ export function resetCandidateState(appState) {
   appState.candidates.upload.photoFile = null;
   appState.candidates.upload.photoFileName = "";
   appState.candidates.upload.photoPreview = null;
+  appState.candidates.upload.photoPreviewToken = "";
   appState.candidates.upload.previewProgress = {
     detail: "",
     isIndeterminate: false,

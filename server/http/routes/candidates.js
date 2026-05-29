@@ -11,6 +11,10 @@ const photoArchiveReadOptions = Object.freeze({
 });
 
 function createCandidateRoutes(deps) {
+  function isJsonRequest(request) {
+    return String(request?.headers?.["content-type"] || "").toLowerCase().includes("application/json");
+  }
+
   async function handleCandidateList({ request, response, searchParams }) {
     deps.assertPermission("viewCandidates", request);
     deps.sendJson(
@@ -80,6 +84,18 @@ function createCandidateRoutes(deps) {
     }),
     exactRoute("POST", "/api/candidates/photo-archive", async ({ request, response }) => {
       deps.assertPermission("manageCandidates", request);
+
+      if (isJsonRequest(request)) {
+        const body = await deps.readJsonBody(request);
+
+        deps.sendJson(
+          response,
+          200,
+          await deps.saveCandidatePhotoArchiveSession(body?.previewToken || body?.uploadSessionId || ""),
+        );
+        return;
+      }
+
       deps.sendJson(
         response,
         200,

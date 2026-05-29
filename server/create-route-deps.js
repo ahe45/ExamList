@@ -120,6 +120,7 @@ function createRouteDeps(appContext) {
     retryPdfGeneration: (...args) => services.pdfGenerationService.retryPdfGeneration(...args),
     saveCandidatePhoto: (...args) => services.candidateRecordService.saveCandidatePhoto(...args),
     saveCandidatePhotoArchiveBuffer: (...args) => services.candidateRecordService.saveCandidatePhotoArchiveBuffer(...args),
+    saveCandidatePhotoArchiveSession: (...args) => services.candidateRecordService.saveCandidatePhotoArchiveSession(...args),
     sendBinary,
     sendDownload,
     sendJson,

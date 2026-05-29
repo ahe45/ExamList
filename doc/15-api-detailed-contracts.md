@@ -589,6 +589,9 @@ Body:
 - status 200
 - ZIP entry 분석 결과
 - 매칭/미매칭/오류 집계
+- `previewToken`: 실제 반영 요청에서 사용할 임시 업로드 세션 token
+- `previewExpiresAt`: 임시 업로드 세션 만료 시각
+- `previewFileSize`: 미리보기 때 저장한 ZIP byte 크기
 
 ### `POST /api/candidates/photo-archive`
 
@@ -596,8 +599,14 @@ Permission: `manageCandidates`.
 
 Body:
 
-- binary body
-- preview와 같은 size 제한
+- 기본 요청: JSON body
+
+| field | 설명 |
+|---|---|
+| `previewToken` | `photo-archive/preview` 응답에서 받은 임시 업로드 세션 token. |
+
+- 호환 요청: binary body
+- 호환 binary 요청은 preview와 같은 size 제한 적용
 
 응답:
 

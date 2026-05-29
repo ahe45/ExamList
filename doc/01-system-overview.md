@@ -70,6 +70,7 @@ npm run start
 | `EXAMLIST_SESSION_COOKIE_SECURE` | `false` | secure cookie 사용 여부 |
 | `EXAMLIST_USERS_JSON` | `[]` | 환경 변수 기반 보조 사용자 목록 |
 | `EXAMLIST_PHOTO_ARCHIVE_MAX_MB` | 기본 2048 | 사진 ZIP 최대 업로드 크기, 1MB에서 4096MB 사이 |
+| `EXAMLIST_PHOTO_ARCHIVE_SESSION_TTL_MINUTES` | 기본 30 | 사진 ZIP 미리보기 후 실제 반영에 재사용하는 임시 업로드 세션 유지 시간 |
 | `PDF_BROWSER_PATH` | 빈 값 | PDF 렌더링용 브라우저 실행 파일 경로 |
 | `PDF_STORAGE_DIR` | `storage/pdf-generations` | PDF 결과 저장 루트 |
 | `PDF_QUEUE_DRIVER` | `memory` | PDF queue driver. Windows 배포 기본값은 `memory` |

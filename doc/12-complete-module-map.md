@@ -92,6 +92,7 @@
 | `server/modules/candidates/field-map.js` | workbook/header와 DB column 매핑. |
 | `server/modules/candidates/photo-parser.js` | ZIP entry에서 수험번호와 이미지 파일 추출. |
 | `server/modules/candidates/photo-archive-service.js` | 사진 ZIP preview/save 처리. |
+| `server/modules/candidates/photo-archive-session-store.js` | 사진 ZIP preview 파일을 실제 반영까지 임시 세션으로 보관. |
 | `server/modules/candidates/photo-file-storage.js` | 사진 파일 저장소 처리. |
 | `server/modules/candidates/photo-record-service.js` | 사진 DB 참조 반영. |
 | `server/modules/candidates/photos.js` | 사진 data URL/file payload 처리. |
@@ -509,6 +510,7 @@
 | `storage/pdf-generations/previews` | 미리보기 PDF. |
 | `storage/pdf-generations/tmp` | PDF 렌더링 임시 작업물. |
 | `storage/candidate-photos` | 수험생 사진 파일. |
+| `storage/tmp/candidate-photo-archives` | 사진 ZIP preview 후 실제 반영까지 유지하는 임시 업로드 세션 파일. |
 
 ## 12. 이식 단위별 필수 묶음
 

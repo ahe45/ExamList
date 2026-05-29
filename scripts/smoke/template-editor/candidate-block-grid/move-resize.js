@@ -38,7 +38,7 @@ async function assertTableBelowCandidateBlockKeepsExplicitBottomPosition(client)
             grid.style.height = '824px';
             grid.style.display = 'grid';
             grid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
-            grid.style.gridTemplateRows = 'repeat(8, minmax(52px, 1fr))';
+            grid.style.gridTemplateRows = 'repeat(8, minmax(20px, 1fr))';
             grid.style.gap = '4pt 4pt';
             grid.style.margin = '0';
 
@@ -131,7 +131,7 @@ async function assertTableObjectMoveDoesNotSplitCandidateBlockGrid(client) {
             grid.style.height = '760px';
             grid.style.display = 'grid';
             grid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
-            grid.style.gridTemplateRows = 'repeat(8, minmax(52px, 1fr))';
+            grid.style.gridTemplateRows = 'repeat(8, minmax(20px, 1fr))';
             grid.style.gap = '4pt 4pt';
             grid.style.margin = '0';
 
@@ -486,7 +486,7 @@ async function runCandidateBlockGridMoveResizeScenario(context) {
           return Boolean(
             grid &&
               (Number.parseFloat(grid.style.width) || 0) >= 120 &&
-              (Number.parseFloat(grid.style.height) || 0) >= 80
+              (Number.parseFloat(grid.style.height) || 0) >= 20
           );
         })()
       `,
