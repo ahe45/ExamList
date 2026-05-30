@@ -6,7 +6,10 @@ import {
 import { getCandidateBlockGridTableMinimumSize } from "./candidate-block-grid-table-normalizer.js";
 import { getObjectCandidateBlockVisualScale } from "./object-alignment-runtime.js";
 import { templateEditorObjectMinimumSize } from "./object-toolbar-constants.js";
-import { parseObjectSizePixelValue } from "./object-size-values.js";
+import {
+  parseObjectSizeInlinePixelValue,
+  parseObjectSizePixelValue,
+} from "./object-size-values.js";
 
 export function getCandidateBlockModalContentSize(modalSurfaceElement) {
   if (!(modalSurfaceElement instanceof HTMLElement)) {
@@ -50,4 +53,51 @@ export function getCandidateBlockGridMinimumSize(gridElement) {
     height: Math.max(candidateBlockGridMinimumHeight, rowMinimumHeight, Math.floor(tableMinimumSize.height || 0)),
     width: Math.max(candidateBlockGridMinimumWidth, Math.floor(tableMinimumSize.width || 0)),
   };
+}
+
+export function getObjectTableCollapsedBorderAdjustment(tableElement) {
+  if (!(tableElement instanceof HTMLTableElement)) {
+    return 0;
+  }
+
+  const tableStyle = window.getComputedStyle(tableElement);
+
+  if (String(tableStyle.borderCollapse || "").trim().toLowerCase() !== "collapse") {
+    return 0;
+  }
+
+  const rows = Array.from(tableElement.rows || []);
+  const leftCell = rows.map((rowElement) => rowElement.cells?.[0]).find(Boolean);
+  const rightCell = rows
+    .map((rowElement) => rowElement.cells?.[Math.max(0, (rowElement.cells?.length || 1) - 1)])
+    .find(Boolean);
+  const leftStyle = leftCell ? window.getComputedStyle(leftCell) : null;
+  const rightStyle = rightCell ? window.getComputedStyle(rightCell) : null;
+
+  return Math.max(
+    parseObjectSizePixelValue(tableStyle.borderLeftWidth),
+    parseObjectSizePixelValue(tableStyle.borderRightWidth),
+    parseObjectSizePixelValue(leftStyle?.borderLeftWidth),
+    parseObjectSizePixelValue(rightStyle?.borderRightWidth),
+  );
+}
+
+export function getObjectTableRenderedTargetWidth(tableElement, targetWidth) {
+  const inlineWidth = parseObjectSizeInlinePixelValue(tableElement?.style?.width, 0);
+  const rectWidth = tableElement?.getBoundingClientRect?.().width || 0;
+  const visualScale = getObjectCandidateBlockVisualScale(tableElement);
+  const scaleX = Math.max(visualScale.x || 1, 0.01);
+  const logicalRectWidth = rectWidth > 0 ? rectWidth / scaleX : 0;
+  const renderedWidthAdjustment = inlineWidth > 0 && logicalRectWidth > inlineWidth
+    ? Math.ceil(logicalRectWidth - inlineWidth)
+    : 0;
+
+  return Math.max(
+    templateEditorObjectMinimumSize,
+    Math.round(targetWidth) -
+      Math.max(
+        renderedWidthAdjustment,
+        Math.max(0, Math.ceil(getObjectTableCollapsedBorderAdjustment(tableElement))),
+      ),
+  );
 }

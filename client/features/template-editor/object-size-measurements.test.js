@@ -20,6 +20,7 @@ class FakeHTMLElement {
     offsetWidth = 0,
     rect = {},
     rows = [],
+    style = {},
     tables = [],
   } = {}) {
     this.blockElements = blockElements;
@@ -36,6 +37,7 @@ class FakeHTMLElement {
       width: rect.width || 0,
     };
     this.rows = rows;
+    this.style = style;
     this.tables = tables;
   }
 
@@ -66,7 +68,10 @@ class FakeHTMLElement {
   }
 }
 
+class FakeTableElement extends FakeHTMLElement {}
+
 global.HTMLElement = FakeHTMLElement;
+global.HTMLTableElement = FakeTableElement;
 global.window = {
   getComputedStyle(element) {
     return {
@@ -81,7 +86,7 @@ global.window = {
 };
 
 function createCandidateBlockTable({ cellStyle = {}, columnCount = 1, rowCount = 1 } = {}) {
-  return new FakeHTMLElement({
+  return new FakeTableElement({
     columns: Array.from({ length: columnCount }, () => new FakeHTMLElement()),
     rows: Array.from({ length: rowCount }, () => ({
       cells: Array.from({ length: columnCount }, () => new FakeHTMLElement({ cssProperties: cellStyle })),
@@ -274,4 +279,87 @@ test("candidate block grid minimum size includes table minimum size", async () =
     height: 125,
     width: 247,
   });
+});
+
+test("object table collapsed border adjustment ignores non-collapsed tables", async () => {
+  const { getObjectTableCollapsedBorderAdjustment } = await importClientModule("object-size-measurements.js");
+  const tableElement = new FakeTableElement({
+    cssProperties: {
+      borderCollapse: "separate",
+      borderLeftWidth: "9px",
+      borderRightWidth: "10px",
+    },
+  });
+
+  assert.equal(getObjectTableCollapsedBorderAdjustment(new FakeHTMLElement()), 0);
+  assert.equal(getObjectTableCollapsedBorderAdjustment(tableElement), 0);
+});
+
+test("object table collapsed border adjustment uses the widest table edge or outer cell edge", async () => {
+  const { getObjectTableCollapsedBorderAdjustment } = await importClientModule("object-size-measurements.js");
+  const leftCell = new FakeHTMLElement({
+    cssProperties: {
+      borderLeftWidth: "7.2px",
+      borderRightWidth: "1px",
+    },
+  });
+  const rightCell = new FakeHTMLElement({
+    cssProperties: {
+      borderLeftWidth: "1px",
+      borderRightWidth: "5px",
+    },
+  });
+  const tableElement = new FakeTableElement({
+    cssProperties: {
+      borderCollapse: "collapse",
+      borderLeftWidth: "2px",
+      borderRightWidth: "3px",
+    },
+    rows: [{ cells: [leftCell, rightCell] }],
+  });
+
+  assert.equal(getObjectTableCollapsedBorderAdjustment(tableElement), 7.2);
+});
+
+test("object table rendered target width subtracts collapsed border adjustment", async () => {
+  const { getObjectTableRenderedTargetWidth } = await importClientModule("object-size-measurements.js");
+  const tableElement = new FakeTableElement({
+    cssProperties: {
+      borderCollapse: "collapse",
+      borderLeftWidth: "4.2px",
+      borderRightWidth: "2px",
+    },
+  });
+
+  assert.equal(getObjectTableRenderedTargetWidth(tableElement, 100.4), 95);
+});
+
+test("object table rendered target width subtracts rendered overflow from scaled rect", async () => {
+  const { getObjectTableRenderedTargetWidth } = await importClientModule("object-size-measurements.js");
+  const blockElement = new FakeHTMLElement({
+    dataset: {
+      candidateBlockLogicalWidth: "100",
+    },
+    rect: { width: 50 },
+  });
+  const tableElement = new FakeTableElement({
+    closestBlock: blockElement,
+    rect: { width: 75 },
+    style: { width: "100px" },
+  });
+
+  assert.equal(getObjectTableRenderedTargetWidth(tableElement, 200), 150);
+});
+
+test("object table rendered target width clamps to the object minimum", async () => {
+  const { getObjectTableRenderedTargetWidth } = await importClientModule("object-size-measurements.js");
+  const { templateEditorObjectMinimumSize } = await importClientModule("object-toolbar-constants.js");
+  const tableElement = new FakeTableElement({
+    cssProperties: {
+      borderCollapse: "collapse",
+      borderLeftWidth: "20px",
+    },
+  });
+
+  assert.equal(getObjectTableRenderedTargetWidth(tableElement, 10), templateEditorObjectMinimumSize);
 });
