@@ -59,6 +59,7 @@ import {
 } from "./candidate-block-grid-block-roles.js";
 import {
   getAdjacentCandidateBlockBoundaryNode,
+  getCandidateBlockGridAdjacentToRange,
   getCandidateBlockGridFromBoundaryNode,
   isBlankCandidateBlockBoundaryHost,
 } from "./candidate-block-grid-boundary.js";
@@ -140,63 +141,6 @@ function getCandidateBlockGridSettingControl(event) {
   const target = event?.target instanceof Element ? event.target : null;
 
   return target?.closest?.("[data-examlist-block-grid-setting]") || null;
-}
-
-function getCandidateBlockGridAdjacentToRange(range, direction, surfaceElement) {
-  let currentNode = range?.startContainer || null;
-  let currentOffset = range?.startOffset || 0;
-
-  while (currentNode) {
-    let adjacentNode = null;
-
-    if (currentNode.nodeType === Node.TEXT_NODE) {
-      const textLength = currentNode.textContent?.length || 0;
-      const isBoundary = direction === "backward" ? currentOffset === 0 : currentOffset === textLength;
-
-      if (!isBoundary) {
-        return null;
-      }
-
-      adjacentNode = getAdjacentCandidateBlockBoundaryNode(
-        currentNode.parentNode,
-        Array.prototype.indexOf.call(currentNode.parentNode?.childNodes || [], currentNode) + (direction === "backward" ? -1 : 1),
-        direction,
-      );
-    } else {
-      adjacentNode = getAdjacentCandidateBlockBoundaryNode(
-        currentNode,
-        direction === "backward" ? currentOffset - 1 : currentOffset,
-        direction,
-      );
-    }
-
-    const adjacentGridElement = getCandidateBlockGridFromBoundaryNode(adjacentNode, direction);
-
-    if (adjacentGridElement instanceof HTMLElement && surfaceElement.contains(adjacentGridElement)) {
-      return adjacentGridElement;
-    }
-
-    if (adjacentNode) {
-      return null;
-    }
-
-    if (currentNode === surfaceElement) {
-      return null;
-    }
-
-    const parentNode = currentNode.parentNode;
-
-    if (!parentNode || !surfaceElement.contains(parentNode)) {
-      return null;
-    }
-
-    const currentIndex = Array.prototype.indexOf.call(parentNode.childNodes, currentNode);
-
-    currentOffset = direction === "backward" ? currentIndex : currentIndex + 1;
-    currentNode = parentNode;
-  }
-
-  return null;
 }
 
 function getCandidateBlockBoundaryHostElement(range, surfaceElement) {

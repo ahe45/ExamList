@@ -68,6 +68,63 @@ export function getCandidateBlockGridFromBoundaryNode(node, direction) {
   return null;
 }
 
+export function getCandidateBlockGridAdjacentToRange(range, direction, surfaceElement) {
+  let currentNode = range?.startContainer || null;
+  let currentOffset = range?.startOffset || 0;
+
+  while (currentNode) {
+    let adjacentNode = null;
+
+    if (currentNode.nodeType === Node.TEXT_NODE) {
+      const textLength = currentNode.textContent?.length || 0;
+      const isBoundary = direction === "backward" ? currentOffset === 0 : currentOffset === textLength;
+
+      if (!isBoundary) {
+        return null;
+      }
+
+      adjacentNode = getAdjacentCandidateBlockBoundaryNode(
+        currentNode.parentNode,
+        Array.prototype.indexOf.call(currentNode.parentNode?.childNodes || [], currentNode) + (direction === "backward" ? -1 : 1),
+        direction,
+      );
+    } else {
+      adjacentNode = getAdjacentCandidateBlockBoundaryNode(
+        currentNode,
+        direction === "backward" ? currentOffset - 1 : currentOffset,
+        direction,
+      );
+    }
+
+    const adjacentGridElement = getCandidateBlockGridFromBoundaryNode(adjacentNode, direction);
+
+    if (adjacentGridElement instanceof HTMLElement && surfaceElement.contains(adjacentGridElement)) {
+      return adjacentGridElement;
+    }
+
+    if (adjacentNode) {
+      return null;
+    }
+
+    if (currentNode === surfaceElement) {
+      return null;
+    }
+
+    const parentNode = currentNode.parentNode;
+
+    if (!parentNode || !surfaceElement.contains(parentNode)) {
+      return null;
+    }
+
+    const currentIndex = Array.prototype.indexOf.call(parentNode.childNodes, currentNode);
+
+    currentOffset = direction === "backward" ? currentIndex : currentIndex + 1;
+    currentNode = parentNode;
+  }
+
+  return null;
+}
+
 export function normalizeCandidateBlockBoundaryHostHtml(value = "") {
   return String(value || "")
     .replace(/<br\s*\/?>/gi, "")
