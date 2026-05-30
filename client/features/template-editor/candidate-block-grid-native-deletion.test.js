@@ -211,6 +211,72 @@ test("candidate block native deletion guard prevents collapsed deletion next to 
   assert.equal(shouldPreventCandidateBlockGridNativeDeletion({ key: "Delete" }, forwardSurfaceElement), true);
 });
 
+test("candidate block native deletion guard skips blank text and BR between collapsed range and grid", async () => {
+  const { shouldPreventCandidateBlockGridNativeDeletion } = await importClientModule("candidate-block-grid-adapter.js");
+  const backwardTextNode = new FakeTextNode("ABC");
+  const backwardSurfaceElement = new FakeHTMLElement("div", {
+    childNodes: [
+      new FakeHTMLElement("div", { isGrid: true }),
+      new FakeTextNode(" \n\t "),
+      new FakeHTMLElement("br"),
+      backwardTextNode,
+    ],
+  });
+
+  setSelectionRange(createRange({ startContainer: backwardTextNode, startOffset: 0 }));
+
+  assert.equal(shouldPreventCandidateBlockGridNativeDeletion({ key: "Backspace" }, backwardSurfaceElement), true);
+
+  const forwardTextNode = new FakeTextNode("ABC");
+  const forwardSurfaceElement = new FakeHTMLElement("div", {
+    childNodes: [
+      forwardTextNode,
+      new FakeTextNode(" \n\t "),
+      new FakeHTMLElement("br"),
+      new FakeHTMLElement("div", { isGrid: true }),
+    ],
+  });
+
+  setSelectionRange(createRange({ startContainer: forwardTextNode, startOffset: 3 }));
+
+  assert.equal(shouldPreventCandidateBlockGridNativeDeletion({ key: "Delete" }, forwardSurfaceElement), true);
+});
+
+test("candidate block native deletion guard scans nested wrappers beside collapsed ranges", async () => {
+  const { shouldPreventCandidateBlockGridNativeDeletion } = await importClientModule("candidate-block-grid-adapter.js");
+  const backwardTextNode = new FakeTextNode("ABC");
+  const backwardWrapperNode = new FakeHTMLElement("span", {
+    childNodes: [
+      new FakeHTMLElement("div", { isGrid: true }),
+      new FakeHTMLElement("br"),
+      new FakeTextNode(" "),
+    ],
+  });
+  const backwardSurfaceElement = new FakeHTMLElement("div", {
+    childNodes: [backwardWrapperNode, backwardTextNode],
+  });
+
+  setSelectionRange(createRange({ startContainer: backwardTextNode, startOffset: 0 }));
+
+  assert.equal(shouldPreventCandidateBlockGridNativeDeletion({ key: "Backspace" }, backwardSurfaceElement), true);
+
+  const forwardTextNode = new FakeTextNode("ABC");
+  const forwardWrapperNode = new FakeHTMLElement("span", {
+    childNodes: [
+      new FakeTextNode(" "),
+      new FakeHTMLElement("br"),
+      new FakeHTMLElement("div", { isGrid: true }),
+    ],
+  });
+  const forwardSurfaceElement = new FakeHTMLElement("div", {
+    childNodes: [forwardTextNode, forwardWrapperNode],
+  });
+
+  setSelectionRange(createRange({ startContainer: forwardTextNode, startOffset: 3 }));
+
+  assert.equal(shouldPreventCandidateBlockGridNativeDeletion({ key: "Delete" }, forwardSurfaceElement), true);
+});
+
 test("candidate block native deletion guard prevents deletion from a blank boundary host beside a grid", async () => {
   const { shouldPreventCandidateBlockGridNativeDeletion } = await importClientModule("candidate-block-grid-adapter.js");
   const blankParagraphNode = new FakeHTMLElement("p", { innerHTML: " <br> &nbsp; <br /> " });
@@ -241,6 +307,30 @@ test("candidate block native deletion guard prevents non-collapsed ranges that i
   }));
 
   assert.equal(shouldPreventCandidateBlockGridNativeDeletion({ key: "Backspace" }, surfaceElement), true);
+});
+
+test("candidate block native deletion guard ignores non-collapsed range intersection errors", async () => {
+  const { shouldPreventCandidateBlockGridNativeDeletion } = await importClientModule("candidate-block-grid-adapter.js");
+  const paragraphNode = new FakeHTMLElement("p", { childNodes: [new FakeTextNode("ABC")] });
+  const surfaceElement = new FakeHTMLElement("div", {
+    childNodes: [
+      paragraphNode,
+      new FakeHTMLElement("div", { isGrid: true }),
+    ],
+  });
+
+  setSelectionRange(createRange({
+    collapsed: false,
+    commonAncestorContainer: surfaceElement,
+    intersectsNode: () => {
+      throw new Error("intersectsNode failed");
+    },
+    startContainer: paragraphNode,
+    startOffset: 0,
+  }));
+
+  assert.equal(shouldPreventCandidateBlockGridNativeDeletion({ key: "Backspace" }, surfaceElement), false);
+  assert.equal(shouldPreventCandidateBlockGridNativeDeletion({ key: "Delete" }, surfaceElement), false);
 });
 
 test("candidate block native deletion guard ignores selections outside the document surface", async () => {
