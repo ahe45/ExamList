@@ -26,7 +26,9 @@
 | 수험생 블록 외 다음 영역 선정 | 완료 | `object-size-controls.js`를 다음 후보로 선정 | 구현 전 테스트 커버와 첫 단위 재확인 |
 | object size controls 사전 검토 | 완료 | pure helper 후보와 위험 경계 확인 | DOM 없는 value helper부터 진행 |
 | object size value helper 분리 | 완료 | `object-size-values.test.js` 5개, 전체 335개 테스트, browser/UI smoke 통과 | DOM 측정 helper는 테스트 선행 후 검토 |
-| object size DOM 측정 helper 검토 | 대기 | `getCandidateBlockModalContentSize`, `getCandidateBlockGridMinimumSize` 후보 | style 적용/event dispatch/config sync 이동 금지 |
+| object size DOM 측정 helper 검토 | 완료 | modal content size fallback 순서 고정 후 분리 | grid 최소 크기 helper는 별도 단위 |
+| object size modal content 측정 helper 분리 | 완료 | `object-size-measurements.test.js` 7개, 전체 342개 테스트, browser/UI smoke 통과 | grid/table 측정 helper는 테스트 선행 |
+| object size grid 최소 크기 helper 검토 | 대기 | `getCandidateBlockGridMinimumSize` 후보 | table normalizer/config sync와 분리 가능한지 확인 |
 
 ## 1. 목적
 
@@ -2125,7 +2127,80 @@ npm run smoke:ui
 - style/class/dataset 쓰기, event dispatch, config sync는 다음 단위에서도 이동하지 않는다.
 - 특히 수험생 블록 grid size는 화면 크기와 저장 config가 동시에 연결되므로 direct helper 테스트와 smoke를 모두 통과해야 한다.
 
-## 35. 결론
+## 35. object size controls 두 번째 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- object size controls 두 번째 작업 완료
+- DOM을 읽지만 쓰지 않는 modal content size 측정 helper를 분리
+- 기존 modal object size 적용 흐름은 변경하지 않음
+
+작업 범위:
+
+- `client/features/template-editor/object-size-measurements.js`를 추가했다.
+- 기존 `object-size-controls.js`의 `getCandidateBlockModalContentSize`를 새 모듈로 이동했다.
+- `object-size-controls.js`는 새 helper를 import해서 기존 `applyCandidateBlockModalObjectSize` 흐름에서 그대로 사용한다.
+- `client/features/template-editor/object-size-measurements.test.js`를 추가해 modal content size fallback 우선순위를 고정했다.
+
+테스트로 고정한 규칙:
+
+- HTMLElement가 아니면 `null`을 반환한다.
+- logical content dataset 값이 있으면 가장 먼저 사용한다.
+- content dataset 값이 `0`이면 기존처럼 logical size dataset으로 fallback한다.
+- dataset 값이 없으면 client size를 offset size와 rect보다 먼저 사용한다.
+- client size가 없으면 offset size를 rect보다 먼저 사용한다.
+- client/offset 값이 없으면 candidate block focus scale을 반영한 rect fallback을 사용한다.
+- 모든 값이 비어 있으면 `templateEditorObjectMinimumSize`로 clamp한다.
+
+금지 범위 준수:
+
+- `applyCandidateBlockModalObjectSize` 조건과 style 적용 순서 변경 없음
+- absolute position 보정 로직 변경 없음
+- inline-block fallback 로직 변경 없음
+- modal input event dispatch 변경 없음
+- `syncActiveEditor` 호출 변경 없음
+- 수험생 블록 grid size 로직 변경 없음
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/object-size-measurements.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- object size measurement helper 테스트 통과, 7개 테스트
+- `npm test` 통과, 342개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+판단:
+
+- modal content 측정 책임은 `object-size-measurements.js`로 분리되었고, fallback 순서가 direct 테스트로 고정되었다.
+- 이번 변경은 DOM 읽기 helper 이동만 포함하며, DOM 쓰기와 저장 동기화는 그대로 남겨 회귀 위험을 낮췄다.
+- 다음 후보인 grid 최소 크기 측정은 table normalizer와 CSS row gap을 함께 읽으므로 modal content helper보다 위험도가 높다.
+
+다음 후보:
+
+- `getCandidateBlockGridMinimumSize`
+- `getObjectTableRenderedTargetWidth`
+
+다음 작업 조건:
+
+- `getCandidateBlockGridMinimumSize`를 이동하기 전 `getCandidateBlockGridTableMinimumSize` 결과, `candidateBlockRows`, row gap, grid 최소 width/height clamp 순서를 테스트로 고정한다.
+- `normalizeCandidateBlockTables`, `writeCandidateBlockGridSizeToConfig`, input event dispatch는 다음 단위에서도 이동하지 않는다.
+- grid 최소 크기 helper 이동 후에는 object size measurement 테스트, 전체 테스트, browser/UI smoke를 모두 다시 실행한다.
+
+## 36. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
