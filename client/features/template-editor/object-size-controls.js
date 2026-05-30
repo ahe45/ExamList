@@ -23,7 +23,9 @@ import { templateEditorObjectMinimumSize } from "./object-toolbar-constants.js";
 import {
   getCandidateBlockGridMinimumSize,
   getCandidateBlockModalContentSize,
+  getObjectTableColumnWidths,
   getObjectTableRenderedTargetWidth,
+  getObjectTableRowHeights,
 } from "./object-size-measurements.js";
 import { normalizeObjectTableSegmentSizes } from "./object-size-table-segments.js";
 import {
@@ -98,40 +100,6 @@ function lockObjectTableCellHeight(cellElement) {
 
 function getObjectTableUtils() {
   return window.ExamListEditorTableUtils || null;
-}
-
-function getObjectTableColumnWidths(tableElement, columns, cellMap, tableUtils) {
-  const visualScale = getObjectCandidateBlockVisualScale(tableElement);
-  const scaleX = Math.max(visualScale.x || 1, 0.01);
-
-  return columns.map((columnElement, columnIndex) =>
-    Math.max(
-      templateEditorObjectMinimumSize,
-      parseObjectSizePixelValue(
-        columnElement.style.width,
-        Math.round(
-          tableUtils?.getTemplateEditorMeasuredColumnWidth?.(cellMap, columnIndex) ||
-            (columnElement.getBoundingClientRect?.().width || 0) / scaleX ||
-            0,
-        ),
-      ),
-    ),
-  );
-}
-
-function getObjectTableRowHeights(tableElement) {
-  const visualScale = getObjectCandidateBlockVisualScale(tableElement);
-  const scaleY = Math.max(visualScale.y || 1, 0.01);
-
-  return Array.from(tableElement?.rows || []).map((rowElement) =>
-    Math.max(
-      templateEditorObjectMinimumSize,
-      parseObjectSizePixelValue(
-        rowElement.style.height,
-        Math.round(((rowElement.getBoundingClientRect?.().height || 0) / scaleY) || 0),
-      ),
-    ),
-  );
 }
 
 function applyCandidateBlockModalObjectSize(element, surfaceElement, { hasHeight, hasWidth, height = null, width = null } = {}) {

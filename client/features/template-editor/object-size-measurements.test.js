@@ -363,3 +363,74 @@ test("object table rendered target width clamps to the object minimum", async ()
 
   assert.equal(getObjectTableRenderedTargetWidth(tableElement, 10), templateEditorObjectMinimumSize);
 });
+
+test("object table column widths prefer inline style and clamp to the object minimum", async () => {
+  const { getObjectTableColumnWidths } = await importClientModule("object-size-measurements.js");
+  const { templateEditorObjectMinimumSize } = await importClientModule("object-toolbar-constants.js");
+  const tableElement = new FakeTableElement();
+  const columns = [
+    new FakeHTMLElement({ style: { width: "31.5px" } }),
+    new FakeHTMLElement({ style: { width: "1px" } }),
+  ];
+
+  assert.deepEqual(getObjectTableColumnWidths(tableElement, columns, null, null), [
+    31.5,
+    templateEditorObjectMinimumSize,
+  ]);
+});
+
+test("object table column widths use table utils before scaled rect fallback", async () => {
+  const { getObjectTableColumnWidths } = await importClientModule("object-size-measurements.js");
+  const blockElement = new FakeHTMLElement({
+    dataset: { candidateBlockLogicalWidth: "100" },
+    rect: { width: 50 },
+  });
+  const tableElement = new FakeTableElement({ closestBlock: blockElement });
+  const cellMap = new Map();
+  const columns = [
+    new FakeHTMLElement({ rect: { width: 100 } }),
+    new FakeHTMLElement({ rect: { width: 30 } }),
+  ];
+  const tableUtils = {
+    getTemplateEditorMeasuredColumnWidth(targetCellMap, columnIndex) {
+      assert.equal(targetCellMap, cellMap);
+      return columnIndex === 0 ? 44.4 : 0;
+    },
+  };
+
+  assert.deepEqual(getObjectTableColumnWidths(tableElement, columns, cellMap, tableUtils), [44, 60]);
+});
+
+test("object table row heights prefer inline style and clamp to the object minimum", async () => {
+  const { getObjectTableRowHeights } = await importClientModule("object-size-measurements.js");
+  const { templateEditorObjectMinimumSize } = await importClientModule("object-toolbar-constants.js");
+  const tableElement = new FakeTableElement({
+    rows: [
+      new FakeHTMLElement({ style: { height: "22.5px" } }),
+      new FakeHTMLElement({ style: { height: "1px" } }),
+    ],
+  });
+
+  assert.deepEqual(getObjectTableRowHeights(tableElement), [
+    22.5,
+    templateEditorObjectMinimumSize,
+  ]);
+});
+
+test("object table row heights use scaled rect fallback", async () => {
+  const { getObjectTableRowHeights } = await importClientModule("object-size-measurements.js");
+  const blockElement = new FakeHTMLElement({
+    dataset: { candidateBlockLogicalHeight: "200" },
+    rect: { height: 100 },
+  });
+  const tableElement = new FakeTableElement({
+    closestBlock: blockElement,
+    rows: [
+      new FakeHTMLElement({ rect: { height: 20 } }),
+      new FakeHTMLElement({ rect: { height: 0 } }),
+    ],
+  });
+  const { templateEditorObjectMinimumSize } = await importClientModule("object-toolbar-constants.js");
+
+  assert.deepEqual(getObjectTableRowHeights(tableElement), [40, templateEditorObjectMinimumSize]);
+});

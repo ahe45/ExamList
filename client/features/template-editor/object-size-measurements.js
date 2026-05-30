@@ -98,6 +98,40 @@ export function getObjectTableRenderedTargetWidth(tableElement, targetWidth) {
       Math.max(
         renderedWidthAdjustment,
         Math.max(0, Math.ceil(getObjectTableCollapsedBorderAdjustment(tableElement))),
+    ),
+  );
+}
+
+export function getObjectTableColumnWidths(tableElement, columns, cellMap, tableUtils) {
+  const visualScale = getObjectCandidateBlockVisualScale(tableElement);
+  const scaleX = Math.max(visualScale.x || 1, 0.01);
+
+  return columns.map((columnElement, columnIndex) =>
+    Math.max(
+      templateEditorObjectMinimumSize,
+      parseObjectSizePixelValue(
+        columnElement.style.width,
+        Math.round(
+          tableUtils?.getTemplateEditorMeasuredColumnWidth?.(cellMap, columnIndex) ||
+            (columnElement.getBoundingClientRect?.().width || 0) / scaleX ||
+            0,
+        ),
       ),
+    ),
+  );
+}
+
+export function getObjectTableRowHeights(tableElement) {
+  const visualScale = getObjectCandidateBlockVisualScale(tableElement);
+  const scaleY = Math.max(visualScale.y || 1, 0.01);
+
+  return Array.from(tableElement?.rows || []).map((rowElement) =>
+    Math.max(
+      templateEditorObjectMinimumSize,
+      parseObjectSizePixelValue(
+        rowElement.style.height,
+        Math.round(((rowElement.getBoundingClientRect?.().height || 0) / scaleY) || 0),
+      ),
+    ),
   );
 }
