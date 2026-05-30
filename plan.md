@@ -28,7 +28,9 @@
 | object size value helper 분리 | 완료 | `object-size-values.test.js` 5개, 전체 335개 테스트, browser/UI smoke 통과 | DOM 측정 helper는 테스트 선행 후 검토 |
 | object size DOM 측정 helper 검토 | 완료 | modal content size fallback 순서 고정 후 분리 | grid 최소 크기 helper는 별도 단위 |
 | object size modal content 측정 helper 분리 | 완료 | `object-size-measurements.test.js` 7개, 전체 342개 테스트, browser/UI smoke 통과 | grid/table 측정 helper는 테스트 선행 |
-| object size grid 최소 크기 helper 검토 | 대기 | `getCandidateBlockGridMinimumSize` 후보 | table normalizer/config sync와 분리 가능한지 확인 |
+| object size grid 최소 크기 helper 검토 | 완료 | row gap/table minimum clamp 순서 고정 후 분리 | table rendered target width 검토 |
+| object size grid 최소 크기 helper 분리 | 완료 | `object-size-measurements.test.js` 10개, 전체 345개 테스트, browser/UI smoke 통과 | table width 측정 helper는 테스트 선행 |
+| object table rendered target width helper 검토 | 대기 | `getObjectTableRenderedTargetWidth`, collapsed border 후보 | table style 적용 로직 이동 금지 |
 
 ## 1. 목적
 
@@ -2200,7 +2202,78 @@ npm run smoke:ui
 - `normalizeCandidateBlockTables`, `writeCandidateBlockGridSizeToConfig`, input event dispatch는 다음 단위에서도 이동하지 않는다.
 - grid 최소 크기 helper 이동 후에는 object size measurement 테스트, 전체 테스트, browser/UI smoke를 모두 다시 실행한다.
 
-## 36. 결론
+## 36. object size controls 세 번째 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- object size controls 세 번째 작업 완료
+- 수험생 블록 grid 최소 크기 측정 helper를 `object-size-measurements.js`로 분리
+- grid size 적용, table normalize, config sync, input event dispatch 흐름은 변경하지 않음
+
+작업 범위:
+
+- 기존 `object-size-controls.js`의 `getCandidateBlockGridMinimumSize`를 `object-size-measurements.js`로 이동했다.
+- `object-size-controls.js`는 새 helper를 import해서 기존 `applyCandidateBlockGridObjectSize` 흐름에서 그대로 사용한다.
+- `object-size-measurements.test.js`에 grid 최소 크기 테스트를 추가했다.
+- 테스트 fake DOM은 candidate block table normalizer가 읽는 `querySelectorAll`, row/cell, computed style 경로만 최소 구현했다.
+
+테스트로 고정한 규칙:
+
+- grid table minimum이 없을 때 width는 `candidateBlockGridMinimumWidth` 아래로 내려가지 않는다.
+- height는 `candidateBlockRows`, `candidateBlockGridMinimumRowHeight`, row gap을 반영한다.
+- `rowGap` 값이 있으면 generic `gap`보다 우선한다.
+- candidate block table minimum size가 더 크면 grid 최소 width/height는 table minimum size를 따른다.
+- table minimum 계산은 block chrome, cell border/padding/line-height, grid column/row gap을 포함한다.
+
+금지 범위 준수:
+
+- `applyCandidateBlockGridObjectSize` 조건과 분기 변경 없음
+- `normalizeCandidateBlockTables` 호출 순서 변경 없음
+- grid style width/height/maxWidth/minHeight 적용 순서 변경 없음
+- `writeCandidateBlockGridSizeToConfig` 호출 변경 없음
+- input event dispatch 변경 없음
+- modal object size 로직 변경 없음
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/object-size-measurements.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- object size measurement helper 테스트 통과, 10개 테스트
+- `npm test` 통과, 345개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+판단:
+
+- 수험생 블록 grid 최소 크기 산정은 measurement helper로 이동했고, grid/table minimum fallback이 테스트로 고정되었다.
+- 실제 grid 크기 적용과 저장 동기화는 여전히 `object-size-controls.js`에 남아 있어 변경 범위가 제한적이다.
+- 다음 후보부터는 일반 table width 측정과 collapsed border 보정이 엮여 있으므로, table style 적용 함수 이동보다 측정 helper 테스트가 먼저다.
+
+다음 후보:
+
+- `getObjectTableRenderedTargetWidth`
+- `getObjectTableCollapsedBorderAdjustment`
+
+다음 작업 조건:
+
+- collapsed border 보정, inline width, rendered rect width, visual scale 계산 순서를 먼저 테스트로 고정한다.
+- `applyObjectTableWidth`, colgroup resize, cell width style 적용은 다음 단위에서 이동하지 않는다.
+- 일반 table과 수험생 블록 modal table 양쪽에서 사용하는 scale fallback이 바뀌지 않는지 smoke까지 확인한다.
+
+## 37. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
