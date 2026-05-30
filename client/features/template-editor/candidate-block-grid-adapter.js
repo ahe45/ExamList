@@ -269,7 +269,7 @@ function doesRangeIncludeCandidateBlockGrid(range, surfaceElement) {
   });
 }
 
-function shouldPreventCandidateBlockGridNativeDeletion(event, surfaceElement) {
+export function shouldPreventCandidateBlockGridNativeDeletion(event, surfaceElement) {
   const direction = event?.key === "Backspace" ? "backward" : event?.key === "Delete" ? "forward" : "";
 
   if (!direction || !(surfaceElement instanceof HTMLElement)) {
