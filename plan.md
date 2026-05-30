@@ -30,7 +30,9 @@
 | object size modal content 측정 helper 분리 | 완료 | `object-size-measurements.test.js` 7개, 전체 342개 테스트, browser/UI smoke 통과 | grid/table 측정 helper는 테스트 선행 |
 | object size grid 최소 크기 helper 검토 | 완료 | row gap/table minimum clamp 순서 고정 후 분리 | table rendered target width 검토 |
 | object size grid 최소 크기 helper 분리 | 완료 | `object-size-measurements.test.js` 10개, 전체 345개 테스트, browser/UI smoke 통과 | table width 측정 helper는 테스트 선행 |
-| object table rendered target width helper 검토 | 대기 | `getObjectTableRenderedTargetWidth`, collapsed border 후보 | table style 적용 로직 이동 금지 |
+| object table rendered target width helper 검토 | 완료 | collapsed border/rendered overflow/scale clamp 고정 후 분리 | table style 적용 로직 이동 금지 |
+| object table rendered target width helper 분리 | 완료 | `object-size-measurements.test.js` 15개, 전체 350개 테스트, browser/UI smoke 통과 | table segment size helper 검토 |
+| object table segment size helper 검토 | 대기 | `normalizeObjectTableSegmentSizes` 후보 | DOM 측정/적용과 분리 가능한 순수 helper인지 확인 |
 
 ## 1. 목적
 
@@ -2273,7 +2275,80 @@ npm run smoke:ui
 - `applyObjectTableWidth`, colgroup resize, cell width style 적용은 다음 단위에서 이동하지 않는다.
 - 일반 table과 수험생 블록 modal table 양쪽에서 사용하는 scale fallback이 바뀌지 않는지 smoke까지 확인한다.
 
-## 37. 결론
+## 37. object size controls 네 번째 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- object size controls 네 번째 작업 완료
+- table rendered target width 측정 helper를 `object-size-measurements.js`로 분리
+- table width 적용, colgroup/cell style 변경, row/column size 적용 흐름은 변경하지 않음
+
+작업 범위:
+
+- 기존 `object-size-controls.js`의 `getObjectTableCollapsedBorderAdjustment`를 `object-size-measurements.js`로 이동했다.
+- 기존 `object-size-controls.js`의 `getObjectTableRenderedTargetWidth`를 `object-size-measurements.js`로 이동했다.
+- `object-size-controls.js`는 `getObjectTableRenderedTargetWidth`를 import해서 기존 `applyObjectTableWidth` 흐름에서 그대로 사용한다.
+- `object-size-measurements.test.js`에 collapsed border와 rendered target width 테스트를 추가했다.
+
+테스트로 고정한 규칙:
+
+- collapsed border가 아닌 table은 border 보정값을 `0`으로 처리한다.
+- collapsed table은 table 좌우 border와 outer cell border 중 가장 큰 값을 보정값으로 사용한다.
+- target width는 collapsed border 보정값을 올림 처리해서 차감한다.
+- inline width보다 scaled rendered rect width가 더 크면 overflow 보정을 차감한다.
+- rendered overflow 보정과 collapsed border 보정 중 더 큰 값을 차감한다.
+- 보정 후 width는 `templateEditorObjectMinimumSize` 아래로 내려가지 않는다.
+
+금지 범위 준수:
+
+- `applyObjectTableWidth` 조건과 분기 변경 없음
+- `ensureTemplateEditorTableColGroup` 호출 흐름 변경 없음
+- colgroup width 적용 순서 변경 없음
+- cell width style 적용 순서 변경 없음
+- table height/row height 로직 변경 없음
+- 수험생 블록 grid/modal size 로직 변경 없음
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/object-size-measurements.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- object size measurement helper 테스트 통과, 15개 테스트
+- `npm test` 통과, 350개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+판단:
+
+- table width 측정과 collapsed border 보정은 measurement helper로 분리되었고, direct 테스트를 갖게 되었다.
+- 실제 table width 적용과 DOM style 변경은 여전히 `object-size-controls.js`에 남아 있어 변경 범위가 제한적이다.
+- 다음 후보는 `normalizeObjectTableSegmentSizes`처럼 DOM을 읽지 않는 size 분배 helper가 안전하다.
+
+다음 후보:
+
+- `normalizeObjectTableSegmentSizes`
+- `getObjectTableColumnWidths`
+- `getObjectTableRowHeights`
+
+다음 작업 조건:
+
+- 먼저 `normalizeObjectTableSegmentSizes`가 순수 helper인지 확인하고, even distribution, proportional distribution, overflow/deficit 보정 규칙을 테스트로 고정한다.
+- `getObjectTableColumnWidths`와 `getObjectTableRowHeights`는 DOM 측정 helper이므로 순수 helper와 같은 단위로 이동하지 않는다.
+- `applyObjectTableWidth`, `applyObjectTableHeight`, table style 적용은 다음 단위에서도 이동하지 않는다.
+
+## 38. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
