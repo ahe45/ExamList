@@ -197,6 +197,31 @@ export function isBlankBoundaryHostAdjacentToCandidateBlockGrid(range, surfaceEl
   );
 }
 
+export function shouldPreventCandidateBlockGridNativeDeletion(event, surfaceElement) {
+  const direction = event?.key === "Backspace" ? "backward" : event?.key === "Delete" ? "forward" : "";
+
+  if (!direction || !(surfaceElement instanceof HTMLElement)) {
+    return false;
+  }
+
+  const selection = window.getSelection?.();
+  const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+
+  if (!range || !surfaceElement.contains(range.commonAncestorContainer)) {
+    return false;
+  }
+
+  if (!range.collapsed) {
+    return doesRangeIncludeCandidateBlockGrid(range, surfaceElement);
+  }
+
+  if (isBlankBoundaryHostAdjacentToCandidateBlockGrid(range, surfaceElement)) {
+    return true;
+  }
+
+  return Boolean(getCandidateBlockGridAdjacentToRange(range, direction, surfaceElement));
+}
+
 export function normalizeCandidateBlockBoundaryHostHtml(value = "") {
   return String(value || "")
     .replace(/<br\s*\/?>/gi, "")

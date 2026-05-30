@@ -57,9 +57,7 @@ import {
   isCandidateBlockTemplateSource,
 } from "./candidate-block-grid-block-roles.js";
 import {
-  doesRangeIncludeCandidateBlockGrid,
-  getCandidateBlockGridAdjacentToRange,
-  isBlankBoundaryHostAdjacentToCandidateBlockGrid,
+  shouldPreventCandidateBlockGridNativeDeletion,
 } from "./candidate-block-grid-boundary.js";
 import { getSelectedPage } from "./state.js";
 
@@ -141,30 +139,7 @@ function getCandidateBlockGridSettingControl(event) {
   return target?.closest?.("[data-examlist-block-grid-setting]") || null;
 }
 
-export function shouldPreventCandidateBlockGridNativeDeletion(event, surfaceElement) {
-  const direction = event?.key === "Backspace" ? "backward" : event?.key === "Delete" ? "forward" : "";
-
-  if (!direction || !(surfaceElement instanceof HTMLElement)) {
-    return false;
-  }
-
-  const selection = window.getSelection?.();
-  const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-
-  if (!range || !surfaceElement.contains(range.commonAncestorContainer)) {
-    return false;
-  }
-
-  if (!range.collapsed) {
-    return doesRangeIncludeCandidateBlockGrid(range, surfaceElement);
-  }
-
-  if (isBlankBoundaryHostAdjacentToCandidateBlockGrid(range, surfaceElement)) {
-    return true;
-  }
-
-  return Boolean(getCandidateBlockGridAdjacentToRange(range, direction, surfaceElement));
-}
+export { shouldPreventCandidateBlockGridNativeDeletion };
 
 function getKeyboardSelectedCandidateBlockGridElement(surfaceElement) {
   const selectedGridElement = getSelectedCandidateBlockGridElement();
