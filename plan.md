@@ -1711,7 +1711,69 @@ npm run smoke:ui
 - 이동한다면 함수 본문을 그대로 옮기고, import/export만 조정한다.
 - 이동 후에는 이번 native deletion guard 테스트와 기존 boundary 테스트를 함께 실행한다.
 
-## 29. 결론
+## 29. 3차 세 번째 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- 3차 세 번째 작업 완료
+- `getCandidateBlockGridAdjacentToRange`를 adapter에서 boundary helper로 분리
+- native deletion guard 전체 이동은 하지 않음
+
+작업 범위:
+
+- `candidate-block-grid-adapter.js` 안에 있던 `getCandidateBlockGridAdjacentToRange`를 `candidate-block-grid-boundary.js`로 이동했다.
+- 함수 본문은 기존 로직 그대로 유지했다.
+- adapter는 `getCandidateBlockGridAdjacentToRange`를 import해서 기존 `shouldPreventCandidateBlockGridNativeDeletion`에서 그대로 호출한다.
+- `shouldPreventCandidateBlockGridNativeDeletion`의 조건 순서와 본문 로직은 변경하지 않았다.
+
+금지 범위 준수:
+
+- `shouldPreventCandidateBlockGridNativeDeletion` 전체 이동 없음
+- `getCandidateBlockBoundaryHostElement` 이동 없음
+- `getCandidateBlockGridSibling` 이동 없음
+- `doesRangeIncludeCandidateBlockGrid` 이동 없음
+- `handleSurfaceKeyDown` 변경 없음
+- `handleDocumentKeyDown` 변경 없음
+- Backspace/Delete preventDefault 조건 변경 없음
+- event listener 등록 순서 변경 없음
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/candidate-block-grid-boundary.test.js
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/candidate-block-grid-native-deletion.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- boundary helper 테스트 통과, 10개 테스트
+- native deletion guard 테스트 통과, 8개 테스트
+- `npm test` 통과, 326개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+판단:
+
+- 이번 단위는 함수 이동만 수행했고 런타임 정책은 바꾸지 않았다.
+- 이동 전에 추가한 Range/Selection 회귀 테스트가 모두 통과했으므로 현재 분리는 안정적인 범위로 본다.
+- 그래도 `shouldPreventCandidateBlockGridNativeDeletion`은 selection, range, blank host, non-collapsed range 판단을 묶고 있어 아직 고위험 함수다.
+
+다음 후보:
+
+- 바로 `shouldPreventCandidateBlockGridNativeDeletion` 전체를 옮기기보다, adapter에 남은 native deletion 관련 함수들의 결합도를 먼저 검토한다.
+- 다음 이동 후보를 고른다면 `getCandidateBlockBoundaryHostElement`, `getCandidateBlockGridSibling`, `isBlankBoundaryHostAdjacentToCandidateBlockGrid`, `doesRangeIncludeCandidateBlockGrid` 중 하나만 단위로 선택한다.
+- 이 중 `doesRangeIncludeCandidateBlockGrid`는 단독 순수도가 높지만 `getCandidateBlockGridElements(surfaceElement)`에 의존하므로 별도 파일 위치를 신중히 정한다.
+
+## 30. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
