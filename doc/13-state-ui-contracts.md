@@ -137,7 +137,6 @@
 | `deletionPassword`, `deletionPasswordConfirm` | 생성 시 삭제 비밀번호와 확인값. `deleteSchoolsWithoutPassword`가 없으면 required. |
 | `logoDataUrl` | 학교 로고 data URL preview와 저장값. |
 | `settingsLoading` | 학교 설정 로딩 중 로고/년도 입력 비활성화. |
-| `isActive` | 학교 활성 여부. |
 | `isSaving` | 생성/수정 저장 중. |
 | `errorMessage` | modal 내부 오류. |
 
@@ -172,6 +171,7 @@
   - `양식 N개`.
   - `수험생 N건`.
   - `최종수정일시 : YYYY년 MM월 DD일 HH시 mm분 ss초`.
+  - 생성 계정 badge.
   - 설정 icon.
   - 삭제 icon.
 - 빈 상태:
@@ -191,6 +191,7 @@
 | `loading` | 계정 목록 로딩. |
 | `errorMessage` | 목록/저장/삭제 오류. |
 | `modal` | 생성/수정 modal 상태. |
+| `uploadModal` | 계정 XLSX 업로드 modal 상태. |
 
 `accounts.modal`:
 
@@ -206,16 +207,32 @@
 | `isSaving` | 저장 중. |
 | `errorMessage` | modal 내부 오류. |
 
+`accounts.uploadModal`:
+
+| key | 역할 |
+|---|---|
+| `isOpen` | 계정 엑셀 업로드 modal 표시. |
+| `file` | 선택된 XLSX 파일 객체. |
+| `fileName` | 선택된 파일명. |
+| `isUploading` | 업로드 API 처리 중. |
+| `result` | 추가/수정/실패 건수와 오류 목록. |
+| `errorMessage` | 업로드 오류. |
+
 ### 주요 DOM hook
 
 | Hook | 역할 |
 |---|---|
 | `[data-action="open-account-create-modal"]` | 계정 추가 modal open. |
+| `[data-action="open-account-upload-modal"]` | 계정 엑셀 업로드 modal open. |
+| `[data-action="close-account-upload-modal"]` | 계정 엑셀 업로드 modal close. |
+| `[data-action="download-account-template"]` | 계정 업로드 양식 다운로드. |
 | `[data-action="open-account-edit-modal"][data-account-id]` | 계정 수정 modal open. |
 | `[data-action="delete-account"][data-account-id]` | 계정 삭제. |
 | `[data-action="refresh-accounts"]` | 계정 목록 reload. |
 | `[data-action="close-account-modal"]` | modal close. |
 | `[data-account-form]` | 생성/수정 submit. |
+| `[data-account-upload-form]` | 계정 XLSX 업로드 submit. |
+| `[data-account-upload-file]` | 계정 XLSX 파일 선택. |
 | `[data-account-modal-field="userId"]` | 아이디 draft. |
 | `[data-account-modal-field="userName"]` | 이름 draft. |
 | `[data-account-modal-field="role"]` | 역할 draft. |
@@ -228,8 +245,8 @@
   - 안내 `슈퍼 관리자만 접근할 수 있습니다.`
 - 권한 있을 때:
   - 총 계정 badge `총 N개`.
-  - `계정 추가`, `새로고침`, `학교 목록`.
-  - table column: 아이디, 이름, 권한, 마지막 로그인, 관리.
+  - `계정 추가`, `엑셀 업로드`, `새로고침`, `학교 목록`.
+  - table column: 아이디, 이름, 권한, 마지막 로그인, 관리, 삭제.
   - 마지막 로그인은 `YYYY-MM-DD HH:mm`, 값이 없으면 `-`.
 
 ## 6. 양식 관리 화면

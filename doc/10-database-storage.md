@@ -29,7 +29,7 @@
 - `name`: 학교명.
 - `description`: 설명.
 - `deletion_password_hash`: 학교 삭제 비밀번호 hash.
-- `is_active`: 사용 여부.
+- `created_account`: 학교 생성 계정 ID. 학교 수정/삭제 권한 판정에 사용된다.
 - `created_at`, `updated_at`, `deleted_at`.
 
 ## `school_settings`
@@ -222,9 +222,16 @@ PDF 관련 감사 로그.
 
 ## PDF 저장소
 
-기본 root:
+저장소 기본 root:
 
-- `storage/pdf-generations`.
+- `EXAMLIST_STORAGE_DIR`가 있으면 해당 경로.
+- 없으면 프로젝트 루트의 `storage`.
+
+PDF 저장 root:
+
+- `PDF_STORAGE_DIR`가 있으면 `<PDF_STORAGE_DIR>/<schoolCode>`.
+- 없으면 `<storage root>/<schoolCode>/pdf-generations`.
+- 기존 파일 호환을 위해 `<PDF_STORAGE_DIR>` 또는 `<storage root>/pdf-generations`의 legacy 경로도 다운로드/삭제 시 조회한다.
 
 하위 디렉터리:
 
@@ -244,8 +251,10 @@ PDF preview 파일:
 
 - 사진 ZIP 또는 개별 업로드를 통해 저장된다.
 - DB에는 `photo_name`, `photo_mime` 등 참조 정보가 저장된다.
+- 신규 저장 경로는 `<storage root>/<schoolCode>/candidate-photos`이다.
+- 기존 파일 호환을 위해 `<storage root>/candidate-photos`도 사진 조회/삭제 후보 경로로 사용한다.
 - 실제 파일 삭제는 데이터 삭제와 학교 삭제 시 파일 시스템 삭제 결과로 집계된다.
-- 사진 ZIP 미리보기 파일은 `storage/tmp/candidate-photo-archives`에 임시 세션으로 저장되며, 실제 반영 시 `previewToken`으로 재사용된 뒤 삭제된다.
+- 사진 ZIP 미리보기 파일은 `<storage root>/<schoolCode>/tmp/candidate-photo-archives`에 임시 세션으로 저장되며, 학교 코드가 없을 때는 legacy `<storage root>/tmp/candidate-photo-archives`를 사용한다. 실제 반영 시 `previewToken`으로 재사용된 뒤 삭제된다.
 
 ## 삭제와 파일 정합성
 

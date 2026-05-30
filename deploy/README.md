@@ -5,7 +5,8 @@
 ## 파일 구성
 
 - 프로젝트 루트의 `start-server.bat`: 서버 구성 여부를 확인하고, 최초 실행이면 Windows setup을 먼저 진행한 뒤 서버를 시작합니다.
-- `deploy\setup-windows.bat`: Node.js 사전 설치 확인, `.env` 생성, DB 접속 사용자 정보 입력, 의존성 설치, DB 스키마 준비, 서버 실행을 처리하는 setup 전용 진입점입니다.
+- `deploy\setup-windows.ps1`: Node.js 사전 설치 확인, `.env` 생성, DB 접속 사용자 정보 입력, 의존성 설치, DB 스키마 준비, 서버 실행을 처리하는 setup 구현입니다.
+- `deploy\setup-windows.bat`: PowerShell setup을 실행하는 호환용 launcher입니다.
 - `README.md`: 이 안내 문서입니다.
 
 ## 직접 준비해야 하는 항목
@@ -94,7 +95,9 @@ custom port를 선택했다면 해당 포트로 열어야 합니다.
 GitHub 변경사항을 서버에 반영할 때는 아래 순서로 처리합니다.
 
 ```bat
-git pull
-npm ci
+git pull --ff-only
+npm install
 npm run setup:db
 ```
+
+프로젝트 루트의 `update-server.bat`를 사용하면 현재 branch 기준으로 `git fetch`, `git pull --ff-only origin <branch>`, `npm install`, `npm run setup:db`를 순서대로 실행한다. 로컬 변경사항이 있으면 덮어쓰지 않도록 업데이트를 중단한다.

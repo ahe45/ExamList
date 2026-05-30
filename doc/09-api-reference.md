@@ -23,7 +23,9 @@
 | Method | URL | Permission | 설명 |
 | --- | --- | --- | --- |
 | GET | `/api/accounts` | `manageAccounts` | 계정 목록 |
+| GET | `/api/accounts/template.xlsx` | `manageAccounts` | 계정 업로드 양식 다운로드 |
 | POST | `/api/accounts` | `manageAccounts` | 계정 생성 |
+| POST | `/api/accounts/import` | `manageAccounts` | 계정 XLSX 업로드 반영 |
 | PATCH | `/api/accounts/:accountId` | `manageAccounts` | 계정 수정 |
 | DELETE | `/api/accounts/:accountId` | `manageAccounts` | 계정 삭제 |
 

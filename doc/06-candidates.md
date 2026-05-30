@@ -209,8 +209,8 @@ Tabs:
 
 API:
 
-- 미리보기: `POST /api/candidates/photo-archive/preview`, binary ZIP을 전송하고 서버 임시 업로드 세션 token을 받는다.
-- 저장: `POST /api/candidates/photo-archive`, JSON body의 `previewToken`으로 미리보기 때 전송한 ZIP을 다시 사용한다.
+- 미리보기: `POST /api/candidates/photo-archive/preview?schoolId=...`, binary ZIP을 전송하고 서버 임시 업로드 세션 token을 받는다.
+- 저장: `POST /api/candidates/photo-archive`, JSON body의 `schoolId`와 `previewToken`으로 미리보기 때 전송한 ZIP을 다시 사용한다.
 - 호환용으로 저장 API는 기존 binary ZIP body도 처리할 수 있지만, 화면에서는 `previewToken` 방식을 사용한다.
 
 규칙:

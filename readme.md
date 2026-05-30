@@ -82,7 +82,7 @@ Git clone으로 설치한 서버를 GitHub 최신 코드로 갱신할 때는 서
 - 브라우저 렌더링 기반 PDF 생성.
 - `pdf-lib` 기반 PDF 병합.
 - `adm-zip`, `yazl` 기반 ZIP 처리.
-- memory queue 기반 PDF 작업 큐.
+- 기본 memory queue, 선택적 BullMQ/Redis 기반 PDF 작업 큐.
 
 ## 현재 문서 검증 상태
 
@@ -100,5 +100,7 @@ Git clone으로 설치한 서버를 GitHub 최신 코드로 갱신할 때는 서
 - `client/app/app-state.js`: 화면별 전역 상태 slice와 modal/table/progress 상태 구조.
 - `client/features/*/renderers.js`, `client/features/*/actions.js`: 화면별 DOM hook과 action 처리.
 - `server/modules/pdf-templates/layout*.js`, `client/features/template-editor/*`: 템플릿 layout 정규화와 편집기 런타임 계약.
+- `server/modules/pdf-generations/queue-*.js`: 기본 memory queue와 선택적 BullMQ 큐 동작.
+- `server/modules/auth/workbook.js`, `client/features/accounts/*`: 계정 엑셀 업로드 API와 화면 동작.
 
 상세 검증 결과는 [구현 검증 기록](doc/00-implementation-verification.md)에 정리했습니다.

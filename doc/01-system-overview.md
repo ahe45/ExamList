@@ -24,14 +24,14 @@ ExamList는 학교별 수험생확인대장 PDF를 생성하기 위한 운영자
 - PDF 렌더링: 브라우저 실행 파일을 이용해 HTML을 PDF로 출력.
 - PDF 병합: `pdf-lib`.
 - ZIP 처리: `adm-zip`, `yazl`.
-- 큐: 기본 memory queue.
+- 큐: 기본 memory queue, 선택적 BullMQ/Redis.
 - 테스트: Node 내장 test runner.
 
 ## 실행 진입점
 
 - `index.js`: `server.js`를 require한다.
 - `server.js`: 앱 컨텍스트 생성, API route 생성, page handler 생성, bootstrap 후 HTTP 서버 시작.
-- 기본 포트: `PORT` 환경 변수 또는 `3002`.
+- 기본 포트: `PORT` 환경 변수가 유효하면 해당 값, 없으면 HTTP 기본 포트 `80`.
 
 ```bash
 npm install
@@ -49,13 +49,14 @@ npm run start
 | `npm run db:create-user` | DB 사용자 생성 |
 | `npm run smoke:ui` | UI smoke 테스트 |
 | `npm run smoke:browser` | 브라우저 smoke 테스트 |
-| `npm run test` | Node test runner 실행 |
+| `npm run smoke:bullmq` | Redis 연결이 설정된 BullMQ smoke 테스트 |
+| `npm test` | Node test runner 실행 |
 
 ## 환경 변수
 
 | 변수 | 기본 예시 | 용도 |
 | --- | --- | --- |
-| `PORT` | `3002` | HTTP 서버 포트 |
+| `PORT` | 미설정 시 `80` | HTTP 서버 포트 |
 | `DB_HOST` | `127.0.0.1` | DB 호스트 |
 | `DB_PORT` | `3306` | DB 포트 |
 | `DB_USER` | `examlist_app` | 앱 DB 사용자 |
@@ -71,13 +72,18 @@ npm run start
 | `EXAMLIST_USERS_JSON` | `[]` | 환경 변수 기반 보조 사용자 목록 |
 | `EXAMLIST_PHOTO_ARCHIVE_MAX_MB` | 기본 2048 | 사진 ZIP 최대 업로드 크기, 1MB에서 4096MB 사이 |
 | `EXAMLIST_PHOTO_ARCHIVE_SESSION_TTL_MINUTES` | 기본 30 | 사진 ZIP 미리보기 후 실제 반영에 재사용하는 임시 업로드 세션 유지 시간 |
+| `EXAMLIST_STORAGE_DIR` | `storage` | PDF와 사진 저장소의 기본 루트. 상대 경로면 프로젝트 루트 기준 |
 | `PDF_BROWSER_PATH` | 빈 값 | PDF 렌더링용 브라우저 실행 파일 경로 |
-| `PDF_STORAGE_DIR` | `storage/pdf-generations` | PDF 결과 저장 루트 |
-| `PDF_QUEUE_DRIVER` | `memory` | PDF queue driver. Windows 배포 기본값은 `memory` |
+| `PDF_STORAGE_DIR` | `storage/pdf-generations` | PDF 결과 저장 루트. 설정하면 그 아래 학교 코드별 디렉터리를 사용 |
+| `PDF_QUEUE_DRIVER` | `memory` | PDF queue driver. `memory` 또는 `bullmq` |
+| `PDF_QUEUE_NAME` | `examlist-pdf-generation` | BullMQ 사용 시 queue 이름 |
+| `PDF_QUEUE_PROCESS_IN_WEB` | `true` | BullMQ 사용 시 웹 프로세스에서 worker도 실행할지 여부 |
+| `PDF_QUEUE_CONCURRENCY` | `1` | BullMQ worker 동시 처리 수, 1에서 5 사이로 보정 |
 | `PDF_QUEUE_MAX_ATTEMPTS` | `2` | 생성 실패 재시도 횟수 |
 | `PDF_QUEUE_RETRY_DELAY_MS` | `5000` | 재시도 지연 |
 | `PDF_GENERATION_CHUNK_SIZE` | `500` | 대상별 수험생 chunk 크기 |
 | `PDF_RETENTION_DAYS` | `30` | PDF 파일 보관 일수 |
+| `REDIS_URL` | 빈 값 | `PDF_QUEUE_DRIVER=bullmq`일 때 Redis 연결 URL |
 | `NODE_ENV` | 빈 값 | 실행 환경 구분 |
 | `DB_ADMIN_USER` | `root` | `npm run db:create-user` 실행 시 관리자 DB 사용자 |
 | `DB_ADMIN_PASSWORD` | 빈 값 | `npm run db:create-user` 실행 시 관리자 DB 비밀번호 |

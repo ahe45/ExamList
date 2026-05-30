@@ -35,9 +35,9 @@ Body:
 
 | field | required | 설명 |
 |---|---|---|
-| `username` | yes | 클라이언트 로그인 form이 보내는 로그인 ID. |
-| `userId` | yes | 서버가 함께 허용하는 로그인 ID alias. |
-| `user_id` | yes | 서버가 함께 허용하는 로그인 ID alias. |
+| `username` | 조건부 | 클라이언트 로그인 form이 보내는 로그인 ID. `username`, `userId`, `user_id` 중 하나가 필요하다. |
+| `userId` | 조건부 | 서버가 함께 허용하는 로그인 ID alias. |
+| `user_id` | 조건부 | 서버가 함께 허용하는 로그인 ID alias. |
 | `password` | yes | 비밀번호. |
 
 동작:
@@ -115,6 +115,22 @@ Query:
 - `createdAt`
 - `updatedAt`
 
+### `GET /api/accounts/template.xlsx`
+
+응답:
+
+- status 200
+- `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- `Content-Disposition: attachment; filename="계정 업로드 양식.xlsx"`
+- body: XLSX binary
+
+업로드 양식 컬럼:
+
+- 아이디.
+- 이름.
+- 비밀번호.
+- 권한.
+
 ### `POST /api/accounts`
 
 Body:
@@ -122,14 +138,35 @@ Body:
 | field | required | 설명 |
 |---|---|---|
 | `userId` | yes | 로그인 ID. unique. |
-| `userName` | yes | 표시명. |
+| `userName` | no | 표시명. 비어 있으면 `userId`를 사용한다. |
 | `password` | yes | 초기 비밀번호. |
-| `role` | yes | `super_admin`, `admin`, `user`. |
+| `role` | no | `super_admin`, `admin`, `user`. 비어 있으면 `user`. |
 
 응답:
 
-- status 201 또는 route service 기준 생성 결과
+- status 201
 - 생성된 계정 payload
+
+### `POST /api/accounts/import`
+
+Body:
+
+| field | required | 설명 |
+|---|---|---|
+| `fileContentBase64` | yes | XLSX 파일 base64 payload. |
+| `fileName` | no | 클라이언트 표시용 파일명. 서버 저장 로직에는 사용하지 않는다. |
+
+업로드 규칙:
+
+- 같은 아이디의 기존 계정은 이름, 권한, 비밀번호를 수정한다.
+- 기존 계정의 비밀번호 칸이 비어 있으면 기존 비밀번호를 유지한다.
+- 신규 계정은 비밀번호가 필요하다.
+- 권한은 `슈퍼 관리자`, `관리자`, `사용자` 또는 `super_admin`, `admin`, `user` 계열 alias를 허용한다.
+
+응답:
+
+- status 200
+- `created`, `updated`, `skipped`, `processed`, `total`, `errors`
 
 ### `PATCH /api/accounts/:accountId`
 
@@ -191,7 +228,8 @@ Query:
 - `code`
 - `name`
 - `description`
-- `isActive`
+- `createdAccount`
+- `canManage`
 - `templateCount`
 - `candidateCount`
 - `updatedAt`
@@ -205,15 +243,15 @@ Body:
 | field | required | 설명 |
 |---|---|---|
 | `name` | yes | 학교명. 클라이언트는 `대학교` suffix 입력 UI를 정규화한다. |
-| `code` | no/yes | 학교 코드. service validation 기준. |
+| `code` | no | 학교 코드. 비어 있으면 서버가 `SCHOOL-...` 형식으로 생성한다. |
 | `description` | no | 설명. |
 | `deletionPassword` | 조건부 | `deleteSchoolsWithoutPassword` 권한이 없으면 필요. |
-| `academicYear` | no | 학교 설정 모집년도. |
-| `logoDataUrl` | no | 학교 로고 data URL. |
+| `deletionPasswordConfirm` | no | 삭제 비밀번호 확인. 입력된 경우 `deletionPassword`와 일치해야 한다. |
 
 Route 옵션:
 
 - `requireDeletionPassword`는 현재 request에 `deleteSchoolsWithoutPassword` 권한이 없을 때 true다.
+- `createdAccount`는 현재 로그인 계정 ID, 인증 비활성 상태에서는 `system`으로 저장된다.
 
 응답:
 
@@ -244,14 +282,15 @@ Body:
 | `name` | 학교명. |
 | `code` | 학교 코드. |
 | `description` | 설명. |
-| `isActive` | 활성 여부. |
-| `academicYear` | 설정 모집년도. |
-| `logoDataUrl` | 설정 로고. |
 
 응답:
 
 - status 200
 - 수정된 학교 payload
+
+비고:
+
+- 모집년도와 로고는 학교 기본 정보 API가 아니라 `PATCH /api/school-settings`로 저장한다.
 
 ### `DELETE /api/schools/:schoolId`
 
@@ -468,7 +507,7 @@ Body:
 
 ### `GET /api/pdf-data-tags`
 
-Permission: route에서 session/access 기반 조회. 실질적으로 템플릿 조회 맥락.
+Permission: `viewTemplates`.
 
 Query:
 
@@ -576,6 +615,12 @@ Body:
 
 Permission: `manageCandidates`.
 
+Query:
+
+| field | 설명 |
+|---|---|
+| `schoolId` | 업로드 대상 학교 id. |
+
 Body:
 
 - binary body
@@ -603,10 +648,12 @@ Body:
 
 | field | 설명 |
 |---|---|
+| `schoolId` | 업로드 대상 학교 id. |
 | `previewToken` | `photo-archive/preview` 응답에서 받은 임시 업로드 세션 token. |
 
 - 호환 요청: binary body
 - 호환 binary 요청은 preview와 같은 size 제한 적용
+- 호환 binary 요청에서는 `schoolId`를 query string으로 전달한다.
 
 응답:
 
@@ -1227,6 +1274,7 @@ Body:
 
 | API | 파일명 기본값 | Content-Disposition |
 |---|---|---|
+| `GET /api/accounts/template.xlsx` | `계정 업로드 양식.xlsx` | attachment |
 | `GET /api/candidates/template.xlsx` | `수험생 데이터 업로드 양식.xlsx` | attachment |
 | `POST /api/candidates/export.xlsx` | `수험생 데이터.xlsx` | attachment |
 | `GET /api/candidates/:candidateId/photo` | 저장된 사진명 또는 `candidate-photo.jpg` | inline |

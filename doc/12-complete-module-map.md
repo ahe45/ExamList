@@ -131,10 +131,10 @@
 | `server/modules/pdf-generations/batch-target-resolution.js` | 배치 요청에서 템플릿, 학교, 필터, 대상 해석. |
 | `server/modules/pdf-generations/batch-orchestrator.js` | 배치 row 생성, chunk 계획, job enqueue. |
 | `server/modules/pdf-generations/chunks.js` | target별 chunk 분할. |
-| `server/modules/pdf-generations/queue-service.js` | 기본 memory queue driver 선택과 job 등록. |
+| `server/modules/pdf-generations/queue-service.js` | 기본 memory queue 또는 선택적 BullMQ driver 선택과 job 등록. |
 | `server/modules/pdf-generations/queue-enqueuer.js` | 단일/배치 job 등록. |
 | `server/modules/pdf-generations/queue-job-processor.js` | queue job 실행 진입. |
-| `server/modules/pdf-generations/queue-lifecycle.js` | worker 시작, event 처리, memory queue 처리. |
+| `server/modules/pdf-generations/queue-lifecycle.js` | queue job 처리, 재시도 연결, queued/running 작업 복구. |
 | `server/modules/pdf-generations/queue-recovery.js` | 서버 재시작 시 queued/running 복구. |
 | `server/modules/pdf-generations/generation-runner.js` | 단일 PDF 생성 실행. |
 | `server/modules/pdf-generations/browser-renderer.js` | browser executable로 HTML을 PDF 파일로 출력. |
@@ -495,6 +495,7 @@
 | `scripts/pdf-worker.js` | 독립 PDF queue worker. |
 | `scripts/smoke-ui.js` | UI smoke. |
 | `scripts/smoke-browser.js` | 로그인부터 주요 화면과 편집기 기본 동작까지 브라우저 smoke. |
+| `scripts/smoke-bullmq.js` | `REDIS_URL` 또는 `PDF_SMOKE_REDIS_URL` 기반 BullMQ smoke. |
 | `scripts/full-browser-regression.js` | 주요 화면 screenshot/checkpoint 회귀 테스트. |
 | `scripts/check-dropdown-ui.js` | route별 드롭다운, 페이지네이션, 반응형 UI 점검. |
 | `scripts/smoke/*` | 브라우저 CDP helper와 시나리오. |
@@ -504,13 +505,14 @@
 
 | 경로 | 저장 내용 |
 |---|---|
-| `storage/pdf-generations/files` | 개별 생성 PDF. |
-| `storage/pdf-generations/archives` | ZIP archive. |
-| `storage/pdf-generations/merged` | 병합 PDF. |
-| `storage/pdf-generations/previews` | 미리보기 PDF. |
-| `storage/pdf-generations/tmp` | PDF 렌더링 임시 작업물. |
-| `storage/candidate-photos` | 수험생 사진 파일. |
-| `storage/tmp/candidate-photo-archives` | 사진 ZIP preview 후 실제 반영까지 유지하는 임시 업로드 세션 파일. |
+| `<PDF_STORAGE_DIR>/<schoolCode>/files` 또는 `storage/<schoolCode>/pdf-generations/files` | 개별 생성 PDF. |
+| `<PDF_STORAGE_DIR>/<schoolCode>/archives` 또는 `storage/<schoolCode>/pdf-generations/archives` | ZIP archive. |
+| `<PDF_STORAGE_DIR>/<schoolCode>/merged` 또는 `storage/<schoolCode>/pdf-generations/merged` | 병합 PDF. |
+| `<PDF_STORAGE_DIR>/<schoolCode>/previews` 또는 `storage/<schoolCode>/pdf-generations/previews` | 미리보기 PDF. |
+| `<PDF_STORAGE_DIR>/<schoolCode>/tmp` 또는 `storage/<schoolCode>/pdf-generations/tmp` | PDF 렌더링 임시 작업물. |
+| `storage/<schoolCode>/candidate-photos` | 신규 수험생 사진 파일. |
+| `storage/<schoolCode>/tmp/candidate-photo-archives` | 사진 ZIP preview 후 실제 반영까지 유지하는 임시 업로드 세션 파일. |
+| `storage/pdf-generations`, `storage/candidate-photos`, `storage/tmp/candidate-photo-archives` | 기존 파일 호환용 legacy 저장소. |
 
 ## 12. 이식 단위별 필수 묶음
 
@@ -535,5 +537,5 @@
 - 클라이언트: `client/features/candidates/*`, `client/features/pdf-generations/*`, `client/features/data-deletion/*`
 - 서버: `server/http/routes/candidates.js`, `pdf-generations.js`, `data-deletion.js`, `server/modules/candidates/*`, `pdf-generations/*`, `data-deletion/*`
 - DB: `candidate_records`, `pdf_generation_histories`, `pdf_generation_batches`, `pdf_audit_logs`
-- 저장소: `storage/candidate-photos`, `storage/pdf-generations`
+- 저장소: 학교 코드별 `candidate-photos`, `pdf-generations`, 그리고 기존 파일 호환용 legacy 저장소
 - 외부 실행 파일: PDF 렌더링용 Chrome/Edge 경로 또는 `PDF_BROWSER_PATH`

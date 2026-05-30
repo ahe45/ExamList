@@ -120,6 +120,7 @@ Header:
 - 양식 개수 badge.
 - 수험생 건수 badge.
 - 최종 수정 일시 badge.
+- 생성 계정 badge.
 - row 클릭 시 `/schools/:schoolCode/templates`로 이동.
 - 수정 버튼: `manageTemplates` 필요.
 - 삭제 버튼: `manageTemplates` 필요.
@@ -210,6 +211,7 @@ Header:
 - 계정 관리 제목.
 - 총 계정 수 badge.
 - 계정 추가 버튼.
+- 엑셀 업로드 버튼.
 - 새로고침 버튼.
 - 학교 목록 버튼.
 
@@ -226,6 +228,29 @@ Header:
 
 - 설정.
 - 삭제.
+
+### 계정 엑셀 업로드 모달
+
+필드:
+
+- XLSX 파일 선택.
+- 업로드 양식 다운로드 버튼.
+
+업로드 양식 컬럼:
+
+- 아이디.
+- 이름.
+- 비밀번호.
+- 권한.
+
+동작:
+
+- `GET /api/accounts/template.xlsx`로 업로드 양식을 다운로드한다.
+- `POST /api/accounts/import`로 XLSX 파일의 base64 payload를 전송한다.
+- 같은 아이디의 기존 계정은 이름, 권한, 비밀번호를 수정한다.
+- 기존 계정의 비밀번호 칸이 비어 있으면 기존 비밀번호를 유지한다.
+- 신규 계정은 비밀번호가 필요하다.
+- 업로드 결과는 추가/수정/실패 건수와 최대 5개 오류를 모달에 표시한다.
 
 ### 계정 추가/수정 모달
 
@@ -246,7 +271,9 @@ Header:
 API:
 
 - `GET /api/accounts`
+- `GET /api/accounts/template.xlsx`
 - `POST /api/accounts`
+- `POST /api/accounts/import`
 - `PATCH /api/accounts/:accountId`
 - `DELETE /api/accounts/:accountId`
 
