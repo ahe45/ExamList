@@ -32,7 +32,9 @@
 | object size grid 최소 크기 helper 분리 | 완료 | `object-size-measurements.test.js` 10개, 전체 345개 테스트, browser/UI smoke 통과 | table width 측정 helper는 테스트 선행 |
 | object table rendered target width helper 검토 | 완료 | collapsed border/rendered overflow/scale clamp 고정 후 분리 | table style 적용 로직 이동 금지 |
 | object table rendered target width helper 분리 | 완료 | `object-size-measurements.test.js` 15개, 전체 350개 테스트, browser/UI smoke 통과 | table segment size helper 검토 |
-| object table segment size helper 검토 | 대기 | `normalizeObjectTableSegmentSizes` 후보 | DOM 측정/적용과 분리 가능한 순수 helper인지 확인 |
+| object table segment size helper 검토 | 완료 | 순수 helper로 확인 후 분리 | DOM 측정 helper는 별도 단위 |
+| object table segment size helper 분리 | 완료 | `object-size-table-segments.test.js` 6개, 전체 356개 테스트, browser/UI smoke 통과 | column/row 측정 helper 검토 |
+| object table column/row 측정 helper 검토 | 대기 | `getObjectTableColumnWidths`, `getObjectTableRowHeights` 후보 | DOM 측정 fallback 테스트 선행 |
 
 ## 1. 목적
 
@@ -2348,7 +2350,80 @@ npm run smoke:ui
 - `getObjectTableColumnWidths`와 `getObjectTableRowHeights`는 DOM 측정 helper이므로 순수 helper와 같은 단위로 이동하지 않는다.
 - `applyObjectTableWidth`, `applyObjectTableHeight`, table style 적용은 다음 단위에서도 이동하지 않는다.
 
-## 38. 결론
+## 38. object size controls 다섯 번째 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- object size controls 다섯 번째 작업 완료
+- DOM을 읽지 않는 table segment size 분배 helper를 분리
+- table width/height 적용과 DOM 측정 helper 흐름은 변경하지 않음
+
+작업 범위:
+
+- `client/features/template-editor/object-size-table-segments.js`를 추가했다.
+- 기존 `object-size-controls.js`의 `normalizeObjectTableSegmentSizes`를 새 모듈로 이동했다.
+- `object-size-controls.js`는 새 helper를 import해서 기존 `applyObjectTableWidth`, `applyObjectTableHeight` 흐름에서 그대로 사용한다.
+- `client/features/template-editor/object-size-table-segments.test.js`를 추가해 현재 size 분배 규칙을 고정했다.
+
+테스트로 고정한 규칙:
+
+- 빈 source는 빈 배열을 반환한다.
+- 거의 균등한 source는 target size를 균등 분배하고 remainder를 앞쪽 segment부터 배정한다.
+- target size가 최소 합계보다 작으면 최소 합계로 clamp한다.
+- 불균등 source는 minimum 초과분 비율에 따라 target extra size를 분배한다.
+- 입력 size, target size, minimum size는 기존처럼 반올림/숫자 변환 규칙을 따른다.
+- rounding overflow는 뒤쪽 segment부터 minimum을 지키는 범위에서 줄인다.
+
+금지 범위 준수:
+
+- `applyObjectTableWidth` 조건과 분기 변경 없음
+- `applyObjectTableHeight` 조건과 분기 변경 없음
+- `getObjectTableColumnWidths` 변경 없음
+- `getObjectTableRowHeights` 변경 없음
+- colgroup width 적용 순서 변경 없음
+- row/cell height 적용 순서 변경 없음
+- table style 적용 변경 없음
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/object-size-table-segments.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- object size table segment helper 테스트 통과, 6개 테스트
+- `npm test` 통과, 356개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+판단:
+
+- table segment 분배 규칙은 순수 helper로 분리되었고, DOM 없이 direct 테스트가 가능해졌다.
+- `object-size-controls.js`에는 여전히 table column/row 측정과 실제 style 적용이 남아 있다.
+- 다음 후보인 `getObjectTableColumnWidths`, `getObjectTableRowHeights`는 DOM 측정 helper이므로 fallback 순서 테스트가 먼저다.
+
+다음 후보:
+
+- `getObjectTableColumnWidths`
+- `getObjectTableRowHeights`
+
+다음 작업 조건:
+
+- column width는 inline style width, table util 측정값, scaled rect fallback, minimum clamp 순서를 테스트로 고정한다.
+- row height는 inline style height, scaled rect fallback, minimum clamp 순서를 테스트로 고정한다.
+- `applyObjectTableWidth`, `applyObjectTableHeight`, row group height sync, cell style 적용은 다음 단위에서 이동하지 않는다.
+
+## 39. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
