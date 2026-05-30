@@ -21,8 +21,8 @@
 | 3차 range adjacency helper 분리 | 완료 | `getCandidateBlockGridAdjacentToRange` 이동 및 326개 테스트 통과 | range inclusion helper 검토 |
 | 3차 range inclusion helper 분리 | 완료 | `doesRangeIncludeCandidateBlockGrid` 이동 및 328개 테스트 통과 | blank boundary host 묶음 검토 |
 | 3차 blank boundary host 인접 판단 묶음 분리 | 완료 | boundary 14개 테스트, native deletion 8개 테스트, 전체 330개 테스트 통과 | 최종 guard orchestration 이동 여부 검토 |
-| `shouldPreventCandidateBlockGridNativeDeletion` 최종 orchestration 이동 | 대기 | 아직 이동하지 않음 | 별도 리뷰 후 한 단위로만 진행 |
-| 수험생 블록 외 다음 영역 선정 | 대기 | object size, adapter, host/runtime 중복 후보 | native deletion guard 안정화 완료 후 결정 |
+| `shouldPreventCandidateBlockGridNativeDeletion` 최종 orchestration 이동 | 완료 | boundary/native deletion 테스트, 전체 330개 테스트, browser/UI smoke 통과 | 수험생 블록 native deletion 리팩토링 일단 중지 가능 |
+| 수험생 블록 외 다음 영역 선정 | 대기 | object size, adapter, host/runtime 중복 후보 | 다음 작업 전 별도 리뷰 후 결정 |
 
 ## 1. 목적
 
@@ -1923,7 +1923,67 @@ npm run smoke:ui
 - 이동한다면 함수 본문은 그대로 두고 adapter import/export만 조정한다.
 - 이동 후에는 boundary/native deletion 단위 테스트, `npm test`, browser/UI smoke를 모두 다시 실행한다.
 
-## 32. 결론
+## 32. 3차 여섯 번째 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- 3차 여섯 번째 작업 완료
+- `shouldPreventCandidateBlockGridNativeDeletion` 최종 orchestration을 adapter에서 boundary helper로 분리
+- adapter는 기존 테스트/외부 진입점을 유지하기 위해 같은 이름을 re-export
+
+작업 범위:
+
+- `candidate-block-grid-adapter.js` 안에 있던 `shouldPreventCandidateBlockGridNativeDeletion` 함수 본문을 `candidate-block-grid-boundary.js`로 이동했다.
+- 함수 본문 로직은 변경하지 않았다.
+- adapter는 `shouldPreventCandidateBlockGridNativeDeletion`을 import해서 기존 `handleSurfaceKeyDown` 흐름에서 그대로 호출한다.
+- adapter는 `shouldPreventCandidateBlockGridNativeDeletion`을 re-export해서 기존 테스트 진입점을 유지한다.
+- adapter의 direct native deletion helper import는 최종 guard import 하나로 줄었다.
+
+금지 범위 준수:
+
+- `shouldPreventCandidateBlockGridNativeDeletion` 본문 조건 순서 변경 없음
+- `handleSurfaceKeyDown` 변경 없음
+- `handleDocumentKeyDown` 변경 없음
+- Backspace/Delete preventDefault 조건 변경 없음
+- event listener 등록 순서 변경 없음
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/candidate-block-grid-boundary.test.js
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/candidate-block-grid-native-deletion.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- boundary helper 테스트 통과, 14개 테스트
+- native deletion guard 테스트 통과, 8개 테스트
+- `npm test` 통과, 330개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+판단:
+
+- 수험생 블록 native deletion 판단 로직은 boundary helper 쪽으로 정리되었다.
+- adapter에는 event handler 흐름과 실제 삭제/동기화 orchestration이 남아 있다.
+- 이 시점에서 수험생 블록 native deletion 리팩토링은 한 번 멈추고 다음 영역을 고르는 것이 안전하다.
+
+다음 후보:
+
+- 다음 작업 전에는 수험생 블록 전체 adapter diff를 리뷰하고, 추가로 옮길 가치가 있는지 판단한다.
+- 새 리팩토링 영역을 고른다면 `object-size-controls.js`의 수험생 블록/일반 오브젝트 크기 처리 분리 후보를 검토한다.
+- 바로 구현에 들어가기보다 해당 영역의 테스트 상태와 smoke 커버를 먼저 확인한다.
+
+## 33. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
