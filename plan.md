@@ -36,7 +36,8 @@
 | object table segment size helper 분리 | 완료 | `object-size-table-segments.test.js` 6개, 전체 356개 테스트, browser/UI smoke 통과 | column/row 측정 helper 검토 |
 | object table column/row 측정 helper 검토 | 완료 | inline style/util/rect fallback 순서 고정 후 분리 | 실제 style 적용 로직은 보류 |
 | object table column/row 측정 helper 분리 | 완료 | `object-size-measurements.test.js` 19개, 전체 360개 테스트, browser/UI smoke 통과 | object size controls 누적 리뷰 |
-| object size controls 누적 리뷰 | 대기 | value/measurement/segment helper 분리 완료 | 추가 이동 가치와 위험도 재평가 |
+| object size controls 누적 리뷰 | 완료 | 809줄에서 642줄로 감소, direct 테스트 30개 추가 | 실제 적용 함수 이동은 보류 |
+| object size controls 1차 중지 결정 | 완료 | 남은 코드는 style 적용/sync/orchestration 중심 | 다음 작업 전 새 후보 선정 |
 
 ## 1. 목적
 
@@ -2501,7 +2502,81 @@ npm run smoke:ui
 - 누적 리뷰에서 adapter처럼 충분히 책임이 줄었는지 먼저 확인한다.
 - 추가 이동을 한다면 적용 함수별 direct 테스트 또는 smoke 시나리오를 먼저 명시한다.
 
-## 40. 결론
+## 40. object size controls 누적 리뷰와 중지 판단
+
+기준일:
+
+- 2026-05-30
+
+검토 범위:
+
+- 기준 커밋: `68f85ce docs: select next template editor refactor area`
+- 현재 커밋: `4730f85 docs: record object table dimension measurement step`
+- 대상 파일:
+  - `client/features/template-editor/object-size-controls.js`
+  - `client/features/template-editor/object-size-values.js`
+  - `client/features/template-editor/object-size-measurements.js`
+  - `client/features/template-editor/object-size-table-segments.js`
+  - 각 helper 테스트 파일
+
+누적 결과:
+
+- `object-size-controls.js`는 809줄에서 642줄로 줄었다.
+- 기준점 대비 `object-size-controls.js` 단일 파일 diff는 14줄 추가, 218줄 삭제다.
+- 새로 분리한 helper는 모두 direct 테스트를 갖는다.
+  - `object-size-values.test.js`: 5개 테스트
+  - `object-size-measurements.test.js`: 19개 테스트
+  - `object-size-table-segments.test.js`: 6개 테스트
+- object size 영역에 direct 테스트가 총 30개 추가되었다.
+- 전체 테스트는 마지막 코드 변경 기준 360개 통과했다.
+- `npm run smoke:browser`, `npm run smoke:ui`도 마지막 코드 변경 기준 통과했다.
+
+분리 완료된 책임:
+
+- size input 값 정규화
+- px/inline px parsing
+- candidate block modal content size 측정
+- candidate block grid minimum size 측정
+- table collapsed border 보정
+- table rendered target width 측정
+- table column/row size 측정
+- table segment size 분배
+
+현재 `object-size-controls.js`에 남은 책임:
+
+- 선택된 일반 object/table/table cell/candidate block modal/candidate block grid 분류
+- table cell object size 적용
+- candidate block modal object size 적용
+- candidate block grid size 적용
+- table width/height style 적용
+- row group height sync
+- candidate block grid config sync
+- modal editor input event dispatch 및 active editor sync
+- toolbar input 상태, focus 보존, commit 처리
+- selection 변경에 따른 toolbar 표시값 동기화
+
+위험도 판단:
+
+- `applyObjectTableWidth`와 `applyObjectTableHeight`는 colgroup, cell width/height, row group height, table utils 호출을 직접 변경한다.
+- `applyCandidateBlockGridObjectSize`는 table normalization, grid style 변경, config write, input event dispatch를 한 함수에서 수행한다.
+- `applyCandidateBlockModalObjectSize`는 modal content bounds, object size, absolute position 보정, inline-block fallback을 함께 처리한다.
+- `bindObjectSizeControls`는 input commit, focus 복원, requestAnimationFrame sync, read-only 상태, mixed size 표시를 함께 관리한다.
+- 위 함수들은 계산 helper보다 실제 사용자 동작과 저장 동기화에 가까워, 지금 바로 이동하면 회귀 위험이 커진다.
+
+중지 판단:
+
+- object size controls의 첫 리팩토링 단위는 여기서 멈추는 것이 안전하다.
+- 기존 계획의 원칙대로 순수 helper와 DOM 측정 helper는 분리했고, 남은 코드는 orchestration 및 DOM 변경 중심이다.
+- 추가 이동을 강행하기보다 현재 상태에서 충분히 안정화 이득을 얻었다고 판단한다.
+
+다음 작업 조건:
+
+- object size controls를 더 진행하려면 먼저 적용 함수별 direct DOM 테스트 또는 smoke 시나리오를 작성한다.
+- 특히 table width/height 적용, candidate block grid size 적용, modal object absolute position 보정은 각각 별도 작업으로 다룬다.
+- 테스트 없이 `applyObjectTableWidth`, `applyObjectTableHeight`, `applyCandidateBlockGridObjectSize`, `applyCandidateBlockModalObjectSize`, `bindObjectSizeControls`를 이동하지 않는다.
+- 다음 리팩토링 작업은 object size controls 바깥의 다른 고위험 영역을 다시 검토한 뒤 선정한다.
+
+## 41. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
