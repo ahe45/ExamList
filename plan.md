@@ -24,7 +24,9 @@
 | `shouldPreventCandidateBlockGridNativeDeletion` 최종 orchestration 이동 | 완료 | boundary/native deletion 테스트, 전체 330개 테스트, browser/UI smoke 통과 | 수험생 블록 native deletion 리팩토링 일단 중지 가능 |
 | 수험생 블록 adapter 누적 리뷰 | 완료 | 823줄에서 627줄로 감소, adapter diff 257줄 삭제/5줄 추가 | 추가 수험생 블록 이동은 일단 보류 |
 | 수험생 블록 외 다음 영역 선정 | 완료 | `object-size-controls.js`를 다음 후보로 선정 | 구현 전 테스트 커버와 첫 단위 재확인 |
-| object size controls 사전 검토 | 대기 | 수험생 블록 grid/modal size와 일반 객체 size가 혼재 | 첫 작업은 테스트/책임 경계 고정부터 진행 |
+| object size controls 사전 검토 | 완료 | pure helper 후보와 위험 경계 확인 | DOM 없는 value helper부터 진행 |
+| object size value helper 분리 | 완료 | `object-size-values.test.js` 5개, 전체 335개 테스트, browser/UI smoke 통과 | DOM 측정 helper는 테스트 선행 후 검토 |
+| object size DOM 측정 helper 검토 | 대기 | `getCandidateBlockModalContentSize`, `getCandidateBlockGridMinimumSize` 후보 | style 적용/event dispatch/config sync 이동 금지 |
 
 ## 1. 목적
 
@@ -2047,7 +2049,83 @@ npm run smoke:ui
   - `getCandidateBlockGridMinimumSize`
 - DOM style 적용, event dispatch, `writeCandidateBlockGridSizeToConfig`, `syncActiveEditor` 호출은 첫 단위에서 이동하지 않는다.
 
-## 34. 결론
+## 34. object size controls 첫 번째 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- object size controls 첫 번째 작업 완료
+- DOM 부작용이 없는 size value helper를 `object-size-controls.js`에서 분리
+- 기존 toolbar input, selection 적용, table/cell/grid/modal size 적용 흐름은 변경하지 않음
+
+작업 범위:
+
+- `client/features/template-editor/object-size-values.js`를 추가했다.
+- 기존 `object-size-controls.js`의 다음 private helper를 새 모듈로 이동했다.
+  - `normalizeObjectSizeInputValue`
+  - `parseObjectSizePixelValue`
+  - `parseObjectSizeInlinePixelValue`
+- `object-size-controls.js`는 새 helper를 import해서 기존 호출 위치에서 그대로 사용한다.
+- `client/features/template-editor/object-size-values.test.js`를 추가해 현재 입력값 처리 규칙을 고정했다.
+
+테스트로 고정한 규칙:
+
+- 빈 값, 공백, 비숫자 입력은 size input 값으로 인정하지 않고 `null`을 반환한다.
+- 숫자 입력은 `Math.round(Number(value))` 규칙을 유지한다.
+- 최소 크기는 `templateEditorObjectMinimumSize` 아래로 내려가지 않는다.
+- 일반 pixel parsing은 기존 `Number.parseFloat` 기반 동작을 유지한다.
+- inline pixel parsing은 명시적인 `px` 단위 문자열만 허용한다.
+
+금지 범위 준수:
+
+- toolbar input event 흐름 변경 없음
+- `applyObjectSizeToSelection` 변경 없음
+- `applyCandidateBlockGridObjectSize` 변경 없음
+- `applyCandidateBlockModalObjectSize` 변경 없음
+- table/cell/grid/modal style 적용 순서 변경 없음
+- `writeCandidateBlockGridSizeToConfig` 호출 변경 없음
+- `syncActiveEditor` 호출 변경 없음
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/object-size-values.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- object size value helper 테스트 통과, 5개 테스트
+- `npm test` 통과, 335개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+판단:
+
+- 이번 작업은 순수 helper 이동만 포함하므로 기능 회귀 위험이 낮다.
+- `object-size-controls.js`의 DOM 적용 흐름은 그대로 유지되어 사용자가 보는 동작과 저장 결과가 바뀌지 않는다.
+- 다음 단계부터는 DOM 측정 helper가 후보가 되므로, helper 이름이 계산처럼 보여도 `getBoundingClientRect`, `offsetWidth`, `getComputedStyle`, dataset fallback을 읽는 순간 중간 위험 작업으로 다뤄야 한다.
+
+다음 후보:
+
+- `getCandidateBlockModalContentSize`
+- `getCandidateBlockGridMinimumSize`
+- `getObjectTableRenderedTargetWidth`
+
+다음 작업 조건:
+
+- DOM 측정 helper를 이동하기 전 현재 fallback 우선순위를 테스트로 먼저 고정한다.
+- style/class/dataset 쓰기, event dispatch, config sync는 다음 단위에서도 이동하지 않는다.
+- 특히 수험생 블록 grid size는 화면 크기와 저장 config가 동시에 연결되므로 direct helper 테스트와 smoke를 모두 통과해야 한다.
+
+## 35. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
