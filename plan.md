@@ -34,7 +34,9 @@
 | object table rendered target width helper 분리 | 완료 | `object-size-measurements.test.js` 15개, 전체 350개 테스트, browser/UI smoke 통과 | table segment size helper 검토 |
 | object table segment size helper 검토 | 완료 | 순수 helper로 확인 후 분리 | DOM 측정 helper는 별도 단위 |
 | object table segment size helper 분리 | 완료 | `object-size-table-segments.test.js` 6개, 전체 356개 테스트, browser/UI smoke 통과 | column/row 측정 helper 검토 |
-| object table column/row 측정 helper 검토 | 대기 | `getObjectTableColumnWidths`, `getObjectTableRowHeights` 후보 | DOM 측정 fallback 테스트 선행 |
+| object table column/row 측정 helper 검토 | 완료 | inline style/util/rect fallback 순서 고정 후 분리 | 실제 style 적용 로직은 보류 |
+| object table column/row 측정 helper 분리 | 완료 | `object-size-measurements.test.js` 19개, 전체 360개 테스트, browser/UI smoke 통과 | object size controls 누적 리뷰 |
+| object size controls 누적 리뷰 | 대기 | value/measurement/segment helper 분리 완료 | 추가 이동 가치와 위험도 재평가 |
 
 ## 1. 목적
 
@@ -2423,7 +2425,83 @@ npm run smoke:ui
 - row height는 inline style height, scaled rect fallback, minimum clamp 순서를 테스트로 고정한다.
 - `applyObjectTableWidth`, `applyObjectTableHeight`, row group height sync, cell style 적용은 다음 단위에서 이동하지 않는다.
 
-## 39. 결론
+## 39. object size controls 여섯 번째 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- object size controls 여섯 번째 작업 완료
+- table column/row size 측정 helper를 `object-size-measurements.js`로 분리
+- table width/height 적용, row group sync, colgroup/cell/row style 변경 흐름은 변경하지 않음
+
+작업 범위:
+
+- 기존 `object-size-controls.js`의 `getObjectTableColumnWidths`를 `object-size-measurements.js`로 이동했다.
+- 기존 `object-size-controls.js`의 `getObjectTableRowHeights`를 `object-size-measurements.js`로 이동했다.
+- `object-size-controls.js`는 새 helper를 import해서 기존 `applyObjectTableWidth`, `applyObjectTableHeight` 흐름에서 그대로 사용한다.
+- `object-size-measurements.test.js`에 column/row 측정 fallback 테스트를 추가했다.
+
+테스트로 고정한 규칙:
+
+- column width는 inline style width를 우선한다.
+- column width는 object minimum size 아래로 내려가지 않는다.
+- inline style width가 없으면 table utils 측정값을 scaled rect fallback보다 먼저 사용한다.
+- table utils 측정값이 없으면 candidate block visual scale을 반영한 rect width를 사용한다.
+- row height는 inline style height를 우선한다.
+- row height는 object minimum size 아래로 내려가지 않는다.
+- inline style height가 없으면 candidate block visual scale을 반영한 rect height를 사용한다.
+
+금지 범위 준수:
+
+- `applyObjectTableWidth` 조건과 분기 변경 없음
+- `applyObjectTableHeight` 조건과 분기 변경 없음
+- `ensureTemplateEditorTableColGroup` 호출 흐름 변경 없음
+- colgroup width 적용 순서 변경 없음
+- cell width style 적용 순서 변경 없음
+- row/cell height style 적용 순서 변경 없음
+- row group height sync 변경 없음
+- 수험생 블록 grid/modal size 로직 변경 없음
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/object-size-measurements.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- object size measurement helper 테스트 통과, 19개 테스트
+- `npm test` 통과, 360개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+판단:
+
+- table 측정 helper는 measurement module로 정리되었고, fallback 우선순위가 direct 테스트로 고정되었다.
+- `object-size-controls.js`에는 이제 toolbar binding, selection 분기, 실제 style 적용, sync orchestration이 중심으로 남아 있다.
+- 다음 작업은 바로 적용 함수를 옮기기보다 누적 diff와 파일 책임을 리뷰해 추가 이동 가치가 있는지 판단하는 것이 안전하다.
+
+다음 후보:
+
+- `object-size-controls.js` 누적 리뷰
+- `applyObjectTableWidth`, `applyObjectTableHeight` 이동 여부 판단
+- `applyCandidateBlockGridObjectSize`, `applyCandidateBlockModalObjectSize` 이동 여부 판단
+
+다음 작업 조건:
+
+- 실제 DOM style 적용 함수는 helper 이동보다 위험도가 높으므로, 바로 이동하지 않는다.
+- 누적 리뷰에서 adapter처럼 충분히 책임이 줄었는지 먼저 확인한다.
+- 추가 이동을 한다면 적용 함수별 direct 테스트 또는 smoke 시나리오를 먼저 명시한다.
+
+## 40. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
