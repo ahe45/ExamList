@@ -58,10 +58,8 @@ import {
 } from "./candidate-block-grid-block-roles.js";
 import {
   doesRangeIncludeCandidateBlockGrid,
-  getAdjacentCandidateBlockBoundaryNode,
   getCandidateBlockGridAdjacentToRange,
-  getCandidateBlockGridFromBoundaryNode,
-  isBlankCandidateBlockBoundaryHost,
+  isBlankBoundaryHostAdjacentToCandidateBlockGrid,
 } from "./candidate-block-grid-boundary.js";
 import { getSelectedPage } from "./state.js";
 
@@ -141,62 +139,6 @@ function getCandidateBlockGridSettingControl(event) {
   const target = event?.target instanceof Element ? event.target : null;
 
   return target?.closest?.("[data-examlist-block-grid-setting]") || null;
-}
-
-function getCandidateBlockBoundaryHostElement(range, surfaceElement) {
-  let currentNode = range?.startContainer || null;
-
-  if (currentNode?.nodeType === Node.TEXT_NODE) {
-    currentNode = currentNode.parentElement;
-  }
-
-  while (currentNode instanceof HTMLElement && currentNode !== surfaceElement) {
-    if (currentNode.matches("[data-candidate-block-grid], .examlist-candidate-block-grid")) {
-      return null;
-    }
-
-    if (
-      currentNode.matches("p, div, h1, h2, h3, blockquote, ul, ol") &&
-      !currentNode.closest("[data-candidate-block-grid], .examlist-candidate-block-grid")
-    ) {
-      return currentNode;
-    }
-
-    currentNode = currentNode.parentElement;
-  }
-
-  return null;
-}
-
-function getCandidateBlockGridSibling(element, direction, surfaceElement) {
-  const parentNode = element?.parentNode || null;
-
-  if (!parentNode) {
-    return null;
-  }
-
-  const currentIndex = Array.prototype.indexOf.call(parentNode.childNodes, element);
-  const siblingNode = getAdjacentCandidateBlockBoundaryNode(
-    parentNode,
-    currentIndex + (direction === "backward" ? -1 : 1),
-    direction,
-  );
-  const gridElement = getCandidateBlockGridFromBoundaryNode(siblingNode, direction);
-
-  return gridElement instanceof HTMLElement && surfaceElement.contains(gridElement) ? gridElement : null;
-}
-
-function isBlankBoundaryHostAdjacentToCandidateBlockGrid(range, surfaceElement) {
-  const hostElement = getCandidateBlockBoundaryHostElement(range, surfaceElement);
-
-  return Boolean(
-    hostElement &&
-      isBlankCandidateBlockBoundaryHost(hostElement) &&
-      (
-        getCandidateBlockGridSibling(hostElement, "backward", surfaceElement) ||
-        getCandidateBlockGridSibling(hostElement, "forward", surfaceElement)
-      )
-  );
 }
 
 export function shouldPreventCandidateBlockGridNativeDeletion(event, surfaceElement) {

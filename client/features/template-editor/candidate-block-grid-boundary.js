@@ -141,6 +141,62 @@ export function doesRangeIncludeCandidateBlockGrid(range, surfaceElement) {
   });
 }
 
+export function getCandidateBlockBoundaryHostElement(range, surfaceElement) {
+  let currentNode = range?.startContainer || null;
+
+  if (currentNode?.nodeType === Node.TEXT_NODE) {
+    currentNode = currentNode.parentElement;
+  }
+
+  while (currentNode instanceof HTMLElement && currentNode !== surfaceElement) {
+    if (currentNode.matches(CANDIDATE_BLOCK_GRID_SELECTOR)) {
+      return null;
+    }
+
+    if (
+      currentNode.matches("p, div, h1, h2, h3, blockquote, ul, ol") &&
+      !currentNode.closest(CANDIDATE_BLOCK_GRID_SELECTOR)
+    ) {
+      return currentNode;
+    }
+
+    currentNode = currentNode.parentElement;
+  }
+
+  return null;
+}
+
+export function getCandidateBlockGridSibling(element, direction, surfaceElement) {
+  const parentNode = element?.parentNode || null;
+
+  if (!parentNode) {
+    return null;
+  }
+
+  const currentIndex = Array.prototype.indexOf.call(parentNode.childNodes, element);
+  const siblingNode = getAdjacentCandidateBlockBoundaryNode(
+    parentNode,
+    currentIndex + (direction === "backward" ? -1 : 1),
+    direction,
+  );
+  const gridElement = getCandidateBlockGridFromBoundaryNode(siblingNode, direction);
+
+  return gridElement instanceof HTMLElement && surfaceElement.contains(gridElement) ? gridElement : null;
+}
+
+export function isBlankBoundaryHostAdjacentToCandidateBlockGrid(range, surfaceElement) {
+  const hostElement = getCandidateBlockBoundaryHostElement(range, surfaceElement);
+
+  return Boolean(
+    hostElement &&
+      isBlankCandidateBlockBoundaryHost(hostElement) &&
+      (
+        getCandidateBlockGridSibling(hostElement, "backward", surfaceElement) ||
+        getCandidateBlockGridSibling(hostElement, "forward", surfaceElement)
+      )
+  );
+}
+
 export function normalizeCandidateBlockBoundaryHostHtml(value = "") {
   return String(value || "")
     .replace(/<br\s*\/?>/gi, "")

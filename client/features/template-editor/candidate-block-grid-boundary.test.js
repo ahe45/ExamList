@@ -8,21 +8,82 @@ function importClientModule(fileName) {
 }
 
 class FakeHTMLElement {
-  constructor(tagName, { childNodes = [], isGrid = false } = {}) {
-    this.childNodes = childNodes;
+  constructor(tagName, { childNodes = [], innerHTML = "", isGrid = false } = {}) {
+    this.childNodes = [];
+    this.innerHTML = innerHTML;
     this.isGrid = isGrid;
+    this.nodeType = 1;
     this.ownerDocument = {
       defaultView: {
         HTMLElement: FakeHTMLElement,
       },
     };
-    this.tagName = tagName;
+    this.parentElement = null;
+    this.parentNode = null;
+    this.tagName = String(tagName || "div").toUpperCase();
+
+    childNodes.forEach((childNode) => {
+      this.appendChild(childNode);
+    });
+  }
+
+  appendChild(childNode) {
+    childNode.parentNode = this;
+    childNode.parentElement = this;
+    this.childNodes.push(childNode);
+    return childNode;
+  }
+
+  closest(selector) {
+    let currentNode = this;
+
+    while (currentNode instanceof FakeHTMLElement) {
+      if (currentNode.matches(selector)) {
+        return currentNode;
+      }
+
+      currentNode = currentNode.parentElement;
+    }
+
+    return null;
+  }
+
+  contains(targetNode) {
+    let currentNode = targetNode || null;
+
+    while (currentNode) {
+      if (currentNode === this) {
+        return true;
+      }
+
+      currentNode = currentNode.parentNode || currentNode.parentElement || null;
+    }
+
+    return false;
   }
 
   matches(selector) {
-    return this.isGrid && selector === "[data-candidate-block-grid], .examlist-candidate-block-grid";
+    if (
+      selector === "[data-candidate-block-grid], .examlist-candidate-block-grid" ||
+      selector === "[data-candidate-block-grid]" ||
+      selector === ".examlist-candidate-block-grid"
+    ) {
+      return this.isGrid;
+    }
+
+    if (selector === "p, div, h1, h2, h3, blockquote, ul, ol") {
+      return ["P", "DIV", "H1", "H2", "H3", "BLOCKQUOTE", "UL", "OL"].includes(this.tagName);
+    }
+
+    return false;
   }
 }
+
+global.HTMLElement = FakeHTMLElement;
+global.Node = {
+  ELEMENT_NODE: 1,
+  TEXT_NODE: 3,
+};
 
 test("candidate block boundary node helper ignores blank text nodes", async () => {
   const { isIgnorableCandidateBlockBoundaryNode } = await importClientModule("candidate-block-grid-boundary.js");
@@ -197,4 +258,71 @@ test("candidate block boundary range helper ignores collapsed ranges and interse
   assert.equal(doesRangeIncludeCandidateBlockGrid(null, surfaceElement), false);
   assert.equal(doesRangeIncludeCandidateBlockGrid({ collapsed: true }, surfaceElement), false);
   assert.equal(doesRangeIncludeCandidateBlockGrid(range, surfaceElement), false);
+});
+
+test("candidate block boundary blank host helper detects adjacent grids on either side", async () => {
+  const { isBlankBoundaryHostAdjacentToCandidateBlockGrid } = await importClientModule("candidate-block-grid-boundary.js");
+  const backwardBlankHost = new FakeHTMLElement("p", { innerHTML: " <br> &nbsp; " });
+  const backwardSurfaceElement = new FakeHTMLElement("div", {
+    childNodes: [
+      new FakeHTMLElement("div", { isGrid: true }),
+      backwardBlankHost,
+    ],
+  });
+
+  assert.equal(
+    isBlankBoundaryHostAdjacentToCandidateBlockGrid({ startContainer: backwardBlankHost }, backwardSurfaceElement),
+    true,
+  );
+
+  const forwardBlankHost = new FakeHTMLElement("p", { innerHTML: " <br> &nbsp; " });
+  const forwardSurfaceElement = new FakeHTMLElement("div", {
+    childNodes: [
+      forwardBlankHost,
+      new FakeHTMLElement("div", { isGrid: true }),
+    ],
+  });
+
+  assert.equal(
+    isBlankBoundaryHostAdjacentToCandidateBlockGrid({ startContainer: forwardBlankHost }, forwardSurfaceElement),
+    true,
+  );
+});
+
+test("candidate block boundary blank host helper ignores nonblank, isolated, and grid-owned hosts", async () => {
+  const { isBlankBoundaryHostAdjacentToCandidateBlockGrid } = await importClientModule("candidate-block-grid-boundary.js");
+  const nonblankHost = new FakeHTMLElement("p", { innerHTML: "text" });
+  const isolatedBlankHost = new FakeHTMLElement("p", { innerHTML: " <br> " });
+  const gridOwnedBlankHost = new FakeHTMLElement("p", { innerHTML: " <br> " });
+  const isolatedSurfaceElement = new FakeHTMLElement("div", {
+    childNodes: [
+      new FakeHTMLElement("p", { innerHTML: "before" }),
+      isolatedBlankHost,
+      new FakeHTMLElement("p", { innerHTML: "after" }),
+    ],
+  });
+  const gridNode = new FakeHTMLElement("div", {
+    childNodes: [gridOwnedBlankHost],
+    isGrid: true,
+  });
+  const surfaceElement = new FakeHTMLElement("div", {
+    childNodes: [
+      new FakeHTMLElement("div", { isGrid: true }),
+      nonblankHost,
+      gridNode,
+    ],
+  });
+
+  assert.equal(
+    isBlankBoundaryHostAdjacentToCandidateBlockGrid({ startContainer: nonblankHost }, surfaceElement),
+    false,
+  );
+  assert.equal(
+    isBlankBoundaryHostAdjacentToCandidateBlockGrid({ startContainer: isolatedBlankHost }, isolatedSurfaceElement),
+    false,
+  );
+  assert.equal(
+    isBlankBoundaryHostAdjacentToCandidateBlockGrid({ startContainer: gridOwnedBlankHost }, surfaceElement),
+    false,
+  );
 });
