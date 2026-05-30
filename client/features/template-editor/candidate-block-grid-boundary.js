@@ -1,3 +1,5 @@
+import { getCandidateBlockGridElements } from "./candidate-block-grid-dom.js";
+
 const TEXT_NODE = 3;
 const CANDIDATE_BLOCK_GRID_SELECTOR = "[data-candidate-block-grid], .examlist-candidate-block-grid";
 
@@ -123,6 +125,20 @@ export function getCandidateBlockGridAdjacentToRange(range, direction, surfaceEl
   }
 
   return null;
+}
+
+export function doesRangeIncludeCandidateBlockGrid(range, surfaceElement) {
+  if (!range || range.collapsed) {
+    return false;
+  }
+
+  return getCandidateBlockGridElements(surfaceElement).some((gridElement) => {
+    try {
+      return range.intersectsNode(gridElement);
+    } catch (error) {
+      return false;
+    }
+  });
 }
 
 export function normalizeCandidateBlockBoundaryHostHtml(value = "") {

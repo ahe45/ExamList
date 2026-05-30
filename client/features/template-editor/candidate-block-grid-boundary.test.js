@@ -162,3 +162,39 @@ test("candidate block boundary grid helper stops at non-grid leaf nodes", async 
   assert.equal(getCandidateBlockGridFromBoundaryNode({ nodeType: 3, textContent: "text" }, "forward"), null);
   assert.equal(getCandidateBlockGridFromBoundaryNode(null, "forward"), null);
 });
+
+test("candidate block boundary range helper detects non-collapsed ranges that include a grid", async () => {
+  const { doesRangeIncludeCandidateBlockGrid } = await importClientModule("candidate-block-grid-boundary.js");
+  const gridNode = {};
+  const surfaceElement = {
+    querySelectorAll(selector) {
+      return selector === "[data-candidate-block-grid]" ? [gridNode] : [];
+    },
+  };
+  const range = {
+    collapsed: false,
+    intersectsNode: (node) => node === gridNode,
+  };
+
+  assert.equal(doesRangeIncludeCandidateBlockGrid(range, surfaceElement), true);
+});
+
+test("candidate block boundary range helper ignores collapsed ranges and intersection errors", async () => {
+  const { doesRangeIncludeCandidateBlockGrid } = await importClientModule("candidate-block-grid-boundary.js");
+  const gridNode = {};
+  const surfaceElement = {
+    querySelectorAll(selector) {
+      return selector === ".examlist-candidate-block-grid" ? [gridNode] : [];
+    },
+  };
+  const range = {
+    collapsed: false,
+    intersectsNode() {
+      throw new Error("intersectsNode failed");
+    },
+  };
+
+  assert.equal(doesRangeIncludeCandidateBlockGrid(null, surfaceElement), false);
+  assert.equal(doesRangeIncludeCandidateBlockGrid({ collapsed: true }, surfaceElement), false);
+  assert.equal(doesRangeIncludeCandidateBlockGrid(range, surfaceElement), false);
+});

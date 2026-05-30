@@ -42,7 +42,6 @@ import {
 } from "./candidate-block-grid-selection.js";
 import {
   extractCandidateBlockTemplateHtml,
-  getCandidateBlockGridElements,
   removeCandidateBlockGridElements,
   scheduleCandidateBlockGridOutsideCaretPlacement,
 } from "./candidate-block-grid-dom.js";
@@ -58,6 +57,7 @@ import {
   isCandidateBlockTemplateSource,
 } from "./candidate-block-grid-block-roles.js";
 import {
+  doesRangeIncludeCandidateBlockGrid,
   getAdjacentCandidateBlockBoundaryNode,
   getCandidateBlockGridAdjacentToRange,
   getCandidateBlockGridFromBoundaryNode,
@@ -197,20 +197,6 @@ function isBlankBoundaryHostAdjacentToCandidateBlockGrid(range, surfaceElement) 
         getCandidateBlockGridSibling(hostElement, "forward", surfaceElement)
       )
   );
-}
-
-function doesRangeIncludeCandidateBlockGrid(range, surfaceElement) {
-  if (!range || range.collapsed) {
-    return false;
-  }
-
-  return getCandidateBlockGridElements(surfaceElement).some((gridElement) => {
-    try {
-      return range.intersectsNode(gridElement);
-    } catch (error) {
-      return false;
-    }
-  });
 }
 
 export function shouldPreventCandidateBlockGridNativeDeletion(event, surfaceElement) {
