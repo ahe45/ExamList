@@ -1588,7 +1588,74 @@ npm run smoke:ui
   - selection이 문서 surface 밖이면 native deletion을 막지 않는다.
 - 이 테스트가 먼저 통과한 뒤에만 `getCandidateBlockGridAdjacentToRange` 분리를 다시 검토한다.
 
-## 27. 결론
+## 27. 3차 첫 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- 3차 첫 작업 완료
+- 수험생 블록 native deletion guard의 Range/Selection 동작을 테스트로 먼저 고정
+- `getCandidateBlockGridAdjacentToRange`와 `shouldPreventCandidateBlockGridNativeDeletion` 구현 이동은 아직 하지 않음
+
+작업 범위:
+
+- `candidate-block-grid-native-deletion.test.js`를 추가했다.
+- 기존 `shouldPreventCandidateBlockGridNativeDeletion` 함수를 테스트에서 직접 호출할 수 있도록 export했다.
+- 함수 본문 로직은 변경하지 않았다.
+- fake DOM, fake Range, fake Selection으로 다음 동작을 고정했다.
+  - collapsed range가 일반 텍스트 중간에 있을 때 Backspace/Delete를 막지 않는다.
+  - collapsed range가 수험생 블록 바로 뒤에 있을 때 Backspace를 막는다.
+  - collapsed range가 수험생 블록 바로 앞에 있을 때 Delete를 막는다.
+  - 빈 boundary host가 수험생 블록과 인접할 때 Delete를 막는다.
+  - non-collapsed range가 수험생 블록을 포함할 때 Backspace를 막는다.
+  - selection이 문서 surface 밖이면 Backspace/Delete를 막지 않는다.
+
+금지 범위 준수:
+
+- `getCandidateBlockGridAdjacentToRange` 이동 없음
+- `shouldPreventCandidateBlockGridNativeDeletion` 함수 본문 변경 없음
+- `handleSurfaceKeyDown` 변경 없음
+- `handleDocumentKeyDown` 변경 없음
+- Backspace/Delete 실행 순서 변경 없음
+- event listener 등록 순서 변경 없음
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/candidate-block-grid-native-deletion.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- 단일 native deletion guard 테스트 통과, 5개 테스트
+- `npm test` 통과, 323개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+판단:
+
+- 이번 작업은 다음 리팩토링을 위한 안전장치 성격이다.
+- 이제 Range/Selection 기반 native deletion guard의 핵심 회귀 케이스가 테스트로 고정되었다.
+- 그래도 `getCandidateBlockGridAdjacentToRange`는 parent traversal과 text offset boundary를 직접 다루므로 여전히 고위험 함수다.
+
+다음 후보:
+
+- `getCandidateBlockGridAdjacentToRange`를 바로 이동하기 전에, 테스트가 부족한 예외 케이스가 더 있는지 한 번 더 확인한다.
+- 특히 다음 케이스는 이동 전에 추가 검토 대상이다.
+  - blank text node와 `BR`을 사이에 둔 Range boundary
+  - nested wrapper 안에 있는 수험생 블록 인접 판단
+  - `range.intersectsNode`가 예외를 던지는 non-collapsed range
+- 추가 테스트가 필요하지 않다고 판단될 때만 `getCandidateBlockGridAdjacentToRange` 분리를 진행한다.
+
+## 28. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
