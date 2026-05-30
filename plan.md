@@ -22,7 +22,9 @@
 | 3차 range inclusion helper 분리 | 완료 | `doesRangeIncludeCandidateBlockGrid` 이동 및 328개 테스트 통과 | blank boundary host 묶음 검토 |
 | 3차 blank boundary host 인접 판단 묶음 분리 | 완료 | boundary 14개 테스트, native deletion 8개 테스트, 전체 330개 테스트 통과 | 최종 guard orchestration 이동 여부 검토 |
 | `shouldPreventCandidateBlockGridNativeDeletion` 최종 orchestration 이동 | 완료 | boundary/native deletion 테스트, 전체 330개 테스트, browser/UI smoke 통과 | 수험생 블록 native deletion 리팩토링 일단 중지 가능 |
-| 수험생 블록 외 다음 영역 선정 | 대기 | object size, adapter, host/runtime 중복 후보 | 다음 작업 전 별도 리뷰 후 결정 |
+| 수험생 블록 adapter 누적 리뷰 | 완료 | 823줄에서 627줄로 감소, adapter diff 257줄 삭제/5줄 추가 | 추가 수험생 블록 이동은 일단 보류 |
+| 수험생 블록 외 다음 영역 선정 | 완료 | `object-size-controls.js`를 다음 후보로 선정 | 구현 전 테스트 커버와 첫 단위 재확인 |
+| object size controls 사전 검토 | 대기 | 수험생 블록 grid/modal size와 일반 객체 size가 혼재 | 첫 작업은 테스트/책임 경계 고정부터 진행 |
 
 ## 1. 목적
 
@@ -1983,7 +1985,69 @@ npm run smoke:ui
 - 새 리팩토링 영역을 고른다면 `object-size-controls.js`의 수험생 블록/일반 오브젝트 크기 처리 분리 후보를 검토한다.
 - 바로 구현에 들어가기보다 해당 영역의 테스트 상태와 smoke 커버를 먼저 확인한다.
 
-## 33. 결론
+## 33. 3차 완료 후 adapter 리뷰와 다음 영역 선정
+
+기준일:
+
+- 2026-05-30
+
+검토 범위:
+
+- 기준 커밋: `54d11d9 docs: record template editor refactor checkpoint`
+- 현재 커밋: `d83d926 docs: record native deletion guard extraction`
+- 대상 파일:
+  - `client/features/template-editor/candidate-block-grid-adapter.js`
+  - 3차에서 분리한 수험생 블록 boundary/keyboard/selection helper와 테스트 파일
+
+검토 결과:
+
+- 수험생 블록 adapter는 기준점 기준 823줄에서 627줄로 감소했다.
+- `candidate-block-grid-adapter.js` 단일 파일 diff 기준 257줄 삭제, 5줄 추가다.
+- 새로 분리된 판단 로직은 테스트 파일을 갖고 있다.
+  - `candidate-block-grid-selection-focus.test.js`
+  - `candidate-block-grid-keyboard-target.test.js`
+  - `candidate-block-grid-boundary.test.js`
+  - `candidate-block-grid-native-deletion.test.js`
+- native deletion 판단은 `candidate-block-grid-boundary.js`로 정리되었다.
+- adapter에는 여전히 이벤트 바인딩, pointer/key/input handler, 실제 삭제/동기화 orchestration이 남아 있다.
+
+판단:
+
+- 수험생 블록 native deletion 리팩토링은 여기서 멈추는 것이 안전하다.
+- 지금 adapter에 남은 코드는 단순 helper라기보다 이벤트 흐름과 상태 동기화에 가까워 추가 이동 위험이 커졌다.
+- 다음 작업은 수험생 블록 adapter를 더 쪼개는 것보다, 이미 계획에 있던 `object-size-controls.js` 영역을 검토하는 것이 낫다.
+
+다음 영역 후보:
+
+- `client/features/template-editor/object-size-controls.js`
+
+선정 이유:
+
+- 파일이 809줄로 크다.
+- 수험생 블록 grid size, 수험생 블록 modal object size, 일반 객체 size, table/cell size 처리, toolbar input 처리 로직이 한 파일에 섞여 있다.
+- 계획서의 두 번째 추천 작업도 object size 계산 helper 분리였다.
+- 최근 수험생 블록 안정화 작업과 연결되는 grid/modal size 처리 코드가 포함되어 있다.
+
+위험 지점:
+
+- `applyObjectSizeToSelection`은 일반 객체, table, table cell, 수험생 블록 modal object, modal table, 수험생 블록 grid를 한 번에 분기한다.
+- `applyCandidateBlockGridObjectSize`는 grid DOM style, table normalization, page config sync, input event dispatch를 함께 수행한다.
+- `applyCandidateBlockModalObjectSize`는 modal content bounds, object size, absolute position 보정, modal sync와 연결된다.
+- size 변경은 사용자 화면, 저장 config, candidate block modal sync에 직접 영향을 준다.
+
+다음 작업 원칙:
+
+- 바로 큰 함수 이동을 하지 않는다.
+- 첫 단위는 object size 영역의 테스트 커버를 확인하고, 가장 순수한 계산 helper부터 분리한다.
+- 후보는 다음 순서로 검토한다.
+  - `normalizeObjectSizeInputValue`
+  - `parseObjectSizePixelValue`
+  - `parseObjectSizeInlinePixelValue`
+  - `getCandidateBlockModalContentSize`
+  - `getCandidateBlockGridMinimumSize`
+- DOM style 적용, event dispatch, `writeCandidateBlockGridSizeToConfig`, `syncActiveEditor` 호출은 첫 단위에서 이동하지 않는다.
+
+## 34. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
