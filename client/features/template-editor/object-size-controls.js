@@ -27,21 +27,12 @@ import {
   syncObjectAlignmentMutation,
 } from "./object-alignment-runtime.js";
 import { templateEditorObjectMinimumSize } from "./object-toolbar-constants.js";
+import {
+  normalizeObjectSizeInputValue,
+  parseObjectSizeInlinePixelValue,
+  parseObjectSizePixelValue,
+} from "./object-size-values.js";
 import { createObjectSizeToolbar, insertObjectToolbarSection } from "./object-toolbar-ui.js";
-
-function normalizeObjectSizeInputValue(value) {
-  if (!String(value || "").trim()) {
-    return null;
-  }
-
-  const numericValue = Math.round(Number(value));
-
-  if (!Number.isFinite(numericValue)) {
-    return null;
-  }
-
-  return Math.max(templateEditorObjectMinimumSize, numericValue);
-}
 
 function isCandidateBlockGridSizeElement(element, surfaceElement) {
   return Boolean(
@@ -109,18 +100,6 @@ function lockObjectTableCellHeight(cellElement) {
 
 function getObjectTableUtils() {
   return window.ExamListEditorTableUtils || null;
-}
-
-function parseObjectSizePixelValue(value, fallback = 0) {
-  const parsedValue = Number.parseFloat(String(value || "").trim());
-
-  return Number.isFinite(parsedValue) ? parsedValue : fallback;
-}
-
-function parseObjectSizeInlinePixelValue(value, fallback = 0) {
-  const rawValue = String(value || "").trim();
-
-  return /^-?\d+(?:\.\d+)?px$/i.test(rawValue) ? parseObjectSizePixelValue(rawValue, fallback) : fallback;
 }
 
 function getObjectTableCollapsedBorderAdjustment(tableElement) {
