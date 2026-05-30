@@ -1773,7 +1773,70 @@ npm run smoke:ui
 - 다음 이동 후보를 고른다면 `getCandidateBlockBoundaryHostElement`, `getCandidateBlockGridSibling`, `isBlankBoundaryHostAdjacentToCandidateBlockGrid`, `doesRangeIncludeCandidateBlockGrid` 중 하나만 단위로 선택한다.
 - 이 중 `doesRangeIncludeCandidateBlockGrid`는 단독 순수도가 높지만 `getCandidateBlockGridElements(surfaceElement)`에 의존하므로 별도 파일 위치를 신중히 정한다.
 
-## 30. 결론
+## 30. 3차 네 번째 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- 3차 네 번째 작업 완료
+- `doesRangeIncludeCandidateBlockGrid`를 adapter에서 boundary helper로 분리
+- `shouldPreventCandidateBlockGridNativeDeletion` 전체 이동은 아직 하지 않음
+
+작업 범위:
+
+- `candidate-block-grid-adapter.js` 안에 있던 `doesRangeIncludeCandidateBlockGrid`를 `candidate-block-grid-boundary.js`로 이동했다.
+- adapter의 `getCandidateBlockGridElements` 직접 import를 제거했다.
+- `candidate-block-grid-boundary.js`가 `getCandidateBlockGridElements(surfaceElement)`를 사용해 non-collapsed range의 grid 포함 여부를 판단한다.
+- `candidate-block-grid-boundary.test.js`에 direct range helper 테스트를 추가했다.
+- non-collapsed range가 grid를 포함하면 `true`를 반환하는 동작을 테스트로 고정했다.
+- null range, collapsed range, `range.intersectsNode` 예외에서는 `false`를 반환하는 동작을 테스트로 고정했다.
+
+금지 범위 준수:
+
+- `shouldPreventCandidateBlockGridNativeDeletion` 전체 이동 없음
+- `shouldPreventCandidateBlockGridNativeDeletion` 본문 조건 순서 변경 없음
+- `getCandidateBlockBoundaryHostElement` 이동 없음
+- `getCandidateBlockGridSibling` 이동 없음
+- `isBlankBoundaryHostAdjacentToCandidateBlockGrid` 이동 없음
+- adapter 이벤트 흐름 변경 없음
+- Backspace/Delete preventDefault 조건 변경 없음
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/candidate-block-grid-boundary.test.js
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/candidate-block-grid-native-deletion.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- boundary helper 테스트 통과, 12개 테스트
+- native deletion guard 테스트 통과, 8개 테스트
+- `npm test` 통과, 328개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+판단:
+
+- `doesRangeIncludeCandidateBlockGrid`는 selection을 직접 읽지 않고 range와 surface만 사용하는 helper라 이번 이동은 낮은 위험 범위였다.
+- native deletion의 non-collapsed range 판단은 이제 boundary helper 쪽에서 직접 테스트된다.
+- adapter에 남은 native deletion 관련 로직은 blank boundary host 인접 판단과 최종 guard orchestration이다.
+
+다음 후보:
+
+- 다음 이동 후보는 `getCandidateBlockBoundaryHostElement`, `getCandidateBlockGridSibling`, `isBlankBoundaryHostAdjacentToCandidateBlockGrid` 묶음이다.
+- 이 묶음은 서로 강하게 연결되어 있어 하나씩 나누면 오히려 adapter/boundary 양쪽 호출이 복잡해진다.
+- 이동 전에는 blank host 인접 판단 direct 테스트를 먼저 추가하거나, 묶음 전체를 옮긴 뒤 기존 native deletion 테스트로 검증한다.
+
+## 31. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
