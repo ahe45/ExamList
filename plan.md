@@ -1655,7 +1655,63 @@ npm run smoke:ui
   - `range.intersectsNode`가 예외를 던지는 non-collapsed range
 - 추가 테스트가 필요하지 않다고 판단될 때만 `getCandidateBlockGridAdjacentToRange` 분리를 진행한다.
 
-## 28. 결론
+## 28. 3차 두 번째 작업 진행 기록
+
+기준일:
+
+- 2026-05-30
+
+상태:
+
+- 3차 두 번째 작업 완료
+- `getCandidateBlockGridAdjacentToRange` 분리 전 예외 케이스를 추가 테스트로 고정
+- 구현 이동과 런타임 동작 변경은 하지 않음
+
+작업 범위:
+
+- `candidate-block-grid-native-deletion.test.js`에 native deletion guard 회귀 테스트 3개를 추가했다.
+- blank text node와 `BR`이 collapsed range와 수험생 블록 사이에 있을 때 Backspace/Delete를 막는 동작을 고정했다.
+- nested wrapper 안에 있는 수험생 블록이 collapsed range와 인접할 때 Backspace/Delete를 막는 동작을 고정했다.
+- non-collapsed range에서 `range.intersectsNode`가 예외를 던지면 native deletion을 막지 않는 동작을 고정했다.
+
+금지 범위 준수:
+
+- `getCandidateBlockGridAdjacentToRange` 이동 없음
+- `shouldPreventCandidateBlockGridNativeDeletion` 함수 본문 변경 없음
+- adapter 이벤트 흐름 변경 없음
+- Backspace/Delete preventDefault 조건 변경 없음
+- 저장 payload shape 변경 없음
+- CSS 변경 없음
+
+검증 결과:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test client/features/template-editor/candidate-block-grid-native-deletion.test.js
+npm test
+npm run smoke:browser
+npm run smoke:ui
+```
+
+결과:
+
+- 단일 native deletion guard 테스트 통과, 8개 테스트
+- `npm test` 통과, 326개 테스트
+- `npm run smoke:browser` 통과
+- `npm run smoke:ui` 통과
+
+판단:
+
+- `getCandidateBlockGridAdjacentToRange` 이동 전에 필요한 핵심 Range boundary 회귀 케이스는 현재 충분히 고정되었다.
+- 다음 단위에서는 `getCandidateBlockGridAdjacentToRange`만 분리 대상으로 검토할 수 있다.
+- 단, `shouldPreventCandidateBlockGridNativeDeletion` 전체 이동은 아직 하지 않는다.
+
+다음 후보:
+
+- `getCandidateBlockGridAdjacentToRange`를 `candidate-block-grid-boundary.js` 또는 별도 Range 전용 helper 파일로 이동할지 결정한다.
+- 이동한다면 함수 본문을 그대로 옮기고, import/export만 조정한다.
+- 이동 후에는 이번 native deletion guard 테스트와 기존 boundary 테스트를 함께 실행한다.
+
+## 29. 결론
 
 양식 편집기 리팩토링은 필요하지만, 대규모 재작성 방식으로 진행하면 위험하다.
 
