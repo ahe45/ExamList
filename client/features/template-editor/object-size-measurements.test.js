@@ -11,16 +11,22 @@ class FakeHTMLElement {
   constructor({
     clientHeight = 0,
     clientWidth = 0,
+    blockElements = [],
     closestBlock = null,
+    columns = [],
     cssProperties = {},
     dataset = {},
     offsetHeight = 0,
     offsetWidth = 0,
     rect = {},
+    rows = [],
+    tables = [],
   } = {}) {
+    this.blockElements = blockElements;
     this.clientHeight = clientHeight;
     this.clientWidth = clientWidth;
     this.closestBlock = closestBlock;
+    this.columns = columns;
     this.cssProperties = cssProperties;
     this.dataset = dataset;
     this.offsetHeight = offsetHeight;
@@ -29,6 +35,8 @@ class FakeHTMLElement {
       height: rect.height || 0,
       width: rect.width || 0,
     };
+    this.rows = rows;
+    this.tables = tables;
   }
 
   closest(selector) {
@@ -40,18 +48,46 @@ class FakeHTMLElement {
   getBoundingClientRect() {
     return this.rect;
   }
+
+  querySelectorAll(selector) {
+    if (selector === "[data-candidate-block-instance]") {
+      return this.blockElements;
+    }
+
+    if (selector === "table") {
+      return this.tables;
+    }
+
+    if (selector === "colgroup col") {
+      return this.columns;
+    }
+
+    return [];
+  }
 }
 
 global.HTMLElement = FakeHTMLElement;
 global.window = {
   getComputedStyle(element) {
     return {
+      ...(element?.cssProperties || {}),
       getPropertyValue(name) {
-        return element?.cssProperties?.[name] || "";
+        const camelName = String(name || "").replace(/-([a-z])/g, (_match, character) => character.toUpperCase());
+
+        return element?.cssProperties?.[name] || element?.cssProperties?.[camelName] || "";
       },
     };
   },
 };
+
+function createCandidateBlockTable({ cellStyle = {}, columnCount = 1, rowCount = 1 } = {}) {
+  return new FakeHTMLElement({
+    columns: Array.from({ length: columnCount }, () => new FakeHTMLElement()),
+    rows: Array.from({ length: rowCount }, () => ({
+      cells: Array.from({ length: columnCount }, () => new FakeHTMLElement({ cssProperties: cellStyle })),
+    })),
+  });
+}
 
 test("candidate block modal content size returns null for non-elements", async () => {
   const { getCandidateBlockModalContentSize } = await importClientModule("object-size-measurements.js");
@@ -157,5 +193,85 @@ test("candidate block modal content size clamps empty values to the object minim
   assert.deepEqual(getCandidateBlockModalContentSize(element), {
     height: templateEditorObjectMinimumSize,
     width: templateEditorObjectMinimumSize,
+  });
+});
+
+test("candidate block grid minimum size uses row count and gap while clamping width", async () => {
+  const { getCandidateBlockGridMinimumSize } = await importClientModule("object-size-measurements.js");
+  const {
+    candidateBlockGridMinimumRowHeight,
+    candidateBlockGridMinimumWidth,
+  } = await importClientModule("candidate-block-grid-config.js");
+  const gridElement = new FakeHTMLElement({
+    cssProperties: { gap: "4px" },
+    dataset: { candidateBlockRows: "3" },
+  });
+
+  assert.deepEqual(getCandidateBlockGridMinimumSize(gridElement), {
+    height: candidateBlockGridMinimumRowHeight * 3 + 4 * 2,
+    width: candidateBlockGridMinimumWidth,
+  });
+});
+
+test("candidate block grid minimum size prefers row gap over generic gap", async () => {
+  const { getCandidateBlockGridMinimumSize } = await importClientModule("object-size-measurements.js");
+  const { candidateBlockGridMinimumRowHeight } = await importClientModule("candidate-block-grid-config.js");
+  const gridElement = new FakeHTMLElement({
+    cssProperties: {
+      gap: "99px",
+      rowGap: "5px",
+    },
+    dataset: { candidateBlockRows: "2" },
+  });
+
+  assert.equal(getCandidateBlockGridMinimumSize(gridElement).height, candidateBlockGridMinimumRowHeight * 2 + 5);
+});
+
+test("candidate block grid minimum size includes table minimum size", async () => {
+  const { getCandidateBlockGridMinimumSize } = await importClientModule("object-size-measurements.js");
+  const cellStyle = {
+    borderBottomWidth: "1px",
+    borderLeftWidth: "5px",
+    borderRightWidth: "5px",
+    borderTopWidth: "1px",
+    lineHeight: "20px",
+    paddingBottom: "2px",
+    paddingLeft: "10px",
+    paddingRight: "10px",
+    paddingTop: "2px",
+  };
+  const tableElement = createCandidateBlockTable({
+    cellStyle,
+    columnCount: 3,
+    rowCount: 2,
+  });
+  const blockElement = new FakeHTMLElement({
+    cssProperties: {
+      borderBottomWidth: "1px",
+      borderLeftWidth: "5px",
+      borderRightWidth: "5px",
+      borderTopWidth: "1px",
+      paddingBottom: "3px",
+      paddingLeft: "10px",
+      paddingRight: "10px",
+      paddingTop: "3px",
+    },
+    tables: [tableElement],
+  });
+  const gridElement = new FakeHTMLElement({
+    blockElements: [blockElement],
+    cssProperties: {
+      columnGap: "7px",
+      rowGap: "5px",
+    },
+    dataset: {
+      candidateBlockColumns: "2",
+      candidateBlockRows: "2",
+    },
+  });
+
+  assert.deepEqual(getCandidateBlockGridMinimumSize(gridElement), {
+    height: 125,
+    width: 247,
   });
 });

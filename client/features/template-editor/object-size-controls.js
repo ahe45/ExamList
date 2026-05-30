@@ -1,14 +1,7 @@
 import { showToast } from "../../app/toast.js";
-import {
-  candidateBlockGridMinimumHeight,
-  candidateBlockGridMinimumRowHeight,
-  candidateBlockGridMinimumWidth,
-} from "./candidate-block-grid-config.js";
+import { candidateBlockGridMinimumHeight } from "./candidate-block-grid-config.js";
 import { writeCandidateBlockGridSizeToConfig } from "./candidate-block-grid-sessions.js";
-import {
-  getCandidateBlockGridTableMinimumSize,
-  normalizeCandidateBlockTables,
-} from "./candidate-block-grid-table-normalizer.js";
+import { normalizeCandidateBlockTables } from "./candidate-block-grid-table-normalizer.js";
 import {
   clampObjectAlignmentValue,
   getObjectAlignmentCanvasMetrics,
@@ -27,7 +20,10 @@ import {
   syncObjectAlignmentMutation,
 } from "./object-alignment-runtime.js";
 import { templateEditorObjectMinimumSize } from "./object-toolbar-constants.js";
-import { getCandidateBlockModalContentSize } from "./object-size-measurements.js";
+import {
+  getCandidateBlockGridMinimumSize,
+  getCandidateBlockModalContentSize,
+} from "./object-size-measurements.js";
 import {
   normalizeObjectSizeInputValue,
   parseObjectSizeInlinePixelValue,
@@ -406,22 +402,6 @@ export function applyObjectTableSize(tableElement, { height = null, width = null
   }
 
   return didApply;
-}
-
-function getCandidateBlockGridMinimumSize(gridElement) {
-  const tableMinimumSize = getCandidateBlockGridTableMinimumSize(gridElement);
-  const gridStyle = window.getComputedStyle(gridElement);
-  const rowCount = Math.max(1, Math.round(Number(gridElement?.dataset?.candidateBlockRows) || 1));
-  const rowGap = parseObjectSizePixelValue(gridStyle.rowGap || gridStyle.gap, 0);
-  const rowMinimumHeight = Math.ceil(
-    rowCount * candidateBlockGridMinimumRowHeight +
-      Math.max(0, rowCount - 1) * rowGap,
-  );
-
-  return {
-    height: Math.max(candidateBlockGridMinimumHeight, rowMinimumHeight, Math.floor(tableMinimumSize.height || 0)),
-    width: Math.max(candidateBlockGridMinimumWidth, Math.floor(tableMinimumSize.width || 0)),
-  };
 }
 
 function getObjectDocumentLogicalPosition(element, documentElement, canvasMetrics) {
