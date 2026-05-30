@@ -7,10 +7,14 @@ import {
 } from "./object-alignment-metrics.js";
 
 function hideObjectAlignmentImageOverlay(surfaceElement) {
-  surfaceElement
-    ?.closest?.(".template-editor-page")
-    ?.querySelector?.(".template-editor-image-selection")
-    ?.classList.add("hidden");
+  const overlayRoot = surfaceElement?.closest?.(".template-editor-page") || surfaceElement;
+
+  overlayRoot
+    ?.querySelectorAll?.(".template-editor-image-selection")
+    ?.forEach((overlayElement) => {
+      overlayElement.classList.add("hidden");
+      overlayElement.classList.remove("is-resizing");
+    });
 }
 
 function hideObjectAlignmentTableOverlay(surfaceElement) {

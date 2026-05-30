@@ -1,6 +1,9 @@
 import {
   getObjectAlignmentCanvasMetrics,
   getObjectAlignmentDocumentElement,
+  getObjectAlignmentOverlayContainer,
+  getObjectAlignmentPositioningElement,
+  getObjectCandidateBlockModalElement,
   getObjectElementSize,
   getObjectTableCellElement,
   getSelectedObjectAlignmentElements,
@@ -42,10 +45,19 @@ function normalizeObjectResizeCorner(value) {
   return objectResizeDirections[corner] ? corner : "bottom-right";
 }
 
-function getSelectedCanvasObjectElements(surfaceElement) {
+function isObjectSelectionOverlayElement(element, surfaceElement) {
+  if (!isObjectAlignmentElement(element, surfaceElement)) {
+    return false;
+  }
+
+  const cellElement = getObjectTableCellElement(element, surfaceElement);
+
+  return !cellElement || Boolean(getObjectCandidateBlockModalElement(element, surfaceElement));
+}
+
+function getSelectedObjectSelectionOverlayElements(surfaceElement) {
   return getSelectedObjectAlignmentElements(surfaceElement).filter((element) =>
-    isObjectAlignmentElement(element, surfaceElement) &&
-      !getObjectTableCellElement(element, surfaceElement),
+    isObjectSelectionOverlayElement(element, surfaceElement),
   );
 }
 
@@ -74,19 +86,34 @@ function createObjectSelectionOverlay(ownerDocument) {
   return overlayElement;
 }
 
+function getOverlayContainerBox(containerElement) {
+  const rect = containerElement.getBoundingClientRect();
+  const logicalWidth = containerElement.offsetWidth || containerElement.clientWidth || rect.width || 0;
+  const logicalHeight = containerElement.offsetHeight || containerElement.clientHeight || rect.height || 0;
+  const scaleX = logicalWidth > 0 && rect.width > 0 ? rect.width / logicalWidth : 1;
+  const scaleY = logicalHeight > 0 && rect.height > 0 ? rect.height / logicalHeight : 1;
+
+  return {
+    originLeft: rect.left + (containerElement.clientLeft || 0) * Math.max(scaleX || 1, 0.01),
+    originTop: rect.top + (containerElement.clientTop || 0) * Math.max(scaleY || 1, 0.01),
+    scaleX: Math.max(scaleX || 1, 0.01),
+    scaleY: Math.max(scaleY || 1, 0.01),
+  };
+}
+
 function syncOverlayToElement(overlayElement, containerElement, objectElement) {
   const objectRect = objectElement.getBoundingClientRect();
-  const containerRect = containerElement.getBoundingClientRect();
+  const containerBox = getOverlayContainerBox(containerElement);
 
   if (objectRect.width < 1 || objectRect.height < 1) {
     overlayElement.classList.add("hidden");
     return;
   }
 
-  overlayElement.style.left = `${Math.round(objectRect.left - containerRect.left)}px`;
-  overlayElement.style.top = `${Math.round(objectRect.top - containerRect.top)}px`;
-  overlayElement.style.width = `${Math.round(objectRect.width)}px`;
-  overlayElement.style.height = `${Math.round(objectRect.height)}px`;
+  overlayElement.style.left = `${Math.round((objectRect.left - containerBox.originLeft) / containerBox.scaleX)}px`;
+  overlayElement.style.top = `${Math.round((objectRect.top - containerBox.originTop) / containerBox.scaleY)}px`;
+  overlayElement.style.width = `${Math.round(objectRect.width / containerBox.scaleX)}px`;
+  overlayElement.style.height = `${Math.round(objectRect.height / containerBox.scaleY)}px`;
   overlayElement.classList.remove("hidden");
 }
 
@@ -164,7 +191,10 @@ export function bindObjectMultiSelectionOverlays({ editor, surfaceElement }) {
   let resizeSession = null;
   let updateFrame = 0;
 
-  const getOverlayContainer = () => getObjectAlignmentDocumentElement(surfaceElement);
+  const getOverlayContainer = (objectElement = null) =>
+    objectElement
+      ? getObjectAlignmentOverlayContainer(objectElement, surfaceElement)
+      : getObjectAlignmentDocumentElement(surfaceElement);
 
   const removeOverlay = (overlayElement) => {
     overlayElement?.remove();
@@ -189,6 +219,10 @@ export function bindObjectMultiSelectionOverlays({ editor, surfaceElement }) {
     }
 
     overlayElement.__examlistObjectElement = objectElement;
+    overlayElement.classList.toggle(
+      "is-cell-contained-object",
+      Boolean(getObjectTableCellElement(objectElement, surfaceElement)),
+    );
     return overlayElement;
   };
 
@@ -198,7 +232,7 @@ export function bindObjectMultiSelectionOverlays({ editor, surfaceElement }) {
     if (resizeSession) {
       resizeSession.items.forEach((item) => {
         const overlayElement = overlaysByElement.get(item.element);
-        const containerElement = getOverlayContainer();
+        const containerElement = getOverlayContainer(item.element);
 
         if (overlayElement && containerElement instanceof HTMLElement) {
           syncOverlayToElement(overlayElement, containerElement, item.element);
@@ -207,15 +241,15 @@ export function bindObjectMultiSelectionOverlays({ editor, surfaceElement }) {
       return;
     }
 
-    const containerElement = getOverlayContainer();
-    const selectedElements = getSelectedCanvasObjectElements(surfaceElement);
+    const selectedElements = getSelectedObjectSelectionOverlayElements(surfaceElement);
 
-    if (!(containerElement instanceof HTMLElement) || selectedElements.length < 2) {
+    if (selectedElements.length < 2) {
       clearOverlays();
       return;
     }
 
     const selectedSet = new Set(selectedElements);
+    const hasCellContainedSelection = selectedElements.some((element) => getObjectTableCellElement(element, surfaceElement));
 
     overlaysByElement.forEach((overlayElement, objectElement) => {
       if (!selectedSet.has(objectElement) || !objectElement.isConnected) {
@@ -225,8 +259,15 @@ export function bindObjectMultiSelectionOverlays({ editor, surfaceElement }) {
     });
 
     selectedElements.forEach((objectElement) => {
+      const containerElement = getOverlayContainer(objectElement);
+
+      if (!(containerElement instanceof HTMLElement)) {
+        return;
+      }
+
       const overlayElement = ensureOverlay(objectElement, containerElement);
 
+      overlayElement.classList.toggle("is-group-resize-disabled", hasCellContainedSelection);
       syncOverlayToElement(overlayElement, containerElement, objectElement);
     });
   };
@@ -246,24 +287,33 @@ export function bindObjectMultiSelectionOverlays({ editor, surfaceElement }) {
 
     const overlayElement = handleElement.closest("[data-examlist-object-selection-overlay]");
     const activeElement = overlayElement?.__examlistObjectElement || null;
-    const selectedElements = getSelectedCanvasObjectElements(surfaceElement);
+    const selectedElements = getSelectedObjectSelectionOverlayElements(surfaceElement);
 
     if (
       !(activeElement instanceof HTMLElement) ||
       !selectedElements.includes(activeElement) ||
-      selectedElements.length < 2
+      selectedElements.length < 2 ||
+      selectedElements.some((element) => getObjectTableCellElement(element, surfaceElement))
     ) {
       return false;
     }
 
-    const documentElement = getObjectAlignmentDocumentElement(surfaceElement);
+    const documentElement = getObjectAlignmentPositioningElement(activeElement, surfaceElement);
 
     if (!(documentElement instanceof HTMLElement)) {
       return false;
     }
 
+    const resizeElements = selectedElements.filter(
+      (selectedElement) => getObjectAlignmentPositioningElement(selectedElement, surfaceElement) === documentElement,
+    );
+
+    if (resizeElements.length < 2) {
+      return false;
+    }
+
     const canvasMetrics = getObjectAlignmentCanvasMetrics(documentElement);
-    const items = prepareObjectAlignmentItems(selectedElements, documentElement, canvasMetrics)
+    const items = prepareObjectAlignmentItems(resizeElements, documentElement, canvasMetrics)
       .map((item) => ({
         ...item,
         startHeight: item.height,
@@ -429,7 +479,23 @@ export function bindObjectMultiSelectionOverlays({ editor, surfaceElement }) {
     });
 
     if (session.didChange) {
-      syncObjectAlignmentMutation(editor, surfaceElement, session.items.map((item) => item.element));
+      const changedElements = session.items.map((item) => item.element);
+      const modalSurfaceElements = Array.from(
+        new Set(changedElements.map((element) => getObjectCandidateBlockModalElement(element, surfaceElement)).filter(Boolean)),
+      );
+
+      modalSurfaceElements.forEach((modalSurfaceElement) => {
+        modalSurfaceElement.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+
+      if (
+        modalSurfaceElements.length &&
+        typeof window.ExamListCandidateBlockModalEditor?.syncActiveEditor === "function"
+      ) {
+        window.ExamListCandidateBlockModalEditor.syncActiveEditor({ markDirty: true });
+      }
+
+      syncObjectAlignmentMutation(editor, surfaceElement, changedElements);
     }
 
     scheduleUpdate();

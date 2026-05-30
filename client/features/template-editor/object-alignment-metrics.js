@@ -20,6 +20,25 @@ export function getObjectAlignmentDocumentElement(surfaceElement) {
   return surfaceElement?.querySelector?.(".template-doc") || surfaceElement || null;
 }
 
+export function getObjectAlignmentPositioningElement(element, surfaceElement) {
+  const modalElement = getObjectCandidateBlockModalElement(element, surfaceElement);
+
+  return modalElement || getObjectAlignmentDocumentElement(surfaceElement);
+}
+
+export function getObjectAlignmentOverlayContainer(element, surfaceElement) {
+  const modalElement = getObjectCandidateBlockModalElement(element, surfaceElement);
+
+  if (modalElement) {
+    return modalElement.closest?.("[data-candidate-block-focus-layer]") ||
+      modalElement.closest?.(".examlist-candidate-block-modal-editor-viewport") ||
+      modalElement.parentElement ||
+      modalElement;
+  }
+
+  return getObjectAlignmentDocumentElement(surfaceElement);
+}
+
 export function isObjectEditorReadOnly(surfaceElement) {
   return surfaceElement?.getAttribute?.("contenteditable") === "false" || surfaceElement?.classList?.contains("readonly");
 }
@@ -125,6 +144,7 @@ export function getObjectAlignmentTableElements(surfaceElement) {
   return Array.from(
     new Set([
       ...surfaceElement.querySelectorAll(".template-doc table"),
+      ...surfaceElement.querySelectorAll("[data-candidate-block-modal-editor-surface] table"),
       ...surfaceElement.querySelectorAll("table.is-selected-table-object"),
       ...surfaceElement.querySelectorAll("table.is-selected-object"),
     ]),
@@ -217,6 +237,25 @@ function getObjectAlignmentTableBorderEventTarget(event, surfaceElement) {
       eventX <= rect.right + hitSlop
     ) {
       distances.push(eventY - rect.bottom);
+    }
+
+    if (!distances.length) {
+      if (getObjectCandidateBlockModalElement(tableElement, surfaceElement)) {
+        const insideHitSlop = Math.min(hitSlop, Math.max(2, Math.min(rect.width, rect.height) / 4));
+
+        if (eventX >= rect.left && eventX <= rect.right && eventY >= rect.top && eventY <= rect.bottom) {
+          const insideEdgeDistance = Math.min(
+            eventX - rect.left,
+            rect.right - eventX,
+            eventY - rect.top,
+            rect.bottom - eventY,
+          );
+
+          if (insideEdgeDistance <= insideHitSlop) {
+            distances.push(insideEdgeDistance);
+          }
+        }
+      }
     }
 
     if (!distances.length) {

@@ -19,6 +19,7 @@
     state,
   }) {
     let templateEditorImageOverlay = null;
+    let templateEditorImageHoverOverlay = null;
 
     function decorateTemplateEditorImages(rootElement) {
       if (!rootElement?.querySelectorAll) {
@@ -153,6 +154,41 @@
       return overlayElement;
     }
 
+    function ensureTemplateEditorImageHoverOverlay() {
+      const overlayContainer = getTemplateEditorImageOverlayContainer();
+
+      if (!overlayContainer) {
+        return null;
+      }
+
+      if (templateEditorImageHoverOverlay) {
+        if (templateEditorImageHoverOverlay.parentElement !== overlayContainer) {
+          overlayContainer.append(templateEditorImageHoverOverlay);
+        }
+
+        if (templateEditorImageOverlay?.parentElement === overlayContainer) {
+          overlayContainer.append(templateEditorImageOverlay);
+        }
+
+        return templateEditorImageHoverOverlay;
+      }
+
+      const overlayElement = document.createElement("div");
+
+      overlayElement.className = "template-editor-image-selection is-hover-only hidden";
+      overlayElement.dataset.templateImageHoverOverlay = "true";
+      overlayElement.setAttribute("aria-hidden", "true");
+      overlayElement.setAttribute("contenteditable", "false");
+      overlayContainer.append(overlayElement);
+      templateEditorImageHoverOverlay = overlayElement;
+
+      if (templateEditorImageOverlay?.parentElement === overlayContainer) {
+        overlayContainer.append(templateEditorImageOverlay);
+      }
+
+      return overlayElement;
+    }
+
     function ensureTemplateEditorImageResizeHandles(overlayElement) {
       const corners = ["bottom-right", "bottom", "bottom-left", "left", "top-left", "top", "top-right", "right"];
       const existingHandles = Array.from(overlayElement?.querySelectorAll?.(".template-editor-image-resize-handle") || []);
@@ -181,6 +217,33 @@
       });
     }
 
+    function syncTemplateEditorImageOverlayToImage(overlayElement, overlayContainer, imageElement) {
+      if (
+        !overlayElement ||
+        !overlayContainer ||
+        !imageElement
+      ) {
+        overlayElement?.classList.add("hidden");
+        overlayElement?.classList.remove("is-resizing");
+        return false;
+      }
+
+      const imageRect = imageElement.getBoundingClientRect();
+      const overlayRect = overlayContainer.getBoundingClientRect();
+
+      if (imageRect.width < 1 || imageRect.height < 1) {
+        overlayElement.classList.add("hidden");
+        return false;
+      }
+
+      overlayElement.style.left = `${Math.round(imageRect.left - overlayRect.left)}px`;
+      overlayElement.style.top = `${Math.round(imageRect.top - overlayRect.top)}px`;
+      overlayElement.style.width = `${Math.round(imageRect.width)}px`;
+      overlayElement.style.height = `${Math.round(imageRect.height)}px`;
+      overlayElement.classList.remove("hidden");
+      return true;
+    }
+
     function updateTemplateEditorImageSelectionOverlay() {
       const overlayElement = ensureTemplateEditorImageOverlay();
       const overlayContainer = getTemplateEditorImageOverlayContainer();
@@ -200,19 +263,44 @@
         return;
       }
 
-      const imageRect = selectedImage.getBoundingClientRect();
-      const overlayRect = overlayContainer.getBoundingClientRect();
+      syncTemplateEditorImageOverlayToImage(overlayElement, overlayContainer, selectedImage);
+    }
 
-      if (imageRect.width < 1 || imageRect.height < 1) {
-        overlayElement.classList.add("hidden");
+    function clearTemplateEditorImageHoverState() {
+      templateEditorImageHoverOverlay?.classList.add("hidden");
+    }
+
+    function updateTemplateEditorImageHoverState(event) {
+      if (
+        state.templateEditor.imageResizeSession ||
+        state.templateEditor.imageMoveSession ||
+        state.templateEditor.tableObjectMoveSession ||
+        state.templateEditor.tableObjectResizeSession
+      ) {
+        clearTemplateEditorImageHoverState();
         return;
       }
 
-      overlayElement.style.left = `${Math.round(imageRect.left - overlayRect.left)}px`;
-      overlayElement.style.top = `${Math.round(imageRect.top - overlayRect.top)}px`;
-      overlayElement.style.width = `${Math.round(imageRect.width)}px`;
-      overlayElement.style.height = `${Math.round(imageRect.height)}px`;
-      overlayElement.classList.remove("hidden");
+      const templateEditorSurface = getTemplateEditorSurface();
+      const templateEditorModal = getTemplateEditorModal();
+      const hoveredImage = getTemplateEditorImageTarget(event?.target);
+      const selectedImage = state.templateEditor.selectedImageElement;
+      const hoverTargetImage = hoveredImage && hoveredImage !== selectedImage ? hoveredImage : null;
+      const overlayElement = ensureTemplateEditorImageHoverOverlay();
+      const overlayContainer = getTemplateEditorImageOverlayContainer();
+
+      if (
+        !overlayElement ||
+        !overlayContainer ||
+        templateEditorModal?.classList.contains("hidden") ||
+        !hoverTargetImage ||
+        !templateEditorSurface?.contains(hoverTargetImage)
+      ) {
+        clearTemplateEditorImageHoverState();
+        return;
+      }
+
+      syncTemplateEditorImageOverlayToImage(overlayElement, overlayContainer, hoverTargetImage);
     }
 
     function selectTemplateEditorImage(imageElement) {
@@ -231,6 +319,7 @@
       }
 
       clearTemplateEditorImageSelection();
+      clearTemplateEditorImageHoverState();
       state.templateEditor.selectedImageElement = imageElement;
       imageElement.classList.add("is-selected-object");
       imageElement.classList.toggle("is-cell-contained-object", Boolean(imageElement.closest("td, th")));
@@ -272,11 +361,13 @@
 
     return Object.freeze({
       clearTemplateEditorImageSelection,
+      clearTemplateEditorImageHoverState,
       decorateTemplateEditorImages,
       ensureTemplateEditorImageOverlay,
       getTemplateEditorImageOverlay: () => templateEditorImageOverlay,
       getTemplateEditorImageTarget,
       selectTemplateEditorImage,
+      updateTemplateEditorImageHoverState,
       updateTemplateEditorImageSelectionOverlay,
     });
   }

@@ -76,6 +76,8 @@ test("renderPreviewDocument repeats photo candidate block grid by page", () => {
   assert.match(result.html, /이수진/);
   assert.match(result.html, /최현우/);
   assert.match(result.html, /26010005/);
+  assert.match(result.pages[2]?.html || "", /<td>5<\/td>[\s\S]*최현우/);
+  assert.doesNotMatch(result.pages[2]?.html || "", /<td>1<\/td>[\s\S]*최현우/);
 });
 
 test("renderPreviewDocument places candidate block data column-first from the top left on every page", () => {

@@ -95,7 +95,7 @@ function renderTableElement(element, pageInstance, baseContext) {
                 },
                 row: {
                   index: rowEntry.isEmpty ? "" : rowEntry.rowNumber,
-                  indexInPage: rowEntry.isEmpty ? "" : rowIndex + 1,
+                  indexInPage: rowEntry.isEmpty ? "" : rowEntry.rowNumber,
                   indexInUnit: rowEntry.isEmpty ? "" : rowEntry.rowNumber,
                 },
               };

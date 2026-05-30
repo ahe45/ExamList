@@ -1,11 +1,22 @@
+const dataFitMinimumFontSizePx = 5;
+const dataFitBaseTolerancePx = 1.25;
+const dataFitMaxHeightTolerancePx = 4;
+const dataFitRowspanToleranceStepPx = 0.75;
+
+function getPreviewDataFitHeightTolerancePx(rowSpan = 1) {
+  const safeRowSpan = Math.max(1, Math.round(Number(rowSpan)) || 1);
+
+  return Math.min(dataFitMaxHeightTolerancePx, dataFitBaseTolerancePx + safeRowSpan * dataFitRowspanToleranceStepPx);
+}
+
 function getPreviewDataFitScript() {
   return `
           <script>
             (() => {
               const fitSelector = "[data-template-data-fit='true'], .template-data-fit";
               const cssPixelsPerPoint = 96 / 72;
-              const minimumFontSizePx = 5;
-              const tolerancePx = 1.25;
+              const minimumFontSizePx = ${dataFitMinimumFontSizePx};
+              const tolerancePx = ${dataFitBaseTolerancePx};
 
               function parseCssLength(value) {
                 const match = String(value || "").trim().match(/^(-?\\d+(?:\\.\\d+)?)(px|pt)?$/i);
@@ -92,6 +103,13 @@ function getPreviewDataFitScript() {
                 return getSpannedRowHeightPx(cell);
               }
 
+              function getCellFitHeightTolerancePx(cell) {
+                const rowSpan = Math.max(1, Math.round(Number(cell?.rowSpan)) || 1);
+
+                // Rowspanned cells accumulate collapsed-border and fractional row rounding differences.
+                return Math.min(${dataFitMaxHeightTolerancePx}, tolerancePx + rowSpan * ${dataFitRowspanToleranceStepPx});
+              }
+
               function getBaseNumber(element, attributeName, fallback) {
                 const savedValue = Number(element.getAttribute(attributeName));
 
@@ -141,8 +159,9 @@ function getPreviewDataFitScript() {
 
               function cellFits(cell, targetHeightPx) {
                 const rectHeight = cell.getBoundingClientRect().height;
+                const heightTolerancePx = getCellFitHeightTolerancePx(cell);
 
-                if (rectHeight > targetHeightPx + tolerancePx) {
+                if (rectHeight > targetHeightPx + heightTolerancePx) {
                   return false;
                 }
 
@@ -228,5 +247,6 @@ function getPreviewDataFitScript() {
 }
 
 module.exports = {
+  getPreviewDataFitHeightTolerancePx,
   getPreviewDataFitScript,
 };

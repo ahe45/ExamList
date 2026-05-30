@@ -4,6 +4,8 @@ export {
   getObjectAlignmentDocumentElement,
   getObjectAlignmentElements,
   getObjectAlignmentEventTarget,
+  getObjectAlignmentOverlayContainer,
+  getObjectAlignmentPositioningElement,
   getObjectCandidateBlockModalElement,
   getObjectCandidateBlockVisualScale,
   getObjectElementSize,

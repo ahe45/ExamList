@@ -35,7 +35,14 @@
   margin: 0 0 1pt;
 }
 
-.editor-document-surface .template-doc > :not([data-candidate-block-grid], .examlist-candidate-block-grid, [data-template-object-flow-spacer]) {
+.editor-document-surface .template-doc > :not(
+  [data-candidate-block-grid],
+  .examlist-candidate-block-grid,
+  [data-template-object-flow-spacer],
+  .examlist-object-selection,
+  .template-editor-image-selection,
+  .template-editor-table-selection
+) {
   position: relative;
   z-index: 2;
 }

@@ -52,11 +52,13 @@
     });
     const {
       clearTemplateEditorImageSelection,
+      clearTemplateEditorImageHoverState,
       decorateTemplateEditorImages,
       ensureTemplateEditorImageOverlay,
       getTemplateEditorImageOverlay,
       getTemplateEditorImageTarget,
       selectTemplateEditorImage,
+      updateTemplateEditorImageHoverState,
       updateTemplateEditorImageSelectionOverlay,
     } = templateEditorImageSelectionController;
 
@@ -82,6 +84,7 @@
 
     return Object.freeze({
       clearTemplateEditorImageSelection,
+      clearTemplateEditorImageHoverState,
       decorateTemplateEditorImages,
       ensureTemplateEditorImageOverlay,
       getTemplateEditorImageTarget,
@@ -89,6 +92,7 @@
       releaseTemplateEditorImageResizeSession,
       selectTemplateEditorImage,
       startTemplateEditorImageMoveSession,
+      updateTemplateEditorImageHoverState,
       updateTemplateEditorImageSelectionOverlay,
     });
   }

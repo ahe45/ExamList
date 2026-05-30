@@ -11,6 +11,7 @@
     applyTemplateEditorFontSize,
     applyToolbarColorTrigger,
     applyToolbarHexColorInput,
+    clearTemplateEditorImageHoverState = () => {},
     clearTemplateEditorImageSelection,
     clearTemplateEditorTableHoverState,
     clearTemplateEditorTableObjectHoverState,
@@ -41,6 +42,7 @@
     undoTemplateEditorHistory = () => {},
     updateTemplateEditorActiveCell,
     updateTemplateEditorFormattingControls,
+    updateTemplateEditorImageHoverState = () => {},
     updateTemplateEditorImageSelectionOverlay,
     updateTemplateEditorTableHoverState,
     updateTemplateEditorTableObjectHoverState,
@@ -509,6 +511,7 @@
       addListener(getTemplateEditorModal(), "compositionend", handleCompositionEnd);
       addListener(getTemplateEditorModal(), "paste", handlePaste);
       addListener(getTemplateEditorModal(), "dragstart", handleDragStart);
+      addListener(getTemplateEditorModal(), "pointermove", updateTemplateEditorImageHoverState);
       addListener(getTemplateEditorModal(), "pointermove", updateTemplateEditorTableObjectHoverState);
       addListener(getTemplateEditorModal(), "pointermove", (event) => {
         if (getTemplateEditorSurface()?.contains(event.target)) {
@@ -516,10 +519,12 @@
         }
       });
       addListener(shell.surfaceElement, "pointerleave", () => {
+        clearTemplateEditorImageHoverState();
         clearTemplateEditorTableHoverState();
         clearTemplateEditorTableObjectHoverState();
       });
       addListener(shell.surfaceElement, "scroll", () => {
+        clearTemplateEditorImageHoverState();
         clearTemplateEditorTableHoverState();
         clearTemplateEditorTableObjectHoverState();
         updateTemplateEditorImageSelectionOverlay();
@@ -528,6 +533,7 @@
       addListener(ownerDocument, "selectionchange", handleSelectionChange);
       addListener(ownerDocument, "click", closeToolbarPanelsForExternalClick, true);
       addListener(ownerWindow, "resize", () => {
+        clearTemplateEditorImageHoverState();
         updateTemplateEditorImageSelectionOverlay();
         updateTemplateEditorTableObjectOverlay();
       });

@@ -27,7 +27,7 @@ test("renderPreviewDocument replaces tokens and paginates table rows", () => {
             {
               config: {
                 columns: [
-                  { key: "row.indexInUnit", label: "순번", width: 48 },
+                  { key: "row.indexInPage", label: "순번", width: 48 },
                   { key: "candidate.name", label: "성명", width: 96 },
                 ],
                 pagination: {
@@ -84,6 +84,7 @@ test("renderPreviewDocument replaces tokens and paginates table rows", () => {
   assert.match(result.html, /김영희/);
   assert.match(result.html, /박민수/);
   assert.match(result.html, /<span class="template-data-fit" data-template-data-fit="true">홍길동<\/span>/);
+  assert.match(result.pages[2]?.html || "", /<span class="template-data-fit" data-template-data-fit="true">3<\/span>[\s\S]*박민수/);
 });
 
 test("renderPreviewDocument renders assigned counts by exam room", () => {

@@ -9,6 +9,7 @@
   const handlerNames = Object.freeze([
     "appendMergedTemplateCellContent",
     "applyTemplateTableSize",
+    "clearTemplateEditorImageHoverState",
     "clearTemplateEditorImageSelection",
     "clearTemplateEditorTableHoverState",
     "clearTemplateEditorTableObjectHoverState",
@@ -46,6 +47,7 @@
     "startTemplateEditorImageMoveSession",
     "syncTemplatePageSettingsFromDocument",
     "updateTemplateEditorFormattingControls",
+    "updateTemplateEditorImageHoverState",
     "updateTemplateEditorImageSelectionOverlay",
     "updateTemplateEditorTableHoverState",
     "updateTemplateEditorTableObjectHoverState",

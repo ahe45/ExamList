@@ -15,6 +15,20 @@
   box-shadow: none;
 }
 
+.template-editor-image-selection.is-hover-only,
+.template-editor-table-selection.is-hover-only,
+.examlist-object-selection.is-hover-only {
+  background: rgba(45, 99, 245, 0.08);
+  border-color: rgba(45, 99, 245, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.68);
+}
+
+.template-editor-image-selection.is-hover-only .template-editor-image-resize-handle,
+.examlist-object-selection.is-hover-only .examlist-object-resize-handle,
+.examlist-object-selection.is-group-resize-disabled .examlist-object-resize-handle {
+  display: none;
+}
+
 .template-editor-image-resize-handle {
   background: linear-gradient(180deg, #2d63f5, #143fcf);
   border: 1px solid #ffffff;
@@ -98,8 +112,7 @@
 }
 
 .template-editor-table-selection.is-hover-only {
-  border-color: rgba(45, 99, 245, 0.46);
-  box-shadow: none;
+  border-color: rgba(45, 99, 245, 0.58);
 }
 
 .template-editor-table-selection.is-moving {

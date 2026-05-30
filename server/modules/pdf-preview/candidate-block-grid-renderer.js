@@ -365,7 +365,7 @@ function createCandidateBlockGridRenderer({
         style="grid-auto-flow:column;grid-template-columns:repeat(${config.columns}, minmax(0, 1fr));grid-template-rows:repeat(${config.rows}, minmax(0, 1fr));gap:${formatPtValue(config.gapYPt)}pt ${formatPtValue(config.gapXPt)}pt;${config.xPt > 0 || config.yPt > 0 ? `position:absolute;left:${formatPtValue(config.xPt)}pt;top:${formatPtValue(config.yPt)}pt;` : ""}${config.widthPt > 0 ? `width:${formatPtValue(config.widthPt)}pt;` : ""}${config.heightPt > 0 ? `height:${formatPtValue(config.heightPt)}pt;` : ""}"
       >
         ${blockEntries
-          .map(({ rowEntry, sequenceIndex, slotIndex }) => {
+          .map(({ rowEntry, slotIndex }) => {
             const gridPosition = getColumnMajorGridPosition(slotIndex, config);
             const rowContext = {
               ...baseContext,
@@ -380,7 +380,7 @@ function createCandidateBlockGridRenderer({
               },
               row: {
                 index: rowEntry.isEmpty ? "" : rowEntry.rowNumber,
-                indexInPage: rowEntry.isEmpty ? "" : sequenceIndex + 1,
+                indexInPage: rowEntry.isEmpty ? "" : rowEntry.rowNumber,
                 indexInUnit: rowEntry.isEmpty ? "" : rowEntry.rowNumber,
               },
             };
