@@ -308,6 +308,57 @@ test("renderPreviewDocument constrains candidate photo token to colgroup cell wi
   assert.match(result.html, constrainedPhotoImageStylePattern);
 });
 
+test("renderPreviewDocument prefers colgroup width over stale photo cell width", () => {
+  const layout = normalizeTemplateLayout(
+    {
+      pages: [
+        {
+          repeatable: true,
+          settings: {
+            documentHtml: '<div class="template-doc"><div data-candidate-block-grid="true"></div></div>',
+            editorMode: "document",
+            candidateBlockGrid: {
+              blockTemplateHtml:
+                '<table data-candidate-block-table="true" style="height:85px;width:354px;border-collapse:collapse;table-layout:fixed;"><colgroup><col style="width:42px;"><col style="width:135px;"><col style="width:104px;"><col style="width:41px;"><col style="width:32px;"></colgroup><tbody><tr style="height:22px;"><td rowspan="4" style="height:85px;width:64px;padding:0;"><span data-template-tag-value="candidate.photo">#사진</span></td><td>A</td><td>B</td><td rowspan="3">C</td><td rowspan="3">D</td></tr><tr style="height:21px;"><td colspan="2">E</td></tr><tr style="height:21px;"><td colspan="2">F</td></tr><tr style="height:21px;"><td colspan="4">G</td></tr></tbody></table>',
+              columns: 1,
+              enabled: true,
+              heightPt: 70,
+              rows: 1,
+              variant: "photo",
+              widthPt: 354,
+            },
+          },
+          type: "content",
+        },
+      ],
+    },
+    {
+      description: "미리보기 테스트",
+      generationUnit: "room",
+      name: "데이터블록 사진 열폭 불일치 테스트",
+      orientation: "portrait",
+      paperPreset: "A4",
+    },
+    "template-preview-block-grid-photo-stale-cell-width-test",
+  );
+  const result = renderPreviewDocument({
+    candidates: [
+      {
+        examNo: "26010001",
+        name: "홍길동",
+        photoUrl: "data:image/png;base64,ZmFrZQ==",
+        roomName: "101호",
+      },
+    ],
+    generatedAt: new Date("2026-04-20T09:00:00+09:00"),
+    template: createTemplate(layout),
+  });
+
+  assert.match(result.html, /<td rowspan="4" style="height: 85px;width:64px;padding:0;">\s*<span class="preview-photo-fit-frame" style="height: 85px; max-height: 85px; width: 42px; max-width: 42px; display: flex; align-items: center; justify-content: center; overflow: hidden; line-height: 0; padding: 1\.5px; box-sizing: border-box">/);
+  assert.doesNotMatch(result.html, /preview-photo-fit-frame" style="[^"]*width: 64px/);
+  assert.match(result.html, constrainedPhotoImageStylePattern);
+});
+
 test("renderPreviewDocument constrains rowspanned candidate photos without explicit row heights", () => {
   const layout = normalizeTemplateLayout(
     {

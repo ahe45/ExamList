@@ -194,12 +194,6 @@ function getCandidateBlockCellWidthPx({
   rowLogicalColumnCount = 1,
   tableLayout = {},
 } = {}) {
-  const configuredCellWidth = getStyleWidthPx(cellOpeningTag);
-
-  if (configuredCellWidth > 0) {
-    return configuredCellWidth;
-  }
-
   const columnWidths = Array.isArray(tableLayout.columnWidths) ? tableLayout.columnWidths : [];
   const spannedColumnWidths = columnWidths.slice(colIndex, colIndex + Math.max(1, colSpan));
   const columnWidth = spannedColumnWidths.length === colSpan
@@ -208,6 +202,12 @@ function getCandidateBlockCellWidthPx({
 
   if (columnWidth > 0) {
     return columnWidth;
+  }
+
+  const configuredCellWidth = getStyleWidthPx(cellOpeningTag);
+
+  if (configuredCellWidth > 0) {
+    return configuredCellWidth;
   }
 
   const tableWidthPx = Number(tableLayout.tableWidthPx) || 0;
