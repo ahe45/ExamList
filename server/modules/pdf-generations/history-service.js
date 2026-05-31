@@ -6,7 +6,6 @@ function createPdfGenerationHistoryService({
   createHttpError,
   createPdfGeneration,
   createPdfGenerationArchive,
-  ensureStorageDirectories,
   fs,
   getBatchGenerationRows,
   getBatchRow,
@@ -15,7 +14,6 @@ function createPdfGenerationHistoryService({
 }) {
   const fileActions = createPdfGenerationFileActions({
     createHttpError,
-    ensureStorageDirectories,
     fs,
     query,
     writeAuditLog,

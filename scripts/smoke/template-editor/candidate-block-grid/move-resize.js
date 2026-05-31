@@ -1,4 +1,6 @@
 const {
+  dispatchBrowserKey,
+  dispatchBrowserMouseClick,
   dispatchBrowserMouseDrag,
   evaluate,
   getBrowserPoint,
@@ -240,6 +242,208 @@ async function assertTableObjectMoveDoesNotSplitCandidateBlockGrid(client) {
   }
 }
 
+async function assertCandidateBlockTableCellImageKeyboardNudge(client) {
+  const originalHtml = await evaluate(client, `window.ExamListTemplateEditorRuntime?.getHtml?.() || ""`);
+
+  await dispatchBrowserMouseClick(client, "#templateEditorSurface [data-candidate-block-instance]");
+  await waitForCondition(
+    client,
+    `Boolean(document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface]'))`,
+    "수험생 데이터 블록 셀 이미지 방향키 테스트 확대 편집",
+  );
+  await evaluate(
+    client,
+    `
+      (() => {
+        const surface = document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface]');
+
+        if (!surface) {
+          return false;
+        }
+
+        surface.innerHTML =
+          '<table id="candidateBlockCellImageNudgeTable" style="width:180px;height:96px;table-layout:fixed;">' +
+            '<tbody><tr style="height:96px;">' +
+              '<td id="candidateBlockCellImageNudgeCell" style="width:180px;height:96px;vertical-align:top;">' +
+                '<img id="candidateBlockCellImageNudgeSmoke" src="data:image/png;base64,ZmFrZQ==" alt="블록 셀 이미지" style="width:48px;height:32px;max-width:100%;max-height:100%;display:inline-block;margin:0;vertical-align:top;" />' +
+              '</td>' +
+            '</tr></tbody>' +
+          '</table>';
+        surface.focus();
+        return true;
+      })()
+    `,
+  );
+  await waitForCondition(
+    client,
+    `Boolean(document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface] #candidateBlockCellImageNudgeSmoke'))`,
+    "수험생 데이터 블록 표 셀 이미지 준비",
+  );
+  await evaluate(
+    client,
+    `
+      (() => {
+        const editor = window.ExamListTemplateEditorRuntime;
+        const surface = document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface]');
+        const image = surface?.querySelector('#candidateBlockCellImageNudgeSmoke');
+
+        if (!editor?.state?.templateEditor || !image || !surface) {
+          return false;
+        }
+
+        editor.state.templateEditor.selectedImageElement = image;
+        image.classList.add('template-editor-image-object', 'is-selected-object');
+        surface.focus();
+        return true;
+      })()
+    `,
+  );
+  await evaluate(
+    client,
+    `
+      (() => {
+        const surface = document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface]');
+
+        if (!surface) {
+          return false;
+        }
+
+        ['ArrowRight', 'ArrowDown'].forEach((key) => {
+          surface.dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true,
+            cancelable: true,
+            code: key,
+            key
+          }));
+        });
+        return true;
+      })()
+    `,
+  );
+  const firstNudgeResult = JSON.parse(
+    await evaluate(
+      client,
+      `
+        JSON.stringify((() => {
+        const activeSurface = document.querySelector('[data-template-editor-runtime-active-surface="true"]');
+        const image = activeSurface?.querySelector('#candidateBlockCellImageNudgeSmoke');
+        const cell = activeSurface?.querySelector('#candidateBlockCellImageNudgeCell');
+        const editor = window.ExamListTemplateEditorRuntime;
+        const imageRect = image?.getBoundingClientRect();
+        const cellRect = cell?.getBoundingClientRect();
+        const styleLeft = Number.parseFloat(image?.style?.left || '');
+        const styleTop = Number.parseFloat(image?.style?.top || '');
+
+        return {
+          activeElement: document.activeElement?.id || document.activeElement?.className || document.activeElement?.tagName || '',
+          activeSurfaceContainsImage: Boolean(activeSurface?.contains?.(image)),
+          activeSurfaceTag: activeSurface?.dataset?.candidateBlockModalEditorSurface ? 'modal' : activeSurface?.id || '',
+          cellExists: Boolean(cell),
+          imageExists: Boolean(image),
+          imageClassName: image?.className || '',
+          imagePosition: image?.style?.position || '',
+          isSelectedState: editor?.state?.templateEditor?.selectedImageElement === image,
+          ok: Boolean(
+            image &&
+            cell &&
+            image.closest('td, th') === cell &&
+            image.style.position === 'absolute' &&
+            Number.isFinite(styleLeft) &&
+            Number.isFinite(styleTop) &&
+            imageRect.left >= cellRect.left - 1 &&
+            imageRect.top >= cellRect.top - 1 &&
+            imageRect.right <= cellRect.right + 1 &&
+            imageRect.bottom <= cellRect.bottom + 1
+          ),
+          styleLeft,
+          styleTop,
+        };
+      })())
+    `,
+    ),
+  );
+
+  if (!firstNudgeResult.ok) {
+    throw new Error(`수험생 데이터 블록 표 셀 이미지 방향키 이동 준비 실패: ${JSON.stringify(firstNudgeResult)}`);
+  }
+
+  await evaluate(
+    client,
+    `
+      (() => {
+        const surface = document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface]');
+        const image = surface?.querySelector('#candidateBlockCellImageNudgeSmoke');
+        const editor = window.ExamListTemplateEditorRuntime;
+
+        if (!surface || !image || !editor?.state?.templateEditor) {
+          return false;
+        }
+
+        editor.state.templateEditor.selectedImageElement = image;
+        ['ArrowRight', 'ArrowDown'].forEach((key) => {
+          surface.dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true,
+            cancelable: true,
+            code: key,
+            key
+          }));
+        });
+        return true;
+      })()
+    `,
+  );
+
+  const nudgeResult = JSON.parse(
+    await evaluate(
+      client,
+      `
+        JSON.stringify((() => {
+          const activeSurface = document.querySelector('[data-template-editor-runtime-active-surface="true"]');
+          const image = activeSurface?.querySelector('#candidateBlockCellImageNudgeSmoke');
+          const styleLeft = Number.parseFloat(image?.style?.left || '');
+          const styleTop = Number.parseFloat(image?.style?.top || '');
+          const before = ${JSON.stringify(firstNudgeResult)};
+
+          return {
+            imageExists: Boolean(image),
+            imagePosition: image?.style?.position || '',
+            ok: Boolean(
+              image &&
+                image.style.position === 'absolute' &&
+                Math.abs(styleLeft - (before.styleLeft + 1)) <= 0.1 &&
+                Math.abs(styleTop - (before.styleTop + 1)) <= 0.1
+            ),
+            styleLeft,
+            styleTop,
+          };
+        })())
+      `,
+    ),
+  );
+
+  if (!nudgeResult.ok) {
+    throw new Error(`수험생 데이터 블록 표 셀 이미지 방향키 1px 이동 실패: ${JSON.stringify(nudgeResult)}`);
+  }
+  await dispatchBrowserMouseClick(client, "[data-candidate-block-focus-close]");
+  await waitForCondition(
+    client,
+    `!document.querySelector('#templateEditorSurface [data-candidate-block-modal-editor-surface]')`,
+    "수험생 데이터 블록 셀 이미지 방향키 테스트 확대 편집 닫기",
+  );
+  await evaluate(
+    client,
+    `
+      (() => {
+        window.ExamListTemplateEditorRuntime?.setHtml?.(${JSON.stringify(originalHtml)}, {
+          notify: false,
+          resetHistory: false
+        });
+        return true;
+      })()
+    `,
+  );
+}
+
 async function runCandidateBlockGridMoveResizeScenario(context) {
   const { client } = context;
     await evaluate(
@@ -459,6 +663,45 @@ async function runCandidateBlockGridMoveResizeScenario(context) {
       `,
       "수험생 데이터 블록 이동 핸들 드래그",
     );
+    const candidateBlockKeyboardBefore = JSON.parse(
+      await evaluate(
+        client,
+        `
+          JSON.stringify((() => {
+            const grid = document.querySelector('#templateEditorSurface [data-candidate-block-grid]');
+
+            return {
+              left: Number.parseFloat(grid?.style?.left || '0'),
+              top: Number.parseFloat(grid?.style?.top || '0')
+            };
+          })())
+        `,
+      ),
+    );
+
+    await evaluate(client, `document.querySelector('#templateEditorSurface [data-candidate-block-grid]')?.focus()`);
+    await dispatchBrowserKey(client, "ArrowRight", { code: "ArrowRight", keyCode: 39 });
+    await dispatchBrowserKey(client, "ArrowDown", { code: "ArrowDown", keyCode: 40 });
+    await waitForCondition(
+      client,
+      `
+        (() => {
+          const grid = document.querySelector('#templateEditorSurface [data-candidate-block-grid]');
+          const before = ${JSON.stringify(candidateBlockKeyboardBefore)};
+          const styleLeft = Number.parseFloat(grid?.style?.left || '');
+          const styleTop = Number.parseFloat(grid?.style?.top || '');
+
+          return Boolean(
+            grid &&
+              grid.classList.contains('is-selected-candidate-block-grid') &&
+              grid.style.position === 'absolute' &&
+              Math.abs(styleLeft - (before.left + 1)) <= 0.1 &&
+              Math.abs(styleTop - (before.top + 1)) <= 0.1
+          );
+        })()
+      `,
+      "수험생 데이터 블록 방향키 1px 이동",
+    );
     const candidateBlockResizeStartPoint = await getBrowserPoint(
       client,
       `(() => {
@@ -611,6 +854,7 @@ async function runCandidateBlockGridMoveResizeScenario(context) {
       `,
       "수험생 데이터 블록 아래 텍스트 입력 후 개체 핸들 표시",
     );
+    await assertCandidateBlockTableCellImageKeyboardNudge(client);
     await assertTableBelowCandidateBlockKeepsExplicitBottomPosition(client);
     await assertTableObjectMoveDoesNotSplitCandidateBlockGrid(client);
 }

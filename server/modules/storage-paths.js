@@ -53,12 +53,6 @@ function resolveLegacyPdfStorageRoot(pathModule, rootDir) {
 }
 
 function resolveSchoolPdfStorageRoot(pathModule, rootDir, schoolStorageCode = "") {
-  const configuredPdfStorageRoot = resolveConfiguredPdfStorageRoot(pathModule, rootDir);
-
-  if (configuredPdfStorageRoot) {
-    return pathModule.join(configuredPdfStorageRoot, normalizeStorageSegment(schoolStorageCode, "school-default"));
-  }
-
   return pathModule.join(resolveSchoolStorageRoot(pathModule, rootDir, schoolStorageCode), "pdf-generations");
 }
 

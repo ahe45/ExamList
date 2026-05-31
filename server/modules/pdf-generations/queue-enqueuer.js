@@ -4,7 +4,6 @@ const { normalizeRetryAttempts } = require("./queue-options");
 const { buildGenerationRequestSnapshot } = require("./snapshots");
 
 function createPdfGenerationQueueEnqueuer({
-  ensureStorageDirectories,
   getPdfGenerationDetail,
   insertHistoryRow,
   pdfPreviewService,
@@ -12,8 +11,6 @@ function createPdfGenerationQueueEnqueuer({
   writeAuditLog,
 }) {
   async function enqueuePdfGeneration(request = {}, options = {}) {
-    await ensureStorageDirectories();
-
     const generationId = `pdf-generation-${randomUUID()}`;
     const jobId = `pdf-job-${randomUUID()}`;
     const batchId = String(options.batchId || request.batchId || "");

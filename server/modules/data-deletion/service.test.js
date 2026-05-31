@@ -164,6 +164,60 @@ test("deleteProjectData clears candidate photos without deleting candidate rows"
   assert.equal(executedSql.some((sql) => sql.includes("DELETE FROM candidate_records")), false);
 });
 
+test("deleteProjectData clears large candidate photo sets without stack overflow", async () => {
+  const candidateRows = Array.from({ length: 23920 }, (_, index) => {
+    const examineeNo = String(26010001 + index);
+
+    return {
+      examineeNo,
+      id: `candidate-${index}`,
+      photoName: `${examineeNo}.jpg`,
+    };
+  });
+  const expectedDeletedFileCount = candidateRows.length * 3 * 2;
+  let deletedFileCount = 0;
+  const service = createDataDeletionService({
+    createHttpError,
+    fs: {
+      existsSync: () => true,
+      promises: {
+        rm: async () => {
+          deletedFileCount += 1;
+        },
+      },
+    },
+    getSchoolById: async () => ({
+      code: "SEOUL01",
+      id: "school-1",
+      name: "서울대학교",
+    }),
+    query: async (sql) => {
+      const compactSql = sql.replace(/\s+/g, " ");
+
+      if (compactSql.includes("FROM candidate_records WHERE school_id = ?")) {
+        return candidateRows;
+      }
+
+      if (compactSql.includes("FROM candidate_records") && compactSql.includes("school_id <> ?")) {
+        return [];
+      }
+
+      if (compactSql.includes("UPDATE candidate_records")) {
+        return { affectedRows: candidateRows.length };
+      }
+
+      return { affectedRows: 1 };
+    },
+    rootDir: path.join("C:\\", "examlist"),
+  });
+
+  const result = await service.deleteProjectData("photos", { schoolId: "school-1" });
+
+  assert.equal(result.deletedCandidatePhotos, candidateRows.length);
+  assert.equal(result.deletedCandidatePhotoFiles, expectedDeletedFileCount);
+  assert.equal(deletedFileCount, expectedDeletedFileCount);
+});
+
 test("deleteProjectData deletes only candidate rows matching deletion unit filters", async () => {
   const queries = [];
   const service = createDataDeletionService({

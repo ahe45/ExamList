@@ -23,6 +23,7 @@ import {
   handleCandidateBlockGridMoveEnd,
   handleCandidateBlockGridResizeEnd,
   handleCandidateBlockGridResizeMove,
+  nudgeCandidateBlockGridPosition,
   resetCandidateBlockGridInteractionSessions,
   startCandidateBlockGridMoveSession,
   startCandidateBlockGridResizeSession,
@@ -175,6 +176,26 @@ function refocusCandidateBlockGridElement(gridElement) {
   });
 
   return selectedGridElement;
+}
+
+function getCandidateBlockGridKeyboardNudgeDelta(key) {
+  if (key === "ArrowUp") {
+    return { x: 0, y: -1 };
+  }
+
+  if (key === "ArrowDown") {
+    return { x: 0, y: 1 };
+  }
+
+  if (key === "ArrowLeft") {
+    return { x: -1, y: 0 };
+  }
+
+  if (key === "ArrowRight") {
+    return { x: 1, y: 0 };
+  }
+
+  return null;
 }
 
 export { getCandidateBlockGridConfig, isPhotoCandidateBlockGridPage } from "./candidate-block-grid-config.js";
@@ -512,6 +533,43 @@ export function bindCandidateBlockGridControls({
   const handleSurfacePointerLeave = () => {
     clearCandidateBlockGridBorderHover(surfaceElement);
   };
+  const handleCandidateBlockGridKeyboardNudge = (event) => {
+    if (
+      event.defaultPrevented ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      event.target?.closest?.("[data-candidate-block-focus-layer], [data-candidate-block-modal-editor-surface]")
+    ) {
+      return false;
+    }
+
+    const delta = getCandidateBlockGridKeyboardNudgeDelta(event.key);
+
+    if (!delta) {
+      return false;
+    }
+
+    const selectedGridElement = getKeyboardSelectedCandidateBlockGridElement(surfaceElement);
+    const activePage = getActiveContentPage();
+
+    if (
+      !(selectedGridElement instanceof HTMLElement) ||
+      !activePage ||
+      !isCandidateBlockGridKeyboardDeleteTarget(event, surfaceElement, selectedGridElement)
+    ) {
+      return false;
+    }
+
+    if (!nudgeCandidateBlockGridPosition(selectedGridElement, delta.x, delta.y, activePage, markDirty, selectCandidateBlockGridElement)) {
+      return false;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+    return true;
+  };
   const handleSurfaceKeyDown = (event) => {
     if (event.key === "Escape" && isCandidateBlockFocusEditorOpen()) {
       closeCandidateBlockFocusEditor();
@@ -522,6 +580,10 @@ export function bindCandidateBlockGridControls({
 
     if (event.key === "Enter" && event.target?.closest?.("[data-candidate-block-grid]") && !event.target?.closest?.("[data-candidate-block-instance]")) {
       event.preventDefault();
+      return;
+    }
+
+    if (handleCandidateBlockGridKeyboardNudge(event)) {
       return;
     }
 
@@ -601,6 +663,10 @@ export function bindCandidateBlockGridControls({
     }
   };
   const handleDocumentKeyDown = (event) => {
+    if (handleCandidateBlockGridKeyboardNudge(event)) {
+      return;
+    }
+
     if (event.defaultPrevented || !["Backspace", "Delete"].includes(event.key)) {
       return;
     }

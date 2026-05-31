@@ -7,8 +7,6 @@ import { dataTagSampleSettingsIcon, renderDataTagSampleModal } from "./data-tag-
 import { renderGenerationUnitSettingsModal } from "./generation-unit-settings-renderer.js";
 import { getSelectedPage } from "./state.js";
 
-const editorCanvasDisplayScale = 4 / 3;
-
 function renderDataTagCatalog(editor, access) {
   const groups = Array.isArray(editor?.dataTags?.groups) ? editor.dataTags.groups : [];
   const canInsertDataTag = canUseAccess(access, "manageTemplates");
@@ -95,28 +93,35 @@ function renderPreviewModal(editor) {
 
   const templateName = String(editor.template?.name || "수험생확인대장").trim() || "수험생확인대장";
   const previewTitle = templateName.endsWith("미리보기") ? templateName : `${templateName} 미리보기`;
+  const pdfUrl = String(editor.previewPdfUrl || "").trim();
 
   return `
     <div class="modal-overlay editor-preview-modal">
       <div class="modal-card editor-preview-modal-card">
-        <div class="modal-header">
-          <div>
+        <div class="modal-header editor-preview-modal-header">
+          <div class="editor-preview-title">
             <h2>${escapeHtml(previewTitle)}</h2>
           </div>
-          <button class="icon-button" data-action="close-template-preview" type="button" aria-label="닫기">×</button>
+          <div class="editor-preview-header-actions">
+            <button class="icon-button" data-action="close-template-preview" type="button" aria-label="닫기">×</button>
+          </div>
         </div>
 
         <div class="editor-preview-body">
           ${
             editor.isPreviewLoading
               ? '<p class="helper-text">미리보기를 생성하는 중입니다.</p>'
-              : `
+              : editor.previewErrorMessage
+                ? `<p class="error-banner">${escapeHtml(editor.previewErrorMessage)}</p>`
+                : pdfUrl
+                  ? `
                   <iframe
-                    class="editor-preview-frame"
-                    srcdoc="${escapeHtml(editor.previewHtml || "")}"
-                    title="템플릿 미리보기"
+                    class="editor-preview-frame pdf-generation-pdf-viewer-frame"
+                    src="${escapeHtml(pdfUrl)}"
+                    title="PDF 미리보기"
                   ></iframe>
                 `
+                  : '<p class="helper-text">표시할 PDF 미리보기가 없습니다.</p>'
           }
         </div>
       </div>

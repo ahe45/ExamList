@@ -163,6 +163,30 @@ async function runImageObjectScenario(context) {
       `,
       "Shift 드래그 이미지 비율 유지 리사이즈",
     );
+    await evaluate(client, `document.querySelector('#templateEditorSurface')?.focus()`);
+    await dispatchBrowserKey(client, "ArrowRight", { code: "ArrowRight", keyCode: 39 });
+    await dispatchBrowserKey(client, "ArrowDown", { code: "ArrowDown", keyCode: 40 });
+    await waitForCondition(
+      client,
+      `
+        (() => {
+          const image = document.querySelector('#plainImageSmoke');
+          const styleLeft = Number.parseFloat(image?.style?.left || '');
+          const styleTop = Number.parseFloat(image?.style?.top || '');
+
+          return Boolean(
+            image &&
+              image.classList.contains('is-selected-object') &&
+              image.style.position === 'absolute' &&
+              Number.isFinite(styleLeft) &&
+              Number.isFinite(styleTop) &&
+              styleLeft >= 1 &&
+              styleTop >= 1
+          );
+        })()
+      `,
+      "캔버스 이미지 방향키 1px 이동",
+    );
     await dispatchBrowserKey(client, "Delete", { code: "Delete", keyCode: 46 });
     await waitForCondition(
       client,
@@ -291,6 +315,44 @@ async function runImageObjectScenario(context) {
         })()
       `,
       "캔버스 표 셀 이미지 위치 이동",
+    );
+    const tableCellImageKeyboardBefore = JSON.parse(
+      await evaluate(
+        client,
+        `
+          JSON.stringify((() => {
+            const image = document.querySelector('#tableCellImageMoveSmoke');
+
+            return {
+              left: Number.parseFloat(image?.style?.left || '0'),
+              top: Number.parseFloat(image?.style?.top || '0')
+            };
+          })())
+        `,
+      ),
+    );
+
+    await evaluate(client, `document.querySelector('#templateEditorSurface')?.focus()`);
+    await dispatchBrowserKey(client, "ArrowRight", { code: "ArrowRight", keyCode: 39 });
+    await dispatchBrowserKey(client, "ArrowDown", { code: "ArrowDown", keyCode: 40 });
+    await waitForCondition(
+      client,
+      `
+        (() => {
+          const image = document.querySelector('#tableCellImageMoveSmoke');
+          const before = ${JSON.stringify(tableCellImageKeyboardBefore)};
+          const styleLeft = Number.parseFloat(image?.style?.left || '');
+          const styleTop = Number.parseFloat(image?.style?.top || '');
+
+          return Boolean(
+            image &&
+              image.style.position === 'absolute' &&
+              Math.abs(styleLeft - (before.left + 1)) <= 0.1 &&
+              Math.abs(styleTop - (before.top + 1)) <= 0.1
+          );
+        })()
+      `,
+      "캔버스 표 셀 이미지 방향키 1px 이동",
     );
 }
 

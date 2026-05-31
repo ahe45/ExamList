@@ -7,6 +7,7 @@ const { deleteRowsByIds } = require("../data-deletion/counts");
 const { deleteFiles } = require("../data-deletion/file-delete");
 const { createPdfGenerationDeleteService } = require("../data-deletion/pdf-generation-delete-service");
 const {
+  appendValues,
   createSqlPlaceholders,
   createUniqueValueList,
 } = require("../data-deletion/utils");
@@ -155,12 +156,12 @@ function createSchoolService({
 
     if (examineeNos.length) {
       conditions.push(`examinee_no IN (${createSqlPlaceholders(examineeNos)})`);
-      params.push(...examineeNos);
+      appendValues(params, examineeNos);
     }
 
     if (photoNames.length) {
       conditions.push(`photo_name IN (${createSqlPlaceholders(photoNames)})`);
-      params.push(...photoNames);
+      appendValues(params, photoNames);
     }
 
     if (!conditions.length) {

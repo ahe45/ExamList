@@ -1,6 +1,8 @@
 const { spawn } = require("child_process");
 const { pathToFileURL } = require("url");
 
+const { resolveSchoolPdfStorageRoot } = require("../storage-paths");
+
 const defaultBrowserPaths = Object.freeze([
   "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
   "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
@@ -8,14 +10,8 @@ const defaultBrowserPaths = Object.freeze([
   "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
 ]);
 
-function resolveStorageRoot(path, root) {
-  const configuredPath = String(process.env.PDF_STORAGE_DIR || "").trim();
-
-  if (!configuredPath) {
-    return path.join(root, "storage", "pdf-generations");
-  }
-
-  return path.isAbsolute(configuredPath) ? configuredPath : path.join(root, configuredPath);
+function resolveStorageRoot(path, root, schoolStorageCode = "") {
+  return resolveSchoolPdfStorageRoot(path, root, schoolStorageCode);
 }
 
 async function resolveBrowserExecutable(fs, createHttpError) {

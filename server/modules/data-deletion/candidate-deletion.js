@@ -11,6 +11,7 @@ const {
   hasDataDeletionFilters,
 } = require("./filters");
 const {
+  appendValues,
   createSqlPlaceholders,
   createUniqueValueList,
 } = require("./utils");
@@ -32,12 +33,12 @@ function createCandidateDeletionService({
 
     if (examineeNos.length) {
       conditions.push(`examinee_no IN (${createSqlPlaceholders(examineeNos)})`);
-      params.push(...examineeNos);
+      appendValues(params, examineeNos);
     }
 
     if (photoNames.length) {
       conditions.push(`photo_name IN (${createSqlPlaceholders(photoNames)})`);
-      params.push(...photoNames);
+      appendValues(params, photoNames);
     }
 
     if (!conditions.length) {
@@ -48,8 +49,12 @@ function createCandidateDeletionService({
       ? `(school_id <> ? OR (school_id = ? AND id NOT IN (${createSqlPlaceholders(excludedCandidateIds)})))`
       : "school_id <> ?";
     const ownershipParams = excludedCandidateIds.length
-      ? [schoolId, schoolId, ...excludedCandidateIds]
+      ? [schoolId, schoolId]
       : [schoolId];
+
+    appendValues(ownershipParams, excludedCandidateIds);
+    const queryParams = ownershipParams.slice();
+    appendValues(queryParams, params);
 
     return transactionQuery(
       `
@@ -61,7 +66,7 @@ function createCandidateDeletionService({
         WHERE ${ownershipCondition}
           AND (${conditions.join(" OR ")})
       `,
-      [...ownershipParams, ...params],
+      queryParams,
     );
   }
 

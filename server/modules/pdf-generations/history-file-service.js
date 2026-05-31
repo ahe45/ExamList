@@ -134,7 +134,6 @@ function resolveAuditTemplateTitle(item = {}, titleMaps = {}) {
 
 function createPdfGenerationFileActions({
   createHttpError,
-  ensureStorageDirectories,
   fs,
   query,
   writeAuditLog,
@@ -180,8 +179,6 @@ function createPdfGenerationFileActions({
   }
 
   async function cleanupExpiredPdfGenerations(request = {}) {
-    await ensureStorageDirectories();
-
     const retentionDays = normalizeRetentionDays(request.retentionDays, normalizeRetentionDays(process.env.PDF_RETENTION_DAYS, 30));
     const cutoffDate = retentionDays > 0
       ? new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000)
@@ -245,8 +242,6 @@ function createPdfGenerationFileActions({
   }
 
   async function deletePdfGenerations(request = {}) {
-    await ensureStorageDirectories();
-
     const generationIds = normalizeArchiveGenerationIds(request.generationIds || request.ids || []);
 
     if (!generationIds.length) {

@@ -94,6 +94,7 @@ test("loadTemplateEditor ignores a stale response from a previously selected tem
       previewErrorMessage: "",
       previewHtml: "",
       previewPageCount: 0,
+      previewPdfUrl: "",
       previewWarnings: [],
       savedTemplateSnapshot: null,
       selectedPageId: "",
@@ -173,6 +174,7 @@ test("loadTemplateEditor selects the content page by default", async () => {
       previewErrorMessage: "",
       previewHtml: "",
       previewPageCount: 0,
+      previewPdfUrl: "",
       previewWarnings: [],
       savedTemplateSnapshot: null,
       selectedPageId: "",
@@ -286,6 +288,111 @@ test("saveTemplateLayout skips legacy document sync after runtime sync", async (
   assert.equal(refreshCalls, 1);
   assert.equal(savedTemplate.layout.pages[0].settings.documentHtml, runtimeHtml);
   assert.equal(appState.templateEditor.isDirty, false);
+});
+
+test("openTemplatePreview creates a PDF preview with current sample values", async () => {
+  installDomStubs();
+  const { createTemplateEditorPersistenceActions } = await importClientModule("template-editor-persistence-actions.js");
+  const template = createTemplatePayload("template-preview-pdf").template;
+  let previewRequest = null;
+  const stateChanges = [];
+  const appState = {
+    currentView: "templateEditor",
+    route: {
+      params: {
+        templateId: template.id,
+      },
+      view: "templateEditor",
+    },
+    templateEditor: {
+      dataTags: {
+        groups: [
+          {
+            tags: [
+              { key: "candidate.name", label: "이름" },
+              { key: "candidate.examNo", label: "수험번호" },
+            ],
+          },
+        ],
+      },
+      dataTagEmptyValueData: {
+        "candidate.name": "빈 이름",
+      },
+      dataTagSampleModal: {},
+      dataTagSampleValues: {
+        "candidate.name": "홍길동",
+        "candidate.examNo": "26010001",
+      },
+      errorMessage: "",
+      isDirty: false,
+      isPreviewLoading: false,
+      isPreviewOpen: false,
+      lastLoadedTemplateId: template.id,
+      loading: false,
+      previewCandidateCount: 0,
+      previewErrorMessage: "",
+      previewHtml: "old html",
+      previewPageCount: 0,
+      previewPdfUrl: "",
+      previewWarnings: [],
+      savedTemplateSnapshot: structuredClone(template),
+      selectedPageId: template.layout.pages[0].id,
+      template,
+    },
+    ui: {
+      activeSchoolId: "school-1",
+      activeTemplateId: template.id,
+    },
+  };
+  const actions = createTemplateEditorPersistenceActions({
+    appState,
+    canManageTemplates: () => true,
+    getCurrentSchoolId: () => "school-1",
+    hasPermission: () => true,
+    initializeDocumentHistoryForPage() {},
+    loadTemplatePreviewRequest: async (request) => {
+      previewRequest = structuredClone(request);
+      return {
+        candidateCount: 25,
+        pageCount: 1,
+        pdfUrl: "/api/pdf-generations/previews/pdf-generation-preview-test?name=preview.pdf",
+        warnings: ["샘플"],
+      };
+    },
+    onStateChange: async () => {
+      stateChanges.push({
+        isPreviewLoading: appState.templateEditor.isPreviewLoading,
+        previewPdfUrl: appState.templateEditor.previewPdfUrl,
+      });
+    },
+    refreshDocumentEditorRuntime() {},
+    resetDocumentEditorRuntime() {},
+    setLastDocumentSelectionPage() {},
+    syncDocumentOverflowUi() {},
+    syncSelectedPageDocumentHtml() {},
+    templatesActions: {
+      loadSummary: async () => {},
+      loadTemplates: async () => {},
+    },
+  });
+
+  await actions.openTemplatePreview();
+
+  assert.equal(previewRequest.schoolId, "school-1");
+  assert.equal(previewRequest.sampleLimit, 60);
+  assert.equal(previewRequest.sampleData["candidate.name"], "홍길동");
+  assert.equal(previewRequest.sampleData["candidate.examNo"], "26010001");
+  assert.equal(previewRequest.emptyValueData["candidate.name"], "빈 이름");
+  assert.equal(appState.templateEditor.previewHtml, "");
+  assert.equal(
+    appState.templateEditor.previewPdfUrl,
+    "/api/pdf-generations/previews/pdf-generation-preview-test?name=preview.pdf",
+  );
+  assert.equal(appState.templateEditor.previewCandidateCount, 25);
+  assert.equal(appState.templateEditor.previewPageCount, 1);
+  assert.deepEqual(appState.templateEditor.previewWarnings, ["샘플"]);
+  assert.equal(stateChanges[0].isPreviewLoading, true);
+  assert.equal(stateChanges.at(-1).isPreviewLoading, false);
 });
 
 test("saveTemplateLayout uses legacy document sync when runtime is unavailable", async () => {

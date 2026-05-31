@@ -45,6 +45,10 @@ const {
 const { createPdfGenerationHistoryService } = require("./history-service");
 const { renderPreviewDocument } = require("../pdf-preview/renderer");
 const {
+  buildPreviewSampleCandidates,
+  previewSampleCandidateCount,
+} = require("../pdf-preview/sample-candidates");
+const {
   resolveLegacyPdfStorageRoot,
   resolveSchoolPdfStorageRoot,
 } = require("../storage-paths");
@@ -105,7 +109,6 @@ function createPdfGenerationService({
     createHttpError,
     createPdfGeneration,
     createPdfGenerationArchive,
-    ensureStorageDirectories,
     fs,
     getBatchGenerationRows,
     getBatchRow,
@@ -156,11 +159,18 @@ function createPdfGenerationService({
     );
   }
 
-  async function ensureStorageDirectories(storageRoot = legacyStorageRoot) {
-    await fs.promises.mkdir(path.join(storageRoot, "archives"), { recursive: true });
-    await fs.promises.mkdir(path.join(storageRoot, "files"), { recursive: true });
-    await fs.promises.mkdir(path.join(storageRoot, "merged"), { recursive: true });
-    await fs.promises.mkdir(path.join(storageRoot, "tmp"), { recursive: true });
+  async function ensureStorageDirectories(storageRoot = "") {
+    const normalizedStorageRoot = String(storageRoot || "").trim();
+
+    if (!normalizedStorageRoot) {
+      return false;
+    }
+
+    await fs.promises.mkdir(path.join(normalizedStorageRoot, "archives"), { recursive: true });
+    await fs.promises.mkdir(path.join(normalizedStorageRoot, "files"), { recursive: true });
+    await fs.promises.mkdir(path.join(normalizedStorageRoot, "merged"), { recursive: true });
+    await fs.promises.mkdir(path.join(normalizedStorageRoot, "tmp"), { recursive: true });
+    return true;
   }
 
   async function createPdfGeneration(request = {}, options = {}) {
@@ -169,6 +179,14 @@ function createPdfGenerationService({
 
   function shouldResolveFirstPreviewTarget(request = {}) {
     return request.previewFirstTarget === true || String(request.previewMode || "").trim() === "first-target";
+  }
+
+  function shouldRenderActualPreviewCandidates(request = {}) {
+    return (
+      request.renderActualCandidates === true ||
+      String(request.previewMode || "").trim() === "generation" ||
+      shouldResolveFirstPreviewTarget(request)
+    );
   }
 
   async function resolveFirstPreviewTargetRequest(request = {}) {
@@ -244,6 +262,7 @@ function createPdfGenerationService({
 
   async function createPdfGenerationPreview(request = {}) {
     const previewRequest = await resolveFirstPreviewTargetRequest(request);
+    const renderActualCandidates = shouldRenderActualPreviewCandidates(previewRequest);
     const previewId = `pdf-generation-preview-${randomUUID()}`;
     const generatedAt = new Date();
     const previewPayload = await pdfPreviewService.resolvePreviewPayload({
@@ -252,8 +271,11 @@ function createPdfGenerationService({
       candidateSort: previewRequest.candidateSort,
       sampleLimit: previewRequest.sampleLimit || previewRequest.chunk?.chunkSize || 500,
     });
+    const renderCandidates = renderActualCandidates
+      ? previewPayload.candidates
+      : buildPreviewSampleCandidates(previewPayload.sampleData, previewSampleCandidateCount);
 
-    if (!previewPayload.candidates.length) {
+    if (renderActualCandidates && !renderCandidates.length) {
       throw createHttpError(400, "PDF 미리보기를 생성할 수험생 데이터가 없습니다.", "PDF_PREVIEW_CANDIDATES_REQUIRED");
     }
 
@@ -265,15 +287,15 @@ function createPdfGenerationService({
     await cleanupExpiredPdfGenerationPreviews(2 * 60 * 60 * 1000, storageRoot);
 
     const previewDocument = renderPreviewDocument({
-      candidates: previewPayload.candidates,
+      candidates: renderCandidates,
       emptyValueData: previewPayload.emptyValueData,
       generatedAt,
-      sampleData: {},
+      sampleData: renderActualCandidates ? {} : previewPayload.sampleData,
       schoolSettings: previewPayload.schoolSettings,
       template: previewPayload.template,
     });
     const fileName = buildPdfGenerationFileName({
-      candidates: previewPayload.candidates,
+      candidates: renderCandidates,
       generatedAt,
       schoolSettings: previewPayload.schoolSettings,
       template: previewPayload.template,
@@ -306,7 +328,7 @@ function createPdfGenerationService({
         action: "pdf_generation_preview_created",
         entityId: previewId,
         metadata: {
-          candidateCount: previewPayload.candidates.length,
+          candidateCount: renderCandidates.length,
           filePath: pdfFilePath,
           pageCount: previewDocument.pageCount,
           schoolId: previewSchoolId,
@@ -316,7 +338,7 @@ function createPdfGenerationService({
       });
 
       return {
-        candidateCount: previewPayload.candidates.length,
+        candidateCount: renderCandidates.length,
         createdAt: generatedAt.toISOString(),
         fileName,
         fileSizeBytes: fileStat.size,
@@ -398,7 +420,6 @@ function createPdfGenerationService({
   pdfGenerationQueueLifecycle = createPdfGenerationQueueLifecycle({
     createHttpError,
     createPdfGeneration,
-    ensureStorageDirectories,
     getBullQueueState,
     getPdfGenerationDetail,
     insertHistoryRow,

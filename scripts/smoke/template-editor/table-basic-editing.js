@@ -160,6 +160,176 @@ async function runTableBasicEditingScenario(context) {
       `,
       "표 활성 셀 단독 강조 없음",
     );
+    await evaluate(
+      client,
+      `
+        (() => {
+          const surface = document.querySelector('#templateEditorSurface');
+          const cell = surface?.querySelector('.template-doc table tr:first-child td:first-child');
+
+          if (!surface || !cell) {
+            return false;
+          }
+
+          cell.textContent = 'ABC';
+          const textNode = cell.firstChild;
+          const selection = window.getSelection();
+          const range = document.createRange();
+
+          surface.focus();
+          range.setStart(textNode, 1);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
+          return true;
+        })()
+      `,
+    );
+    await dispatchBrowserKey(client, "ArrowRight", { code: "ArrowRight", keyCode: 39 });
+    await waitForCondition(
+      client,
+      `
+        (() => {
+          const cell = document.querySelector('#templateEditorSurface .template-doc table tr:first-child td:first-child');
+          const selection = window.getSelection();
+
+          return Boolean(
+            cell?.classList.contains('is-active-cell') &&
+              selection.anchorNode === cell.firstChild &&
+              selection.anchorOffset === 2
+          );
+        })()
+      `,
+      "표 셀 텍스트 안쪽 오른쪽 방향키 커서 이동 우선",
+    );
+    await dispatchBrowserKey(client, "ArrowLeft", { code: "ArrowLeft", keyCode: 37 });
+    await waitForCondition(
+      client,
+      `
+        (() => {
+          const cell = document.querySelector('#templateEditorSurface .template-doc table tr:first-child td:first-child');
+          const selection = window.getSelection();
+
+          return Boolean(
+            cell?.classList.contains('is-active-cell') &&
+              selection.anchorNode === cell.firstChild &&
+              selection.anchorOffset === 1
+          );
+        })()
+      `,
+      "표 셀 텍스트 안쪽 왼쪽 방향키 커서 이동 우선",
+    );
+    await evaluate(
+      client,
+      `
+        (() => {
+          const surface = document.querySelector('#templateEditorSurface');
+          const cell = surface?.querySelector('.template-doc table tr:first-child td:first-child');
+          const textNode = cell?.firstChild;
+
+          if (!surface || !cell || !textNode) {
+            return false;
+          }
+
+          const selection = window.getSelection();
+          const range = document.createRange();
+
+          surface.focus();
+          range.setStart(textNode, textNode.textContent.length);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
+          return true;
+        })()
+      `,
+    );
+    await dispatchBrowserKey(client, "ArrowRight", { code: "ArrowRight", keyCode: 39 });
+    await waitForCondition(
+      client,
+      `document.querySelector('#templateEditorSurface .template-doc table tr:first-child td:nth-child(2)')?.classList.contains('is-active-cell')`,
+      "표 셀 텍스트 끝 오른쪽 방향키 셀 이동",
+    );
+    await evaluate(
+      client,
+      `
+        (() => {
+          const surface = document.querySelector('#templateEditorSurface');
+          const cell = surface?.querySelector('.template-doc table tr:first-child td:first-child');
+
+          if (!surface || !cell) {
+            return false;
+          }
+
+          cell.innerHTML = '<div>Top line</div><div>Bottom line</div>';
+          const firstLineText = cell.querySelector('div:first-child')?.firstChild;
+          const selection = window.getSelection();
+          const range = document.createRange();
+
+          if (!firstLineText) {
+            return false;
+          }
+
+          surface.focus();
+          range.setStart(firstLineText, 1);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
+          return true;
+        })()
+      `,
+    );
+    await dispatchBrowserKey(client, "ArrowDown", { code: "ArrowDown", keyCode: 40 });
+    await waitForCondition(
+      client,
+      `
+        (() => {
+          const cell = document.querySelector('#templateEditorSurface .template-doc table tr:first-child td:first-child');
+          const bottomText = cell?.querySelector('div:nth-child(2)')?.firstChild;
+          const selection = window.getSelection();
+
+          return Boolean(
+            cell?.classList.contains('is-active-cell') &&
+              bottomText &&
+              selection.anchorNode === bottomText
+          );
+        })()
+      `,
+      "표 셀 여러 줄 텍스트 아래 방향키 커서 이동 우선",
+    );
+    await evaluate(
+      client,
+      `
+        (() => {
+          const surface = document.querySelector('#templateEditorSurface');
+          const cell = surface?.querySelector('.template-doc table tr:first-child td:first-child');
+          const bottomText = cell?.querySelector('div:nth-child(2)')?.firstChild;
+
+          if (!surface || !cell || !bottomText) {
+            return false;
+          }
+
+          const selection = window.getSelection();
+          const range = document.createRange();
+
+          surface.focus();
+          range.setStart(bottomText, bottomText.textContent.length);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
+          return true;
+        })()
+      `,
+    );
+    await dispatchBrowserKey(client, "ArrowDown", { code: "ArrowDown", keyCode: 40 });
+    await waitForCondition(
+      client,
+      `document.querySelector('#templateEditorSurface .template-doc table tr:nth-child(2) td:first-child')?.classList.contains('is-active-cell')`,
+      "표 셀 텍스트 마지막 줄 아래 방향키 셀 이동",
+    );
     const selectionStartPoint = await getBrowserPoint(
       client,
       `(() => {

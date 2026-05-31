@@ -505,14 +505,14 @@
 
 | 경로 | 저장 내용 |
 |---|---|
-| `<PDF_STORAGE_DIR>/<schoolCode>/files` 또는 `storage/<schoolCode>/pdf-generations/files` | 개별 생성 PDF. |
-| `<PDF_STORAGE_DIR>/<schoolCode>/archives` 또는 `storage/<schoolCode>/pdf-generations/archives` | ZIP archive. |
-| `<PDF_STORAGE_DIR>/<schoolCode>/merged` 또는 `storage/<schoolCode>/pdf-generations/merged` | 병합 PDF. |
-| `<PDF_STORAGE_DIR>/<schoolCode>/previews` 또는 `storage/<schoolCode>/pdf-generations/previews` | 미리보기 PDF. |
-| `<PDF_STORAGE_DIR>/<schoolCode>/tmp` 또는 `storage/<schoolCode>/pdf-generations/tmp` | PDF 렌더링 임시 작업물. |
-| `storage/<schoolCode>/candidate-photos` | 신규 수험생 사진 파일. |
-| `storage/<schoolCode>/tmp/candidate-photo-archives` | 사진 ZIP preview 후 실제 반영까지 유지하는 임시 업로드 세션 파일. |
-| `storage/pdf-generations`, `storage/candidate-photos`, `storage/tmp/candidate-photo-archives` | 기존 파일 호환용 legacy 저장소. |
+| `<storage root>/<schoolCode>/pdf-generations/files` | 개별 생성 PDF. |
+| `<storage root>/<schoolCode>/pdf-generations/archives` | ZIP archive. |
+| `<storage root>/<schoolCode>/pdf-generations/merged` | 병합 PDF. |
+| `<storage root>/<schoolCode>/pdf-generations/previews` | 미리보기 PDF. |
+| `<storage root>/<schoolCode>/pdf-generations/tmp` | PDF 렌더링 임시 작업물. |
+| `<storage root>/<schoolCode>/candidate-photos` | 신규 수험생 사진 파일. |
+| `<storage root>/<schoolCode>/tmp/candidate-photo-archives` | 사진 ZIP preview 후 실제 반영까지 유지하는 임시 업로드 세션 파일. |
+| `<storage root>/pdf-generations`, `<storage root>/candidate-photos`, `<storage root>/tmp/candidate-photo-archives` | 기존 파일 호환용 legacy 저장소. 신규 생성 루트로는 사용하지 않음. |
 
 ## 12. 이식 단위별 필수 묶음
 

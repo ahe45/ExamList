@@ -235,6 +235,7 @@ export function resetSchoolState(appState) {
 
 export function resetTemplateState(appState) {
   appState.templateEditor.previewHtml = "";
+  appState.templateEditor.previewPdfUrl = "";
   appState.templateEditor.dataTagSampleModal = {
     draftEmptyValueData: {},
     draftValues: {},

@@ -111,7 +111,7 @@
 필수 환경:
 
 - PDF 렌더링 가능한 Chrome/Chromium 또는 `PDF_BROWSER_PATH`.
-- `EXAMLIST_STORAGE_DIR` 또는 `PDF_STORAGE_DIR`.
+- `EXAMLIST_STORAGE_DIR`. 생략하면 프로젝트 루트의 `storage`를 사용한다.
 - 기본은 `PDF_QUEUE_DRIVER=memory`이며, 외부 큐가 필요하면 `PDF_QUEUE_DRIVER=bullmq`와 `REDIS_URL`을 함께 설정한다.
 
 필수 상태:

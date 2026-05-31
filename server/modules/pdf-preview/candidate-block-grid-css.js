@@ -101,6 +101,13 @@ function getStyleHeightPx(openingTag = "") {
   return heightMatch ? parseCssPixelLength(heightMatch[1]) : Number.NaN;
 }
 
+function getStyleWidthPx(openingTag = "") {
+  const styleValue = getStyleAttributeValue(openingTag);
+  const widthMatch = styleValue.match(/(?:^|;)\s*width\s*:\s*([^;]+)/i);
+
+  return widthMatch ? parseCssPixelLength(widthMatch[1]) : Number.NaN;
+}
+
 function replaceOrAppendStyleDeclaration(openingTag = "", propertyName = "", propertyValue = "") {
   const safePropertyName = String(propertyName || "").trim();
   const safePropertyValue = String(propertyValue || "").trim();
@@ -183,6 +190,49 @@ function getVerticalPaddingPx(styleValue = "") {
   return Math.max(0, paddingTop) + Math.max(0, paddingBottom);
 }
 
+function getHorizontalPaddingPx(styleValue = "") {
+  let paddingLeft = 0;
+  let paddingRight = 0;
+
+  splitStyleDeclarations(styleValue).forEach(({ name, value }) => {
+    const propertyName = name.toLowerCase();
+
+    if (propertyName === "padding") {
+      const expandedPadding = expandCssBoxShorthand(value);
+      const left = parseCssPixelLength(expandedPadding?.left);
+      const right = parseCssPixelLength(expandedPadding?.right);
+
+      if (Number.isFinite(left)) {
+        paddingLeft = left;
+      }
+
+      if (Number.isFinite(right)) {
+        paddingRight = right;
+      }
+      return;
+    }
+
+    if (propertyName === "padding-left") {
+      const nextPaddingLeft = parseCssPixelLength(value);
+
+      if (Number.isFinite(nextPaddingLeft)) {
+        paddingLeft = nextPaddingLeft;
+      }
+      return;
+    }
+
+    if (propertyName === "padding-right") {
+      const nextPaddingRight = parseCssPixelLength(value);
+
+      if (Number.isFinite(nextPaddingRight)) {
+        paddingRight = nextPaddingRight;
+      }
+    }
+  });
+
+  return Math.max(0, paddingLeft) + Math.max(0, paddingRight);
+}
+
 function scaleVerticalPaddingDeclaration(value = "", scale = 1) {
   const expandedPadding = expandCssBoxShorthand(value);
 
@@ -243,8 +293,10 @@ module.exports = {
   cssPixelsPerPoint,
   formatCssNumber,
   formatCssPixelLength,
+  getHorizontalPaddingPx,
   getStyleAttributeValue,
   getStyleHeightPx,
+  getStyleWidthPx,
   getVerticalPaddingPx,
   parseCssPixelLength,
   replaceOrAppendStyleDeclaration,

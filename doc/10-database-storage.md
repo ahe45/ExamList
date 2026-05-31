@@ -229,9 +229,9 @@ PDF 관련 감사 로그.
 
 PDF 저장 root:
 
-- `PDF_STORAGE_DIR`가 있으면 `<PDF_STORAGE_DIR>/<schoolCode>`.
-- 없으면 `<storage root>/<schoolCode>/pdf-generations`.
-- 기존 파일 호환을 위해 `<PDF_STORAGE_DIR>` 또는 `<storage root>/pdf-generations`의 legacy 경로도 다운로드/삭제 시 조회한다.
+- 신규 PDF 파일은 항상 `<storage root>/<schoolCode>/pdf-generations`에 저장한다.
+- `PDF_STORAGE_DIR`는 신규 저장 루트로 사용하지 않으며, 기존 파일 호환을 위한 legacy 조회 루트로만 유지한다.
+- `PDF_STORAGE_DIR`가 없으면 legacy 조회 루트는 `<storage root>/pdf-generations`이다.
 
 하위 디렉터리:
 

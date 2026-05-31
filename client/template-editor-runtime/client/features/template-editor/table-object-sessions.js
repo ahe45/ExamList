@@ -701,7 +701,190 @@
       updateTemplateEditorTableObjectOverlay();
     }
 
+    function parseTemplateEditorTableObjectPixelLength(value = "") {
+      const normalizedValue = String(value || "").trim();
+
+      return /^-?\d+(?:\.\d+)?px$/i.test(normalizedValue) ? Number.parseFloat(normalizedValue) : 0;
+    }
+
+    function removeEmptyTemplateEditorTableObjectHost(hostElement, containerElement) {
+      if (
+        !(hostElement instanceof HTMLElement) ||
+        hostElement === containerElement ||
+        !/^(P|DIV)$/i.test(String(hostElement.tagName || ""))
+      ) {
+        return;
+      }
+
+      const text = String(hostElement.textContent || "").replace(/\u00a0/g, " ").trim();
+      const hasMeaningfulObject = Boolean(
+        hostElement.querySelector("img, table, hr, [data-template-tag-value], .template-token, .template-generated-object"),
+      );
+
+      if (!text && !hasMeaningfulObject) {
+        hostElement.remove();
+      }
+    }
+
+    function prepareTemplateEditorCandidateBlockTableObjectForMove(tableElement) {
+      const candidateBlockElement = tableElement?.closest?.("[data-candidate-block-instance]");
+
+      if (!(candidateBlockElement instanceof HTMLElement) || !isTemplateEditorTableObjectElement(tableElement)) {
+        return null;
+      }
+
+      const tableRect = tableElement.getBoundingClientRect();
+      const candidateBlockRect = candidateBlockElement.getBoundingClientRect();
+      const focusScale = getCandidateBlockFocusScale(tableElement);
+      const width = Math.max(
+        TEMPLATE_EDITOR_TABLE_MIN_SIZE,
+        Math.round(
+          parseTemplateEditorTableObjectPixelLength(tableElement.style.width) ||
+            tableElement.offsetWidth ||
+            tableRect.width / Math.max(focusScale, 0.01) ||
+            0,
+        ),
+      );
+      const height = Math.max(
+        TEMPLATE_EDITOR_TABLE_MIN_SIZE,
+        Math.round(
+          parseTemplateEditorTableObjectPixelLength(tableElement.style.height) ||
+            tableElement.offsetHeight ||
+            tableRect.height / Math.max(focusScale, 0.01) ||
+            0,
+        ),
+      );
+      const visualScaleX = Math.max(tableRect.width / Math.max(width, 1), focusScale, 0.01);
+      const visualScaleY = Math.max(tableRect.height / Math.max(height, 1), focusScale, 0.01);
+      const maxDocumentWidth = getTemplateEditorCandidateBlockContainerWidth(candidateBlockElement, tableRect.width, visualScaleX);
+      const maxDocumentHeight = getTemplateEditorCandidateBlockContainerHeight(candidateBlockElement, tableRect.height, visualScaleY);
+      const left = String(tableElement.style.position || "") === "absolute"
+        ? getTemplateEditorBoundedTableObjectCoordinate(
+            parseTemplateEditorTableObjectPixelLength(tableElement.style.left) || tableElement.offsetLeft || 0,
+            maxDocumentWidth - width,
+          )
+        : getTemplateEditorBoundedTableObjectCoordinate(
+            (tableRect.left - candidateBlockRect.left) / visualScaleX,
+            maxDocumentWidth - width,
+          );
+      const top = String(tableElement.style.position || "") === "absolute"
+        ? getTemplateEditorBoundedTableObjectCoordinate(
+            parseTemplateEditorTableObjectPixelLength(tableElement.style.top) || tableElement.offsetTop || 0,
+            maxDocumentHeight - height,
+          )
+        : getTemplateEditorBoundedTableObjectCoordinate(
+            (tableRect.top - candidateBlockRect.top) / visualScaleY,
+            maxDocumentHeight - height,
+          );
+      const previousParent = tableElement.parentElement;
+
+      if (window.getComputedStyle(candidateBlockElement).position === "static") {
+        candidateBlockElement.style.position = "relative";
+      }
+
+      tableElement.style.position = "absolute";
+      tableElement.style.left = `${left}px`;
+      tableElement.style.top = `${top}px`;
+      tableElement.style.width = `${width}px`;
+      tableElement.style.height = `${height}px`;
+      tableElement.style.margin = "0";
+      tableElement.style.maxWidth = "none";
+      tableElement.style.zIndex = "2";
+
+      if (tableElement.parentElement !== candidateBlockElement) {
+        candidateBlockElement.append(tableElement);
+        removeEmptyTemplateEditorTableObjectHost(previousParent, candidateBlockElement);
+      }
+
+      return {
+        height,
+        isCandidateBlockTable: true,
+        left,
+        maxDocumentHeight,
+        maxDocumentWidth,
+        top,
+        width,
+      };
+    }
+
+    function prepareSelectedTemplateEditorTableObjectForNudge(tableElement) {
+      const normalMetrics = prepareTemplateEditorTableObjectForMove(tableElement, { syncSegments: false });
+
+      if (normalMetrics) {
+        const documentElement = getTemplateEditorDocumentElement();
+
+        return {
+          ...normalMetrics,
+          isCandidateBlockTable: false,
+          maxDocumentHeight: getTemplateEditorTableObjectContainerHeight(documentElement, normalMetrics.height),
+          maxDocumentWidth: getTemplateEditorTableObjectContainerWidth(documentElement, normalMetrics.width),
+        };
+      }
+
+      return prepareTemplateEditorCandidateBlockTableObjectForMove(tableElement);
+    }
+
+    function nudgeSelectedTemplateEditorTableObject(deltaX = 0, deltaY = 0) {
+      const selectedTable = state.templateEditor.selectedTableElement;
+
+      if (
+        state.templateEditor.tableObjectMoveSession ||
+        state.templateEditor.tableObjectResizeSession ||
+        !isTemplateEditorTableObjectElement(selectedTable)
+      ) {
+        return false;
+      }
+
+      const metrics = prepareSelectedTemplateEditorTableObjectForNudge(selectedTable);
+
+      if (!metrics) {
+        return false;
+      }
+
+      const nextLeft = getTemplateEditorBoundedTableObjectCoordinate(
+        Number(metrics.left || 0) + Number(deltaX || 0),
+        metrics.maxDocumentWidth - metrics.width,
+      );
+      const nextTop = getTemplateEditorBoundedTableObjectCoordinate(
+        Number(metrics.top || 0) + Number(deltaY || 0),
+        metrics.maxDocumentHeight - metrics.height,
+      );
+      const didChange =
+        nextLeft !== Math.round(Number(metrics.left || 0)) ||
+        nextTop !== Math.round(Number(metrics.top || 0));
+
+      selectedTable.style.left = `${nextLeft}px`;
+      selectedTable.style.top = `${nextTop}px`;
+
+      if (!metrics.isCandidateBlockTable) {
+        reflowTemplateEditorObjectRows(selectedTable, {
+          activeHeight: metrics.height,
+          activeTop: nextTop,
+          documentElement: getTemplateEditorDocumentElement(),
+          minimumHeight: TEMPLATE_EDITOR_TABLE_MIN_SIZE,
+          movementY: nextTop - Number(metrics.top || 0),
+          reorderByPosition: false,
+        });
+        syncTemplateEditorTableObjectFlowSpacer?.(selectedTable, {
+          height: metrics.height,
+          top: nextTop,
+        });
+      }
+
+      updateTemplateEditorTableObjectOverlay();
+
+      if (didChange) {
+        const tableIndex = getTemplateEditorTableObjectIndex(selectedTable);
+
+        syncTemplateEditorContent({ preserveSelection: true, focusEditor: true, normalizeTables: false });
+        selectTemplateEditorTableObjectAfterSync(selectedTable, tableIndex, { delayed: !metrics.isCandidateBlockTable });
+      }
+
+      return true;
+    }
+
     return Object.freeze({
+      nudgeSelectedTemplateEditorTableObject,
       releaseTemplateEditorTableObjectMoveSession,
       releaseTemplateEditorTableObjectResizeSession,
       startTemplateEditorTableObjectMoveSession,

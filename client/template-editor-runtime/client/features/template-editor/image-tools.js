@@ -34,6 +34,7 @@
     syncTemplateEditorContent,
   }) {
     let handleTemplateEditorImageResizeStart = () => {};
+    let nudgeSelectedTemplateEditorImage = () => false;
     let releaseTemplateEditorImageMoveSession = () => {};
     let releaseTemplateEditorImageResizeSession = () => {};
     let startTemplateEditorImageMoveSession = () => {};
@@ -77,6 +78,7 @@
 
     ({
       handleTemplateEditorImageResizeStart,
+      nudgeSelectedTemplateEditorImage,
       releaseTemplateEditorImageMoveSession,
       releaseTemplateEditorImageResizeSession,
       startTemplateEditorImageMoveSession,
@@ -88,6 +90,7 @@
       decorateTemplateEditorImages,
       ensureTemplateEditorImageOverlay,
       getTemplateEditorImageTarget,
+      nudgeSelectedTemplateEditorImage,
       releaseTemplateEditorImageMoveSession,
       releaseTemplateEditorImageResizeSession,
       selectTemplateEditorImage,

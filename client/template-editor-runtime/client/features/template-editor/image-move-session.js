@@ -168,7 +168,61 @@
       window.addEventListener("pointercancel", handleTemplateEditorImageMoveEnd);
     }
 
+    function nudgeSelectedTemplateEditorImage(deltaX = 0, deltaY = 0) {
+      const templateEditorSurface = getTemplateEditorSurface();
+      const selectedImage = state.templateEditor.selectedImageElement;
+
+      if (
+        state.templateEditor.imageMoveSession ||
+        state.templateEditor.imageResizeSession ||
+        !selectedImage ||
+        !templateEditorSurface?.contains(selectedImage)
+      ) {
+        return false;
+      }
+
+      const startingPosition = prepareTemplateEditorImageForMove(selectedImage);
+
+      if (!startingPosition) {
+        return false;
+      }
+
+      const documentElement = getTemplateEditorDocumentElement();
+      const imageRect = selectedImage.getBoundingClientRect();
+      const scaleX = Math.max(Number(startingPosition.scaleX || 1) || 1, 0.01);
+      const scaleY = Math.max(Number(startingPosition.scaleY || 1) || 1, 0.01);
+      const imageWidth = Math.max(1, Math.round(imageRect.width / scaleX));
+      const imageHeight = Math.max(1, Math.round(imageRect.height / scaleY));
+      const boundsWidth = startingPosition.boundsWidth || documentElement?.clientWidth || 0;
+      const boundsHeight =
+        startingPosition.boundsHeight ||
+        Math.max(documentElement?.scrollHeight || 0, documentElement?.clientHeight || 0);
+      const nextLeft = geometry.getTemplateEditorBoundedCoordinate(
+        Number(startingPosition.left || 0) + Number(deltaX || 0),
+        boundsWidth - imageWidth,
+      );
+      const nextTop = geometry.getTemplateEditorBoundedCoordinate(
+        Number(startingPosition.top || 0) + Number(deltaY || 0),
+        boundsHeight - imageHeight,
+      );
+      const didChange =
+        nextLeft !== Math.round(Number(startingPosition.left || 0)) ||
+        nextTop !== Math.round(Number(startingPosition.top || 0));
+
+      selectedImage.style.left = `${nextLeft}px`;
+      selectedImage.style.top = `${nextTop}px`;
+      updateTemplateEditorImageSelectionOverlay();
+
+      if (didChange) {
+        syncTemplateEditorContent({ preserveSelection: true, focusEditor: true });
+        selectTemplateEditorImage(selectedImage);
+      }
+
+      return true;
+    }
+
     return Object.freeze({
+      nudgeSelectedTemplateEditorImage,
       releaseTemplateEditorImageMoveSession,
       startTemplateEditorImageMoveSession,
     });

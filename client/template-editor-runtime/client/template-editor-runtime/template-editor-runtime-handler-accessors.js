@@ -35,6 +35,8 @@
     "insertTemplateCellAtAbsoluteColumn",
     "isTemplateEditorTableObjectElement",
     "isTemplateTableCellEmpty",
+    "nudgeSelectedTemplateEditorImage",
+    "nudgeSelectedTemplateEditorTableObject",
     "releaseTemplateEditorImageMoveSession",
     "releaseTemplateEditorImageResizeSession",
     "releaseTemplateEditorTableObjectMoveSession",

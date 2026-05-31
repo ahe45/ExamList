@@ -152,11 +152,13 @@ function getPreviewElementStyles() {
 
     .preview-photo-fit-frame {
       align-items: center;
+      box-sizing: border-box;
       display: flex;
       height: 100%;
       justify-content: center;
       line-height: 0;
       min-height: 0;
+      overflow: hidden;
       width: 100%;
     }
 
@@ -177,6 +179,9 @@ function getPreviewElementStyles() {
       max-height: 100%;
       max-width: 100%;
       object-fit: contain;
+      object-position: center center;
+      min-height: 0;
+      min-width: 0;
       width: auto;
     }
 

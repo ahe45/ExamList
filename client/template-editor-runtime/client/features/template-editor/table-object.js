@@ -252,6 +252,7 @@
       syncTemplateEditorTableObjectFlowSpacer,
     } = tableObjectGeometryController;
     const {
+      nudgeSelectedTemplateEditorTableObject,
       releaseTemplateEditorTableObjectMoveSession,
       releaseTemplateEditorTableObjectResizeSession,
       startTemplateEditorTableObjectMoveSession,
@@ -482,6 +483,7 @@
       clearTemplateEditorTableObjectSelection,
       handleTemplateEditorTableObjectPointerDown,
       isTemplateEditorTableObjectElement,
+      nudgeSelectedTemplateEditorTableObject,
       releaseTemplateEditorTableObjectMoveSession,
       releaseTemplateEditorTableObjectResizeSession,
       replaceTemplateEditorTableWithCaretHost,

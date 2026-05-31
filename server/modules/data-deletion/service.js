@@ -17,6 +17,7 @@ const {
   createEmptyDeletionCounts,
 } = require("./summary");
 const { createTemplateDeletionService } = require("./template-deletion");
+const { appendValues } = require("./utils");
 
 const DATA_DELETION_CONFIRMATION_PHRASE = "전체 데이터 삭제";
 
@@ -115,7 +116,7 @@ function createDataDeletionService({
         counts.pdfAuditLogs += pdfDeletion.deletedPdfAuditLogs;
         counts.pdfGenerationBatches += pdfDeletion.deletedPdfGenerationBatches;
         counts.pdfGenerationHistories += pdfDeletion.deletedPdfGenerationHistories;
-        pdfFilePaths.push(...pdfDeletion.pdfFilePaths);
+        appendValues(pdfFilePaths, pdfDeletion.pdfFilePaths);
       }
 
       if (normalizedScope === "all" || normalizedScope === "candidates") {
@@ -125,14 +126,14 @@ function createDataDeletionService({
 
         counts.candidatePhotos += candidateDeletion.deletedCandidatePhotos;
         counts.candidateRecords += candidateDeletion.deletedCandidateRecords;
-        candidatePhotoFilePaths.push(...candidateDeletion.candidatePhotoFilePaths);
+        appendValues(candidatePhotoFilePaths, candidateDeletion.candidatePhotoFilePaths);
       } else if (normalizedScope === "photos") {
         const photoDeletion = await deleteCandidatePhotos(transactionQuery, school.id, filters, {
           schoolStorageCode: school.code,
         });
 
         counts.candidatePhotos += photoDeletion.deletedCandidatePhotos;
-        candidatePhotoFilePaths.push(...photoDeletion.candidatePhotoFilePaths);
+        appendValues(candidatePhotoFilePaths, photoDeletion.candidatePhotoFilePaths);
       }
 
       if (!isFilteredDeletion && (normalizedScope === "all" || normalizedScope === "templates")) {

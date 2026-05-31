@@ -161,6 +161,8 @@ test("enqueuePdfGenerationBatch queues one generation job per selected target", 
     assert.deepEqual(payload.items.map((item) => item.targetName), ["101호", "102호"]);
     assert.equal([...historyRows.values()].filter((row) => row.status === "queued").length, 2);
     assert.equal(batchRows.get(payload.batchId).queuedCount, 2);
+    assert.equal(fs.existsSync(path.join(tempRoot, "pdf-storage")), false);
+    assert.equal(fs.existsSync(path.join(tempRoot, "storage", "pdf-generations")), false);
   } finally {
     if (typeof previousStorageDir === "undefined") {
       delete process.env.PDF_STORAGE_DIR;

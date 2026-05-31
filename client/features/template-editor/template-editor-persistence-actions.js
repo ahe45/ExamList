@@ -102,6 +102,7 @@ export function createTemplateEditorPersistenceActions({
     appState.templateEditor.previewErrorMessage = "";
     appState.templateEditor.previewHtml = "";
     appState.templateEditor.previewPageCount = 0;
+    appState.templateEditor.previewPdfUrl = "";
     appState.templateEditor.previewWarnings = [];
   }
 
@@ -390,6 +391,8 @@ export function createTemplateEditorPersistenceActions({
     appState.templateEditor.isPreviewOpen = true;
     appState.templateEditor.isPreviewLoading = true;
     appState.templateEditor.previewErrorMessage = "";
+    appState.templateEditor.previewHtml = "";
+    appState.templateEditor.previewPdfUrl = "";
     await onStateChange();
 
     try {
@@ -404,14 +407,16 @@ export function createTemplateEditorPersistenceActions({
 
       appState.templateEditor.previewCandidateCount = Number(payload?.candidateCount) || 0;
       appState.templateEditor.previewErrorMessage = "";
-      appState.templateEditor.previewHtml = String(payload?.previewHtml || "");
+      appState.templateEditor.previewHtml = "";
       appState.templateEditor.previewPageCount = Number(payload?.pageCount) || 0;
+      appState.templateEditor.previewPdfUrl = String(payload?.pdfUrl || "");
       appState.templateEditor.previewWarnings = Array.isArray(payload?.warnings) ? payload.warnings : [];
     } catch (error) {
       appState.templateEditor.previewCandidateCount = 0;
       appState.templateEditor.previewErrorMessage = error.message;
       appState.templateEditor.previewHtml = "";
       appState.templateEditor.previewPageCount = 0;
+      appState.templateEditor.previewPdfUrl = "";
       appState.templateEditor.previewWarnings = [];
       showToast(appState.templateEditor.previewErrorMessage, { tone: "error" });
     } finally {

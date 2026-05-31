@@ -36,6 +36,8 @@
       insertTemplateCellAtAbsoluteColumn: () => {},
       isTemplateEditorTableObjectElement: () => false,
       isTemplateTableCellEmpty: () => true,
+      nudgeSelectedTemplateEditorImage: () => false,
+      nudgeSelectedTemplateEditorTableObject: () => false,
       releaseTemplateEditorImageMoveSession: () => {},
       releaseTemplateEditorImageResizeSession: () => {},
       releaseTemplateEditorTableObjectMoveSession: () => {},

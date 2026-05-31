@@ -3,6 +3,9 @@ const assert = require("node:assert/strict");
 
 const { createTemplate, normalizeTemplateLayout, renderPreviewDocument } = require("./renderer-test-helpers");
 
+const constrainedPhotoImageStylePattern =
+  /<img class="preview-photo-image"[^>]*style="display: block; height: 100%; width: 100%; max-height: 100%; max-width: 100%; object-fit: contain; object-position: center center; min-height: 0; min-width: 0"/;
+
 test("renderPreviewDocument repeats photo candidate block grid by page", () => {
   const layout = normalizeTemplateLayout(
     {
@@ -245,11 +248,116 @@ test("renderPreviewDocument fits candidate photo token to candidate block table 
   assert.match(result.html, /preview-photo-fit-frame/);
   assert.match(result.html, /preview-photo-image/);
   assert.match(result.html, /object-fit: contain/);
+  assert.match(result.html, /<span class="preview-photo-fit-frame" style="height: 80px; max-height: 80px; width: 125\.33px; max-width: 125\.33px; display: flex; align-items: center; justify-content: center; overflow: hidden; line-height: 0; padding: 1\.5px; box-sizing: border-box">/);
+  assert.match(result.html, constrainedPhotoImageStylePattern);
   assert.match(result.html, /max-height: 100%/);
   assert.match(result.html, /max-width: 100%/);
+  assert.match(result.html, /object-position: center center/);
   assert.doesNotMatch(result.html, /height: 52pt/);
   assert.doesNotMatch(result.html, /width: 40pt/);
   assert.doesNotMatch(result.html, /padding: 0 !important/);
+});
+
+test("renderPreviewDocument constrains candidate photo token to colgroup cell width", () => {
+  const layout = normalizeTemplateLayout(
+    {
+      pages: [
+        {
+          repeatable: true,
+          settings: {
+            documentHtml: '<div class="template-doc"><div data-candidate-block-grid="true"></div></div>',
+            editorMode: "document",
+            candidateBlockGrid: {
+              blockTemplateHtml:
+                '<table data-candidate-block-table="true" style="height:60px;width:120px;border-collapse:collapse;"><colgroup><col style="width:80px;"><col style="width:40px;"></colgroup><tbody><tr style="height:60px;"><td style="height:60px;padding:0;"><span data-template-tag-value="candidate.photo">#사진</span></td><td style="height:60px;">A</td></tr></tbody></table>',
+              columns: 1,
+              enabled: true,
+              heightPt: 48,
+              rows: 1,
+              variant: "photo",
+              widthPt: 120,
+            },
+          },
+          type: "content",
+        },
+      ],
+    },
+    {
+      description: "미리보기 테스트",
+      generationUnit: "room",
+      name: "데이터블록 사진 열폭 테스트",
+      orientation: "portrait",
+      paperPreset: "A4",
+    },
+    "template-preview-block-grid-photo-colgroup-fit-test",
+  );
+  const result = renderPreviewDocument({
+    candidates: [
+      {
+        examNo: "26010001",
+        name: "홍길동",
+        photoUrl: "data:image/png;base64,ZmFrZQ==",
+        roomName: "101호",
+      },
+    ],
+    generatedAt: new Date("2026-04-20T09:00:00+09:00"),
+    template: createTemplate(layout),
+  });
+
+  assert.match(result.html, /<span class="preview-photo-fit-frame" style="height: 60px; max-height: 60px; width: 80px; max-width: 80px; display: flex; align-items: center; justify-content: center; overflow: hidden; line-height: 0; padding: 1\.5px; box-sizing: border-box">/);
+  assert.match(result.html, constrainedPhotoImageStylePattern);
+});
+
+test("renderPreviewDocument constrains rowspanned candidate photos without explicit row heights", () => {
+  const layout = normalizeTemplateLayout(
+    {
+      pages: [
+        {
+          repeatable: true,
+          settings: {
+            documentHtml: '<div class="template-doc"><div data-candidate-block-grid="true"></div></div>',
+            editorMode: "document",
+            candidateBlockGrid: {
+              blockTemplateHtml:
+                '<table data-candidate-block-table="true" style="height:120px;width:220px;border-collapse:collapse;"><colgroup><col style="width:50px;"><col style="width:170px;"></colgroup><tbody><tr><td rowspan="4" style="padding:0;"><span data-template-tag-value="candidate.photo">#사진</span></td><td>A</td></tr><tr><td>B</td></tr><tr><td>C</td></tr><tr><td>D</td></tr></tbody></table>',
+              columns: 1,
+              enabled: true,
+              heightPt: 100,
+              rows: 1,
+              variant: "photo",
+              widthPt: 220,
+            },
+          },
+          type: "content",
+        },
+      ],
+    },
+    {
+      description: "미리보기 테스트",
+      generationUnit: "room",
+      name: "데이터블록 사진 무행높이 테스트",
+      orientation: "portrait",
+      paperPreset: "A4",
+    },
+    "template-preview-block-grid-rowspan-photo-no-row-height-fit-test",
+  );
+  const result = renderPreviewDocument({
+    candidates: [
+      {
+        examNo: "26010001",
+        name: "홍길동",
+        photoUrl: "data:image/png;base64,ZmFrZQ==",
+        roomName: "101호",
+      },
+    ],
+    generatedAt: new Date("2026-04-20T09:00:00+09:00"),
+    template: createTemplate(layout),
+  });
+
+  assert.match(result.html, /<span class="preview-photo-fit-frame" style="height: 120px; max-height: 120px; width: 50px; max-width: 50px; display: flex; align-items: center; justify-content: center; overflow: hidden; line-height: 0; padding: 1\.5px; box-sizing: border-box">/);
+  assert.match(result.html, constrainedPhotoImageStylePattern);
+  assert.doesNotMatch(result.html, /<span class="preview-photo-fit-frame">\s*<img class="preview-photo-image"/);
+  assert.doesNotMatch(result.html, /preview-photo-fit-frame[\s\S]*?<\/span>\s*<br\s*\/?>/);
 });
 
 test("renderPreviewDocument uses empty value data for empty candidate block values with fallback styling", () => {
@@ -592,11 +700,8 @@ test("renderPreviewDocument constrains rowspanned candidate photos inside candid
   });
 
   assert.match(result.html, /<td style="height: 89px;padding:0;" rowspan="4"/);
-  assert.match(result.html, /<span class="preview-photo-fit-frame" style="height: 86px; max-height: 86px">/);
-  assert.match(
-    result.html,
-    /<img class="preview-photo-image"[^>]*style="height: 86px; max-height: 86px; width: 100%; object-fit: contain"/,
-  );
+  assert.match(result.html, /<span class="preview-photo-fit-frame" style="height: 89px; max-height: 89px; width: 110px; max-width: 110px; display: flex; align-items: center; justify-content: center; overflow: hidden; line-height: 0; padding: 1\.5px; box-sizing: border-box">/);
+  assert.match(result.html, constrainedPhotoImageStylePattern);
   assert.doesNotMatch(result.html, /preview-photo-fit-frame[\s\S]*?<\/span>\s*<br\s*\/?>/);
 });
 

@@ -2,6 +2,14 @@ function createSqlPlaceholders(values = []) {
   return values.map(() => "?").join(", ");
 }
 
+function appendValues(target, values = []) {
+  for (const value of Array.isArray(values) ? values : []) {
+    target.push(value);
+  }
+
+  return target;
+}
+
 function createUniqueValueList(values = []) {
   return Array.from(
     new Set(
@@ -25,6 +33,7 @@ function parseJsonColumn(value, fallback) {
 }
 
 module.exports = {
+  appendValues,
   createSqlPlaceholders,
   createUniqueValueList,
   parseJsonColumn,

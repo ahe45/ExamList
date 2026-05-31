@@ -241,6 +241,45 @@ async function runTableObjectSelectionScenario(context) {
       `,
       "일반 표 개체 위치 이동 핸들 드래그",
     );
+    const plainTableObjectKeyboardBefore = JSON.parse(
+      await evaluate(
+        client,
+        `
+          JSON.stringify((() => {
+            const table = document.querySelector('#plainTableDeleteSmoke');
+
+            return {
+              left: Number.parseFloat(table?.style?.left || '0'),
+              top: Number.parseFloat(table?.style?.top || '0')
+            };
+          })())
+        `,
+      ),
+    );
+
+    await evaluate(client, `document.querySelector('#templateEditorSurface')?.focus()`);
+    await dispatchBrowserKey(client, "ArrowRight", { code: "ArrowRight", keyCode: 39 });
+    await dispatchBrowserKey(client, "ArrowDown", { code: "ArrowDown", keyCode: 40 });
+    await waitForCondition(
+      client,
+      `
+        (() => {
+          const table = document.querySelector('#plainTableDeleteSmoke');
+          const before = ${JSON.stringify(plainTableObjectKeyboardBefore)};
+          const styleLeft = Number.parseFloat(table?.style?.left || '');
+          const styleTop = Number.parseFloat(table?.style?.top || '');
+
+          return Boolean(
+            table &&
+              table.classList.contains('is-selected-table-object') &&
+              table.style.position === 'absolute' &&
+              Math.abs(styleLeft - (before.left + 1)) <= 0.1 &&
+              Math.abs(styleTop - (before.top + 1)) <= 0.1
+          );
+        })()
+      `,
+      "일반 표 개체 방향키 1px 이동",
+    );
     const plainTableObjectResizeBefore = JSON.parse(
       await evaluate(
         client,

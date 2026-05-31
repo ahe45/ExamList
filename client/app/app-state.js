@@ -420,6 +420,7 @@ export const appState = {
     previewErrorMessage: "",
     previewHtml: "",
     previewPageCount: 0,
+    previewPdfUrl: "",
     previewWarnings: [],
     savedTemplateSnapshot: null,
     selectedImageElement: null,

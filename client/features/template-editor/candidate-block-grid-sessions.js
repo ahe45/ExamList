@@ -395,6 +395,39 @@ export function startCandidateBlockGridMoveSession(gridElement, event, selectedP
   return true;
 }
 
+export function nudgeCandidateBlockGridPosition(gridElement, deltaX = 0, deltaY = 0, selectedPage, markDirty, selectGridElement = null) {
+  if (!(gridElement instanceof HTMLElement)) {
+    return false;
+  }
+
+  const metrics = prepareCandidateBlockGridMove(gridElement);
+
+  if (!metrics) {
+    return false;
+  }
+
+  const nextLeft = clampCandidateBlockGridCoordinate(
+    metrics.left + Number(deltaX || 0),
+    metrics.maxWidth - metrics.width,
+  );
+  const nextTop = clampCandidateBlockGridCoordinate(
+    metrics.top + Number(deltaY || 0),
+    metrics.maxHeight - metrics.height,
+  );
+  const didChange = nextLeft !== metrics.left || nextTop !== metrics.top;
+
+  gridElement.style.left = `${nextLeft}px`;
+  gridElement.style.top = `${nextTop}px`;
+  writeCandidateBlockGridSizeToConfig(selectedPage, gridElement);
+  selectGridElement?.(gridElement);
+
+  if (didChange) {
+    markDirty?.();
+  }
+
+  return true;
+}
+
 export function handleCandidateBlockGridMove(event) {
   const session = candidateBlockGridMoveSession;
 

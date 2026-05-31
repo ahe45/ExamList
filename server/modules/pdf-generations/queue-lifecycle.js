@@ -6,7 +6,6 @@ const { createPdfGenerationQueueRecoveryController } = require("./queue-recovery
 function createPdfGenerationQueueLifecycle({
   createHttpError,
   createPdfGeneration,
-  ensureStorageDirectories,
   getBullQueueState,
   getPdfGenerationDetail,
   insertHistoryRow,
@@ -20,7 +19,6 @@ function createPdfGenerationQueueLifecycle({
 }) {
   const queueHistoryStore = createPdfGenerationQueueHistoryStore({ query });
   const { enqueuePdfGeneration } = createPdfGenerationQueueEnqueuer({
-    ensureStorageDirectories,
     getPdfGenerationDetail,
     insertHistoryRow,
     pdfPreviewService,

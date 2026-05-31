@@ -19,6 +19,8 @@
     handleTemplateEditorTokenDeletion,
     handleTemplateTableAction,
     isTemplateEditorTableObjectElement,
+    nudgeSelectedTemplateEditorImage = () => false,
+    nudgeSelectedTemplateEditorTableObject = () => false,
     ownerDocument,
     ownerWindow,
     releaseTemplateEditorImageMoveSession,
@@ -38,6 +40,73 @@
     undoTemplateEditorHistory,
       updateTemplateEditorTableObjectOverlay,
     }) {
+    const templateEditorObjectNudgeKeys = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
+
+    function getTemplateEditorObjectNudgeDelta(key) {
+      if (key === "ArrowUp") {
+        return { x: 0, y: -1 };
+      }
+
+      if (key === "ArrowDown") {
+        return { x: 0, y: 1 };
+      }
+
+      if (key === "ArrowLeft") {
+        return { x: -1, y: 0 };
+      }
+
+      if (key === "ArrowRight") {
+        return { x: 1, y: 0 };
+      }
+
+      return null;
+    }
+
+    function isTemplateEditorObjectNudgeControlTarget(target) {
+      const targetElement = target instanceof ownerWindow.Element ? target : null;
+
+      if (!targetElement) {
+        return false;
+      }
+
+      return Boolean(
+        targetElement.closest?.("input, textarea, select") ||
+          shell.toolbarHost?.contains?.(targetElement) ||
+          shell.tagHost?.contains?.(targetElement) ||
+          shell.pagePropertiesHost?.contains?.(targetElement)
+      );
+    }
+
+    function handleTemplateEditorObjectKeyboardNudge(event) {
+      if (
+        !templateEditorObjectNudgeKeys.has(event.key) ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        isTemplateEditorObjectNudgeControlTarget(event.target)
+      ) {
+        return false;
+      }
+
+      const delta = getTemplateEditorObjectNudgeDelta(event.key);
+
+      if (!delta) {
+        return false;
+      }
+
+      const didHandle =
+        nudgeSelectedTemplateEditorImage(delta.x, delta.y) ||
+        nudgeSelectedTemplateEditorTableObject(delta.x, delta.y);
+
+      if (!didHandle) {
+        return false;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      return true;
+    }
+
     function markTemplateEditorNativeHistoryInputHandled(inputType) {
       state.templateEditor.suppressedNativeHistoryInputType = inputType;
       ownerWindow.setTimeout(() => {
@@ -191,6 +260,108 @@
       return Boolean(startElement && endElement && cell.contains(startElement) && cell.contains(endElement));
     }
 
+    function isTemplateEditorRangeInsideCell(cell, range) {
+      if (!cell || !range) {
+        return false;
+      }
+
+      const startElement =
+        range.startContainer instanceof ownerWindow.Element
+          ? range.startContainer
+          : range.startContainer?.parentElement || null;
+      const endElement =
+        range.endContainer instanceof ownerWindow.Element
+          ? range.endContainer
+          : range.endContainer?.parentElement || null;
+
+      return Boolean(startElement && endElement && cell.contains(startElement) && cell.contains(endElement));
+    }
+
+    function isTemplateEditorSameRangeStart(leftRange, rightRange) {
+      return Boolean(
+        leftRange &&
+          rightRange &&
+          leftRange.startContainer === rightRange.startContainer &&
+          leftRange.startOffset === rightRange.startOffset
+      );
+    }
+
+    function getTemplateEditorNativeArrowMovement(key) {
+      if (key === "ArrowLeft") {
+        return { direction: "backward", granularity: "character" };
+      }
+
+      if (key === "ArrowRight") {
+        return { direction: "forward", granularity: "character" };
+      }
+
+      if (key === "ArrowUp") {
+        return { direction: "backward", granularity: "line" };
+      }
+
+      if (key === "ArrowDown") {
+        return { direction: "forward", granularity: "line" };
+      }
+
+      return null;
+    }
+
+    function restoreTemplateEditorSelectionRanges(selection, ranges) {
+      selection.removeAllRanges();
+      ranges.forEach((range) => {
+        try {
+          selection.addRange(range);
+        } catch (error) {
+          // Ignore stale ranges; keydown handling can safely fall back to table navigation.
+        }
+      });
+
+      if (ranges[0]) {
+        state.templateEditor.savedRange = ranges[0].cloneRange();
+      }
+    }
+
+    function canMoveTemplateEditorCaretNativelyWithinCell(cell, key, range) {
+      const selection = ownerWindow.getSelection?.();
+      const movement = getTemplateEditorNativeArrowMovement(key);
+
+      if (
+        !cell ||
+        !range?.collapsed ||
+        !selection?.rangeCount ||
+        typeof selection.modify !== "function" ||
+        !movement ||
+        !isTemplateEditorRangeInsideCell(cell, range)
+      ) {
+        return false;
+      }
+
+      const originalRanges = Array.from({ length: selection.rangeCount }, (_, index) =>
+        selection.getRangeAt(index).cloneRange()
+      );
+      const originalRange = range.cloneRange();
+
+      try {
+        selection.modify("move", movement.direction, movement.granularity);
+
+        if (!selection.rangeCount) {
+          return false;
+        }
+
+        const movedRange = selection.getRangeAt(0);
+
+        return Boolean(
+          movedRange.collapsed &&
+            !isTemplateEditorSameRangeStart(originalRange, movedRange) &&
+            isTemplateEditorRangeInsideCell(cell, movedRange)
+        );
+      } catch (error) {
+        return false;
+      } finally {
+        restoreTemplateEditorSelectionRanges(selection, originalRanges);
+      }
+    }
+
     function hasTemplateEditorCellEditableContent(cell) {
       if (!cell) {
         return false;
@@ -203,21 +374,25 @@
       return Boolean(cell.querySelector("img, table, hr, [data-template-tag-value], .template-token, .template-generated-object"));
     }
 
-    function shouldUseNativeTableCellArrowNavigation(cell) {
+    function shouldUseNativeTableCellArrowNavigation(cell, key) {
       const tableSelection = state.templateEditor.tableSelection;
 
       if (tableSelection?.selectedCells?.length) {
         return false;
       }
 
-      if (cell?.closest?.("[data-candidate-block-instance].is-candidate-block-focus-editor")) {
-        return false;
-      }
-
       const selection = ownerWindow.getSelection?.();
       const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
 
-      return Boolean(range && !range.collapsed && isTemplateEditorCellRangeTarget(cell) && hasTemplateEditorCellEditableContent(cell));
+      if (!range || !isTemplateEditorCellRangeTarget(cell) || !hasTemplateEditorCellEditableContent(cell)) {
+        return false;
+      }
+
+      if (!range.collapsed) {
+        return true;
+      }
+
+      return canMoveTemplateEditorCaretNativelyWithinCell(cell, key, range);
     }
 
     function handleTemplateEditorTableArrowNavigation(event) {
@@ -234,7 +409,7 @@
         return false;
       }
 
-      if (shouldUseNativeTableCellArrowNavigation(selectedCell)) {
+      if (shouldUseNativeTableCellArrowNavigation(selectedCell, event.key)) {
         return false;
       }
 
@@ -496,6 +671,10 @@
           applyTemplateEditorKeyboardHistory("redo");
           return;
         }
+      }
+
+      if (isSurfaceTarget && !isModifierPressed && handleTemplateEditorObjectKeyboardNudge(event)) {
+        return;
       }
 
       if (isSurfaceTarget && !isModifierPressed && !event.altKey && !event.shiftKey && handleTemplateEditorTableArrowNavigation(event)) {

@@ -11,6 +11,7 @@ function createHttpError(statusCode, message, errorCode) {
 }
 
 test("deletePdfGenerations removes completed history rows and their files", async () => {
+  let ensureCalls = 0;
   const removedFiles = [];
   const queryCalls = [];
   const auditLogs = [];
@@ -30,7 +31,9 @@ test("deletePdfGenerations removes completed history rows and their files", asyn
   ];
   const actions = createPdfGenerationFileActions({
     createHttpError,
-    ensureStorageDirectories: async () => {},
+    ensureStorageDirectories: async () => {
+      ensureCalls += 1;
+    },
     fs: {
       existsSync: (filePath) => filePath === "C:\\storage\\first.pdf",
       promises: {
@@ -69,14 +72,56 @@ test("deletePdfGenerations removes completed history rows and their files", asyn
   assert.equal(result.fileDeletedCount, 1);
   assert.equal(result.fileMissingCount, 1);
   assert.equal(result.totalFileSizeBytes, 3072);
+  assert.equal(ensureCalls, 0);
   assert.equal(auditLogs[0].action, "pdf_generation_deleted");
   assert.equal(auditLogs[0].metadata.deletedCount, 2);
 });
 
-test("deletePdfGenerations requires at least one target id", async () => {
+test("cleanupExpiredPdfGenerations purges files without creating storage directories", async () => {
+  let ensureCalls = 0;
+  const removedFiles = [];
   const actions = createPdfGenerationFileActions({
     createHttpError,
-    ensureStorageDirectories: async () => {},
+    ensureStorageDirectories: async () => {
+      ensureCalls += 1;
+    },
+    fs: {
+      existsSync: () => false,
+      promises: {
+        rm: async (filePath, options) => {
+          removedFiles.push({ filePath, options });
+        },
+      },
+    },
+    query: async (sql) => {
+      if (sql.includes("SELECT") && sql.includes("FROM pdf_generation_histories")) {
+        return [
+          {
+            filePath: "C:\\storage\\expired.pdf",
+            id: "expired",
+          },
+        ];
+      }
+
+      return [];
+    },
+    writeAuditLog: async () => {},
+  });
+
+  const result = await actions.cleanupExpiredPdfGenerations({ retentionDays: 30 });
+
+  assert.equal(result.purgedCount, 1);
+  assert.deepEqual(removedFiles.map((item) => item.filePath), ["C:\\storage\\expired.pdf"]);
+  assert.equal(ensureCalls, 0);
+});
+
+test("deletePdfGenerations requires at least one target id", async () => {
+  let ensureCalls = 0;
+  const actions = createPdfGenerationFileActions({
+    createHttpError,
+    ensureStorageDirectories: async () => {
+      ensureCalls += 1;
+    },
     fs: {
       existsSync: () => false,
       promises: {
@@ -94,6 +139,7 @@ test("deletePdfGenerations requires at least one target id", async () => {
       statusCode: 400,
     },
   );
+  assert.equal(ensureCalls, 0);
 });
 
 test("listPdfAuditLogs resolves template ids to readable template titles", async () => {

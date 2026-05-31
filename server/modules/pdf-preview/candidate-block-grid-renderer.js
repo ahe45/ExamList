@@ -9,8 +9,10 @@ const {
   cssPixelsPerPoint,
   formatCssNumber,
   formatCssPixelLength,
+  getHorizontalPaddingPx,
   getStyleAttributeValue,
   getStyleHeightPx,
+  getStyleWidthPx,
   getVerticalPaddingPx,
   parseCssPixelLength,
   replaceOrAppendStyleDeclaration,
@@ -18,7 +20,15 @@ const {
 } = require("./candidate-block-grid-css");
 
 const collapsedCandidateBlockTableBorderPx = 1;
-const candidateBlockPhotoContentInsetPx = 3;
+const candidateBlockPhotoFramePaddingPx = 1.5;
+
+function applyStyleDeclarations(openingTag = "", declarations = []) {
+  return declarations.reduce(
+    (nextOpeningTag, [propertyName, propertyValue]) =>
+      replaceOrAppendStyleDeclaration(nextOpeningTag, propertyName, propertyValue),
+    openingTag,
+  );
+}
 
 function getImageHeightPx(imageOpeningTag = "") {
   const styleHeight = getStyleHeightPx(imageOpeningTag);
@@ -58,35 +68,69 @@ function scaleImageHeightAttributes(html = "", scale = 1) {
   });
 }
 
-function constrainPhotoSizingMarkup(html = "", maxHeightPx = 0) {
-  const safeMaxHeightPx = Number(maxHeightPx) || 0;
+function constrainPhotoSizingMarkup(
+  html = "",
+  frameHeightPx = 0,
+  frameWidthPx = 0,
+) {
+  const safeFrameHeightPx = Number(frameHeightPx) || 0;
+  const safeFrameWidthPx = Number(frameWidthPx) || 0;
 
-  if (!(safeMaxHeightPx > 0)) {
+  if (!(safeFrameHeightPx > 0) && !(safeFrameWidthPx > 0)) {
     return html;
   }
 
-  const maxHeightCssValue = formatCssPixelLength(safeMaxHeightPx);
+  const frameHeightCssValue = safeFrameHeightPx > 0 ? formatCssPixelLength(safeFrameHeightPx) : "";
+  const frameWidthCssValue = safeFrameWidthPx > 0 ? formatCssPixelLength(safeFrameWidthPx) : "";
+  const framePaddingCssValue = formatCssPixelLength(candidateBlockPhotoFramePaddingPx);
 
   return String(html || "").replace(/<(span|img)\b[^>]*>/gi, (openingTag) => {
     if (!/\bpreview-photo-(?:fit-frame|image)\b/.test(openingTag)) {
       return openingTag;
     }
 
-    let nextOpeningTag = replaceOrAppendStyleDeclaration(
-      replaceOrAppendStyleDeclaration(openingTag, "height", maxHeightCssValue),
-      "max-height",
-      maxHeightCssValue,
-    );
+    let nextOpeningTag = openingTag;
+    const isImage = /\bpreview-photo-image\b/.test(openingTag);
 
-    if (/\bpreview-photo-image\b/.test(openingTag)) {
+    if (isImage) {
+      return applyStyleDeclarations(nextOpeningTag, [
+        ["display", "block"],
+        ["height", "100%"],
+        ["width", "100%"],
+        ["max-height", "100%"],
+        ["max-width", "100%"],
+        ["object-fit", "contain"],
+        ["object-position", "center center"],
+        ["min-height", "0"],
+        ["min-width", "0"],
+      ]);
+    }
+
+    if (frameHeightCssValue) {
       nextOpeningTag = replaceOrAppendStyleDeclaration(
-        replaceOrAppendStyleDeclaration(nextOpeningTag, "width", "100%"),
-        "object-fit",
-        "contain",
+        replaceOrAppendStyleDeclaration(nextOpeningTag, "height", frameHeightCssValue),
+        "max-height",
+        frameHeightCssValue,
       );
     }
 
-    return nextOpeningTag;
+    if (frameWidthCssValue) {
+      nextOpeningTag = replaceOrAppendStyleDeclaration(
+        replaceOrAppendStyleDeclaration(nextOpeningTag, "width", frameWidthCssValue),
+        "max-width",
+        frameWidthCssValue,
+      );
+    }
+
+    return applyStyleDeclarations(nextOpeningTag, [
+      ["display", "flex"],
+      ["align-items", "center"],
+      ["justify-content", "center"],
+      ["overflow", "hidden"],
+      ["line-height", "0"],
+      ["padding", framePaddingCssValue],
+      ["box-sizing", "border-box"],
+    ]);
   });
 }
 
@@ -102,6 +146,304 @@ function getCellRowSpan(cellOpeningTag = "") {
   const rowspan = rowspanMatch ? Math.round(Number(rowspanMatch[2])) : 1;
 
   return Math.max(1, rowspan || 1);
+}
+
+function getCellColSpan(cellOpeningTag = "") {
+  const colspanMatch = String(cellOpeningTag || "").match(/\scolspan\s*=\s*(["']?)(\d+)\1/i);
+  const colspan = colspanMatch ? Math.round(Number(colspanMatch[2])) : 1;
+
+  return Math.max(1, colspan || 1);
+}
+
+function getTableColumnWidthsPx(tableHtml = "") {
+  const colMatches = Array.from(String(tableHtml || "").matchAll(/<col\b[^>]*>/gi));
+
+  return colMatches
+    .map((match) => getStyleWidthPx(match[0]))
+    .filter((width) => width > 0);
+}
+
+function getTableWidthPx(tableHtml = "", fallbackWidthPx = 0) {
+  const tableOpeningTag = String(tableHtml || "").match(/<table\b[^>]*>/i)?.[0] || "";
+  const configuredWidth = getStyleWidthPx(tableOpeningTag);
+
+  return configuredWidth > 0 ? configuredWidth : Math.max(0, Number(fallbackWidthPx) || 0);
+}
+
+function createCandidateBlockTableLayout(tableHtml = "", fallbackWidthPx = 0) {
+  return {
+    columnWidths: getTableColumnWidthsPx(tableHtml),
+    tableWidthPx: getTableWidthPx(tableHtml, fallbackWidthPx),
+  };
+}
+
+function getRowLogicalColumnCount(rowInnerHtml = "") {
+  const cellMatches = Array.from(String(rowInnerHtml || "").matchAll(/<(?:td|th)\b[^>]*>/gi));
+  const logicalColumnCount = cellMatches.reduce(
+    (columnCount, match) => columnCount + getCellColSpan(match[0]),
+    0,
+  );
+
+  return Math.max(1, logicalColumnCount || cellMatches.length || 1);
+}
+
+function getCandidateBlockCellWidthPx({
+  cellOpeningTag,
+  colIndex = 0,
+  colSpan = 1,
+  rowLogicalColumnCount = 1,
+  tableLayout = {},
+} = {}) {
+  const configuredCellWidth = getStyleWidthPx(cellOpeningTag);
+
+  if (configuredCellWidth > 0) {
+    return configuredCellWidth;
+  }
+
+  const columnWidths = Array.isArray(tableLayout.columnWidths) ? tableLayout.columnWidths : [];
+  const spannedColumnWidths = columnWidths.slice(colIndex, colIndex + Math.max(1, colSpan));
+  const columnWidth = spannedColumnWidths.length === colSpan
+    ? spannedColumnWidths.reduce((widthSum, width) => widthSum + (Number(width) || 0), 0)
+    : 0;
+
+  if (columnWidth > 0) {
+    return columnWidth;
+  }
+
+  const tableWidthPx = Number(tableLayout.tableWidthPx) || 0;
+
+  return tableWidthPx > 0
+    ? (tableWidthPx * Math.max(1, colSpan)) / Math.max(1, rowLogicalColumnCount)
+    : 0;
+}
+
+function hasConstrainablePhotoMarkup(html = "") {
+  return /\bpreview-photo-fit-frame\b|\bpreview-photo-image\b/i.test(String(html || ""));
+}
+
+function getCandidateBlockTableOpeningTag(tableHtml = "") {
+  return String(tableHtml || "").match(/<table\b[^>]*>/i)?.[0] || "";
+}
+
+function getCandidateBlockTableCellLayout(tableHtml = "") {
+  const rowMatches = Array.from(String(tableHtml || "").matchAll(/(<tr\b[^>]*>)([\s\S]*?)(<\/tr>)/gi));
+  const occupiedSlots = new Set();
+  let columnCount = getTableColumnWidthsPx(tableHtml).length;
+  const rows = rowMatches.map((rowMatch, rowIndex) => {
+    const cellMatches = Array.from(String(rowMatch[2] || "").matchAll(/(<(td|th)\b[^>]*>)([\s\S]*?)(<\/\2>)/gi));
+    let colIndex = 0;
+    const cells = cellMatches.map((cellMatch, cellIndex) => {
+      while (occupiedSlots.has(`${rowIndex}:${colIndex}`)) {
+        colIndex += 1;
+      }
+
+      const rowSpan = getCellRowSpan(cellMatch[1]);
+      const colSpan = getCellColSpan(cellMatch[1]);
+      const cellLayout = {
+        cellIndex,
+        colIndex,
+        colSpan,
+        openingTag: cellMatch[1],
+        rowIndex,
+        rowSpan,
+      };
+
+      for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
+        for (let colOffset = 0; colOffset < colSpan; colOffset += 1) {
+          occupiedSlots.add(`${rowIndex + rowOffset}:${colIndex + colOffset}`);
+        }
+      }
+
+      columnCount = Math.max(columnCount, colIndex + colSpan);
+      colIndex += colSpan;
+      return cellLayout;
+    });
+
+    columnCount = Math.max(columnCount, colIndex);
+    return {
+      cells,
+      openingTag: rowMatch[1],
+    };
+  });
+
+  return {
+    columnCount: Math.max(1, columnCount || 1),
+    rowCount: rows.length,
+    rows,
+  };
+}
+
+function getCandidateBlockTableHeightPx(tableHtml = "") {
+  return getStyleHeightPx(getCandidateBlockTableOpeningTag(tableHtml));
+}
+
+function inferCandidateBlockTableRowHeightsPx(tableHtml = "", targetHeightPx = 0, tableCellLayout = null) {
+  const layout = tableCellLayout || getCandidateBlockTableCellLayout(tableHtml);
+  const rowCount = layout.rowCount;
+
+  if (!rowCount) {
+    return [];
+  }
+
+  const configuredRowHeights = layout.rows.map((row) => getStyleHeightPx(row.openingTag));
+  const inferredRowHeights = configuredRowHeights.map((height) => (height > 0 ? height : 0));
+
+  layout.rows.forEach((row) => {
+    row.cells.forEach((cell) => {
+      const cellHeight = getStyleHeightPx(cell.openingTag);
+
+      if (!(cellHeight > 0)) {
+        return;
+      }
+
+      const spannedRowIndexes = Array.from(
+        { length: Math.min(cell.rowSpan, Math.max(0, rowCount - cell.rowIndex)) },
+        (_item, index) => cell.rowIndex + index,
+      );
+
+      if (!spannedRowIndexes.length) {
+        return;
+      }
+
+      const flexibleRowIndexes = spannedRowIndexes.filter((rowIndex) => !(configuredRowHeights[rowIndex] > 0));
+
+      if (flexibleRowIndexes.length) {
+        const fixedHeight = spannedRowIndexes
+          .filter((rowIndex) => !flexibleRowIndexes.includes(rowIndex))
+          .reduce((heightSum, rowIndex) => heightSum + (Number(inferredRowHeights[rowIndex]) || 0), 0);
+        const currentFlexibleHeight = flexibleRowIndexes.reduce(
+          (heightSum, rowIndex) => heightSum + (Number(inferredRowHeights[rowIndex]) || 0),
+          0,
+        );
+        const targetFlexibleHeight = Math.max(currentFlexibleHeight, cellHeight - fixedHeight);
+        const flexibleRowHeight = Math.max(1, targetFlexibleHeight / flexibleRowIndexes.length);
+
+        flexibleRowIndexes.forEach((rowIndex) => {
+          inferredRowHeights[rowIndex] = Math.max(Number(inferredRowHeights[rowIndex]) || 0, flexibleRowHeight);
+        });
+        return;
+      }
+
+      const currentSpannedHeight = spannedRowIndexes.reduce(
+        (heightSum, rowIndex) => heightSum + (Number(inferredRowHeights[rowIndex]) || 0),
+        0,
+      );
+
+      if (currentSpannedHeight < cellHeight) {
+        const minimumRowHeight = Math.max(1, cellHeight / spannedRowIndexes.length);
+
+        spannedRowIndexes.forEach((rowIndex) => {
+          inferredRowHeights[rowIndex] = Math.max(Number(inferredRowHeights[rowIndex]) || 0, minimumRowHeight);
+        });
+      }
+    });
+  });
+
+  const configuredTableHeight = getCandidateBlockTableHeightPx(tableHtml);
+  const fallbackTableHeight = configuredTableHeight > 0
+    ? configuredTableHeight
+    : targetHeightPx > 0
+      ? Math.max(rowCount, targetHeightPx - collapsedCandidateBlockTableBorderPx)
+      : 0;
+
+  if (fallbackTableHeight > 0) {
+    const currentTotalHeight = inferredRowHeights.reduce((heightSum, height) => heightSum + (Number(height) || 0), 0);
+
+    if (!(currentTotalHeight > 0)) {
+      const distributedHeight = fallbackTableHeight / rowCount;
+
+      return inferredRowHeights.map(() => Math.max(1, distributedHeight));
+    }
+
+    if (currentTotalHeight < fallbackTableHeight) {
+      const flexibleRowIndexes = configuredRowHeights
+        .map((height, rowIndex) => (height > 0 ? -1 : rowIndex))
+        .filter((rowIndex) => rowIndex >= 0);
+
+      if (flexibleRowIndexes.length) {
+        const additionalHeight = (fallbackTableHeight - currentTotalHeight) / flexibleRowIndexes.length;
+
+        flexibleRowIndexes.forEach((rowIndex) => {
+          inferredRowHeights[rowIndex] = Math.max(1, (Number(inferredRowHeights[rowIndex]) || 0) + additionalHeight);
+        });
+      }
+    }
+  }
+
+  return inferredRowHeights;
+}
+
+function constrainCandidateBlockTablePhotoCells(tableHtml = "", targetHeightPx = 0, targetWidthPx = 0) {
+  if (!hasConstrainablePhotoMarkup(tableHtml)) {
+    return tableHtml;
+  }
+
+  const tableCellLayout = getCandidateBlockTableCellLayout(tableHtml);
+
+  if (!tableCellLayout.rowCount) {
+    return tableHtml;
+  }
+
+  const rowHeights = inferCandidateBlockTableRowHeightsPx(tableHtml, targetHeightPx, tableCellLayout);
+  const tableLayout = createCandidateBlockTableLayout(tableHtml, targetWidthPx);
+  let rowIndex = 0;
+
+  return String(tableHtml || "").replace(/(<tr\b[^>]*>)([\s\S]*?)(<\/tr>)/gi, (
+    _rowMatch,
+    rowOpeningTag,
+    rowInnerHtml,
+    rowClosingTag,
+  ) => {
+    const rowLayout = tableCellLayout.rows[rowIndex] || { cells: [] };
+    let cellIndex = 0;
+    const nextRowInnerHtml = String(rowInnerHtml || "").replace(/(<(td|th)\b[^>]*>)([\s\S]*?)(<\/\2>)/gi, (
+      cellMatch,
+      cellOpeningTag,
+      _tagName,
+      cellInnerHtml,
+      cellClosingTag,
+    ) => {
+      const cellLayout = rowLayout.cells[cellIndex] || {};
+
+      cellIndex += 1;
+
+      if (!hasConstrainablePhotoMarkup(cellInnerHtml)) {
+        return cellMatch;
+      }
+
+      const rowSpan = cellLayout.rowSpan || getCellRowSpan(cellOpeningTag);
+      const colSpan = cellLayout.colSpan || getCellColSpan(cellOpeningTag);
+      const configuredCellHeight = getStyleHeightPx(cellOpeningTag);
+      const cellHeightPx = configuredCellHeight > 0
+        ? configuredCellHeight
+        : getSpannedCellHeightPx(cellLayout.rowIndex || rowIndex, rowSpan, rowHeights);
+      const fittedCellStyle = getStyleAttributeValue(cellOpeningTag);
+      const verticalPadding = getVerticalPaddingPx(fittedCellStyle);
+      const photoFrameHeight = cellHeightPx > 0 ? Math.max(1, cellHeightPx - verticalPadding) : 0;
+      const cellWidthPx = getCandidateBlockCellWidthPx({
+        cellOpeningTag,
+        colIndex: cellLayout.colIndex || 0,
+        colSpan,
+        rowLogicalColumnCount: tableCellLayout.columnCount,
+        tableLayout,
+      });
+      const horizontalPadding = getHorizontalPaddingPx(fittedCellStyle);
+      const photoFrameWidth = cellWidthPx > 0
+        ? Math.max(1, (Number(cellWidthPx) || 0) - horizontalPadding)
+        : 0;
+
+      if (!(photoFrameHeight > 0) && !(photoFrameWidth > 0)) {
+        return cellMatch;
+      }
+
+      return `${cellOpeningTag}${removePhotoSizingTrailingBreaks(
+        constrainPhotoSizingMarkup(cellInnerHtml, photoFrameHeight, photoFrameWidth),
+      )}${cellClosingTag}`;
+    });
+
+    rowIndex += 1;
+    return `${rowOpeningTag}${nextRowInnerHtml}${rowClosingTag}`;
+  });
 }
 
 function getRowEffectiveHeightPx(rowHtml = "", rowHeightPx = 0) {
@@ -138,7 +480,10 @@ function getSpannedCellHeightPx(rowIndex = 0, rowspan = 1, rowHeights = []) {
   return spannedHeight > 0 ? spannedHeight : 0;
 }
 
-function setRowCellHeights(rowInnerHtml = "", heightCssValue = "", scale = 1, rowIndex = 0, rowHeights = []) {
+function setRowCellHeights(rowInnerHtml = "", heightCssValue = "", scale = 1, rowIndex = 0, rowHeights = [], tableLayout = {}) {
+  const rowLogicalColumnCount = getRowLogicalColumnCount(rowInnerHtml);
+  let colIndex = 0;
+
   return String(rowInnerHtml || "").replace(/(<(td|th)\b[^>]*>)([\s\S]*?)(<\/\2>)/gi, (
     _match,
     cellOpeningTag,
@@ -147,6 +492,7 @@ function setRowCellHeights(rowInnerHtml = "", heightCssValue = "", scale = 1, ro
     cellClosingTag,
   ) => {
     const rowspan = getCellRowSpan(cellOpeningTag);
+    const colSpan = getCellColSpan(cellOpeningTag);
     const spannedHeightPx = rowspan > 1 ? getSpannedCellHeightPx(rowIndex, rowspan, rowHeights) : 0;
     const cellHeightPx = spannedHeightPx || parseCssPixelLength(heightCssValue);
     const cellHeightCssValue = spannedHeightPx > 0 ? formatCssPixelLength(spannedHeightPx) : heightCssValue;
@@ -156,22 +502,35 @@ function setRowCellHeights(rowInnerHtml = "", heightCssValue = "", scale = 1, ro
     );
     const fittedCellStyle = getStyleAttributeValue(nextCellOpeningTag);
     const verticalPadding = getVerticalPaddingPx(fittedCellStyle);
-    const maxPhotoContentHeight = Math.max(
+    const photoFrameHeight = Math.max(
       1,
-      (Number(cellHeightPx) || 0) - verticalPadding - candidateBlockPhotoContentInsetPx,
+      (Number(cellHeightPx) || 0) - verticalPadding,
     );
+    const cellWidthPx = getCandidateBlockCellWidthPx({
+      cellOpeningTag: nextCellOpeningTag,
+      colIndex,
+      colSpan,
+      rowLogicalColumnCount,
+      tableLayout,
+    });
+    const horizontalPadding = getHorizontalPaddingPx(fittedCellStyle);
+    const photoFrameWidth = cellWidthPx > 0
+      ? Math.max(1, (Number(cellWidthPx) || 0) - horizontalPadding)
+      : 0;
     const fittedCellInnerHtml = removePhotoSizingTrailingBreaks(
       constrainPhotoSizingMarkup(
         scaleImageHeightAttributes(cellInnerHtml, scale),
-        maxPhotoContentHeight,
+        photoFrameHeight,
+        photoFrameWidth,
       ),
     );
 
+    colIndex += colSpan;
     return `${nextCellOpeningTag}${fittedCellInnerHtml}${cellClosingTag}`;
   });
 }
 
-function fitCandidateBlockTableRowsToHeight(tableHtml = "", targetHeightPx = 0) {
+function fitCandidateBlockTableRowsToHeight(tableHtml = "", targetHeightPx = 0, targetWidthPx = 0) {
   const rowMatches = Array.from(String(tableHtml || "").matchAll(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi));
 
   if (!(targetHeightPx > 0) || !rowMatches.length) {
@@ -205,6 +564,7 @@ function fitCandidateBlockTableRowsToHeight(tableHtml = "", targetHeightPx = 0) 
   }
 
   const scale = Math.min(1, safeTargetHeight / currentTotalHeight);
+  const tableLayout = createCandidateBlockTableLayout(tableHtml, targetWidthPx);
   const targetTotalHeight = Math.min(currentTotalHeight, safeTargetHeight);
   let usedHeight = 0;
   const nextHeights = effectiveRowHeights.map((height, index) => {
@@ -233,20 +593,22 @@ function fitCandidateBlockTableRowsToHeight(tableHtml = "", targetHeightPx = 0) 
       scale,
       rowIndex - 1,
       nextHeights,
+      tableLayout,
     )}${closingTag}`;
   });
 }
 
 function fitCandidateBlockTablesToBlock(blockTemplateHtml = "", blockSize = {}) {
   const targetHeightPx = Number(blockSize.heightPx) || 0;
+  const targetWidthPx = Number(blockSize.widthPx) || 0;
 
-  if (!(targetHeightPx > 0)) {
-    return blockTemplateHtml;
-  }
+  return String(blockTemplateHtml || "").replace(/<table\b[\s\S]*?<\/table>/gi, (tableHtml) => {
+    const fittedTableHtml = targetHeightPx > 0
+      ? fitCandidateBlockTableRowsToHeight(tableHtml, targetHeightPx, targetWidthPx)
+      : tableHtml;
 
-  return String(blockTemplateHtml || "").replace(/<table\b[\s\S]*?<\/table>/gi, (tableHtml) =>
-    fitCandidateBlockTableRowsToHeight(tableHtml, targetHeightPx),
-  );
+    return constrainCandidateBlockTablePhotoCells(fittedTableHtml, targetHeightPx, targetWidthPx);
+  });
 }
 
 function getCandidateBlockPreviewSize(config = {}) {

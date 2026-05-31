@@ -50,8 +50,10 @@ export function saveTemplateLayoutPayload({ schoolId = "", template }) {
 }
 
 export function loadTemplatePreviewPayload({ emptyValueData = {}, sampleData = {}, sampleLimit = 60, schoolId = "", template }) {
-  return postJson("/api/pdf-preview", {
+  return postJson("/api/pdf-preview/pdf", {
     emptyValueData: emptyValueData && typeof emptyValueData === "object" && !Array.isArray(emptyValueData) ? emptyValueData : {},
+    previewMode: "template",
+    renderActualCandidates: false,
     sampleData: sampleData && typeof sampleData === "object" && !Array.isArray(sampleData) ? sampleData : {},
     sampleLimit,
     schoolId: String(schoolId || template.schoolId || ""),

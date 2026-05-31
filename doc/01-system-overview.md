@@ -74,7 +74,7 @@ npm run start
 | `EXAMLIST_PHOTO_ARCHIVE_SESSION_TTL_MINUTES` | 기본 30 | 사진 ZIP 미리보기 후 실제 반영에 재사용하는 임시 업로드 세션 유지 시간 |
 | `EXAMLIST_STORAGE_DIR` | `storage` | PDF와 사진 저장소의 기본 루트. 상대 경로면 프로젝트 루트 기준 |
 | `PDF_BROWSER_PATH` | 빈 값 | PDF 렌더링용 브라우저 실행 파일 경로 |
-| `PDF_STORAGE_DIR` | `storage/pdf-generations` | PDF 결과 저장 루트. 설정하면 그 아래 학교 코드별 디렉터리를 사용 |
+| `PDF_STORAGE_DIR` | 빈 값 | 기존 PDF 파일 호환용 legacy 조회 루트. 신규 저장은 `EXAMLIST_STORAGE_DIR` 아래 학교 코드별 폴더 사용 |
 | `PDF_QUEUE_DRIVER` | `memory` | PDF queue driver. `memory` 또는 `bullmq` |
 | `PDF_QUEUE_NAME` | `examlist-pdf-generation` | BullMQ 사용 시 queue 이름 |
 | `PDF_QUEUE_PROCESS_IN_WEB` | `true` | BullMQ 사용 시 웹 프로세스에서 worker도 실행할지 여부 |

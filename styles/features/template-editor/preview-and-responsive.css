@@ -41,6 +41,29 @@
   width: min(100%, 1320px);
 }
 
+.editor-preview-modal-header {
+  align-items: center;
+  gap: 16px;
+}
+
+.editor-preview-title {
+  min-width: 0;
+}
+
+.editor-preview-title h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-preview-header-actions {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+  margin-left: auto;
+}
+
 .editor-preview-body {
   display: grid;
   gap: 16px;
@@ -56,6 +79,18 @@
   height: 100%;
   min-height: 0;
   width: 100%;
+}
+
+@media (max-width: 720px) {
+  .editor-preview-modal-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .editor-preview-header-actions {
+    justify-content: space-between;
+    margin-left: 0;
+  }
 }
 
 .template-editor-modal-sheet {
