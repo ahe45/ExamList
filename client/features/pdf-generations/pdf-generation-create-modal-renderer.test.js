@@ -82,3 +82,17 @@ test("PDF generation create modal keeps series visible but disabled until admiss
   assert.match(getFilterSelectOpeningHtml(withoutAdmissionHtml, "series"), /disabled/);
   assert.doesNotMatch(getFilterSelectOpeningHtml(withAdmissionHtml, "series"), /disabled/);
 });
+
+test("PDF generation create modal shows only template through series filters", () => {
+  const html = renderCreateModal({
+    selectedFilterKeys: ["track", "admission", "series"],
+    selectedTemplateId: "template-1",
+    templates: [baseTemplate],
+  });
+
+  assert.match(html, /data-pdf-generation-template-select/);
+  assert.match(html, /data-pdf-generation-modal-filter="track"/);
+  assert.match(html, /data-pdf-generation-modal-filter="admission"/);
+  assert.match(html, /data-pdf-generation-modal-filter="series"/);
+  assert.doesNotMatch(html, /data-pdf-generation-modal-filter="unit"/);
+});

@@ -107,29 +107,9 @@ export function isPdfGenerationCreateConditionComplete(selectedFilterKeys = [], 
 
 export function getPdfGenerationRevealedFilterSteps(selectedFilterKeys = [], generationUnit = "") {
   const visibleSteps = getPdfGenerationVisibleFilterSteps(generationUnit);
-  const selectedKeySet = new Set(normalizePdfGenerationSelectedFilterKeys(selectedFilterKeys, generationUnit));
-  const alwaysRevealedStepCount = Math.min(4, visibleSteps.length);
-  const revealedSteps = visibleSteps.slice(0, alwaysRevealedStepCount);
+  const alwaysRevealedStepCount = Math.min(3, visibleSteps.length);
 
-  if (!visibleSteps.length || !selectedKeySet.has("admission")) {
-    return revealedSteps;
-  }
-
-  const lastAlwaysRevealedStep = revealedSteps[revealedSteps.length - 1];
-
-  if (!selectedKeySet.has(lastAlwaysRevealedStep?.key)) {
-    return revealedSteps;
-  }
-
-  for (const step of visibleSteps.slice(alwaysRevealedStepCount)) {
-    revealedSteps.push(step);
-
-    if (!selectedKeySet.has(step.key)) {
-      break;
-    }
-  }
-
-  return revealedSteps;
+  return visibleSteps.slice(0, alwaysRevealedStepCount);
 }
 
 export function resetPdfGenerationLowerFilters(filters = {}, stepKey = "") {

@@ -11,7 +11,7 @@ import {
 test("PDF generation create flow always reveals through series", () => {
   assert.deepEqual(
     getPdfGenerationRevealedFilterSteps([], "roomCode").map((step) => step.key),
-    ["track", "admission", "series", "unit"],
+    ["track", "admission", "series"],
   );
   assert.deepEqual(
     getPdfGenerationVisibleFilterSteps("admission").map((step) => step.key),
@@ -19,18 +19,18 @@ test("PDF generation create flow always reveals through series", () => {
   );
 });
 
-test("PDF generation create flow does not reveal major until unit is selected", () => {
+test("PDF generation create flow does not reveal unit or lower filters", () => {
   assert.deepEqual(
     getPdfGenerationRevealedFilterSteps(["track", "admission"], "roomCode").map((step) => step.key),
-    ["track", "admission", "series", "unit"],
+    ["track", "admission", "series"],
   );
   assert.deepEqual(
     getPdfGenerationRevealedFilterSteps(["track", "admission", "series"], "roomCode").map((step) => step.key),
-    ["track", "admission", "series", "unit"],
+    ["track", "admission", "series"],
   );
   assert.deepEqual(
     getPdfGenerationRevealedFilterSteps(["track", "admission", "series", "unit"], "roomCode").map((step) => step.key),
-    ["track", "admission", "series", "unit", "major"],
+    ["track", "admission", "series"],
   );
 });
 
