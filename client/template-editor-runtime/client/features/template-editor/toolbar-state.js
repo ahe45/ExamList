@@ -59,6 +59,7 @@
     getTemplateEditorTextColorElement,
     getTemplateEditorTextShadingElement,
     syncEditorToolbarBorderSelectControl,
+    syncEditorToolbarBorderWidthControl,
     syncEditorToolbarColorControls,
     updateEditorToolbarFormattingState,
   }) {
@@ -123,6 +124,14 @@
           selectElement.classList.remove("open");
           selectElement.querySelector(".template-toolbar-icon-select-button")?.setAttribute("aria-expanded", "false");
           selectElement.querySelector(".template-toolbar-icon-select-menu")?.classList.add("hidden");
+        });
+
+      tableGroupElement
+        ?.querySelectorAll?.(".template-toolbar-border-width-combo.open")
+        .forEach((comboElement) => {
+          comboElement.classList.remove("open", "open-up", "open-down");
+          comboElement.querySelector("[data-editor-border-width-toggle]")?.setAttribute("aria-expanded", "false");
+          comboElement.querySelector(".template-toolbar-combo-menu")?.classList.add("hidden");
         });
     }
 
@@ -267,8 +276,8 @@
       }
 
       const isActiveBorderDropdown =
-        Boolean(activeElement?.closest(".template-toolbar-icon-select")) ||
-        Boolean(templateEditorModal?.querySelector(".template-toolbar-icon-select.open"));
+        Boolean(activeElement?.closest(".template-toolbar-icon-select, .template-toolbar-border-width-combo")) ||
+        Boolean(templateEditorModal?.querySelector(".template-toolbar-icon-select.open, .template-toolbar-border-width-combo.open"));
       const hasDirtyBorderControl = [
         templateEditorBorderColor,
         templateEditorBorderStyle,
@@ -339,7 +348,12 @@
         const borderWidth = borderStyle === "double" && Number.isFinite(actualBorderWidth)
           ? Math.max(1, actualBorderWidth - 2)
           : actualBorderWidth;
-        templateEditorBorderWidth.value = String(Number.isFinite(borderWidth) ? Math.max(0, Math.round(borderWidth)) : 1);
+        const normalizedBorderWidth = Number.isFinite(borderWidth) ? Math.max(0, Math.min(3, Math.round(borderWidth * 2) / 2)) : 1;
+        if (typeof syncEditorToolbarBorderWidthControl === "function") {
+          syncEditorToolbarBorderWidthControl(templateEditorBorderWidth, normalizedBorderWidth);
+        } else {
+          templateEditorBorderWidth.value = String(normalizedBorderWidth);
+        }
       }
 
       if (templateEditorBorderStyle && selectedCell) {

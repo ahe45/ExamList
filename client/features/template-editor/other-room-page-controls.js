@@ -2,6 +2,20 @@ function isContentTemplatePage(page) {
   return String(page?.type || "").trim() === "content";
 }
 
+function resolveSelectedPage(appState, fallbackPage = null) {
+  const pages = Array.isArray(appState?.templateEditor?.template?.layout?.pages)
+    ? appState.templateEditor.template.layout.pages
+    : [];
+  const fallbackPageId = String(fallbackPage?.id || "");
+  const selectedPageId = String(appState?.templateEditor?.selectedPageId || fallbackPageId || "");
+
+  return (
+    pages.find((page) => String(page?.id || "") === selectedPageId) ||
+    pages.find((page) => String(page?.id || "") === fallbackPageId) ||
+    fallbackPage
+  );
+}
+
 function normalizeOtherRoomPageConfig(value) {
   const source = value && typeof value === "object" ? value : {};
 
@@ -64,7 +78,32 @@ function readOtherRoomPageControls(sectionElement, fallbackConfig) {
   });
 }
 
-export function bindOtherRoomPageControls({ onDirty = null, pagePropertiesHost, selectedPage }) {
+export function commitOtherRoomPageControlsToPage({
+  appState = null,
+  pagePropertiesHost,
+  selectedPage,
+  syncControls = true,
+} = {}) {
+  const sectionElement = pagePropertiesHost?.querySelector?.(".examlist-other-room-page-field") || null;
+  const activePage = resolveSelectedPage(appState, selectedPage);
+
+  if (!sectionElement || !activePage || !isContentTemplatePage(activePage)) {
+    return false;
+  }
+
+  writeOtherRoomPageConfigToPage(
+    activePage,
+    readOtherRoomPageControls(sectionElement, activePage.settings?.otherRoomPage),
+  );
+
+  if (syncControls) {
+    syncOtherRoomPageControls(sectionElement, activePage);
+  }
+
+  return true;
+}
+
+export function bindOtherRoomPageControls({ appState = null, onDirty = null, pagePropertiesHost, selectedPage }) {
   if (!pagePropertiesHost || !selectedPage) {
     return null;
   }
@@ -89,11 +128,15 @@ export function bindOtherRoomPageControls({ onDirty = null, pagePropertiesHost, 
   syncOtherRoomPageControls(sectionElement, selectedPage);
 
   const applyFromControls = () => {
-    writeOtherRoomPageConfigToPage(
-      selectedPage,
-      readOtherRoomPageControls(sectionElement, selectedPage.settings?.otherRoomPage),
-    );
-    syncOtherRoomPageControls(sectionElement, selectedPage);
+    if (
+      !commitOtherRoomPageControlsToPage({
+        appState,
+        pagePropertiesHost,
+        selectedPage,
+      })
+    ) {
+      return;
+    }
 
     if (typeof onDirty === "function") {
       onDirty();

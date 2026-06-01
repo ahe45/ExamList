@@ -138,6 +138,7 @@ export function createPdfGenerationCreateModalActions({
     try {
       const queryString = toQueryString({
         ...buildCreateModalFilterPayload(),
+        excludeSelfFilters: "1",
         fields: pdfGenerationCreateOptionFields.join(","),
         schoolId: getCurrentSchoolId(),
       });

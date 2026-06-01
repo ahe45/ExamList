@@ -47,6 +47,20 @@ function isCoverTemplatePage(page) {
   return String(page?.type || "").trim() === "cover";
 }
 
+function resolveSelectedPage(appState, fallbackPage = null) {
+  const pages = Array.isArray(appState?.templateEditor?.template?.layout?.pages)
+    ? appState.templateEditor.template.layout.pages
+    : [];
+  const fallbackPageId = String(fallbackPage?.id || "");
+  const selectedPageId = String(appState?.templateEditor?.selectedPageId || fallbackPageId || "");
+
+  return (
+    pages.find((page) => String(page?.id || "") === selectedPageId) ||
+    pages.find((page) => String(page?.id || "") === fallbackPageId) ||
+    fallbackPage
+  );
+}
+
 function normalizePageNumberConfig(value) {
   const source = value && typeof value === "object" ? value : {};
   const rawPreset = String(source.preset || "").trim();
@@ -205,6 +219,33 @@ function readPageNumberControls(sectionElement, fallbackConfig, page) {
   });
 }
 
+export function commitPageNumberControlsToPage({
+  appState = null,
+  pagePropertiesHost,
+  selectedPage,
+  surfaceElement,
+  syncControls = true,
+} = {}) {
+  const sectionElement = pagePropertiesHost?.querySelector?.(".examlist-page-number-field") || null;
+  const activePage = resolveSelectedPage(appState, selectedPage);
+
+  if (!sectionElement || !activePage || isCoverTemplatePage(activePage)) {
+    return false;
+  }
+
+  writePageNumberConfigToPage(
+    activePage,
+    readPageNumberControls(sectionElement, activePage.settings?.pageNumber, activePage),
+  );
+
+  if (syncControls) {
+    syncPageNumberControls(sectionElement, activePage);
+  }
+
+  updatePageNumberOverlay(surfaceElement, activePage, appState?.templateEditor);
+  return true;
+}
+
 export function bindPageNumberControls({
   appState,
   onDirty = null,
@@ -248,9 +289,17 @@ export function bindPageNumberControls({
     }
   };
   const applyFromControls = () => {
-    writePageNumberConfigToPage(selectedPage, readPageNumberControls(sectionElement, selectedPage.settings?.pageNumber, selectedPage));
-    syncPageNumberControls(sectionElement, selectedPage);
-    updatePageNumberOverlay(surfaceElement, selectedPage, appState?.templateEditor);
+    if (
+      !commitPageNumberControlsToPage({
+        appState,
+        pagePropertiesHost,
+        selectedPage,
+        surfaceElement,
+      })
+    ) {
+      return;
+    }
+
     markDirty();
   };
   const handleControlChange = (event) => {
@@ -265,10 +314,14 @@ export function bindPageNumberControls({
       return;
     }
 
-    window.requestAnimationFrame(() => updatePageNumberOverlay(surfaceElement, selectedPage, appState?.templateEditor));
+    window.requestAnimationFrame(() =>
+      updatePageNumberOverlay(surfaceElement, resolveSelectedPage(appState, selectedPage), appState?.templateEditor),
+    );
   };
   const resizeObserver = typeof ResizeObserver === "function"
-    ? new ResizeObserver(() => updatePageNumberOverlay(surfaceElement, selectedPage, appState?.templateEditor))
+    ? new ResizeObserver(() =>
+        updatePageNumberOverlay(surfaceElement, resolveSelectedPage(appState, selectedPage), appState?.templateEditor),
+      )
     : null;
 
   sectionElement.addEventListener("input", handleControlChange);

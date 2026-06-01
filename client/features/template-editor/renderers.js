@@ -148,11 +148,19 @@ export function renderTemplateEditorView({ access, editor }) {
 
   const selectedPage = getSelectedPage(editor);
   const canManageTemplates = canUseAccess(access, "manageTemplates");
+  const isBlockingModalOpen = Boolean(
+    editor.isPreviewOpen ||
+      editor.dataTagSampleModal?.isOpen ||
+      editor.generationUnitSettingsModal?.isOpen ||
+      editor.generationUnitModal?.isOpen,
+  );
+  const runtimeModalAttributes = isBlockingModalOpen ? 'inert aria-hidden="true"' : "";
+  const runtimeModalClass = isBlockingModalOpen ? " is-template-editor-modal-open" : "";
 
   return `
     <section class="template-editor-shell">
       <div class="template-editor-modal-sheet examlist-template-editor-sheet">
-        <div class="template-editor-modal-body template-editor-grid examlist-template-editor-body template-editor-runtime-shell" id="templateEditorRuntimeHost">
+        <div class="template-editor-modal-body template-editor-grid examlist-template-editor-body template-editor-runtime-shell${runtimeModalClass}" id="templateEditorRuntimeHost" ${runtimeModalAttributes}>
           <aside class="editor-toolbar-column template-editor-toolbar-column editor-tools-column">
             <div class="editor-toolbar" id="templateEditorToolbarHost" role="toolbar" aria-label="양식 편집 도구">
               <p class="helper-text">편집 도구를 불러오는 중입니다.</p>

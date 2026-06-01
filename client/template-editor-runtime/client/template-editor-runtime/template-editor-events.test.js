@@ -342,6 +342,29 @@ test("template editor runtime suppresses toolbar trigger selectionchange before 
   assert.equal(state.templateEditor.suppressToolbarSelectionChange, true);
 });
 
+test("template editor runtime preserves selection for border width dropdown options", () => {
+  let borderWidthOptionElement = null;
+  const { FakeElement, handlePointerDown, selectionSaveCalls } = createRuntimeEventHarness({
+    modalContains: (target) => target === borderWidthOptionElement,
+  });
+  let didPreventDefault = false;
+
+  borderWidthOptionElement = new FakeElement();
+  borderWidthOptionElement.closest = (selector) =>
+    String(selector || "").includes("[data-editor-border-width-option]") ? borderWidthOptionElement : null;
+
+  handlePointerDown({
+    button: 0,
+    preventDefault: () => {
+      didPreventDefault = true;
+    },
+    target: borderWidthOptionElement,
+  });
+
+  assert.equal(selectionSaveCalls.length, 1);
+  assert.equal(didPreventDefault, true);
+});
+
 test("template editor runtime reapplies table selection visual state after toolbar focus", () => {
   let fontFamilyElement = null;
   let selectedCell = null;

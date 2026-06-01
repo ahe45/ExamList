@@ -160,6 +160,20 @@ function isCoverTemplatePage(page) {
   return String(page?.type || "").trim() === "cover";
 }
 
+function resolveSelectedPage(appState, fallbackPage = null) {
+  const pages = Array.isArray(appState?.templateEditor?.template?.layout?.pages)
+    ? appState.templateEditor.template.layout.pages
+    : [];
+  const fallbackPageId = String(fallbackPage?.id || "");
+  const selectedPageId = String(appState?.templateEditor?.selectedPageId || fallbackPageId || "");
+
+  return (
+    pages.find((page) => String(page?.id || "") === selectedPageId) ||
+    pages.find((page) => String(page?.id || "") === fallbackPageId) ||
+    fallbackPage
+  );
+}
+
 function isDisabledCoverTemplatePage(page) {
   return isCoverTemplatePage(page) && page?.enabled === false;
 }
@@ -181,7 +195,36 @@ function createCoverPageControls(page) {
   return sectionElement;
 }
 
-export function bindCoverPageControls({ onDirty, pagePropertiesHost, selectedPage } = {}) {
+export function commitCoverPageControlsToPage({
+  appState = null,
+  pagePropertiesHost,
+  selectedPage,
+  surfaceElement = typeof document !== "undefined" ? document.getElementById("templateEditorSurface") : null,
+  syncControls = true,
+} = {}) {
+  const sectionElement = pagePropertiesHost?.querySelector?.(".examlist-cover-page-field") || null;
+  const activePage = resolveSelectedPage(appState, selectedPage);
+  const control = sectionElement?.querySelector?.('[data-examlist-cover-page-setting="enabled"]');
+
+  if (!sectionElement || !isCoverTemplatePage(activePage) || !(control instanceof HTMLInputElement)) {
+    return false;
+  }
+
+  activePage.enabled = control.checked;
+
+  if (syncControls) {
+    control.checked = activePage.enabled !== false;
+  }
+
+  syncCoverPageDisabledState({
+    pagePropertiesHost,
+    selectedPage: activePage,
+    surfaceElement,
+  });
+  return true;
+}
+
+export function bindCoverPageControls({ appState = null, onDirty, pagePropertiesHost, selectedPage } = {}) {
   if (!pagePropertiesHost || !selectedPage) {
     return null;
   }
@@ -210,13 +253,18 @@ export function bindCoverPageControls({ onDirty, pagePropertiesHost, selectedPag
       return;
     }
 
-    selectedPage.enabled = control.checked;
+    if (
+      !commitCoverPageControlsToPage({
+        appState,
+        pagePropertiesHost,
+        selectedPage,
+        surfaceElement: document.getElementById("templateEditorSurface"),
+      })
+    ) {
+      return;
+    }
+
     onDirty?.();
-    syncCoverPageDisabledState({
-      pagePropertiesHost,
-      selectedPage,
-      surfaceElement: document.getElementById("templateEditorSurface"),
-    });
   };
 
   sectionElement.addEventListener("change", handleCoverPageChange);
@@ -254,7 +302,7 @@ export function syncCoverPageDisabledState({ pagePropertiesHost, selectedPage, s
     }
   });
 
-  if (!(surfaceElement instanceof HTMLElement)) {
+  if (typeof HTMLElement === "undefined" || !(surfaceElement instanceof HTMLElement)) {
     return;
   }
 

@@ -10,6 +10,10 @@ const photoArchiveReadOptions = Object.freeze({
   tooLargeMessage: `사진 ZIP 파일이 너무 큽니다. ${photoArchiveMaxBodyMegabytes}MB 이하의 ZIP 파일로 업로드해 주세요.`,
 });
 
+function readBooleanSearchParam(searchParams, key) {
+  return /^(1|true|yes)$/i.test(String(searchParams.get(key) || "").trim());
+}
+
 function createCandidateRoutes(deps) {
   function isJsonRequest(request) {
     return String(request?.headers?.["content-type"] || "").toLowerCase().includes("application/json");
@@ -130,7 +134,9 @@ function createCandidateRoutes(deps) {
       await deps.assertSchoolWriteAccess(filters.schoolId || "", request);
       deps.sendJson(response, 200, {
         filters,
-        options: await deps.getCandidateFilterOptions(filters, searchParams.get("fields") || ""),
+        options: await deps.getCandidateFilterOptions(filters, searchParams.get("fields") || "", {
+          excludeSelfFilters: readBooleanSearchParam(searchParams, "excludeSelfFilters"),
+        }),
       });
     }),
     exactRoute("GET", "/api/candidates", handleCandidateList),

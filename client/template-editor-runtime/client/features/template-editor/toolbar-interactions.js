@@ -92,6 +92,8 @@
       const fontFamilyOptionTrigger = target.closest("[data-editor-font-family-option]");
       const borderSelectToggleTrigger = target.closest("[data-editor-border-select-toggle]");
       const borderSelectOptionTrigger = target.closest("[data-editor-border-select-option]");
+      const borderWidthToggleTrigger = target.closest("[data-editor-border-width-toggle]");
+      const borderWidthOptionTrigger = target.closest("[data-editor-border-width-option]");
       const colorToggleTrigger = target.closest("[data-editor-color-toggle]");
       const colorDirectTrigger = target.closest("[data-editor-color-direct]");
       const colorPresetTrigger = target.closest("[data-editor-color-preset]");
@@ -179,6 +181,27 @@
         }
 
         toolbar.setEditorToolbarBorderSelectMenuVisibility?.(inputId, false);
+        return;
+      }
+
+      if (borderWidthToggleTrigger) {
+        const inputId = borderWidthToggleTrigger.dataset.editorBorderWidthToggle || "";
+        const { menuElement } = toolbar.getEditorToolbarBorderWidthComboElements?.(inputId) || {};
+
+        toolbar.setEditorToolbarBorderWidthMenuVisibility?.(inputId, menuElement?.classList.contains("hidden") ?? true);
+        return;
+      }
+
+      if (borderWidthOptionTrigger) {
+        const comboMenu = borderWidthOptionTrigger.closest(".template-toolbar-combo-menu");
+        const inputId = comboMenu?.dataset.editorBorderWidthMenuFor || "";
+        const value = borderWidthOptionTrigger.dataset.editorBorderWidthOption || "";
+
+        if (inputId && value) {
+          toolbar.applyEditorToolbarBorderWidthOption?.(inputId, value);
+        }
+
+        toolbar.setEditorToolbarBorderWidthMenuVisibility?.(inputId, false);
         return;
       }
 

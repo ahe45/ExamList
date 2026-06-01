@@ -23,6 +23,7 @@
     Object.freeze({ label: "이중선", value: "double" }),
     Object.freeze({ label: "선 없음", value: "none" }),
   ]);
+  const EDITOR_TOOLBAR_BORDER_WIDTH_OPTIONS = Object.freeze(["0", "0.5", "1", "1.5", "2", "2.5", "3"]);
 
   function createEditorToolbarBorderMarkup({
     EDITOR_TOOLBAR_TEXT_COLOR_PRESETS,
@@ -140,6 +141,52 @@
       `;
     }
 
+    function renderEditorToolbarBorderWidthOptions(selectedValue = "1") {
+      const activeValue = EDITOR_TOOLBAR_BORDER_WIDTH_OPTIONS.includes(String(selectedValue))
+        ? String(selectedValue)
+        : "1";
+
+      return EDITOR_TOOLBAR_BORDER_WIDTH_OPTIONS.map((optionValue) => {
+        const isActive = optionValue === activeValue;
+
+        return `
+          <button
+            class="template-toolbar-combo-option${isActive ? " active" : ""}"
+            data-editor-border-width-option="${escapeEditorToolbarAttribute(optionValue)}"
+            type="button"
+            role="option"
+            aria-selected="${isActive ? "true" : "false"}"
+          >
+            ${escapeEditorToolbarHtml(optionValue)}
+          </button>
+        `;
+      }).join("");
+    }
+
+    function renderEditorToolbarBorderWidthDropdown(borderWidthId = "") {
+      const menuId = `${borderWidthId}Menu`;
+
+      return `
+        <div class="template-toolbar-border-width-combo" data-editor-border-width-combo="${escapeEditorToolbarAttribute(borderWidthId)}">
+          <input class="template-toolbar-border-width-input template-toolbar-border-width" id="${escapeEditorToolbarAttribute(borderWidthId)}" type="hidden" value="1" aria-hidden="true" tabindex="-1" />
+          <button
+            class="template-toolbar-combo-value template-toolbar-border-width-value"
+            data-editor-border-width-toggle="${escapeEditorToolbarAttribute(borderWidthId)}"
+            type="button"
+            aria-label="테두리 굵기 목록 열기"
+            aria-expanded="false"
+            aria-controls="${escapeEditorToolbarAttribute(menuId)}"
+          >
+            <span data-editor-border-width-current>1</span>
+            <span class="template-toolbar-combo-caret" aria-hidden="true"></span>
+          </button>
+          <div class="template-toolbar-combo-menu template-toolbar-border-width-menu hidden" id="${escapeEditorToolbarAttribute(menuId)}" data-editor-border-width-menu-for="${escapeEditorToolbarAttribute(borderWidthId)}" role="listbox" aria-label="테두리 굵기 목록">
+            ${renderEditorToolbarBorderWidthOptions("1")}
+          </div>
+        </div>
+      `;
+    }
+
     function renderEditorToolbarBorderSection({
       tableActionAttr = "",
       borderTargetId = "",
@@ -177,13 +224,12 @@
                 selectedValue: "solid",
               })}
             </div>
-            <label class="template-toolbar-border-width-field" for="${escapeEditorToolbarAttribute(borderWidthId)}">
+            <div class="template-toolbar-border-width-field">
               <span class="template-toolbar-border-field-label">굵기</span>
               <span class="template-toolbar-border-width-control">
-                <input class="template-toolbar-number template-toolbar-border-width" id="${escapeEditorToolbarAttribute(borderWidthId)}" type="number" min="0" max="12" step="1" value="1" aria-label="테두리 굵기" />
-                <span aria-hidden="true">px</span>
+                ${renderEditorToolbarBorderWidthDropdown(borderWidthId)}
               </span>
-            </label>
+            </div>
             <div class="template-toolbar-border-field template-toolbar-border-field-color">
               <span class="template-toolbar-border-field-label">색상</span>
               ${renderEditorToolbarColorPickerSection({

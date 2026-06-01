@@ -107,10 +107,35 @@
 
 .template-toolbar-border-width-control {
   align-items: center;
-  display: inline-flex;
-  gap: 4px;
+  display: block;
   min-height: 36px;
   min-width: 0;
+}
+
+.template-toolbar-border-width-combo {
+  flex: 1 1 auto;
+  max-width: none;
+  min-width: 0;
+  width: 100%;
+}
+
+.template-toolbar-border-width-combo.open {
+  z-index: 45;
+}
+
+.template-toolbar-border-width-combo.open-up .template-toolbar-combo-menu {
+  bottom: calc(100% + 6px);
+  top: auto;
+}
+
+.template-toolbar-border-width-value {
+  padding-left: 9px;
+  padding-right: 9px;
+}
+
+.template-toolbar-border-width-menu {
+  max-height: 240px;
+  z-index: 45;
 }
 
 .template-toolbar-border-width {

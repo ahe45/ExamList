@@ -52,3 +52,35 @@ test("findCandidateGroups supports multi-field grouping", async () => {
     },
   ]);
 });
+
+test("findCandidateFilterOptions can exclude the requested field from its own filters", async () => {
+  const calls = [];
+  const repository = createCandidateReadRepository({
+    createHttpError: (statusCode, message, errorCode) => Object.assign(new Error(message), { errorCode, statusCode }),
+    async query(sql, params) {
+      calls.push({ params, sql });
+
+      return [{ candidateCount: 1, value: "value" }];
+    },
+  });
+
+  await repository.findCandidateFilterOptions(
+    {
+      campus: "글로벌캠퍼스",
+      schoolId: "school-1",
+      track: "수시",
+    },
+    "campus,track",
+    { excludeSelfFilters: true },
+  );
+
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls[0].params, {
+    schoolId: "school-1",
+    track: "수시",
+  });
+  assert.deepEqual(calls[1].params, {
+    campus: "글로벌캠퍼스",
+    schoolId: "school-1",
+  });
+});

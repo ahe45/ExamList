@@ -38,3 +38,38 @@ test("template preview modal renders generated PDF viewer without zoom controls"
   assert.doesNotMatch(html, /data-template-preview-zoom-input/);
   assert.doesNotMatch(html, /data-action="zoom-out-template-preview"/);
 });
+
+test("data tag settings modal isolates the editor runtime while open", async () => {
+  const { renderTemplateEditorView } = await importClientModule("renderers.js");
+  const html = renderTemplateEditorView({
+    access: {
+      permissions: {
+        manageTemplates: true,
+        previewTemplates: true,
+      },
+    },
+    editor: {
+      dataTagSampleModal: {
+        draftEmptyValueData: {},
+        draftValues: {},
+        isOpen: true,
+      },
+      dataTags: { groups: [] },
+      selectedPageId: "page-content",
+      template: {
+        id: "template-1",
+        layout: {
+          pages: [
+            { enabled: true, id: "page-cover", name: "표지", settings: {}, type: "cover" },
+            { id: "page-content", name: "본문", settings: {}, type: "content" },
+          ],
+        },
+        name: "수험생확인대장",
+      },
+    },
+  });
+
+  assert.match(html, /template-editor-runtime-shell is-template-editor-modal-open/);
+  assert.match(html, /id="templateEditorRuntimeHost" inert aria-hidden="true"/);
+  assert.match(html, /class="modal-overlay data-tag-sample-modal-overlay"/);
+});

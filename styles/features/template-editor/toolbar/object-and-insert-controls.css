@@ -258,7 +258,8 @@
 .template-toolbar-color-picker.open,
 .template-toolbar-font-family-combo.open,
 .template-toolbar-font-size-combo.open,
-.template-toolbar-line-height-combo.open {
+.template-toolbar-line-height-combo.open,
+.template-toolbar-border-width-combo.open {
   z-index: 20;
 }
 

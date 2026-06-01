@@ -29,10 +29,16 @@ import {
   normalizeSavedRuntimeHtml,
   readRuntimePageSettingsFromHtml,
 } from "./editor-runtime-document-state.js";
-import { applyTemplateMetadataControlsToState, prependPageSwitcher, syncCoverPageDisabledState } from "./editor-runtime-page-controls.js";
+import {
+  applyTemplateMetadataControlsToState,
+  commitCoverPageControlsToPage,
+  prependPageSwitcher,
+  syncCoverPageDisabledState,
+} from "./editor-runtime-page-controls.js";
 import { templateEditorObjectMinimumSize } from "./object-toolbar-controls.js";
-import { getPageNumberConfig } from "./page-number-controls.js";
-import { getPageRecognitionMarksConfig } from "./recognition-marks-controls.js";
+import { commitOtherRoomPageControlsToPage } from "./other-room-page-controls.js";
+import { commitPageNumberControlsToPage, getPageNumberConfig } from "./page-number-controls.js";
+import { commitRecognitionMarksControlsToPage, getPageRecognitionMarksConfig } from "./recognition-marks-controls.js";
 import { templateSampleCandidatePhotoPath } from "./sample-candidate-photo.js";
 import { getSelectedPage } from "./state.js";
 import {
@@ -564,6 +570,10 @@ export function syncTemplateEditorRuntimeToState({ appState } = {}) {
 
   applyTemplateMetadataControlsToState(appState, pagePropertiesHost);
   const hadSnapshotChangesBeforeRuntimeSync = hasTemplateSnapshotChanges(appState);
+  commitCoverPageControlsToPage({ appState, pagePropertiesHost, selectedPage, surfaceElement });
+  commitPageNumberControlsToPage({ appState, pagePropertiesHost, selectedPage, surfaceElement });
+  commitRecognitionMarksControlsToPage({ appState, pagePropertiesHost, selectedPage, surfaceElement });
+  commitOtherRoomPageControlsToPage({ appState, pagePropertiesHost, selectedPage });
   commitCandidateBlockGridControlsToPage({ pagePropertiesHost, selectedPage, surfaceElement });
   syncCandidateBlockTemplateFromSurface(surfaceElement, selectedPage, null, { allowFallback: true });
 

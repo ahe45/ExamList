@@ -213,6 +213,7 @@ export function ensureEditorRuntimeControls({
 
   if (!disposers.coverPage) {
     disposers.coverPage = bindCoverPageControls({
+      appState,
       onDirty,
       pagePropertiesHost,
       selectedPage,
@@ -231,6 +232,7 @@ export function ensureEditorRuntimeControls({
 
   if (!disposers.recognitionMarks) {
     disposers.recognitionMarks = bindRecognitionMarksControls({
+      appState,
       onDirty,
       pagePropertiesHost,
       selectedPage,
@@ -240,6 +242,7 @@ export function ensureEditorRuntimeControls({
 
   if (!disposers.otherRoomPage) {
     disposers.otherRoomPage = bindOtherRoomPageControls({
+      appState,
       onDirty,
       pagePropertiesHost,
       selectedPage,

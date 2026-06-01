@@ -32,6 +32,20 @@ function normalizeRecognitionMarksConfig(value) {
   };
 }
 
+function resolveSelectedPage(appState, fallbackPage = null) {
+  const pages = Array.isArray(appState?.templateEditor?.template?.layout?.pages)
+    ? appState.templateEditor.template.layout.pages
+    : [];
+  const fallbackPageId = String(fallbackPage?.id || "");
+  const selectedPageId = String(appState?.templateEditor?.selectedPageId || fallbackPageId || "");
+
+  return (
+    pages.find((page) => String(page?.id || "") === selectedPageId) ||
+    pages.find((page) => String(page?.id || "") === fallbackPageId) ||
+    fallbackPage
+  );
+}
+
 export function getPageRecognitionMarksConfig(page) {
   return normalizeRecognitionMarksConfig(page?.settings?.recognitionMarks);
 }
@@ -172,7 +186,31 @@ function isRecognitionMarksNumberControl(control) {
     Boolean(control.closest?.(".examlist-recognition-marks-field"));
 }
 
-export function bindRecognitionMarksControls({ onDirty = null, pagePropertiesHost, selectedPage, surfaceElement }) {
+export function commitRecognitionMarksControlsToPage({
+  appState = null,
+  pagePropertiesHost,
+  selectedPage,
+  surfaceElement,
+  syncControls = true,
+} = {}) {
+  const sectionElement = pagePropertiesHost?.querySelector?.(".examlist-recognition-marks-field") || null;
+  const activePage = resolveSelectedPage(appState, selectedPage);
+
+  if (!sectionElement || !activePage) {
+    return false;
+  }
+
+  const nextConfig = readRecognitionMarksControls(sectionElement, getPageRecognitionMarksConfig(activePage));
+
+  writeRecognitionMarksConfigToPage(activePage, nextConfig);
+  if (syncControls) {
+    syncRecognitionMarksControls(sectionElement, nextConfig);
+  }
+  updateRecognitionMarksOverlay(surfaceElement, activePage);
+  return true;
+}
+
+export function bindRecognitionMarksControls({ appState = null, onDirty = null, pagePropertiesHost, selectedPage, surfaceElement }) {
   if (!pagePropertiesHost || !selectedPage || !surfaceElement) {
     return null;
   }
@@ -185,20 +223,24 @@ export function bindRecognitionMarksControls({ onDirty = null, pagePropertiesHos
   updateRecognitionMarksOverlay(surfaceElement, selectedPage);
 
   const applyFromControls = ({ syncControls = true } = {}) => {
-    const nextConfig = readRecognitionMarksControls(sectionElement, getPageRecognitionMarksConfig(selectedPage));
-
-    writeRecognitionMarksConfigToPage(selectedPage, nextConfig);
-    if (syncControls) {
-      syncRecognitionMarksControls(sectionElement, nextConfig);
+    if (
+      !commitRecognitionMarksControlsToPage({
+        appState,
+        pagePropertiesHost,
+        selectedPage,
+        surfaceElement,
+        syncControls,
+      })
+    ) {
+      return;
     }
-    updateRecognitionMarksOverlay(surfaceElement, selectedPage);
 
     if (typeof onDirty === "function") {
       onDirty();
     }
   };
   const scheduleOverlayUpdate = () => {
-    window.requestAnimationFrame(() => updateRecognitionMarksOverlay(surfaceElement, selectedPage));
+    window.requestAnimationFrame(() => updateRecognitionMarksOverlay(surfaceElement, resolveSelectedPage(appState, selectedPage)));
   };
   const handleRecognitionControlChange = (event) => {
     const control = event.target?.closest?.("[data-examlist-recognition-setting]");

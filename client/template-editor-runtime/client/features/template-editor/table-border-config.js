@@ -20,8 +20,10 @@
 
   function normalizeTemplateEditorBorderWidth(rawValue = 1) {
     const normalizedValue = String(rawValue ?? "").trim();
-    const width = Math.round(Number(normalizedValue === "" ? 1 : normalizedValue));
-    return Number.isFinite(width) ? Math.max(0, Math.min(12, width)) : 1;
+    const width = Number(normalizedValue === "" ? 1 : normalizedValue);
+    const roundedWidth = Math.round(width * 2) / 2;
+
+    return Number.isFinite(roundedWidth) ? Math.max(0, Math.min(3, roundedWidth)) : 1;
   }
 
   function createTemplateEditorTableBorderConfigController({

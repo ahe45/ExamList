@@ -42,6 +42,7 @@ export function createDataDeletionSummaryActions({
       ? ""
       : toQueryString({
           ...filterPayload,
+          excludeSelfFilters: "1",
           fields: dataDeletionOptionFields.join(","),
           schoolId,
         });

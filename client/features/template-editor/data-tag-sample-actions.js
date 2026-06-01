@@ -11,6 +11,13 @@ import {
 } from "./data-tag-samples.js";
 import { flattenTemplateTags } from "./data-tags-definitions.js";
 
+const DATA_TAG_SAMPLE_MODAL_FOCUS_SELECTOR = [
+  ".data-tag-sample-modal-overlay [data-data-tag-sample-key]",
+  ".data-tag-sample-modal-overlay [data-data-tag-empty-value-key]",
+  ".data-tag-sample-modal-overlay summary",
+  ".data-tag-sample-modal-overlay button:not(:disabled)",
+].join(", ");
+
 function ensureDataTagSampleModalState(appState) {
   appState.templateEditor.dataTagSampleModal = {
     draftEmptyValueData: {},
@@ -20,6 +27,80 @@ function ensureDataTagSampleModalState(appState) {
   };
 
   return appState.templateEditor.dataTagSampleModal;
+}
+
+function releaseTemplateEditorDocumentFocus() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const runtimeHost = document.getElementById("templateEditorRuntimeHost");
+  const activeElement = document.activeElement;
+
+  if (runtimeHost?.contains(activeElement) && typeof activeElement?.blur === "function") {
+    activeElement.blur();
+  }
+
+  if (typeof window === "undefined" || typeof window.getSelection !== "function") {
+    return;
+  }
+
+  const surfaceElement = document.getElementById("templateEditorSurface");
+  const selection = window.getSelection();
+
+  if (!surfaceElement || !selection) {
+    return;
+  }
+
+  const anchorNode = selection.anchorNode;
+  const focusNode = selection.focusNode;
+
+  if ((anchorNode && surfaceElement.contains(anchorNode)) || (focusNode && surfaceElement.contains(focusNode))) {
+    selection.removeAllRanges();
+  }
+}
+
+function isFocusableDataTagModalElement(element) {
+  if (!element || typeof element.focus !== "function" || element.disabled) {
+    return false;
+  }
+
+  const tagName = String(element.tagName || "").toLowerCase();
+
+  if (tagName !== "summary" && element.closest?.("details:not([open])")) {
+    return false;
+  }
+
+  return element.getClientRects?.().length > 0 || element.offsetParent !== null;
+}
+
+function focusDataTagSampleModal() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const focusModalElement = () => {
+    const focusableElement = Array.from(document.querySelectorAll(DATA_TAG_SAMPLE_MODAL_FOCUS_SELECTOR)).find(
+      isFocusableDataTagModalElement,
+    );
+
+    if (!focusableElement) {
+      return;
+    }
+
+    try {
+      focusableElement.focus({ preventScroll: true });
+    } catch (_error) {
+      focusableElement.focus();
+    }
+  };
+
+  if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+    window.requestAnimationFrame(focusModalElement);
+    return;
+  }
+
+  setTimeout(focusModalElement, 0);
 }
 
 function getBaseTagDefinitions(appState) {
@@ -69,7 +150,9 @@ export function createDataTagSampleActions({ appState, onSaveDataTagSettings = n
     modalState.draftValues = { ...currentValues };
     modalState.draftEmptyValueData = { ...currentEmptyValueData };
     modalState.isOpen = true;
+    releaseTemplateEditorDocumentFocus();
     await onStateChange();
+    focusDataTagSampleModal();
   }
 
   async function closeDataTagSampleModal() {
@@ -110,7 +193,9 @@ export function createDataTagSampleActions({ appState, onSaveDataTagSettings = n
     modalState.draftValues = buildDefaultDataTagSampleValues(getBaseTagDefinitions(appState));
     modalState.draftEmptyValueData = buildDefaultDataTagEmptyValueData(getBaseTagDefinitions(appState));
     modalState.isOpen = true;
+    releaseTemplateEditorDocumentFocus();
     await onStateChange();
+    focusDataTagSampleModal();
   }
 
   async function saveDataTagSampleModal() {

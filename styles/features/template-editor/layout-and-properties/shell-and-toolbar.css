@@ -176,6 +176,11 @@
   width: max-content;
 }
 
+.examlist-template-editor-body.template-editor-runtime-shell.is-template-editor-modal-open {
+  pointer-events: none;
+  user-select: none;
+}
+
 .template-editor-modal-body {
   align-items: stretch;
   background: transparent;

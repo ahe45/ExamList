@@ -13,6 +13,15 @@
     closeAllEditorToolbarTableInsertPanels,
     updateEditorToolbarFloatingPanelPlacement,
   }) {
+    function formatEditorToolbarBorderWidthValue(value = "1") {
+      const numericValue = Number.parseFloat(String(value ?? "").trim() || "1");
+      const normalizedValue = Number.isFinite(numericValue)
+        ? Math.max(0, Math.min(3, Math.round(numericValue * 2) / 2))
+        : 1;
+
+      return Number.isInteger(normalizedValue) ? String(normalizedValue) : normalizedValue.toFixed(1);
+    }
+
     function getEditorToolbarBorderSelectElements(inputId = "") {
       const normalizedInputId = String(inputId || "").trim();
       const selectElement = normalizedInputId ? document.getElementById(normalizedInputId) : null;
@@ -23,6 +32,20 @@
       const menuElement = selectWrapper?.querySelector(".template-toolbar-icon-select-menu") || null;
 
       return { menuElement, selectElement, selectWrapper, toggleElement };
+    }
+
+    function getEditorToolbarBorderWidthComboElements(inputId = "") {
+      const normalizedInputId = String(inputId || "").trim();
+      const inputElement = normalizedInputId ? document.getElementById(normalizedInputId) : null;
+      const comboElement =
+        inputElement?.closest(".template-toolbar-border-width-combo") ||
+        (normalizedInputId
+          ? document.querySelector(`.template-toolbar-border-width-combo[data-editor-border-width-combo="${normalizedInputId}"]`)
+          : null);
+      const toggleElement = comboElement?.querySelector("[data-editor-border-width-toggle]") || null;
+      const menuElement = comboElement?.querySelector(".template-toolbar-combo-menu") || null;
+
+      return { comboElement, inputElement, menuElement, toggleElement };
     }
 
     function syncEditorToolbarBorderSelectControl(selectInput = null, value = "") {
@@ -79,7 +102,39 @@
       return selectElement.value;
     }
 
-    function closeAllEditorToolbarBorderSelectMenus(exceptInputId = "") {
+    function syncEditorToolbarBorderWidthControl(input = null, value = "") {
+      const inputElement =
+        input instanceof HTMLInputElement
+          ? input
+          : typeof input === "string" && input
+            ? document.getElementById(input)
+            : null;
+
+      if (!inputElement) {
+        return "";
+      }
+
+      const normalizedValue = formatEditorToolbarBorderWidthValue(value || inputElement.value || "1");
+      const { comboElement, menuElement } = getEditorToolbarBorderWidthComboElements(inputElement.id);
+      const currentValueElement = comboElement?.querySelector("[data-editor-border-width-current]") || null;
+
+      inputElement.value = normalizedValue;
+
+      if (currentValueElement) {
+        currentValueElement.textContent = normalizedValue;
+      }
+
+      Array.from(menuElement?.querySelectorAll("[data-editor-border-width-option]") || []).forEach((buttonElement) => {
+        const isActive = buttonElement.dataset.editorBorderWidthOption === normalizedValue;
+
+        buttonElement.classList.toggle("active", isActive);
+        buttonElement.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+
+      return normalizedValue;
+    }
+
+    function closeAllEditorToolbarBorderIconSelectMenus(exceptInputId = "") {
       let closedAnyMenu = false;
 
       Array.from(document.querySelectorAll(".template-toolbar-icon-select")).forEach((selectWrapper) => {
@@ -105,6 +160,39 @@
       return closedAnyMenu;
     }
 
+    function closeAllEditorToolbarBorderWidthMenus(exceptInputId = "") {
+      let closedAnyMenu = false;
+
+      Array.from(document.querySelectorAll(".template-toolbar-border-width-combo")).forEach((comboElement) => {
+        const inputElement = comboElement.querySelector(".template-toolbar-border-width-input");
+        const toggleElement = comboElement.querySelector("[data-editor-border-width-toggle]");
+        const menuElement = comboElement.querySelector(".template-toolbar-combo-menu");
+        const shouldKeepOpen =
+          exceptInputId &&
+          inputElement?.id === exceptInputId &&
+          menuElement &&
+          !menuElement.classList.contains("hidden");
+
+        if (!menuElement || shouldKeepOpen || menuElement.classList.contains("hidden")) {
+          return;
+        }
+
+        menuElement.classList.add("hidden");
+        comboElement.classList.remove("open", "open-up", "open-down");
+        toggleElement?.setAttribute("aria-expanded", "false");
+        closedAnyMenu = true;
+      });
+
+      return closedAnyMenu;
+    }
+
+    function closeAllEditorToolbarBorderSelectMenus(exceptInputId = "") {
+      const closedIconMenus = closeAllEditorToolbarBorderIconSelectMenus(exceptInputId);
+      const closedWidthMenus = closeAllEditorToolbarBorderWidthMenus(exceptInputId);
+
+      return closedIconMenus || closedWidthMenus;
+    }
+
     function setEditorToolbarBorderSelectMenuVisibility(inputId = "", nextVisible = false) {
       const { menuElement, selectElement, selectWrapper, toggleElement } = getEditorToolbarBorderSelectElements(inputId);
 
@@ -113,7 +201,8 @@
       }
 
       if (nextVisible) {
-        closeAllEditorToolbarBorderSelectMenus(inputId);
+        closeAllEditorToolbarBorderIconSelectMenus(inputId);
+        closeAllEditorToolbarBorderWidthMenus();
         closeAllEditorToolbarTableInsertPanels();
         closeAllEditorToolbarFontFamilyMenus();
         closeAllEditorToolbarFontSizeMenus();
@@ -134,6 +223,36 @@
       return true;
     }
 
+    function setEditorToolbarBorderWidthMenuVisibility(inputId = "", nextVisible = false) {
+      const { comboElement, inputElement, menuElement, toggleElement } = getEditorToolbarBorderWidthComboElements(inputId);
+
+      if (!inputElement || !menuElement || !comboElement) {
+        return false;
+      }
+
+      if (nextVisible) {
+        closeAllEditorToolbarBorderWidthMenus(inputId);
+        closeAllEditorToolbarBorderIconSelectMenus();
+        closeAllEditorToolbarTableInsertPanels();
+        closeAllEditorToolbarFontFamilyMenus();
+        closeAllEditorToolbarFontSizeMenus();
+        closeAllEditorToolbarColorPanels();
+        syncEditorToolbarBorderWidthControl(inputElement);
+      }
+
+      menuElement.classList.toggle("hidden", !nextVisible);
+      comboElement.classList.toggle("open", nextVisible);
+      toggleElement?.setAttribute("aria-expanded", nextVisible ? "true" : "false");
+
+      if (nextVisible) {
+        updateEditorToolbarFloatingPanelPlacement(comboElement, menuElement, 6);
+      } else {
+        comboElement.classList.remove("open-up", "open-down");
+      }
+
+      return true;
+    }
+
     function applyEditorToolbarBorderSelectOption(inputId = "", value = "") {
       const { selectElement } = getEditorToolbarBorderSelectElements(inputId);
 
@@ -147,12 +266,30 @@
       return true;
     }
 
+    function applyEditorToolbarBorderWidthOption(inputId = "", value = "") {
+      const { inputElement } = getEditorToolbarBorderWidthComboElements(inputId);
+
+      if (!inputElement) {
+        return false;
+      }
+
+      syncEditorToolbarBorderWidthControl(inputElement, value);
+      inputElement.dataset.editorBorderUserValue = "true";
+      inputElement.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    }
+
     return Object.freeze({
       applyEditorToolbarBorderSelectOption,
+      applyEditorToolbarBorderWidthOption,
       closeAllEditorToolbarBorderSelectMenus,
+      closeAllEditorToolbarBorderWidthMenus,
       getEditorToolbarBorderSelectElements,
+      getEditorToolbarBorderWidthComboElements,
       setEditorToolbarBorderSelectMenuVisibility,
+      setEditorToolbarBorderWidthMenuVisibility,
       syncEditorToolbarBorderSelectControl,
+      syncEditorToolbarBorderWidthControl,
     });
   }
 

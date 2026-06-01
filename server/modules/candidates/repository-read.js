@@ -318,6 +318,22 @@ function createCandidateReadRepository({ createHttpError, query }) {
     return whereClause ? `${whereClause} AND ${valueCondition}` : `WHERE ${valueCondition}`;
   }
 
+  function buildCandidateFilterForOptionField(filter = {}, field = "", options = {}) {
+    if (!options.excludeSelfFilters) {
+      return filter;
+    }
+
+    const fieldFilterKeys = field === "date" ? ["examDate"] : [field];
+
+    return fieldFilterKeys.reduce(
+      (nextFilter, key) => ({
+        ...nextFilter,
+        [key]: "",
+      }),
+      filter,
+    );
+  }
+
   async function findCandidates(rawFilter = {}) {
     const filter = normalizeRepositoryFilter(rawFilter);
     const offset = (filter.page - 1) * filter.limit;
@@ -463,15 +479,16 @@ function createCandidateReadRepository({ createHttpError, query }) {
     });
   }
 
-  async function findCandidateFilterOptions(rawFilter = {}, fields = []) {
+  async function findCandidateFilterOptions(rawFilter = {}, fields = [], options = {}) {
     const filter = normalizeRepositoryFilter(rawFilter);
     const requestedFields = normalizeCandidateFilterOptionFields(fields);
-    const { params, whereClause } = buildCandidateWhereClause(filter);
     const optionGroups = {};
 
     for (const field of requestedFields) {
       const columnName = candidateFilterOptionColumns[field];
       const displayExpression = columnName;
+      const fieldFilter = buildCandidateFilterForOptionField(filter, field, options);
+      const { params, whereClause } = buildCandidateWhereClause(fieldFilter);
       const rows = await query(
         `
           SELECT ${displayExpression} AS value, COUNT(*) AS candidateCount
