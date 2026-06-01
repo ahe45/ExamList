@@ -57,14 +57,13 @@ function createSeedPool(initialState = {}) {
       }
 
       if (compactSql.startsWith("UPDATE schools SET")) {
-        const school = state.schools.find((item) => item.id === params[5]);
+        const school = state.schools.find((item) => item.id === params[4]);
 
         if (school) {
           school.code = params[0];
           school.name = params[1];
-          school.description = params[2];
-          school.deletionPasswordHash = params[3];
-          school.createdAccount = params[4];
+          school.deletionPasswordHash = params[2];
+          school.createdAccount = params[3];
           school.deletedAt = null;
         }
 
@@ -74,9 +73,8 @@ function createSeedPool(initialState = {}) {
       if (compactSql.startsWith("INSERT INTO schools")) {
         state.schools.push({
           code: params[1],
-          description: params[3],
-          deletionPasswordHash: params[4],
-          createdAccount: params[5],
+          deletionPasswordHash: params[3],
+          createdAccount: params[4],
           id: params[0],
           name: params[2],
         });
@@ -89,13 +87,17 @@ function createSeedPool(initialState = {}) {
         if (existingSettings) {
           existingSettings.schoolId = params[1];
           existingSettings.schoolName = params[2];
-          existingSettings.academicYear = params[3];
-          existingSettings.logoDataUrl = params[4];
+          existingSettings.campusName = params[3];
+          existingSettings.campusCode = params[4];
+          existingSettings.academicYear = params[5];
+          existingSettings.logoDataUrl = params[6];
         } else {
           state.settings.push({
-            academicYear: params[3],
+            academicYear: params[5],
+            campusCode: params[4],
+            campusName: params[3],
             id: params[0],
-            logoDataUrl: params[4],
+            logoDataUrl: params[6],
             schoolId: params[1],
             schoolName: params[2],
           });
@@ -219,7 +221,6 @@ test("setup-db seeds 한국대학교 and 기본 템플릿 when missing", async (
   assert.equal(defaultSeed.school.createdAccount, "default");
   assert.deepEqual(state.schools[0], {
     code: defaultSeed.school.code,
-    description: defaultSeed.school.description,
     createdAccount: defaultSeed.school.createdAccount,
     deletionPasswordHash: defaultSeed.school.deletionPasswordHash,
     id: defaultSeed.school.id,
@@ -228,6 +229,8 @@ test("setup-db seeds 한국대학교 and 기본 템플릿 when missing", async (
   assert.equal(state.settings[0].id, defaultSeed.schoolSettings.id);
   assert.equal(state.settings[0].schoolId, defaultSeed.schoolSettings.schoolId);
   assert.equal(state.settings[0].schoolName, defaultSeed.schoolSettings.schoolName);
+  assert.equal(state.settings[0].campusName, defaultSeed.schoolSettings.campusName);
+  assert.equal(state.settings[0].campusCode, defaultSeed.schoolSettings.campusCode);
   assert.equal(state.settings[0].academicYear, defaultSeed.schoolSettings.academicYear);
   assert.equal(hashText(state.settings[0].logoDataUrl), hashText(defaultSeed.schoolSettings.logoDataUrl));
   assert.equal(state.templates.length, 1);
@@ -263,7 +266,6 @@ test("setup-db does not duplicate an existing 기본 템플릿", async () => {
         code: "LEGACY",
         createdAccount: "legacy-admin",
         deletedAt: "2026-01-01",
-        description: "old",
         id: "school-default",
         name: "이전 학교명",
       },
@@ -285,7 +287,6 @@ test("setup-db does not duplicate an existing 기본 템플릿", async () => {
   assert.equal(state.versions.length, 0);
   assert.equal(state.schools[0].code, defaultSeed.school.code);
   assert.equal(state.schools[0].name, "한국대학교");
-  assert.equal(state.schools[0].description, defaultSeed.school.description);
   assert.equal(state.schools[0].createdAccount, defaultSeed.school.createdAccount);
   assert.equal(state.schools[0].deletedAt, null);
   assert.equal(state.settings[0].academicYear, defaultSeed.schoolSettings.academicYear);

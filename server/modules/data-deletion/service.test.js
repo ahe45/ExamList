@@ -236,7 +236,6 @@ test("deleteProjectData deletes only candidate rows matching deletion unit filte
       if (
         compactSql.includes("FROM candidate_records WHERE school_id = ?") &&
         compactSql.includes("admission = ?") &&
-        compactSql.includes("campus = ?") &&
         compactSql.includes("track = ?")
       ) {
         return [
@@ -261,7 +260,6 @@ test("deleteProjectData deletes only candidate rows matching deletion unit filte
   const result = await service.deleteProjectData("candidates", {
     filters: {
       admission: "학생부종합",
-      campus: "서울",
       track: "수시",
     },
     schoolId: "school-1",
@@ -272,7 +270,6 @@ test("deleteProjectData deletes only candidate rows matching deletion unit filte
   assert.equal(result.deletedCandidatePhotos, 1);
   assert.deepEqual(result.filters, {
     admission: "학생부종합",
-    campus: "서울",
     track: "수시",
   });
   assert.deepEqual(deleteQuery.params, ["candidate-1", "candidate-2"]);
@@ -310,7 +307,6 @@ test("deleteProjectData deletes filtered PDF histories and only fully matched ba
             requestJson: JSON.stringify({
               resultScope: {
                 admission: "학생부종합",
-                campus: "서울",
                 track: "수시",
               },
             }),
@@ -322,7 +318,6 @@ test("deleteProjectData deletes filtered PDF histories and only fully matched ba
             requestJson: JSON.stringify({
               resultScope: {
                 admission: "논술",
-                campus: "서울",
                 track: "수시",
               },
             }),
@@ -373,7 +368,6 @@ test("deleteProjectData deletes filtered PDF histories and only fully matched ba
   const result = await service.deleteProjectData("pdf-generations", {
     filters: {
       admission: "학생부종합",
-      campus: "서울",
       track: "수시",
     },
     schoolId: "school-1",
@@ -626,7 +620,7 @@ test("getProjectDataDeletionSummary excludes template counts when deletion unit 
 
   const summary = await service.getProjectDataDeletionSummary({
     filters: {
-      campus: "서울",
+      track: "수시",
     },
     schoolId: "school-1",
   });

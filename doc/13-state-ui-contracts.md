@@ -28,7 +28,7 @@
 | `schools` | 학교 선택/생성/수정/삭제 상태. |
 | `templates` | 양식 목록, 카드 메타 편집, 새 양식 modal 상태. |
 | `candidates` | 수험생 목록/table/filter/upload/detail/download 상태. |
-| `schoolSettings` | 학교 로고, 표시 학교명, 모집년도 설정 상태. |
+| `schoolSettings` | 학교 로고, 표시 학교명, 학년도 설정 상태. |
 | `dataDeletion` | 데이터 삭제 카드, modal, 최종 확인, 삭제 진행 상태. |
 | `pdfGenerations` | PDF 생성 목록, 생성 modal, 배치 진행, 다운로드/삭제/결과/audit 상태. |
 | `pdfGenerationDetail` | PDF 생성 상세 페이지 상태. |
@@ -132,8 +132,7 @@
 | `schoolId` | 수정 대상 id. |
 | `name` | 학교명 draft. 입력 UI는 `대학교` suffix를 붙여 표시하고 저장 전 정규화한다. |
 | `code` | 학교 코드. |
-| `academicYear` | 모집년도. 숫자 입력, 1900-2999 범위 UI. |
-| `description` | 학교 설명. |
+| `academicYear` | 학년도. 숫자 입력, 1900-2999 범위 UI. |
 | `deletionPassword`, `deletionPasswordConfirm` | 생성 시 삭제 비밀번호와 확인값. `deleteSchoolsWithoutPassword`가 없으면 required. |
 | `logoDataUrl` | 학교 로고 data URL preview와 저장값. |
 | `settingsLoading` | 학교 설정 로딩 중 로고/년도 입력 비활성화. |
@@ -153,7 +152,7 @@
 | `[data-school-modal-field]` | modal input 상태 갱신. |
 | `[data-school-modal-logo-file]` | 로고 파일 선택. accept는 PNG/JPEG/WebP. |
 | `[data-action="clear-school-modal-logo"]` | 로고 삭제. |
-| `[data-action="step-school-academic-year"][data-school-year-step]` | 모집년도 증감. |
+| `[data-action="step-school-academic-year"][data-school-year-step]` | 학년도 증감. |
 | `[data-action="close-school-modal"]` | modal close. |
 
 ### 화면 요소
@@ -170,7 +169,7 @@
   - 학교 코드 또는 `코드 없음`.
   - `양식 N개`.
   - `수험생 N건`.
-  - `최종수정일시 : YYYY년 MM월 DD일 HH시 mm분 ss초`.
+  - `최종수정일시 : YYYY년 MM월 DD일 HH시 mm분`.
   - 생성 계정 badge.
   - 설정 icon.
   - 삭제 icon.
@@ -388,8 +387,6 @@ Page size option:
 |---|---|
 | `designatedSort` | 지정정렬 |
 | `track` | 모집시기 |
-| `campus` | 캠퍼스명 |
-| `campusCode` | 캠퍼스코드 |
 | `admission` | 전형명 |
 | `admissionCode` | 전형코드 |
 | `series` | 계열명 |

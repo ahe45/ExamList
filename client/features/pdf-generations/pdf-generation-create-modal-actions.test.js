@@ -24,11 +24,11 @@ test("PDF generation create modal option request excludes each field from its ow
   const modal = {
     errorMessage: "",
     filters: {
-      campus: "글로벌캠퍼스",
+      track: "수시",
     },
     isLoadingOptions: false,
     options: {},
-    selectedFilterKeys: ["campus"],
+    selectedFilterKeys: ["track"],
     selectedTemplateId: "template-1",
     targetEstimate: null,
     templates: [
@@ -77,8 +77,8 @@ test("PDF generation create modal option request excludes each field from its ow
   const optionParams = getUrlParams(optionUrl);
   const targetParams = getUrlParams(targetUrl);
 
-  assert.equal(optionParams.get("campus"), "글로벌캠퍼스");
+  assert.equal(optionParams.get("track"), "수시");
   assert.equal(optionParams.get("excludeSelfFilters"), "1");
-  assert.equal(targetParams.get("campus"), "글로벌캠퍼스");
+  assert.equal(targetParams.get("track"), "수시");
   assert.equal(targetParams.get("excludeSelfFilters"), null);
 });

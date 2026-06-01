@@ -4,7 +4,6 @@ import {
 
 export const pdfGenerationGridColumns = Object.freeze([
   Object.freeze({ key: "sequenceNumber", label: "순서", filterable: false, sortable: true }),
-  Object.freeze({ key: "campus", label: "캠퍼스", filterable: true, sortable: true }),
   Object.freeze({ key: "track", label: "모집시기", filterable: true, sortable: true }),
   Object.freeze({ key: "admission", label: "전형", filterable: true, sortable: true }),
   Object.freeze({ key: "series", label: "계열", filterable: true, sortable: true }),
@@ -43,7 +42,6 @@ export function normalizePdfGenerationGridValue(item = {}, key = "") {
   const valueMap = {
     admission: resultScope.admission,
     building: resultScope.building,
-    campus: resultScope.campus,
     candidateCount: String(Number(item.candidateCount) || 0),
     createdAt: formatDateTime(item.createdAt),
     endTime: resultScope.endTime,

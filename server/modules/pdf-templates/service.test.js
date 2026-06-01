@@ -517,6 +517,8 @@ test("duplicateTemplate can copy a source school template into a target school",
   });
 
   const duplicatedTemplate = await service.duplicateTemplate("template-source", {
+    description: "새 설명",
+    name: "복사 양식",
     sourceSchoolId: "school-source",
     targetSchoolId: "school-target",
   });
@@ -525,8 +527,10 @@ test("duplicateTemplate can copy a source school template into a target school",
 
   assert.equal(sourceLookup.params[1], "school-source");
   assert.equal(insertQuery.params[1], "school-target");
+  assert.equal(insertQuery.params[2], "복사 양식");
+  assert.equal(insertQuery.params[3], "새 설명");
   assert.equal(duplicatedTemplate.schoolId, "school-target");
-  assert.equal(duplicatedTemplate.name, "기존 양식 복사본");
+  assert.equal(duplicatedTemplate.name, "복사 양식");
 });
 
 test("updateTemplate updates metadata without writing activation state", async () => {

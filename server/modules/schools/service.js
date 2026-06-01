@@ -108,6 +108,11 @@ const relatedSchoolStatsJoins = `
     ON settings_stats.school_id = s.id
 `;
 
+const schoolSettingsRowJoin = `
+  LEFT JOIN school_settings ss
+    ON ss.school_id = s.id
+`;
+
 function createSchoolService({
   createHttpError,
   fs: fileSystem = nodeFs,
@@ -194,12 +199,14 @@ function createSchoolService({
           s.id,
           s.code,
           s.name,
-          s.description,
+          COALESCE(ss.campus_name, '') AS campusName,
+          COALESCE(ss.campus_code, '') AS campusCode,
           s.created_account AS createdAccount,
           ${relatedSchoolUpdatedAtExpression} AS updatedAt,
           COALESCE(template_stats.templateCount, 0) AS templateCount,
           COALESCE(candidate_stats.candidateCount, 0) AS candidateCount
         FROM schools s
+        ${schoolSettingsRowJoin}
         ${relatedSchoolStatsJoins}
         WHERE (s.id = ? OR s.code = ?)
           AND s.deleted_at IS NULL
@@ -239,24 +246,26 @@ function createSchoolService({
     };
 
     if (filter.keyword) {
-      conditions.push("(s.name LIKE :keyword OR s.code LIKE :keyword OR s.description LIKE :keyword)");
+      conditions.push("(s.name LIKE :keyword OR s.code LIKE :keyword OR ss.campus_name LIKE :keyword OR ss.campus_code LIKE :keyword)");
       params.keyword = `%${filter.keyword}%`;
     }
 
     const whereClause = `WHERE ${conditions.join(" AND ")}`;
-    const countRows = await query(`SELECT COUNT(*) AS total FROM schools s ${whereClause}`, params);
+    const countRows = await query(`SELECT COUNT(*) AS total FROM schools s ${schoolSettingsRowJoin} ${whereClause}`, params);
     const rows = await query(
       `
         SELECT
           s.id,
           s.code,
           s.name,
-          s.description,
+          COALESCE(ss.campus_name, '') AS campusName,
+          COALESCE(ss.campus_code, '') AS campusCode,
           s.created_account AS createdAccount,
           ${relatedSchoolUpdatedAtExpression} AS updatedAt,
           COALESCE(template_stats.templateCount, 0) AS templateCount,
           COALESCE(candidate_stats.candidateCount, 0) AS candidateCount
         FROM schools s
+        ${schoolSettingsRowJoin}
         ${relatedSchoolStatsJoins}
         ${whereClause}
         ORDER BY s.name ASC, s.code ASC
@@ -296,12 +305,11 @@ function createSchoolService({
           id,
           code,
           name,
-          description,
           deletion_password_hash,
           created_account
-        ) VALUES (?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?)
       `,
-      [schoolId, code, school.name, school.description, deletionPasswordHash, createdAccount],
+      [schoolId, code, school.name, deletionPasswordHash, createdAccount],
     );
 
     await query(
@@ -339,12 +347,11 @@ function createSchoolService({
         SET
           code = ?,
           name = ?,
-          description = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
           AND deleted_at IS NULL
       `,
-      [school.code || `SCHOOL-${normalizedSchoolId.slice(-8).toUpperCase()}`, school.name, school.description, normalizedSchoolId],
+      [school.code || `SCHOOL-${normalizedSchoolId.slice(-8).toUpperCase()}`, school.name, normalizedSchoolId],
     );
 
     await query(

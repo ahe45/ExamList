@@ -8,8 +8,6 @@ const candidateSortColumnMap = Object.freeze({
   birthDate: "birth_date",
   building: "building",
   buildingCode: "building_code",
-  campus: "campus",
-  campusCode: "campus_code",
   date: "exam_date",
   designatedSort: "designated_sort",
   examDate: "exam_date",
@@ -43,8 +41,6 @@ const candidateGroupByColumns = Object.freeze({
   admissionCode: "admission_code",
   building: "building",
   buildingCode: "building_code",
-  campus: "campus",
-  campusCode: "campus_code",
   date: "exam_date",
   exam: "track",
   examDate: "exam_date",
@@ -80,7 +76,7 @@ function buildCandidateWhereClause(filter) {
 
   if (filter.keyword) {
     conditions.push(
-      "(examinee_no LIKE :keyword OR temporary_no LIKE :keyword OR name LIKE :keyword OR designated_sort LIKE :keyword OR admission_year LIKE :keyword OR campus LIKE :keyword OR admission LIKE :keyword OR admission_code LIKE :keyword OR room LIKE :keyword)",
+      "(examinee_no LIKE :keyword OR temporary_no LIKE :keyword OR name LIKE :keyword OR designated_sort LIKE :keyword OR admission_year LIKE :keyword OR admission LIKE :keyword OR admission_code LIKE :keyword OR room LIKE :keyword)",
     );
     params.keyword = `%${filter.keyword}%`;
   }
@@ -103,16 +99,6 @@ function buildCandidateWhereClause(filter) {
   if (filter.buildingCode) {
     conditions.push("building_code = :buildingCode");
     params.buildingCode = filter.buildingCode;
-  }
-
-  if (filter.campus) {
-    conditions.push("campus = :campus");
-    params.campus = filter.campus;
-  }
-
-  if (filter.campusCode) {
-    conditions.push("campus_code = :campusCode");
-    params.campusCode = filter.campusCode;
   }
 
   if (filter.room) {
@@ -274,8 +260,6 @@ function createCandidateReadRepository({ createHttpError, query }) {
     admissionCode: "admission_code",
     building: "building",
     buildingCode: "building_code",
-    campus: "campus",
-    campusCode: "campus_code",
     date: "exam_date",
     examDate: "exam_date",
     group: "group_name",
@@ -357,8 +341,6 @@ function createCandidateReadRepository({ createHttpError, query }) {
           time,
           end_time AS endTime,
           track,
-          campus,
-          campus_code AS campusCode,
           admission,
           admission_code AS admissionCode,
           series,
@@ -521,8 +503,6 @@ function createCandidateReadRepository({ createHttpError, query }) {
           time,
           end_time AS endTime,
           track,
-          campus,
-          campus_code AS campusCode,
           admission,
           admission_code AS admissionCode,
           series,
@@ -570,8 +550,6 @@ function createCandidateReadRepository({ createHttpError, query }) {
           time,
           end_time AS endTime,
           track,
-          campus,
-          campus_code AS campusCode,
           admission,
           admission_code AS admissionCode,
           series,

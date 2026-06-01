@@ -57,7 +57,6 @@ async function ensureInitialDefaultSchool(connection) {
         SET
           code = ?,
           name = ?,
-          description = ?,
           deletion_password_hash = ?,
           created_account = ?,
           deleted_at = NULL
@@ -66,7 +65,6 @@ async function ensureInitialDefaultSchool(connection) {
       [
         schoolCode,
         seedSchool.name,
-        seedSchool.description,
         seedSchool.deletionPasswordHash || "",
         seedSchool.createdAccount || DEFAULT_SCHOOL_CREATED_ACCOUNT,
         seedSchool.id,
@@ -83,17 +81,15 @@ async function ensureInitialDefaultSchool(connection) {
         id,
         code,
         name,
-        description,
         deletion_password_hash,
         created_account
       )
-      VALUES (?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?)
     `,
     [
       seedSchool.id,
       schoolCode,
       seedSchool.name,
-      seedSchool.description,
       seedSchool.deletionPasswordHash || "",
       seedSchool.createdAccount || DEFAULT_SCHOOL_CREATED_ACCOUNT,
     ],
@@ -110,13 +106,17 @@ async function ensureInitialDefaultSchoolSettings(connection) {
         id,
         school_id,
         school_name,
+        campus_name,
+        campus_code,
         academic_year,
         logo_data_url
       )
-      VALUES (?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         school_id = VALUES(school_id),
         school_name = VALUES(school_name),
+        campus_name = VALUES(campus_name),
+        campus_code = VALUES(campus_code),
         academic_year = VALUES(academic_year),
         logo_data_url = VALUES(logo_data_url),
         updated_at = CURRENT_TIMESTAMP
@@ -125,6 +125,8 @@ async function ensureInitialDefaultSchoolSettings(connection) {
       seedSettings.id || "default",
       seedSettings.schoolId || seedSchool.id,
       seedSettings.schoolName || seedSchool.name,
+      seedSettings.campusName || "",
+      seedSettings.campusCode || "",
       seedSettings.academicYear || "",
       seedSettings.logoDataUrl || "",
     ],

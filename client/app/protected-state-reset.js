@@ -200,6 +200,8 @@ export function resetDataDeletionState(appState) {
 
 export function resetSchoolState(appState) {
   appState.schoolSettings.academicYear = "";
+  appState.schoolSettings.campusCode = "";
+  appState.schoolSettings.campusName = "";
   appState.schoolSettings.logoDataUrl = "";
   appState.schoolSettings.schoolId = "";
   appState.schoolSettings.schoolName = "";
@@ -218,6 +220,8 @@ export function resetSchoolState(appState) {
   appState.schools.errorMessage = "";
   appState.schools.modal = {
     academicYear: "",
+    campusCode: "",
+    campusName: "",
     code: "",
     deletionPassword: "",
     deletionPasswordConfirm: "",

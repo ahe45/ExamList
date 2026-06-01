@@ -250,7 +250,7 @@ export function createDataDeletionModalActions({
     if (!isDataDeletionUnitComplete()) {
       modal.errorMessage = modal.selectedScope === "templates"
         ? "삭제할 양식을 선택하세요."
-        : "캠퍼스, 모집시기, 전형까지 선택한 뒤 삭제를 진행하세요.";
+        : "모집시기, 전형까지 선택한 뒤 삭제를 진행하세요.";
       showToast(modal.errorMessage, { tone: "warning" });
       await onStateChange();
       return;

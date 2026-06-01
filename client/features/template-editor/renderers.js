@@ -46,9 +46,8 @@ function renderDataTagCatalog(editor, access) {
 
 function isVisibleDataTag(tag = {}) {
   const key = String(tag?.key || "").trim();
-  const label = String(tag?.label || "").trim();
 
-  return key !== "school.academicYear" && label !== "학년도";
+  return key !== "school.academicYear";
 }
 
 function renderEditorSidebarFooter(editor, access) {

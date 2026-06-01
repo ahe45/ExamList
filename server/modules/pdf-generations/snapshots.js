@@ -6,7 +6,6 @@ const { getTemplateGenerationUnitFields } = require("./generation-unit-fields");
 const generationResultScopeCandidateFields = Object.freeze({
   admission: Object.freeze(["admission", "admissionTypeName"]),
   building: Object.freeze(["building", "buildingName"]),
-  campus: Object.freeze(["campus", "campusName"]),
   endTime: Object.freeze(["endTime", "examEndTime"]),
   examDate: Object.freeze(["examDate", "date"]),
   group: Object.freeze(["group", "groupName"]),
@@ -24,7 +23,6 @@ const generationRequestFilterLabels = Object.freeze({
   admissionCode: "전형코드",
   building: "고사건물",
   buildingCode: "고사건물코드",
-  campus: "캠퍼스",
   date: "시험날짜",
   examDate: "시험날짜",
   group: "조",

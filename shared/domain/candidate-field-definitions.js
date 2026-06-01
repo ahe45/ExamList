@@ -29,7 +29,7 @@ const candidateFieldDefinitions = Object.freeze([
   }),
   createFieldDefinition({
     key: "admissionYear",
-    label: "모집년도",
+    label: "학년도",
     templateWidth: 12,
     exportWidth: 12,
     sample: "2026",
@@ -259,8 +259,6 @@ const candidateFieldDefinitionMap = Object.freeze(
 
 const candidateGridFieldKeys = Object.freeze([
   "designatedSort",
-  "campus",
-  "campusCode",
   "track",
   "admission",
   "admissionCode",
@@ -295,7 +293,6 @@ const candidateWorkbookFieldKeys = Object.freeze([...candidateGridFieldKeys]);
 const optionalTemplateFieldKeys = Object.freeze([
   "designatedSort",
   "endTime",
-  "campusCode",
   "admissionCode",
   "seriesCode",
   "unitCode",
@@ -313,7 +310,7 @@ const optionalTemplateFieldKeys = Object.freeze([
   "opt5",
 ]);
 const legacyTemplateHeaders = Object.freeze({
-  admissionYear: "모집년도",
+  admissionYear: "학년도",
   admission: "전형",
   building: "고사건물",
   date: "시험일자",

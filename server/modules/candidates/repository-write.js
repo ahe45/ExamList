@@ -23,8 +23,6 @@ function createCandidateWriteRepository({ query, resolveSchoolId }) {
           time = ?,
           end_time = ?,
           track = ?,
-          campus = ?,
-          campus_code = ?,
           admission = ?,
           admission_code = ?,
           series = ?,
@@ -60,8 +58,6 @@ function createCandidateWriteRepository({ query, resolveSchoolId }) {
         row.time,
         row.endTime,
         row.track,
-        row.campus,
-        row.campusCode,
         row.admission,
         row.admissionCode,
         row.series,
@@ -110,8 +106,6 @@ function createCandidateWriteRepository({ query, resolveSchoolId }) {
           time,
           end_time,
           track,
-          campus,
-          campus_code,
           admission,
           admission_code,
           series,
@@ -138,7 +132,7 @@ function createCandidateWriteRepository({ query, resolveSchoolId }) {
           opt5,
           photo_name,
           photo_mime
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')
         ON DUPLICATE KEY UPDATE
           designated_sort = VALUES(designated_sort),
           admission_year = VALUES(admission_year),
@@ -146,8 +140,6 @@ function createCandidateWriteRepository({ query, resolveSchoolId }) {
           time = VALUES(time),
           end_time = VALUES(end_time),
           track = VALUES(track),
-          campus = VALUES(campus),
-          campus_code = VALUES(campus_code),
           admission = VALUES(admission),
           admission_code = VALUES(admission_code),
           series = VALUES(series),
@@ -185,8 +177,6 @@ function createCandidateWriteRepository({ query, resolveSchoolId }) {
         row.time,
         row.endTime,
         row.track,
-        row.campus,
-        row.campusCode,
         row.admission,
         row.admissionCode,
         row.series,

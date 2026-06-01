@@ -288,13 +288,13 @@ function createPdfTemplateService({ createHttpError, getDefaultSchoolId = null, 
         ? duplicateOptions.targetSchoolId || (await resolveSchoolId())
         : duplicateOptions.targetSchoolId || existingTemplate.schoolId || (await resolveSchoolId()),
     ).trim();
-    const metadata = {
-      description: existingTemplate.description,
+    const metadata = normalizeTemplateMetadata({
+      description: duplicateOptions.hasDescription ? duplicateOptions.description : existingTemplate.description,
       generationUnit: existingTemplate.generationUnit,
-      name: `${existingTemplate.name} 복사본`,
+      name: duplicateOptions.name || `${existingTemplate.name} 복사본`,
       orientation: existingTemplate.orientation,
       paperPreset: existingTemplate.paperPreset,
-    };
+    });
     const nextTemplateId = `template-${randomUUID()}`;
     const snapshot = cloneSnapshotWithFreshIds(existingTemplate.layout, metadata, nextTemplateId);
     const connection = await getPool().getConnection();

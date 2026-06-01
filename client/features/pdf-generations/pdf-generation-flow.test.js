@@ -11,22 +11,26 @@ import {
 test("PDF generation create flow always reveals through series", () => {
   assert.deepEqual(
     getPdfGenerationRevealedFilterSteps([], "roomCode").map((step) => step.key),
-    ["campus", "track", "admission", "series"],
+    ["track", "admission", "series", "unit"],
   );
   assert.deepEqual(
     getPdfGenerationVisibleFilterSteps("admission").map((step) => step.key),
-    ["campus", "track", "admission", "series"],
+    ["track", "admission", "series"],
   );
 });
 
-test("PDF generation create flow does not reveal unit until series is selected", () => {
+test("PDF generation create flow does not reveal major until unit is selected", () => {
   assert.deepEqual(
-    getPdfGenerationRevealedFilterSteps(["campus", "track", "admission"], "roomCode").map((step) => step.key),
-    ["campus", "track", "admission", "series"],
+    getPdfGenerationRevealedFilterSteps(["track", "admission"], "roomCode").map((step) => step.key),
+    ["track", "admission", "series", "unit"],
   );
   assert.deepEqual(
-    getPdfGenerationRevealedFilterSteps(["campus", "track", "admission", "series"], "roomCode").map((step) => step.key),
-    ["campus", "track", "admission", "series", "unit"],
+    getPdfGenerationRevealedFilterSteps(["track", "admission", "series"], "roomCode").map((step) => step.key),
+    ["track", "admission", "series", "unit"],
+  );
+  assert.deepEqual(
+    getPdfGenerationRevealedFilterSteps(["track", "admission", "series", "unit"], "roomCode").map((step) => step.key),
+    ["track", "admission", "series", "unit", "major"],
   );
 });
 
@@ -34,24 +38,23 @@ test("PDF generation independent required filters do not clear each other", () =
   const nextFilters = resetPdfGenerationFiltersAfterSelection(
     {
       admission: "논술",
-      campus: "서울",
       series: "인문",
       track: "수시",
     },
-    "campus",
+    "track",
     "roomCode",
   );
   const nextSelectedKeys = getPdfGenerationSelectedFilterKeysAfterSelection({
     generationUnit: "roomCode",
-    selectedFilterKeys: ["campus", "track", "admission", "series"],
-    stepKey: "campus",
-    value: "서울",
+    selectedFilterKeys: ["track", "admission", "series"],
+    stepKey: "track",
+    value: "수시",
   });
 
   assert.equal(nextFilters.track, "수시");
   assert.equal(nextFilters.admission, "논술");
   assert.equal(nextFilters.series, "");
-  assert.deepEqual(nextSelectedKeys, ["campus", "track", "admission"]);
+  assert.deepEqual(nextSelectedKeys, ["track", "admission"]);
 });
 
 test("selecting admission all selects missing upper filters as all", () => {
@@ -62,7 +65,7 @@ test("selecting admission all selects missing upper filters as all", () => {
       stepKey: "admission",
       value: "",
     }),
-    ["campus", "track", "admission"],
+    ["track", "admission"],
   );
 });
 
@@ -74,6 +77,6 @@ test("selecting admission first selects missing upper filters as all", () => {
       stepKey: "admission",
       value: "논술",
     }),
-    ["campus", "track", "admission"],
+    ["track", "admission"],
   );
 });

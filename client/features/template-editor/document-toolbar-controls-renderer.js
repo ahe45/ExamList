@@ -265,11 +265,23 @@ export function renderDocumentToolbarCellSplitPopover() {
         <fieldset class="template-toolbar-subfield template-toolbar-subfield-wide template-toolbar-choice-field">
           <legend>편집</legend>
           <div class="template-toolbar-choice-group" role="radiogroup" aria-label="셀 분할 방향">
-            <label class="template-toolbar-choice-option" for="templateEditorCellSplitAxisRow">
+            <label
+              class="template-toolbar-choice-option"
+              for="templateEditorCellSplitAxisRow"
+              data-action="set-document-cell-split-axis"
+              data-cell-split-axis="row"
+              data-template-cell-split-axis-option="row"
+            >
               <input class="sr-only" id="templateEditorCellSplitAxisRow" name="templateEditorCellSplitAxis" type="radio" value="row" />
               <span>행</span>
             </label>
-            <label class="template-toolbar-choice-option" for="templateEditorCellSplitAxisColumn">
+            <label
+              class="template-toolbar-choice-option"
+              for="templateEditorCellSplitAxisColumn"
+              data-action="set-document-cell-split-axis"
+              data-cell-split-axis="column"
+              data-template-cell-split-axis-option="column"
+            >
               <input class="sr-only" id="templateEditorCellSplitAxisColumn" name="templateEditorCellSplitAxis" type="radio" value="column" checked />
               <span>열</span>
             </label>

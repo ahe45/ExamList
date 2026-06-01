@@ -61,14 +61,17 @@ function renderCurrentSchoolMeta({ currentView = "", school = null }) {
 
   const schoolName = String(school.name || "").trim();
   const schoolCode = String(school.code || school.id || "").trim();
+  const campusName = String(school.campusName || "").trim();
+  const campusDisplayName = campusName || "캠퍼스 미설정";
   const displayName = schoolName || schoolCode;
+  const titleText = [displayName, campusDisplayName].filter(Boolean).join(" · ");
 
   if (!displayName) {
     return "";
   }
 
   return `
-    <div class="topbar-school-card" id="currentSchoolMeta" title="${escapeHtml(displayName)}">
+    <div class="topbar-school-card" id="currentSchoolMeta" title="${escapeHtml(titleText || displayName)}">
       <span class="topbar-school-icon" aria-hidden="true">
         <svg viewBox="0 0 20 20" focusable="false">
           <path d="M3.8 8.2 10 4.4l6.2 3.8-6.2 3.8-6.2-3.8Z"></path>
@@ -77,7 +80,7 @@ function renderCurrentSchoolMeta({ currentView = "", school = null }) {
       </span>
       <span class="topbar-school-meta">
         <strong id="currentSchoolName">${escapeHtml(displayName)}</strong>
-        ${schoolCode && schoolCode !== displayName ? `<small id="currentSchoolCode">${escapeHtml(schoolCode)}</small>` : ""}
+        <small id="currentSchoolCampusName">${escapeHtml(campusDisplayName)}</small>
       </span>
     </div>
   `;

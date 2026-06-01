@@ -8,8 +8,6 @@ const {
 
 test("buildResultScopeFromCandidateAggregate keeps only single candidate scope values", () => {
   const resultScope = buildResultScopeFromCandidateAggregate({
-    campusDistinct: 1,
-    campusValue: "서울",
     trackDistinct: 1,
     trackValue: "수시",
     timeDistinct: 1,
@@ -20,7 +18,6 @@ test("buildResultScopeFromCandidateAggregate keeps only single candidate scope v
     majorValue: "국어국문",
   });
 
-  assert.equal(resultScope.campus, "서울");
   assert.equal(resultScope.track, "수시");
   assert.equal(resultScope.time, "09:00");
   assert.equal(resultScope.endTime, "10:00");
@@ -47,8 +44,6 @@ test("listPdfGenerations infers missing display scope from current candidate dat
             admissionValue: "논술",
             buildingDistinct: 1,
             buildingValue: "1고사관",
-            campusDistinct: 1,
-            campusValue: "서울",
             endTimeDistinct: 1,
             endTimeValue: "10:00",
             examDateDistinct: 1,
@@ -99,7 +94,6 @@ test("listPdfGenerations infers missing display scope from current candidate dat
 
   const result = await readActions.listPdfGenerations({ schoolId: "school-1" });
 
-  assert.equal(result.items[0].resultScope.campus, "서울");
   assert.equal(result.items[0].resultScope.track, "수시");
   assert.equal(result.items[0].resultScope.time, "09:00");
   assert.equal(result.items[0].resultScope.endTime, "10:00");

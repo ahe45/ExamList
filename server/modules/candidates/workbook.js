@@ -78,7 +78,7 @@ function createCandidateWorkbookService({ createHttpError }) {
       birth: normalizeText(candidateInput.birth ?? candidateInput.birthDate, "생년월일", rowNumber),
       building: normalizeText(candidateInput.building, "고사건물명", rowNumber),
       buildingCode: normalizeOptionalText(candidateInput.buildingCode),
-      campus: normalizeText(candidateInput.campus ?? candidateInput.campusName, "캠퍼스명", rowNumber),
+      campus: normalizeOptionalText(candidateInput.campus ?? candidateInput.campusName),
       campusCode: normalizeOptionalText(candidateInput.campusCode),
       date: normalizeText(candidateInput.date ?? candidateInput.examDate, "시험날짜", rowNumber),
       designatedSort: normalizeOptionalText(candidateInput.designatedSort),

@@ -37,7 +37,6 @@ test("buildGenerationRequestSnapshot stores unique display scope from generated 
       {
         admission: "논술",
         building: "1고사관",
-        campus: "서울",
         endTime: "10:00",
         examDate: "2026-05-19",
         major: "국어국문",
@@ -51,7 +50,6 @@ test("buildGenerationRequestSnapshot stores unique display scope from generated 
       {
         admission: "논술",
         building: "1고사관",
-        campus: "서울",
         endTime: "10:00",
         examDate: "2026-05-19",
         major: "영어영문",
@@ -81,7 +79,6 @@ test("buildGenerationRequestSnapshot stores unique display scope from generated 
   assert.deepEqual(snapshot.resultScope, {
     admission: "논술",
     building: "1고사관",
-    campus: "서울",
     endTime: "10:00",
     examDate: "2026-05-19",
     period: "1교시",

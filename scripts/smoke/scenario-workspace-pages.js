@@ -174,7 +174,7 @@ async function runWorkspacePagesScenario(context) {
                 ...[...document.querySelectorAll('.candidate-grid-table thead .table-header-label')].map((cell) => cell.textContent.trim()),
               ].filter(Boolean).join('|');
 
-              return headers === '순번|지정정렬|모집시기|캠퍼스명|캠퍼스코드|전형명|전형코드|계열명|계열코드|모집단위명|모집단위코드|전공명|전공코드|시험날짜|시작시간|종료시간|교시명|교시코드|고사건물명|고사건물코드|고사실명|고사실코드|수험번호|가번호|이름|생년월일|조|OPT1|OPT2|OPT3|OPT4|OPT5';
+              return headers === '순번|지정정렬|모집시기|전형명|전형코드|계열명|계열코드|모집단위명|모집단위코드|전공명|전공코드|시험날짜|시작시간|종료시간|교시명|교시코드|고사건물명|고사건물코드|고사실명|고사실코드|수험번호|가번호|이름|생년월일|조|OPT1|OPT2|OPT3|OPT4|OPT5';
             })()
           `,
           "수험생확인대장 수험생 데이터 컬럼 순서",

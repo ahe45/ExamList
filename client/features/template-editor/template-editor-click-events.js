@@ -225,6 +225,19 @@ export function bindTemplateEditorClickEvents({
       return;
     }
 
+    if (actionName === "set-document-cell-split-axis") {
+      event.preventDefault();
+
+      const axis = actionTarget.dataset.cellSplitAxis === "row" ? "row" : "column";
+      const panelElement = actionTarget.closest("#templateEditorCellSplitPanel") || document.getElementById("templateEditorCellSplitPanel");
+      const axisInput = panelElement?.querySelector?.(`input[name="templateEditorCellSplitAxis"][value="${axis}"]`);
+
+      if (axisInput) {
+        axisInput.checked = true;
+      }
+      return;
+    }
+
     if (actionName === "step-document-cell-split-count") {
       const splitCountInput = document.getElementById("templateEditorCellSplitCount");
 

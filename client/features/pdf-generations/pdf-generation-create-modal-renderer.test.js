@@ -24,7 +24,6 @@ function renderCreateModal(overrides = {}) {
       isSubmitting: false,
       options: {
         admission: [{ candidateCount: 1, value: "논술" }],
-        campus: [{ candidateCount: 1, value: "서울" }],
         series: [{ candidateCount: 1, value: "인문" }],
         track: [{ candidateCount: 1, value: "수시" }],
       },
@@ -58,12 +57,10 @@ function getFilterFieldHtml(html, key) {
 test("PDF generation create modal disables filters until a template is selected", () => {
   const html = renderCreateModal();
 
-  assert.match(getFilterSelectOpeningHtml(html, "campus"), /disabled/);
   assert.match(getFilterSelectOpeningHtml(html, "track"), /disabled/);
   assert.match(getFilterSelectOpeningHtml(html, "admission"), /disabled/);
   assert.match(getFilterSelectOpeningHtml(html, "series"), /disabled/);
   assert.match(html, /data-pdf-generation-template-select[\s\S]*<\/select>\s*<span class="field-required-badge">필수<\/span>/);
-  assert.match(getFilterFieldHtml(html, "campus"), /<\/select>\s*<span class="field-required-badge">필수<\/span>/);
   assert.match(getFilterFieldHtml(html, "track"), /<\/select>\s*<span class="field-required-badge">필수<\/span>/);
   assert.match(getFilterFieldHtml(html, "admission"), /<\/select>\s*<span class="field-required-badge">필수<\/span>/);
   assert.doesNotMatch(getFilterFieldHtml(html, "series"), /field-required-badge/);
@@ -80,7 +77,7 @@ test("PDF generation create modal keeps series visible but disabled until admiss
     templates: [baseTemplate],
   });
 
-  assert.doesNotMatch(getFilterSelectOpeningHtml(withoutAdmissionHtml, "campus"), /disabled/);
+  assert.doesNotMatch(getFilterSelectOpeningHtml(withoutAdmissionHtml, "track"), /disabled/);
   assert.doesNotMatch(getFilterSelectOpeningHtml(withoutAdmissionHtml, "admission"), /disabled/);
   assert.match(getFilterSelectOpeningHtml(withoutAdmissionHtml, "series"), /disabled/);
   assert.doesNotMatch(getFilterSelectOpeningHtml(withAdmissionHtml, "series"), /disabled/);

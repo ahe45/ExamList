@@ -27,6 +27,7 @@ async function assertTopbarAccount(context) {
 
 async function assertTopbarSchoolMeta(context, schoolCode) {
   const { client } = context;
+  const expectedCampusName = context.schoolCampusName || "";
 
   await waitForCondition(
     client,
@@ -37,7 +38,7 @@ async function assertTopbarSchoolMeta(context, schoolCode) {
         const logoutButton = document.querySelector('#logoutButton');
         const listButton = document.querySelector('#topbarTemplateListButton');
         const schoolName = document.querySelector('#currentSchoolName');
-        const schoolCode = document.querySelector('#currentSchoolCode');
+        const schoolCampusName = document.querySelector('#currentSchoolCampusName');
         const schoolAccountSeparator = document.querySelector('[data-topbar-separator="school-account"]');
         const logoutListSeparator = document.querySelector('[data-topbar-separator="logout-school-list"]');
         const schoolSeparatorStyle = schoolAccountSeparator ? getComputedStyle(schoolAccountSeparator) : null;
@@ -57,8 +58,12 @@ async function assertTopbarSchoolMeta(context, schoolCode) {
             logoutButton &&
             listButton &&
             schoolName &&
+            schoolCampusName &&
             !text.includes('현재 학교') &&
-            (text.includes(${JSON.stringify(schoolCode)}) || meta.getAttribute('title')?.includes(${JSON.stringify(schoolCode)}) || schoolCode?.textContent.trim() === ${JSON.stringify(schoolCode)}) &&
+            !document.querySelector('#currentSchoolCode') &&
+            schoolCampusName.textContent.trim() === ${JSON.stringify(expectedCampusName)} &&
+            text.includes(${JSON.stringify(expectedCampusName)}) &&
+            !text.includes(${JSON.stringify(schoolCode)}) &&
             schoolAccountSeparator &&
             logoutListSeparator &&
             schoolSeparatorStyle?.display !== 'none' &&

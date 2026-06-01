@@ -1,5 +1,4 @@
 export const pdfGenerationFilterSteps = Object.freeze([
-  Object.freeze({ key: "campus", label: "캠퍼스" }),
   Object.freeze({ key: "track", label: "모집시기" }),
   Object.freeze({ key: "admission", label: "전형" }),
   Object.freeze({ key: "series", label: "계열" }),
@@ -24,8 +23,8 @@ export const pdfGenerationResultColumns = Object.freeze([
   ...pdfGenerationFilterSteps,
 ]);
 
-export const pdfGenerationCreateRequiredFilterKeys = Object.freeze(["campus", "track", "admission"]);
-export const pdfGenerationCreateIndependentFilterKeys = Object.freeze(["campus", "track", "admission"]);
+export const pdfGenerationCreateRequiredFilterKeys = Object.freeze(["track", "admission"]);
+export const pdfGenerationCreateIndependentFilterKeys = Object.freeze(["track", "admission"]);
 
 export const pdfGenerationUnitFilterKeyMap = Object.freeze({
   admission: "admission",
@@ -223,7 +222,6 @@ export function getPdfGenerationSelectedFilterKeysAfterSelection({
     selectedKeySet.add(normalizedStepKey);
 
     if (normalizedStepKey === "admission") {
-      selectedKeySet.add("campus");
       selectedKeySet.add("track");
     }
 

@@ -104,6 +104,32 @@ export function renderTemplateCreateModal(templates = {}) {
           <button class="icon-button" data-action="close-template-create-modal" type="button" aria-label="닫기">×</button>
         </div>
         <form class="modal-form template-create-form" data-template-create-form>
+          <div class="template-create-meta-fields">
+            <label class="form-field">
+              <span>양식 제목</span>
+              <input
+                data-template-create-field="name"
+                name="name"
+                type="text"
+                maxlength="200"
+                placeholder="${isCopyMode ? "비워두면 원본 양식명 복사본으로 생성됩니다." : "새 양식"}"
+                value="${escapeHtml(modal.name || "")}"
+                ${modal.isSubmitting ? "disabled" : ""}
+              />
+            </label>
+            <label class="form-field">
+              <span>설명</span>
+              <textarea
+                data-template-create-field="description"
+                name="description"
+                rows="3"
+                maxlength="255"
+                placeholder="양식 설명을 입력하세요."
+                ${modal.isSubmitting ? "disabled" : ""}
+              >${escapeHtml(modal.description || "")}</textarea>
+            </label>
+          </div>
+
           <div class="template-create-mode-grid" role="radiogroup" aria-label="양식 생성 방식">
             ${renderTemplateCreateModeOption({
               checked: mode === "blank",

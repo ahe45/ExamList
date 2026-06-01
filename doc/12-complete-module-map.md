@@ -22,7 +22,7 @@
 | `server/http/routes/auth.js` | 로그인, 로그아웃, 세션 조회 API. |
 | `server/http/routes/accounts.js` | 관리자 계정 CRUD API. |
 | `server/http/routes/schools.js` | 학교 목록/생성/상세/수정/삭제 API. |
-| `server/http/routes/school-settings.js` | 학교명, 모집년도, 로고 설정 API. |
+| `server/http/routes/school-settings.js` | 학교명, 학년도, 로고 설정 API. |
 | `server/http/routes/pdf-templates.js` | 템플릿 목록, 생성, 상세, 저장, 삭제, 복사 API. |
 | `server/http/routes/pdf-data-tags.js` | 데이터 태그 catalog API. |
 | `server/http/routes/pdf-preview.js` | 템플릿 HTML/PDF 미리보기 API. |
@@ -55,7 +55,7 @@
 |---|---|
 | `server/modules/schools/service.js` | 학교 CRUD, 삭제 비밀번호, 기본 학교 보호, 학교 삭제 시 관련 데이터 정리. |
 | `server/modules/schools/validators.js` | 학교 코드, 이름, 설명, 삭제 비밀번호 검증. |
-| `server/modules/school-settings/service.js` | 학교 표시명, 모집년도, 로고 data URL 조회/저장. |
+| `server/modules/school-settings/service.js` | 학교 표시명, 학년도, 로고 data URL 조회/저장. |
 
 학교 삭제는 학교 자체뿐 아니라 템플릿, 페이지, 요소, 버전, 수험생, PDF 이력, 배치, 학교 설정을 함께 정리한다. 실제 파일 삭제는 관련 데이터 삭제 모듈과 파일 저장소 모듈에서 처리된다.
 
@@ -215,7 +215,7 @@
 | `client/features/schools/modal-actions.js` | 학교 모달 open/close/input/logo/year step/submit. |
 | `client/features/schools/data-actions.js` | API 호출과 상태 반영. |
 | `client/features/schools/event-bindings.js` | click/input/change/submit 이벤트 바인딩. |
-| `client/features/schools/utils.js` | 학교명 suffix, 모집년도 정규화. |
+| `client/features/schools/utils.js` | 학교명 suffix, 학년도 정규화. |
 
 ### 계정 관리
 
@@ -478,7 +478,7 @@
 | `styles/responsive.css` | 반응형 shell 보정. |
 | `styles/features/auth.css` | 로그인/auth UI. |
 | `styles/features/schools.css` | 학교 목록/모달. |
-| `styles/features/school-settings.css` | 학교 로고/모집년도 설정. |
+| `styles/features/school-settings.css` | 학교 로고/학년도 설정. |
 | `styles/features/templates.css` | 양식 카드/생성 modal/thumbnail. |
 | `styles/features/candidates.css`와 하위 파일 | 수험생 table, filter, upload, detail. |
 | `styles/features/pdf-generations.css` | PDF 생성 목록, modal, progress, detail, audit log. |

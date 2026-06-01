@@ -1,7 +1,7 @@
 async function ensureSchoolColumns(connection, { dropIndexIfExists, ensureColumn, ensureIndex, hasColumn }) {
   await ensureColumn(connection, {
     columnName: "deletion_password_hash",
-    definition: "deletion_password_hash VARCHAR(255) NOT NULL DEFAULT '' COMMENT '학교 삭제 비밀번호 해시' AFTER description",
+    definition: "deletion_password_hash VARCHAR(255) NOT NULL DEFAULT '' COMMENT '학교 삭제 비밀번호 해시' AFTER name",
     tableName: "schools",
   });
   await ensureColumn(connection, {
@@ -44,7 +44,17 @@ async function ensureSchoolSettingsColumns(connection, { defaultSchoolId, ensure
   });
   await ensureColumn(connection, {
     columnName: "academic_year",
-    definition: "academic_year VARCHAR(20) NOT NULL DEFAULT '' COMMENT '모집년도' AFTER school_name",
+    definition: "academic_year VARCHAR(20) NOT NULL DEFAULT '' COMMENT '학년도' AFTER school_name",
+    tableName: "school_settings",
+  });
+  await ensureColumn(connection, {
+    columnName: "campus_name",
+    definition: "campus_name VARCHAR(120) NOT NULL DEFAULT '' COMMENT '캠퍼스명' AFTER school_name",
+    tableName: "school_settings",
+  });
+  await ensureColumn(connection, {
+    columnName: "campus_code",
+    definition: "campus_code VARCHAR(120) NOT NULL DEFAULT '' COMMENT '캠퍼스 코드' AFTER campus_name",
     tableName: "school_settings",
   });
   await ensureIndex(connection, {

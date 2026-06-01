@@ -1,5 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const ExcelJS = require("exceljs");
 
 const { createCandidateWorkbookService } = require("./workbook");
 
@@ -70,6 +71,45 @@ test("normalizeCandidateWorkbookInput accepts free-form date text", () => {
 
   assert.equal(row.date, "2026/03/28");
   assert.equal(row.birth, "2006년 1월 2일");
+});
+
+test("normalizeCandidateWorkbookInput does not require campus fields", () => {
+  const service = createCandidateWorkbookService({ createHttpError });
+
+  const row = service.normalizeCandidateWorkbookInput(
+    {
+      admission: "일반전형",
+      birth: "2006-01-02",
+      building: "본관",
+      date: "2026-03-28",
+      examineeNo: "26010001",
+      name: "홍길동",
+      period: "1교시",
+      room: "101",
+      series: "인문",
+      time: "08:40",
+      track: "수시",
+      unit: "국어국문학과",
+    },
+    0,
+  );
+
+  assert.equal(row.campus, "");
+  assert.equal(row.campusCode, "");
+});
+
+test("buildCandidateTemplateBuffer omits campus columns", async () => {
+  const service = createCandidateWorkbookService({ createHttpError });
+  const buffer = await service.buildCandidateTemplateBuffer();
+  const workbook = new ExcelJS.Workbook();
+
+  await workbook.xlsx.load(buffer);
+
+  const worksheet = workbook.worksheets[0];
+  const headers = worksheet.getRow(1).values.filter(Boolean);
+
+  assert.ok(!headers.includes("캠퍼스명"));
+  assert.ok(!headers.includes("캠퍼스코드"));
 });
 
 test("buildCandidateExportBuffer creates XLSX buffer for rows", async () => {

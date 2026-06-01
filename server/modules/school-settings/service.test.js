@@ -15,6 +15,8 @@ test("normalizeSchoolSettingsPayload trims values and accepts image data urls", 
     normalizeSchoolSettingsPayload(
       {
         academicYear: "  2026  ",
+        campusCode: " SEOUL ",
+        campusName: " 서울캠퍼스 ",
         logoDataUrl: "data:image/png;base64,ZmFrZQ==",
         schoolName: "  한국대학교  ",
       },
@@ -22,6 +24,8 @@ test("normalizeSchoolSettingsPayload trims values and accepts image data urls", 
     ),
     {
       academicYear: "2026",
+      campusCode: "SEOUL",
+      campusName: "서울캠퍼스",
       logoDataUrl: "data:image/png;base64,ZmFrZQ==",
       schoolName: "한국대학교",
     },
@@ -40,6 +44,8 @@ test("normalizeSchoolSettingsPayload stores academic year as four digits", () =>
     ),
     {
       academicYear: "2027",
+      campusCode: "",
+      campusName: "",
       logoDataUrl: "",
       schoolName: "한국대학교",
     },
@@ -57,7 +63,7 @@ test("normalizeSchoolSettingsPayload rejects non numeric academic year", () => {
         },
         createHttpError,
       ),
-    /모집년도는 숫자 4자리로 입력하세요/,
+    /학년도는 숫자 4자리로 입력하세요/,
   );
 });
 
@@ -87,6 +93,20 @@ test("normalizeSchoolSettingsPayload rejects too long academic year", () => {
         },
         createHttpError,
       ),
-    /모집년도는 20자 이하로 입력하세요/,
+    /학년도는 20자 이하로 입력하세요/,
+  );
+});
+
+test("normalizeSchoolSettingsPayload rejects too long campus values", () => {
+  assert.throws(
+    () =>
+      normalizeSchoolSettingsPayload(
+        {
+          campusCode: "C".repeat(121),
+          campusName: "서울캠퍼스",
+        },
+        createHttpError,
+      ),
+    /캠퍼스코드 값은 120자 이하로 입력하세요/,
   );
 });

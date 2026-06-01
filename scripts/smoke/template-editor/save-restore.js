@@ -25,8 +25,7 @@ async function runSaveRestoreScenario(context) {
               groupLabels.includes('수험생 정보') &&
             tagTexts.includes('#학교명') &&
               tagTexts.includes('#학교코드') &&
-              !tagTexts.includes('#학년도') &&
-              tagTexts.includes('#모집년도') &&
+              tagTexts.includes('#학년도') &&
               !tagTexts.includes('#지정정렬') &&
               tagTexts.includes('#시험날짜') &&
               tagTexts.includes('#시작시간') &&

@@ -46,8 +46,6 @@ Header:
 | --- | --- |
 | `designatedSort` | 지정정렬 |
 | `track` | 모집시기 |
-| `campus` | 캠퍼스명 |
-| `campusCode` | 캠퍼스코드 |
 | `admission` | 전형명 |
 | `admissionCode` | 전형코드 |
 | `series` | 계열명 |
@@ -175,7 +173,6 @@ Tabs:
 ### 선택 필드
 
 - 지정정렬.
-- 캠퍼스코드.
 - 전형코드.
 - 계열코드.
 - 모집단위코드.
@@ -260,8 +257,6 @@ API:
 | --- | --- | --- |
 | `designatedSort` | `designated_sort` | 지정정렬 |
 | `track` | `track` | 모집시기 |
-| `campus` | `campus` | 캠퍼스명 |
-| `campusCode` | `campus_code` | 캠퍼스코드 |
 | `admission` | `admission` | 전형명 |
 | `admissionCode` | `admission_code` | 전형코드 |
 | `series` | `series` | 계열명 |

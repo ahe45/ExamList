@@ -211,18 +211,16 @@ test("data deletion modal renders one-screen unit selection with target counts",
         errorMessage: "",
         filters: {
           admission: "",
-          campus: "",
           track: "",
         },
         isOpen: true,
         isLoadingSummary: false,
         options: {
           admission: [{ candidateCount: 5, value: "학생부종합" }],
-          campus: [{ candidateCount: 5, value: "서울" }],
           series: [{ candidateCount: 3, value: "자연" }],
           track: [{ candidateCount: 5, value: "수시" }],
         },
-        selectedFilterKeys: ["campus", "track", "admission"],
+        selectedFilterKeys: ["track", "admission"],
         selectedScope: "pdf-generations",
         summary,
       },
@@ -238,12 +236,11 @@ test("data deletion modal renders one-screen unit selection with target counts",
 
   assert.match(html, /데이터 삭제 설정/);
   assert.match(html, /삭제 단위/);
-  assert.match(html, /data-data-deletion-modal-filter="campus"/);
+  assert.doesNotMatch(html, /data-data-deletion-modal-filter="campus"/);
   assert.match(html, /data-data-deletion-modal-filter="track"/);
   assert.match(html, /data-data-deletion-modal-filter="admission"/);
   assert.match(html, /data-data-deletion-modal-filter="series"/);
   assert.match(html, /data-data-deletion-modal-filter="room"/);
-  assert.match(getDataDeletionFilterFieldHtml(html, "campus"), /<\/select>\s*<span class="field-required-badge">필수<\/span>/);
   assert.match(getDataDeletionFilterFieldHtml(html, "track"), /<\/select>\s*<span class="field-required-badge">필수<\/span>/);
   assert.match(getDataDeletionFilterFieldHtml(html, "admission"), /<\/select>\s*<span class="field-required-badge">필수<\/span>/);
   assert.doesNotMatch(getDataDeletionFilterFieldHtml(html, "series"), /field-required-badge/);
@@ -285,12 +282,11 @@ test("data deletion confirmation popup requires phrase for all data", () => {
         errorMessage: "",
         filters: {
           admission: "",
-          campus: "",
           track: "",
         },
         isOpen: true,
         isLoadingSummary: false,
-        selectedFilterKeys: ["campus", "track", "admission"],
+        selectedFilterKeys: ["track", "admission"],
         selectedScope: "all",
         summary,
       },

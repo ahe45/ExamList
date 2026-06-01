@@ -39,7 +39,7 @@
 - `id`.
 - `school_id`: unique.
 - `school_name`: 양식에 표시할 학교명.
-- `academic_year`: 모집년도.
+- `academic_year`: 학년도.
 - `logo_data_url`: 로고 data URL.
 - `updated_at`.
 
@@ -132,7 +132,6 @@
 - `time`.
 - `end_time`.
 - `track`.
-- `campus`, `campus_code`.
 - `admission`, `admission_code`.
 - `series`, `series_code`.
 - `unit`, `unit_code`.

@@ -21,8 +21,6 @@ export const candidateBlockGridDefaults = Object.freeze({
 export const objectResizeCorners = Object.freeze(["bottom-right", "bottom", "bottom-left", "left", "top-left", "top", "top-right", "right"]);
 export const candidateBlockGridSortOptions = Object.freeze([
   Object.freeze({ key: "designatedSort", label: "지정정렬" }),
-  Object.freeze({ key: "campus", label: "캠퍼스명" }),
-  Object.freeze({ key: "campusCode", label: "캠퍼스코드" }),
   Object.freeze({ key: "track", label: "모집시기" }),
   Object.freeze({ key: "admission", label: "전형명" }),
   Object.freeze({ key: "admissionCode", label: "전형코드" }),
@@ -60,8 +58,6 @@ const candidateBlockGridSortKeyAliases = Object.freeze({
   "candidate.birthDate": "birth",
   "candidate.buildingCode": "buildingCode",
   "candidate.buildingName": "building",
-  "candidate.campusCode": "campusCode",
-  "candidate.campusName": "campus",
   "candidate.date": "date",
   "candidate.departmentCode": "unitCode",
   "candidate.departmentName": "unit",

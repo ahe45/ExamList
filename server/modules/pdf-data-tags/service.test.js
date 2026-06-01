@@ -10,6 +10,8 @@ test("getCatalog builds tags from school settings and candidate columns", async 
       "candidate.designatedSort": "designated_sort",
       "candidate.examStartTime": "time",
       "candidate.examEndTime": "end_time",
+      "candidate.campusName": "school_settings.campus_name",
+      "candidate.campusCode": "school_settings.campus_code",
       "candidate.examNo": "examinee_no",
       "candidate.temporaryNo": "temporary_no",
       "candidate.name": "name",
@@ -21,6 +23,8 @@ test("getCatalog builds tags from school settings and candidate columns", async 
     async getSchoolSettings() {
       return {
         academicYear: "2027",
+        campusCode: "SEOUL",
+        campusName: "서울캠퍼스",
         schoolCode: "SEOUL01",
         schoolName: "한국대학교",
       };
@@ -46,6 +50,8 @@ test("getCatalog builds tags from school settings and candidate columns", async 
     candidateTags.map((tag) => tag.key),
     [
       "candidate.admissionYear",
+      "candidate.campusName",
+      "candidate.campusCode",
       "candidate.departmentName",
       "candidate.examStartTime",
       "candidate.examEndTime",
@@ -58,6 +64,8 @@ test("getCatalog builds tags from school settings and candidate columns", async 
     ],
   );
   assert.equal(candidateTags.find((tag) => tag.key === "candidate.admissionYear").example, "2027학년도");
+  assert.equal(candidateTags.find((tag) => tag.key === "candidate.campusName").example, "서울캠퍼스");
+  assert.equal(candidateTags.find((tag) => tag.key === "candidate.campusCode").sourceColumn, "school_settings.campus_code");
   assert.equal(candidateTags.some((tag) => tag.key === "candidate.designatedSort"), false);
   assert.equal(candidateTags.find((tag) => tag.key === "candidate.examStartTime").label, "시작시간");
   assert.equal(candidateTags.find((tag) => tag.key === "candidate.examEndTime").label, "종료시간");

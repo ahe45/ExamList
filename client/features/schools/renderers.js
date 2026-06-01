@@ -1,7 +1,12 @@
 import { hasAccess } from "../../app/access.js";
 import { escapeHtml } from "../../app/html-utils.js";
 import { formatCount } from "../../app/number-format.js";
-import { formatSchoolNameForSave, normalizeAcademicYearInputValue, normalizeSchoolNameInputValue } from "./utils.js";
+import {
+  formatSchoolNameForSave,
+  normalizeAcademicYearInputValue,
+  normalizeCampusNameInputValue,
+  normalizeSchoolNameInputValue,
+} from "./utils.js";
 
 function formatUpdatedAtLabel(value = "") {
   const date = new Date(value);
@@ -12,7 +17,7 @@ function formatUpdatedAtLabel(value = "") {
 
   const pad = (number) => String(number).padStart(2, "0");
 
-  return `${date.getFullYear()}년 ${pad(date.getMonth() + 1)}월 ${pad(date.getDate())}일 ${pad(date.getHours())}시 ${pad(date.getMinutes())}분 ${pad(date.getSeconds())}초`;
+  return `${date.getFullYear()}년 ${pad(date.getMonth() + 1)}월 ${pad(date.getDate())}일 ${pad(date.getHours())}시 ${pad(date.getMinutes())}분`;
 }
 
 const schoolActionIcons = Object.freeze({
@@ -37,6 +42,20 @@ function isProtectedSchool(school = {}) {
   return formatSchoolNameForSave(school.name) === "한국대학교";
 }
 
+function renderAcademicYearOptions(selectedValue = "") {
+  const selectedYear = normalizeAcademicYearInputValue(selectedValue);
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 11 }, (_item, index) => String(currentYear - 5 + index));
+  const hasSelectedYear = years.includes(selectedYear);
+
+  return [
+    `<option value="" ${hasSelectedYear ? "" : "selected"}>선택</option>`,
+    ...years.map(
+      (year) => `<option value="${escapeHtml(year)}" ${selectedYear === year ? "selected" : ""}>${escapeHtml(year)}학년도</option>`,
+    ),
+  ].join("");
+}
+
 function renderSchoolRows(schools = [], access = null, schoolState = {}) {
   if (!schools.length) {
     return `
@@ -56,6 +75,7 @@ function renderSchoolRows(schools = [], access = null, schoolState = {}) {
         const isDeletingThisSchool = isDeleting && String(schoolState?.deletingSchoolId || "") === String(school.id || "");
         const isSettingsDisabled = !canManageSchool || isDeleting;
         const isDeleteDisabled = !canManageSchool || isProtectedSchool(school) || isDeleting;
+        const campusName = String(school.campusName || "").trim() || "캠퍼스 미설정";
         const deleteTitle = !canManageSchool
           ? "이 학교는 생성자 또는 슈퍼 관리자만 삭제할 수 있습니다."
           : isProtectedSchool(school)
@@ -72,7 +92,7 @@ function renderSchoolRows(schools = [], access = null, schoolState = {}) {
           <button class="school-list-main" data-action="open-school-workspace" data-school-code="${escapeHtml(school.code || school.id)}" data-school-id="${escapeHtml(school.id)}" type="button">
             <span class="school-list-heading">
               <span class="school-list-title">${escapeHtml(school.name)}</span>
-              <span class="school-list-code">${escapeHtml(school.code || "코드 없음")}</span>
+              <span class="school-list-campus">${escapeHtml(campusName)}</span>
             </span>
             <span class="school-list-meta" aria-label="학교 관리 현황">
               <span class="school-meta-badge">양식 ${formatCount(school.templateCount)}개</span>
@@ -163,6 +183,7 @@ function renderCreateSchoolModal(schools, access = null) {
   const isDeletionPasswordRequired = !hasAccess(access, "deleteSchoolsWithoutPassword");
   const schoolNameInputValue = normalizeSchoolNameInputValue(schools.modal.name);
   const academicYearInputValue = normalizeAcademicYearInputValue(schools.modal.academicYear);
+  const campusNameInputValue = normalizeCampusNameInputValue(schools.modal.campusName);
 
   return `
     <div class="modal-overlay school-modal-overlay">
@@ -175,7 +196,7 @@ function renderCreateSchoolModal(schools, access = null) {
           <button class="icon-button" data-action="close-school-modal" type="button" aria-label="닫기">×</button>
         </div>
         <form class="modal-form" data-school-form>
-          <div class="school-modal-field-row">
+          <div class="school-modal-field-grid">
             <label class="form-field school-modal-name-field">
               <span>학교명</span>
               <div class="school-suffixed-input">
@@ -188,52 +209,32 @@ function renderCreateSchoolModal(schools, access = null) {
               <input class="school-modal-code-input" data-school-modal-field="code" name="code" placeholder="예 : 0000" type="text" value="${escapeHtml(schools.modal.code)}" />
             </label>
             <label class="form-field">
-              <span>모집년도</span>
-              <div class="school-suffixed-input school-year-input">
-                <input
-                  class="school-academic-year-input"
-                  data-school-modal-field="academicYear"
-                  inputmode="numeric"
-                  max="2999"
-                  min="1900"
-                  name="academicYear"
-                  placeholder="2026"
-                  step="1"
-                  type="number"
-                  value="${escapeHtml(academicYearInputValue)}"
-                  ${canEditSettings ? "" : "disabled"}
-                />
-                <span class="school-input-suffix">학년도</span>
-                <span class="school-year-stepper" aria-label="모집년도 조정">
-                  <button
-                    class="school-year-step school-year-step-up"
-                    data-action="step-school-academic-year"
-                    data-school-year-step="1"
-                    type="button"
-                    aria-label="모집년도 증가"
-                    ${canEditSettings ? "" : "disabled"}
-                  ></button>
-                  <button
-                    class="school-year-step school-year-step-down"
-                    data-action="step-school-academic-year"
-                    data-school-year-step="-1"
-                    type="button"
-                    aria-label="모집년도 감소"
-                    ${canEditSettings ? "" : "disabled"}
-                  ></button>
-                </span>
+              <span>학년도</span>
+              <select
+                class="school-academic-year-select"
+                data-school-modal-field="academicYear"
+                name="academicYear"
+                ${canEditSettings ? "" : "disabled"}
+              >
+                ${renderAcademicYearOptions(academicYearInputValue)}
+              </select>
+            </label>
+            <label class="form-field school-modal-campus-name-field">
+              <span>캠퍼스명</span>
+              <div class="school-suffixed-input">
+                <input data-school-modal-field="campusName" name="campusName" type="text" value="${escapeHtml(campusNameInputValue)}" ${canEditSettings ? "" : "disabled"} />
+                <span class="school-input-suffix">캠퍼스</span>
               </div>
             </label>
-          </div>
-          <label class="form-field">
-            <span>설명</span>
-            <textarea class="school-modal-description" data-school-modal-field="description" name="description" rows="3">${escapeHtml(schools.modal.description)}</textarea>
-          </label>
-          ${
-            isEditMode
-              ? ""
-              : `
-                <div class="school-modal-deletion-password-row">
+            <label class="form-field">
+              <span>캠퍼스 코드</span>
+              <input class="school-modal-code-input" data-school-modal-field="campusCode" name="campusCode" placeholder="예 : 01" type="text" value="${escapeHtml(schools.modal.campusCode || "")}" ${canEditSettings ? "" : "disabled"} />
+            </label>
+            <span class="school-modal-grid-spacer" aria-hidden="true"></span>
+            ${
+              isEditMode
+                ? ""
+                : `
                   <label class="form-field school-modal-deletion-password-field">
                     <span>삭제 비밀번호</span>
                     <input
@@ -258,11 +259,10 @@ function renderCreateSchoolModal(schools, access = null) {
                       ${isDeletionPasswordRequired ? "required" : ""}
                     />
                   </label>
-                </div>
-              `
-          }
+                `
+            }
+          </div>
           <section class="school-modal-settings-section">
-            <h3>양식 공통 설정</h3>
             <div class="school-settings-form school-modal-settings-form">
               <div class="school-logo-preview">
                 ${
@@ -276,15 +276,15 @@ function renderCreateSchoolModal(schools, access = null) {
                   <span>학교 로고</span>
                   <input accept="image/png,image/jpeg,image/webp" data-school-modal-logo-file name="logo" type="file" ${canEditSettings ? "" : "disabled"} />
                 </label>
+                <button class="ghost-button school-modal-logo-clear-button" data-action="clear-school-modal-logo" type="button" ${canEditSettings ? "" : "disabled"}>로고 삭제</button>
               </div>
             </div>
           </section>
           <div class="modal-actions school-modal-actions">
             <div class="school-modal-actions-left">
-              <button class="ghost-button" data-action="clear-school-modal-logo" type="button" ${canEditSettings ? "" : "disabled"}>로고 삭제</button>
+              <button class="ghost-button" data-action="close-school-modal" type="button">취소</button>
             </div>
             <div class="school-modal-actions-right">
-              <button class="ghost-button" data-action="close-school-modal" type="button">취소</button>
               <button class="primary-button" type="submit" ${schools.modal.isSaving ? "disabled" : ""}>
                 ${schools.modal.isSaving ? "저장 중..." : isEditMode ? "저장" : "등록"}
               </button>
@@ -332,7 +332,7 @@ export function renderSchoolManagementView({ access, schools }, options = {}) {
       <form class="filter-bar" data-school-filter-form>
         <label class="filter-field school-search-field">
           <span>학교 검색</span>
-          <input name="keyword" placeholder="학교명, 코드, 설명" type="text" value="${escapeHtml(schools.filters.keyword)}" />
+          <input name="keyword" placeholder="학교명, 코드, 캠퍼스명" type="text" value="${escapeHtml(schools.filters.keyword)}" />
         </label>
         <div class="filter-actions">
           <button class="ghost-button" type="submit">검색</button>

@@ -13,6 +13,7 @@ const DOCUMENT_TOOLBAR_ACTION_SELECTOR = [
   "[data-action='toggle-document-table-insert-panel']",
   "[data-action='confirm-document-table-insert']",
   "[data-action='toggle-document-cell-split-panel']",
+  "[data-action='set-document-cell-split-axis']",
   "[data-action='step-document-cell-split-count']",
   "[data-action='confirm-document-cell-split']",
   "[data-action='apply-document-table-action']",

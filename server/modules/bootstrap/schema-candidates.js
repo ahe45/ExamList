@@ -20,22 +20,12 @@ async function ensureCandidateRecordColumns(
   });
   await ensureColumn(connection, {
     columnName: "admission_year",
-    definition: "admission_year VARCHAR(20) NOT NULL DEFAULT '' COMMENT '모집년도' AFTER designated_sort",
+    definition: "admission_year VARCHAR(20) NOT NULL DEFAULT '' COMMENT '학년도' AFTER designated_sort",
     tableName: "candidate_records",
   });
   await ensureColumn(connection, {
     columnName: "end_time",
     definition: "end_time VARCHAR(40) NOT NULL DEFAULT '' COMMENT '종료시간' AFTER time",
-    tableName: "candidate_records",
-  });
-  await ensureColumn(connection, {
-    columnName: "campus",
-    definition: "campus VARCHAR(120) NOT NULL DEFAULT '' COMMENT '캠퍼스명' AFTER track",
-    tableName: "candidate_records",
-  });
-  await ensureColumn(connection, {
-    columnName: "campus_code",
-    definition: "campus_code VARCHAR(120) NOT NULL DEFAULT '' COMMENT '캠퍼스 코드' AFTER campus",
     tableName: "candidate_records",
   });
   await ensureColumn(connection, {
@@ -113,11 +103,9 @@ async function ensureCandidateRecordColumns(
       ALTER TABLE \`candidate_records\`
       MODIFY COLUMN \`exam_date\` VARCHAR(120) NULL COMMENT '시험일',
       MODIFY COLUMN \`designated_sort\` VARCHAR(120) NOT NULL DEFAULT '' COMMENT '지정정렬',
-      MODIFY COLUMN \`admission_year\` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '모집년도',
+      MODIFY COLUMN \`admission_year\` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '학년도',
       MODIFY COLUMN \`time\` VARCHAR(40) NOT NULL DEFAULT '' COMMENT '시작시간',
       MODIFY COLUMN \`end_time\` VARCHAR(40) NOT NULL DEFAULT '' COMMENT '종료시간',
-      MODIFY COLUMN \`campus\` VARCHAR(120) NOT NULL DEFAULT '' COMMENT '캠퍼스명',
-      MODIFY COLUMN \`campus_code\` VARCHAR(120) NOT NULL DEFAULT '' COMMENT '캠퍼스 코드',
       MODIFY COLUMN \`admission_code\` VARCHAR(120) NOT NULL DEFAULT '' COMMENT '전형 코드',
       MODIFY COLUMN \`series\` VARCHAR(120) NOT NULL DEFAULT '' COMMENT '계열명',
       MODIFY COLUMN \`series_code\` VARCHAR(120) NOT NULL DEFAULT '' COMMENT '계열 코드',

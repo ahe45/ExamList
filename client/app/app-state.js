@@ -88,6 +88,8 @@ export const appState = {
     loading: false,
     modal: {
       academicYear: "",
+      campusCode: "",
+      campusName: "",
       code: "",
       deletionPassword: "",
       deletionPasswordConfirm: "",
@@ -202,6 +204,8 @@ export const appState = {
   },
   schoolSettings: {
     academicYear: "",
+    campusCode: "",
+    campusName: "",
     errorMessage: "",
     isDirty: false,
     isSaving: false,

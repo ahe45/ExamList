@@ -113,5 +113,5 @@ rg "creationMode|DEFAULT_TEMPLATE_NOT_FOUND|preserveLayoutSettings|clearSnapshot
 - `server/modules/pdf-generations/queue-options.js`, `queue-service.js`: PDF 큐는 기본 `memory`이며 `PDF_QUEUE_DRIVER=bullmq`와 `REDIS_URL` 설정 시 BullMQ/Redis를 사용한다.
 - `server/http/routes/accounts.js`, `server/modules/auth/workbook.js`: 계정 엑셀 업로드용 `GET /api/accounts/template.xlsx`, `POST /api/accounts/import` API가 있다.
 - `db/schema.sql`, `server/modules/bootstrap/schema-schools.js`: `schools.is_active`는 현재 schema에서 제거되었고, `created_account`가 학교 생성 계정 컬럼이다.
-- `server/http/routes/schools.js`, `server/modules/schools/service.js`: 학교 기본 정보 API는 모집년도와 로고를 직접 저장하지 않고, 해당 값은 `school-settings` API로 저장한다.
+- `server/http/routes/schools.js`, `server/modules/schools/service.js`: 학교 기본 정보 API는 학년도와 로고를 직접 저장하지 않고, 해당 값은 `school-settings` API로 저장한다.
 - `deploy/README.md`: 업데이트 절차를 `update-server.bat`의 실제 명령 순서와 맞췄다.

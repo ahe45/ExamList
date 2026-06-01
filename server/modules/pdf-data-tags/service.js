@@ -52,7 +52,7 @@ const candidateTagMetadata = Object.freeze({
   "candidate.admissionRoundName": Object.freeze({ label: "모집시기", type: "string", example: "수시" }),
   "candidate.admissionTypeCode": Object.freeze({ label: "전형코드", type: "string", example: "SU" }),
   "candidate.admissionTypeName": Object.freeze({ label: "전형명", type: "string", example: "학생부종합전형" }),
-  "candidate.admissionYear": Object.freeze({ label: "모집년도", type: "string", example: "2026학년도" }),
+  "candidate.admissionYear": Object.freeze({ label: "학년도", type: "string", example: "2026학년도" }),
   "candidate.birthDate": Object.freeze({ label: "생년월일", type: "date", example: "2007.03.15" }),
   "candidate.buildingCode": Object.freeze({ label: "고사건물코드", type: "string", example: "BLD01" }),
   "candidate.buildingName": Object.freeze({ label: "고사건물명", type: "string", example: "본관" }),
@@ -136,9 +136,8 @@ function freezeTag(tag) {
 
 function isVisibleDataTag(tag = {}) {
   const key = String(tag?.key || "").trim();
-  const label = String(tag?.label || "").trim();
 
-  return Boolean(key) && key !== "school.academicYear" && label !== "학년도";
+  return Boolean(key) && key !== "school.academicYear";
 }
 
 function createFallbackLabel(key) {
@@ -151,6 +150,8 @@ function createFallbackLabel(key) {
 function buildCandidateTags(fieldMap = {}, schoolSettings = {}) {
   const mapEntries = Object.entries(fieldMap && typeof fieldMap === "object" ? fieldMap : {});
   const schoolAdmissionYear = formatSchoolAcademicYearLabel(schoolSettings.academicYear);
+  const schoolCampusCode = String(schoolSettings.campusCode || "").trim();
+  const schoolCampusName = String(schoolSettings.campusName || "").trim();
   const orderedKeys = [
     ...candidateTagOrder.filter((key) => Object.prototype.hasOwnProperty.call(fieldMap, key)),
     ...mapEntries.map(([key]) => key).filter((key) => !candidateTagOrder.includes(key)),
@@ -162,7 +163,14 @@ function buildCandidateTags(fieldMap = {}, schoolSettings = {}) {
       const metadata = candidateTagMetadata[key] || {};
 
       return freezeTag({
-        example: key === "candidate.admissionYear" ? schoolAdmissionYear || metadata.example || "" : metadata.example || "",
+        example:
+          key === "candidate.admissionYear"
+            ? schoolAdmissionYear || metadata.example || ""
+            : key === "candidate.campusName"
+              ? schoolCampusName || metadata.example || ""
+              : key === "candidate.campusCode"
+                ? schoolCampusCode || metadata.example || ""
+                : metadata.example || "",
         key,
         label: metadata.label || createFallbackLabel(key),
         sourceColumn: fieldMap[key],

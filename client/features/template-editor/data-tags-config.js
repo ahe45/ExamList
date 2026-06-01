@@ -92,7 +92,7 @@ export const dataTagFallbackDefinitions = Object.freeze({
   "school.code": Object.freeze({ example: generatedObjectPreviewValues["school.code"], label: "학교코드", type: "string" }),
   "candidate.campusName": Object.freeze({ example: generatedObjectPreviewValues["candidate.campusName"], label: "캠퍼스명", type: "string" }),
   "candidate.campusCode": Object.freeze({ example: generatedObjectPreviewValues["candidate.campusCode"], label: "캠퍼스코드", type: "string" }),
-  "candidate.admissionYear": Object.freeze({ example: generatedObjectPreviewValues["candidate.admissionYear"], label: "모집년도", type: "string" }),
+  "candidate.admissionYear": Object.freeze({ example: generatedObjectPreviewValues["candidate.admissionYear"], label: "학년도", type: "string" }),
   "candidate.admissionRoundName": Object.freeze({ example: generatedObjectPreviewValues["candidate.admissionRoundName"], label: "모집시기", type: "string" }),
   "candidate.admissionTypeName": Object.freeze({ example: generatedObjectPreviewValues["candidate.admissionTypeName"], label: "전형명", type: "string" }),
   "candidate.admissionTypeCode": Object.freeze({ example: generatedObjectPreviewValues["candidate.admissionTypeCode"], label: "전형코드", type: "string" }),
@@ -164,7 +164,6 @@ export function getDataTagGroupForKey(key = "") {
 
 export function isVisibleTemplateTag(tag = {}) {
   const key = String(tag?.key || tag?.dataKey || tag?.token || "").trim();
-  const label = String(tag?.label || "").trim();
 
-  return Boolean(key) && !hiddenTemplateTagKeys.has(key) && label !== "학년도";
+  return Boolean(key) && !hiddenTemplateTagKeys.has(key);
 }

@@ -19,6 +19,9 @@ test("template create modal defaults to the default template option", () => {
 
   assert.match(html, /새 양식/);
   assert.match(html, /data-template-create-form/);
+  assert.match(html, /data-template-create-field="name"/);
+  assert.match(html, /data-template-create-field="description"/);
+  assert.match(html, /양식 제목/);
   assert.match(html, /value="default"\s+checked/);
   assert.match(html, /기본 템플릿/);
   assert.match(html, /빈 템플릿/);
@@ -86,4 +89,6 @@ test("template management buttons stay visible but disabled for read-only school
   assert.match(html, /data-action="create-template"[\s\S]*disabled/);
   assert.match(html, /data-action="duplicate-template"[\s\S]*disabled/);
   assert.match(html, /data-action="delete-template"[\s\S]*disabled/);
+  assert.match(html, /최종수정일시 : \d{4}년 \d{2}월 \d{2}일 \d{2}시 \d{2}분/);
+  assert.doesNotMatch(html, /최종수정일시 : \d{4}년 \d{2}월 \d{2}일 \d{2}시 \d{2}분 \d{2}초/);
 });

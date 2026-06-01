@@ -123,7 +123,13 @@
     }
 
     function undoTemplateEditorHistory() {
-      recordTemplateEditorHistorySnapshot();
+      const currentSnapshot = state.templateEditor.historyEntries[state.templateEditor.historyIndex] || null;
+
+      if (currentSnapshot?.html === state.templateEditor.draftHtml) {
+        currentSnapshot.selection = createTemplateEditorSelectionSnapshot();
+      } else {
+        recordTemplateEditorHistorySnapshot();
+      }
 
       if (state.templateEditor.historyIndex <= 0) {
         return;

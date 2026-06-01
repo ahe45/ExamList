@@ -73,7 +73,7 @@ const csvHeaderMap = Object.freeze({
   고사실명: "room",
   고사실코드: "roomCode",
   지정정렬: "designatedSort",
-  모집년도: "admissionYear",
+  학년도: "admissionYear",
   모집연도: "admissionYear",
   캠퍼스: "campus",
   캠퍼스명: "campus",

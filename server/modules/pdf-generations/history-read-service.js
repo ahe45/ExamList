@@ -4,7 +4,6 @@ const { mapBatchRow, mapGenerationDetailRow, mapGenerationRow } = require("./map
 const generationResultScopeCandidateColumns = Object.freeze({
   admission: "admission",
   building: "building",
-  campus: "campus",
   endTime: "end_time",
   examDate: "exam_date",
   group: "group_name",
@@ -20,7 +19,6 @@ const generationFilterCandidateColumns = Object.freeze({
   ...generationResultScopeCandidateColumns,
   admissionCode: "admission_code",
   buildingCode: "building_code",
-  campusCode: "campus_code",
   date: "exam_date",
   groupName: "group_name",
   majorCode: "major_code",

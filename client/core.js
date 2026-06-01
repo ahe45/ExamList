@@ -17,6 +17,7 @@ import { setupPdfGenerationActions } from "./features/pdf-generations/actions.js
 import { setupSchoolSettingsActions } from "./features/school-settings/actions.js";
 import { setupSchoolActions } from "./features/schools/actions.js";
 import { setupTemplateEditorActions } from "./features/template-editor/actions.js";
+import { attachTemplateEditorToolbarTooltips } from "./features/template-editor/toolbar-tooltip.js";
 import { setupTemplateActions } from "./features/templates/actions.js";
 
 const appConfig = window.ExamListAppConfig;
@@ -322,6 +323,7 @@ registerAppModalGuards({
 });
 modalCloseGuard.attach();
 attachGridCellTooltips();
+attachTemplateEditorToolbarTooltips();
 
 async function navigateTo(routeMatch) {
   const nextRoute = routeMatch || appConfig.getRouteMatch(window.location.pathname) || appConfig.getRouteMatch("/schools");

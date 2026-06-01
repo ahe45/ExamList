@@ -342,6 +342,34 @@ test("template editor runtime suppresses toolbar trigger selectionchange before 
   assert.equal(state.templateEditor.suppressToolbarSelectionChange, true);
 });
 
+test("template editor runtime treats cell split axis choice as a focus-preserving toolbar trigger", () => {
+  let splitAxisElement = null;
+  const { FakeElement, handlePointerDown, handlePointerDownCapture, selectionSaveCalls, state } =
+    createRuntimeEventHarness({
+      modalContains: (target) => target === splitAxisElement,
+    });
+  let didPreventDefault = false;
+
+  splitAxisElement = new FakeElement();
+  splitAxisElement.closest = (selector) =>
+    String(selector || "").includes("[data-template-cell-split-axis-option]") ? splitAxisElement : null;
+
+  const event = {
+    button: 0,
+    preventDefault: () => {
+      didPreventDefault = true;
+    },
+    target: splitAxisElement,
+  };
+
+  handlePointerDownCapture(event);
+  handlePointerDown(event);
+
+  assert.equal(selectionSaveCalls.length, 1);
+  assert.equal(state.templateEditor.suppressToolbarSelectionChange, true);
+  assert.equal(didPreventDefault, true);
+});
+
 test("template editor runtime preserves selection for border width dropdown options", () => {
   let borderWidthOptionElement = null;
   const { FakeElement, handlePointerDown, selectionSaveCalls } = createRuntimeEventHarness({

@@ -6,7 +6,7 @@ const { normalizeCandidateRecordInput, parseCandidateCsv } = require("./service"
 test("parseCandidateCsv maps Korean examinee headers", () => {
   const items = parseCandidateCsv(
     [
-      "지정정렬,모집년도,모집시기,캠퍼스명,전형명,계열명,모집단위명,전공명,고사건물명,고사실명,교시명,시작시간,종료시간,수험번호,가번호,전형코드,성명,생년월일,조,OPT1",
+      "지정정렬,학년도,모집시기,캠퍼스명,전형명,계열명,모집단위명,전공명,고사건물명,고사실명,교시명,시작시간,종료시간,수험번호,가번호,전형코드,성명,생년월일,조,OPT1",
       "1,2026,수시,서울캠퍼스,학생부종합,일반,간호학과,간호학,본관,101호,1교시,09:00,10:00,26010001,A001,A-1,홍길동,2007.03.15,A조,비고",
     ].join("\n"),
   );

@@ -129,7 +129,7 @@ const generatedObjectSourceLabelMap = Object.freeze({
   "candidate.applicationNo": "전형코드",
   "candidate.admissionTypeCode": "전형코드",
   "candidate.admissionTypeName": "전형명",
-  "candidate.admissionYear": "모집년도",
+  "candidate.admissionYear": "학년도",
   "candidate.birthDate": "생년월일",
   "candidate.buildingCode": "고사건물코드",
   "candidate.buildingName": "고사건물명",

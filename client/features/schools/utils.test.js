@@ -32,3 +32,16 @@ test("school modal helpers format academic year labels", async () => {
   assert.equal(formatAcademicYearForSave("2027학년도"), "2027학년도");
   assert.equal(formatAcademicYearForSave(""), "");
 });
+
+test("school modal helpers format campus names without duplicating suffix", async () => {
+  const {
+    formatCampusNameForSave,
+    normalizeCampusNameInputValue,
+  } = await importClientModule("utils.js");
+
+  assert.equal(normalizeCampusNameInputValue("서울캠퍼스"), "서울");
+  assert.equal(normalizeCampusNameInputValue(" 서울 "), "서울");
+  assert.equal(formatCampusNameForSave("서울"), "서울캠퍼스");
+  assert.equal(formatCampusNameForSave("서울캠퍼스"), "서울캠퍼스");
+  assert.equal(formatCampusNameForSave(""), "");
+});

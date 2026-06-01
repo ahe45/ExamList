@@ -46,6 +46,15 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.template-create-meta-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.template-create-meta-fields textarea {
+  resize: vertical;
+}
+
 .template-create-mode-option,
 .template-create-source-item {
   align-items: center;

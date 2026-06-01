@@ -100,6 +100,7 @@
       const colorApplyTrigger = target.closest("[data-editor-color-apply]");
       const cellSplitStepTrigger = target.closest("[data-template-cell-split-step]");
       const cellSplitToggleTrigger = target.closest("[data-template-cell-split-toggle]");
+      const cellSplitAxisTrigger = target.closest("[data-template-cell-split-axis-option]");
       const cellSplitConfirmTrigger = target.closest("[data-template-cell-split-confirm]");
       const commandTrigger = target.closest("[data-template-command]");
       const tableActionTrigger = target.closest("[data-template-table-action]");
@@ -239,8 +240,19 @@
       if (cellSplitToggleTrigger) {
         const nextOpen = toolbarElements.cellSplitPanel?.classList.contains("hidden") ?? true;
         setTemplateEditorCellSplitPanelVisibility(nextOpen);
-        toolbarElements.cellSplitCount?.focus();
-        toolbarElements.cellSplitCount?.select?.();
+        return;
+      }
+
+      if (cellSplitAxisTrigger) {
+        event.preventDefault?.();
+
+        const splitAxis = cellSplitAxisTrigger.dataset.templateCellSplitAxisOption === "row" ? "row" : "column";
+        const panelElement = cellSplitAxisTrigger.closest(".template-toolbar-cell-split-panel") || toolbarElements.cellSplitPanel;
+        const axisInput = panelElement?.querySelector?.(`input[type="radio"][value="${splitAxis}"]`);
+
+        if (axisInput) {
+          axisInput.checked = true;
+        }
         return;
       }
 

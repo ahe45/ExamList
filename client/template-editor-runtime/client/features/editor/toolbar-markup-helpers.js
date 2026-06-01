@@ -252,7 +252,11 @@
             <fieldset class="template-toolbar-subfield template-toolbar-subfield-wide template-toolbar-choice-field">
               <legend>편집</legend>
               <div class="template-toolbar-choice-group" role="radiogroup" aria-label="셀 분할 방향">
-                <label class="template-toolbar-choice-option" for="${escapeEditorToolbarAttribute(axisRowId)}">
+                <label
+                  class="template-toolbar-choice-option"
+                  for="${escapeEditorToolbarAttribute(axisRowId)}"
+                  data-template-cell-split-axis-option="row"
+                >
                   <input
                     class="sr-only"
                     id="${escapeEditorToolbarAttribute(axisRowId)}"
@@ -262,7 +266,11 @@
                   />
                   <span>행</span>
                 </label>
-                <label class="template-toolbar-choice-option" for="${escapeEditorToolbarAttribute(axisColumnId)}">
+                <label
+                  class="template-toolbar-choice-option"
+                  for="${escapeEditorToolbarAttribute(axisColumnId)}"
+                  data-template-cell-split-axis-option="column"
+                >
                   <input
                     class="sr-only"
                     id="${escapeEditorToolbarAttribute(axisColumnId)}"

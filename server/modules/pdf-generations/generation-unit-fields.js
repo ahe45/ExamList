@@ -6,8 +6,6 @@ const generationUnitFieldLabels = Object.freeze({
   admissionCode: "전형코드",
   building: "고사건물명",
   buildingCode: "고사건물코드",
-  campus: "캠퍼스명",
-  campusCode: "캠퍼스코드",
   date: "날짜",
   endTime: "종료시간",
   examDate: "날짜",

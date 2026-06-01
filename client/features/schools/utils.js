@@ -30,6 +30,16 @@ export function formatAcademicYearForSave(value) {
   return normalizedAcademicYear ? `${normalizedAcademicYear}학년도` : "";
 }
 
+export function normalizeCampusNameInputValue(value) {
+  return String(value || "").trim().replace(/\s*캠퍼스\s*$/u, "").trim();
+}
+
+export function formatCampusNameForSave(value) {
+  const normalizedCampusName = normalizeCampusNameInputValue(value);
+
+  return normalizedCampusName ? `${normalizedCampusName}캠퍼스` : "";
+}
+
 export function normalizeSchoolNameInputValue(value) {
   return String(value || "").trim().replace(/\s*대학교\s*$/u, "").trim();
 }

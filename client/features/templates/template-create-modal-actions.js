@@ -150,6 +150,16 @@ export function createTemplateCreateModalActions({
     await onStateChange();
   }
 
+  function updateTemplateCreateField(field = "", value = "") {
+    if (!["description", "name"].includes(field)) {
+      return;
+    }
+
+    const modal = getTemplateCreateModal();
+
+    modal[field] = String(value ?? "");
+  }
+
   async function createTemplateFromModal() {
     if (!hasPermission("manageTemplates")) {
       return;
@@ -168,6 +178,9 @@ export function createTemplateCreateModalActions({
       return;
     }
 
+    const templateName = String(modal.name || "").trim();
+    const templateDescription = String(modal.description || "").trim();
+
     modal.isSubmitting = true;
     modal.errorMessage = "";
     await onStateChange();
@@ -175,6 +188,8 @@ export function createTemplateCreateModalActions({
     try {
       if (modal.mode === "copy") {
         await postJson(`/api/pdf-templates/${encodeURIComponent(modal.selectedTemplateId)}/duplicate`, {
+          description: templateDescription,
+          name: templateName,
           sourceSchoolId: modal.selectedSchoolId,
           targetSchoolId: getCurrentSchoolId(),
         });
@@ -182,9 +197,9 @@ export function createTemplateCreateModalActions({
       } else {
         await postJson("/api/pdf-templates", {
           creationMode: modal.mode === "blank" ? "blank" : "default",
-          description: "",
+          description: templateDescription,
           generationUnit: "roomCode",
-          name: "새 양식",
+          name: templateName || "새 양식",
           orientation: "portrait",
           paperPreset: "A4",
           schoolId: getCurrentSchoolId(),
@@ -212,5 +227,6 @@ export function createTemplateCreateModalActions({
     selectTemplateCreateSchool,
     selectTemplateCreateSourceTemplate,
     updateTemplateCreateMode,
+    updateTemplateCreateField,
   };
 }

@@ -19,6 +19,8 @@ function createSchoolsState(overrides = {}) {
     loading: false,
     modal: {
       academicYear: "",
+      campusCode: "",
+      campusName: "",
       code: "",
       deletionPassword: "",
       deletionPasswordConfirm: "",
@@ -63,7 +65,7 @@ test("school management shows account management only to super administrators", 
   assert.match(adminHtml, /새 학교/);
 });
 
-test("school create modal renders deletion password fields under description", () => {
+test("school create modal renders settings grid without description", () => {
   const html = renderSchoolManagementView({
     access: {
       permissions: {
@@ -75,19 +77,25 @@ test("school create modal renders deletion password fields under description", (
     schools: createSchoolsState({
       modal: {
         ...createSchoolsState().modal,
-        description: "설명",
+        campusCode: "SEOUL",
+        campusName: "서울캠퍼스",
         isOpen: true,
       },
     }),
   });
 
-  assert.ok(html.indexOf("학교 설명") === -1);
-  assert.ok(html.indexOf("삭제 비밀번호") > html.indexOf("설명"));
+  assert.doesNotMatch(html, /data-school-modal-field="description"/);
+  assert.doesNotMatch(html, /양식 공통 설정/);
+  assert.match(html, /data-school-modal-field="campusName"/);
+  assert.match(html, /data-school-modal-field="campusCode"/);
+  assert.match(html, /<span class="school-input-suffix">캠퍼스<\/span>/);
+  assert.match(html, /data-school-modal-field="academicYear"[\s\S]*<option value=""/);
   assert.match(html, /data-school-modal-field="deletionPassword"/);
   assert.match(html, /data-school-modal-field="deletionPasswordConfirm"/);
   assert.match(html, /name="deletionPassword"[\s\S]*required/);
   assert.match(html, /name="deletionPasswordConfirm"[\s\S]*required/);
-  assert.match(html, /school-modal-deletion-password-row/);
+  assert.match(html, /school-modal-field-grid/);
+  assert.match(html, /school-modal-logo-clear-button/);
 });
 
 test("school management disables delete action for Korea University", () => {
@@ -129,6 +137,7 @@ test("school management disables row edit actions when school access is read-onl
       items: [
         {
           canManage: false,
+          campusName: "관악캠퍼스",
           candidateCount: 0,
           code: "SEOUL",
           id: "school-seoul",
@@ -143,6 +152,7 @@ test("school management disables row edit actions when school access is read-onl
   assert.match(html, /school-settings-button[\s\S]*disabled/);
   assert.match(html, /school-delete-button[\s\S]*disabled/);
   assert.match(html, /서울대학교/);
+  assert.match(html, /school-list-campus">관악캠퍼스/);
 });
 
 test("school management renders creator id badge after updated time", () => {
@@ -169,6 +179,8 @@ test("school management renders creator id badge after updated time", () => {
   });
 
   assert.match(html, /최종수정일시 :/);
+  assert.match(html, /최종수정일시 : \d{4}년 \d{2}월 \d{2}일 \d{2}시 \d{2}분/);
+  assert.doesNotMatch(html, /최종수정일시 : \d{4}년 \d{2}월 \d{2}일 \d{2}시 \d{2}분 \d{2}초/);
   assert.match(html, /school-created-account-badge">owner-admin/);
   assert.doesNotMatch(html, /생성자 ID :/);
   assert.ok(html.indexOf("최종수정일시 :") < html.indexOf("owner-admin"));

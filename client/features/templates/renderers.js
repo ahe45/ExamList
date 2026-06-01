@@ -13,7 +13,7 @@ function formatUpdatedAtLabel(value = "") {
 
   const pad = (number) => String(number).padStart(2, "0");
 
-  return `${date.getFullYear()}년 ${pad(date.getMonth() + 1)}월 ${pad(date.getDate())}일 ${pad(date.getHours())}시 ${pad(date.getMinutes())}분 ${pad(date.getSeconds())}초`;
+  return `${date.getFullYear()}년 ${pad(date.getMonth() + 1)}월 ${pad(date.getDate())}일 ${pad(date.getHours())}시 ${pad(date.getMinutes())}분`;
 }
 
 const templateActionIcons = Object.freeze({

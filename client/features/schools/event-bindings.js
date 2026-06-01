@@ -1,5 +1,10 @@
 import { showToast } from "../../app/toast.js";
-import { normalizeAcademicYearInputValue, normalizeSchoolNameInputValue, readSchoolLogoFileAsDataUrl } from "./utils.js";
+import {
+  normalizeAcademicYearInputValue,
+  normalizeCampusNameInputValue,
+  normalizeSchoolNameInputValue,
+  readSchoolLogoFileAsDataUrl,
+} from "./utils.js";
 
 const appConfig = window.ExamListAppConfig;
 
@@ -15,6 +20,24 @@ export function bindSchoolActionEvents({
   resetSchoolModal,
   updateSchool,
 }) {
+  function updateSchoolModalField(schoolModalField) {
+    const fieldName = schoolModalField.dataset.schoolModalField || "";
+    const nextValue =
+      fieldName === "academicYear"
+        ? normalizeAcademicYearInputValue(schoolModalField.value)
+        : fieldName === "campusName"
+          ? normalizeCampusNameInputValue(schoolModalField.value)
+          : fieldName === "name"
+            ? normalizeSchoolNameInputValue(schoolModalField.value)
+            : schoolModalField.value;
+
+    if (schoolModalField.value !== nextValue) {
+      schoolModalField.value = nextValue;
+    }
+
+    appState.schools.modal[fieldName] = nextValue;
+  }
+
   document.addEventListener("beforeinput", (event) => {
     const schoolModalField = event.target.closest("[data-school-modal-field]");
 
@@ -66,22 +89,16 @@ export function bindSchoolActionEvents({
       return;
     }
 
-    const fieldName = schoolModalField.dataset.schoolModalField || "";
-    const nextValue =
-      fieldName === "academicYear"
-        ? normalizeAcademicYearInputValue(schoolModalField.value)
-        : fieldName === "name"
-          ? normalizeSchoolNameInputValue(schoolModalField.value)
-          : schoolModalField.value;
-
-    if (schoolModalField.value !== nextValue) {
-      schoolModalField.value = nextValue;
-    }
-
-    appState.schools.modal[fieldName] = nextValue;
+    updateSchoolModalField(schoolModalField);
   });
 
   document.addEventListener("change", async (event) => {
+    const schoolModalField = event.target.closest("[data-school-modal-field]");
+
+    if (schoolModalField) {
+      updateSchoolModalField(schoolModalField);
+    }
+
     const logoInput = event.target.closest("[data-school-modal-logo-file]");
 
     if (!logoInput) {
@@ -148,24 +165,6 @@ export function bindSchoolActionEvents({
     if (actionTarget.dataset.action === "close-school-modal") {
       resetSchoolModal();
       await onStateChange();
-      return;
-    }
-
-    if (actionTarget.dataset.action === "step-school-academic-year") {
-      const currentValue = normalizeAcademicYearInputValue(appState.schools.modal.academicYear);
-      const fallbackYear = new Date().getFullYear();
-      const baseYear = Number(currentValue) || fallbackYear;
-      const step = Number(actionTarget.dataset.schoolYearStep) || 0;
-      const nextYear = Math.min(2999, Math.max(1900, baseYear + step));
-      const yearInput = actionTarget.closest(".school-year-input")?.querySelector('[data-school-modal-field="academicYear"]');
-
-      appState.schools.modal.academicYear = String(nextYear);
-
-      if (yearInput instanceof HTMLInputElement) {
-        yearInput.value = String(nextYear);
-        yearInput.focus();
-      }
-
       return;
     }
 

@@ -11,45 +11,53 @@ async function assertSchoolSettingsModal(context) {
         const modal = document.querySelector('.school-modal-card');
         const nameInput = document.querySelector('[data-school-modal-field="name"]');
         const codeInput = document.querySelector('[data-school-modal-field="code"]');
-        const academicYearInput = document.querySelector('[data-school-modal-field="academicYear"]');
-        const descriptionInput = document.querySelector('[data-school-modal-field="description"]');
+        const academicYearSelect = document.querySelector('[data-school-modal-field="academicYear"]');
+        const campusNameInput = document.querySelector('[data-school-modal-field="campusName"]');
+        const campusCodeInput = document.querySelector('[data-school-modal-field="campusCode"]');
         const logoDeleteButton = document.querySelector('[data-action="clear-school-modal-logo"]');
         const modalActions = document.querySelector('.school-modal-actions');
+        const cancelButton = modalActions?.querySelector('[data-action="close-school-modal"]');
         const submitButton = modal?.querySelector('button[type="submit"]');
         const academicYearAfterCode = Boolean(
           codeInput &&
-            academicYearInput &&
-            codeInput.compareDocumentPosition(academicYearInput) & Node.DOCUMENT_POSITION_FOLLOWING
+            academicYearSelect &&
+            codeInput.compareDocumentPosition(academicYearSelect) & Node.DOCUMENT_POSITION_FOLLOWING
         );
-        const descriptionAfterAcademicYear = Boolean(
-          academicYearInput &&
-            descriptionInput &&
-            academicYearInput.compareDocumentPosition(descriptionInput) & Node.DOCUMENT_POSITION_FOLLOWING
+        const campusAfterAcademicYear = Boolean(
+          academicYearSelect &&
+            campusNameInput &&
+            campusCodeInput &&
+            academicYearSelect.compareDocumentPosition(campusNameInput) & Node.DOCUMENT_POSITION_FOLLOWING &&
+            campusNameInput.compareDocumentPosition(campusCodeInput) & Node.DOCUMENT_POSITION_FOLLOWING
         );
+        const yearOptions = [...(academicYearSelect?.options || [])].map((option) => Number(option.value)).filter(Boolean);
+        const currentYear = new Date().getFullYear();
 
         return Boolean(
           modal &&
-            modal.textContent.includes('양식 공통 설정') &&
+            !modal.textContent.includes('양식 공통 설정') &&
             nameInput &&
             codeInput &&
-            academicYearInput &&
-            descriptionInput &&
-            academicYearInput.type === 'number' &&
-            academicYearInput.step === '1' &&
-            !academicYearInput.disabled &&
+            academicYearSelect?.tagName === 'SELECT' &&
+            campusNameInput &&
+            campusCodeInput &&
+            !document.querySelector('[data-school-modal-field="description"]') &&
+            !academicYearSelect.disabled &&
             academicYearAfterCode &&
-            descriptionAfterAcademicYear &&
-            getComputedStyle(descriptionInput).resize === 'none' &&
+            campusAfterAcademicYear &&
+            yearOptions[0] === currentYear - 5 &&
+            yearOptions[yearOptions.length - 1] === currentYear + 5 &&
             !modal.textContent.includes('불러오는 중...') &&
             document.querySelector('[data-school-modal-logo-file]') &&
             logoDeleteButton &&
-            modalActions?.contains(logoDeleteButton) &&
+            !modalActions?.contains(logoDeleteButton) &&
+            modalActions?.querySelector('.school-modal-actions-left')?.contains(cancelButton) &&
             submitButton?.textContent.trim() === '저장' &&
             !document.querySelector('[data-school-settings-form]')
         );
       })()
     `,
-    "학교 목록 설정 모달 양식 공통 설정 이관",
+    "학교 목록 설정 모달 캠퍼스 설정 구성",
   );
   await waitForCondition(
     client,
@@ -82,16 +90,20 @@ async function assertSchoolSettingsModal(context) {
           return false;
         }
 
-        const nextAcademicYear = academicYearInput.value === '2027' ? '2028' : '2027';
+        const nextAcademicYear = [...academicYearInput.options].map((option) => option.value).find((value) => value && value !== academicYearInput.value);
+
+        if (!nextAcademicYear) {
+          return false;
+        }
 
         academicYearInput.focus();
         academicYearInput.value = nextAcademicYear;
-        academicYearInput.dispatchEvent(new InputEvent('input', { bubbles: true, data: nextAcademicYear.slice(-1), inputType: 'insertText' }));
+        academicYearInput.dispatchEvent(new Event('change', { bubbles: true }));
 
         return document.activeElement === academicYearInput && academicYearInput.value === nextAcademicYear;
       })()
     `,
-    "학교 설정 모달 모집년도 숫자 입력 유지",
+    "학교 설정 모달 학년도 선택 유지",
   );
   await evaluate(client, "document.querySelector('[data-action=\"close-school-modal\"]')?.click()");
   await waitForCondition(

@@ -47,7 +47,7 @@ test("data deletion modal option request excludes each field from its own filter
   };
 
   const actions = createDataDeletionSummaryActions({
-    buildDataDeletionFilterPayload: () => ({ campus: "글로벌캠퍼스" }),
+    buildDataDeletionFilterPayload: () => ({ track: "수시" }),
     getCurrentSchoolId: () => "school-1",
     getDataDeletionModalState: () => modal,
     onStateChange: async () => {},
@@ -60,8 +60,8 @@ test("data deletion modal option request excludes each field from its own filter
   const optionParams = getUrlParams(optionUrl);
   const summaryParams = getUrlParams(summaryUrl);
 
-  assert.equal(optionParams.get("campus"), "글로벌캠퍼스");
+  assert.equal(optionParams.get("track"), "수시");
   assert.equal(optionParams.get("excludeSelfFilters"), "1");
-  assert.equal(summaryParams.get("campus"), "글로벌캠퍼스");
+  assert.equal(summaryParams.get("track"), "수시");
   assert.equal(summaryParams.get("excludeSelfFilters"), null);
 });

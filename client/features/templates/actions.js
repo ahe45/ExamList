@@ -318,6 +318,14 @@ export function setupTemplateActions({ appState, dom, navigateToPath, onStateCha
         event.target.dataset.templateField || "",
         event.target.value,
       );
+      return;
+    }
+
+    if (event.target?.matches?.("[data-template-create-field]")) {
+      templateCreateModalActions.updateTemplateCreateField(
+        event.target.dataset.templateCreateField || "",
+        event.target.value,
+      );
     }
   });
 

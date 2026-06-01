@@ -30,19 +30,6 @@
   gap: 16px;
 }
 
-.school-academic-year-input {
-  -moz-appearance: auto;
-  -webkit-appearance: auto;
-  appearance: auto;
-}
-
-.school-academic-year-input::-webkit-inner-spin-button,
-.school-academic-year-input::-webkit-outer-spin-button {
-  -webkit-appearance: auto;
-  margin-left: 6px;
-  opacity: 1;
-}
-
 .school-settings-actions {
   display: flex;
   gap: 10px;

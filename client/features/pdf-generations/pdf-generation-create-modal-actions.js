@@ -277,7 +277,7 @@ export function createPdfGenerationCreateModalActions({
     }
 
     if (!isCreateModalConditionComplete()) {
-      modal.errorMessage = "캠퍼스, 모집시기, 전형까지 선택한 뒤 미리보기를 진행하세요.";
+      modal.errorMessage = "모집시기, 전형까지 선택한 뒤 미리보기를 진행하세요.";
       showToast(modal.errorMessage, { tone: "warning" });
       await onStateChange();
       return;
@@ -433,7 +433,7 @@ export function createPdfGenerationCreateModalActions({
     }
 
     if (!isCreateModalConditionComplete()) {
-      modal.errorMessage = "캠퍼스, 모집시기, 전형까지 선택한 뒤 PDF를 생성하세요.";
+      modal.errorMessage = "모집시기, 전형까지 선택한 뒤 PDF를 생성하세요.";
       showToast(modal.errorMessage, { tone: "warning" });
       await onStateChange();
       return;

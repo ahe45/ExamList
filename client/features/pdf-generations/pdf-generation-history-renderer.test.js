@@ -115,7 +115,7 @@ test("PDF generation grid does not render filter strip when filters are active",
       items: [
         {
           id: "first",
-          resultScope: { campus: "서울" },
+          resultScope: { track: "수시" },
           status: "completed",
         },
       ],
@@ -123,7 +123,7 @@ test("PDF generation grid does not render filter strip when filters are active",
       rerunningGenerationIds: [],
       selectedGenerationIds: [],
       table: {
-        filters: { campus: ["서울"] },
+        filters: { track: ["수시"] },
         page: 1,
         pageSize: 25,
         sortRules: [],

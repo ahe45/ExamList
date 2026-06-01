@@ -66,11 +66,11 @@ test("findCandidateFilterOptions can exclude the requested field from its own fi
 
   await repository.findCandidateFilterOptions(
     {
-      campus: "글로벌캠퍼스",
+      admission: "논술",
       schoolId: "school-1",
       track: "수시",
     },
-    "campus,track",
+    "admission,track",
     { excludeSelfFilters: true },
   );
 
@@ -80,7 +80,7 @@ test("findCandidateFilterOptions can exclude the requested field from its own fi
     track: "수시",
   });
   assert.deepEqual(calls[1].params, {
-    campus: "글로벌캠퍼스",
+    admission: "논술",
     schoolId: "school-1",
   });
 });

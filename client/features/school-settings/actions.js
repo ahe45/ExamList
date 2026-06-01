@@ -13,6 +13,8 @@ export function setupSchoolSettingsActions({ appState, onStateChange }) {
       const settings = await getJson(`/api/school-settings${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ""}`);
 
       appState.schoolSettings.academicYear = String(settings.academicYear || "");
+      appState.schoolSettings.campusCode = String(settings.campusCode || "");
+      appState.schoolSettings.campusName = String(settings.campusName || "");
       appState.schoolSettings.schoolId = String(settings.schoolId || schoolId);
       appState.schoolSettings.schoolName = String(settings.schoolName || "");
       appState.schoolSettings.logoDataUrl = String(settings.logoDataUrl || "");

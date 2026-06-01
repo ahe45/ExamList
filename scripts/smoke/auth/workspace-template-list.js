@@ -2,7 +2,7 @@ const { evaluate, waitForCondition } = require("../../smoke-browser-cdp");
 
 async function openFirstSchoolWorkspace(context) {
   const { client } = context;
-  const schoolCode = await evaluate(
+  const schoolJson = await evaluate(
     client,
     `
       (() => {
@@ -12,17 +12,23 @@ async function openFirstSchoolWorkspace(context) {
           return "";
         }
 
+        const item = button.closest('.school-list-item') || button;
         const code = button.dataset.schoolCode || "";
+        const campusName = item.querySelector('.school-list-campus')?.textContent.trim() || "";
+
         button.click();
-        return code;
+        return JSON.stringify({ campusName, code });
       })()
     `,
   );
+  const school = schoolJson ? JSON.parse(schoolJson) : null;
+  const schoolCode = String(school?.code || "");
 
   if (!schoolCode) {
     throw new Error("학교 선택 테스트에 사용할 학교 코드가 없습니다.");
   }
 
+  context.schoolCampusName = String(school?.campusName || "");
   context.schoolCode = schoolCode;
   return schoolCode;
 }
@@ -105,7 +111,7 @@ async function assertTemplateCardActions(context) {
         return Boolean(
           card &&
             updatedAt &&
-            /^최종수정일시 : \\d{4}년 \\d{2}월 \\d{2}일 \\d{2}시 \\d{2}분 \\d{2}초$/.test(updatedAt.textContent.trim()) &&
+            /^최종수정일시 : \\d{4}년 \\d{2}월 \\d{2}일 \\d{2}시 \\d{2}분$/.test(updatedAt.textContent.trim()) &&
             !card.querySelector('.template-card-meta') &&
             !card.querySelector('.template-card-date')
         );

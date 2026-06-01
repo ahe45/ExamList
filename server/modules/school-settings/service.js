@@ -14,14 +14,14 @@ function normalizeAcademicYearValue(value, createHttpError = null) {
   }
 
   if (rawValue.length > 20 && typeof createHttpError === "function") {
-    throw createHttpError(400, "모집년도는 20자 이하로 입력하세요.", "INVALID_ACADEMIC_YEAR");
+    throw createHttpError(400, "학년도는 20자 이하로 입력하세요.", "INVALID_ACADEMIC_YEAR");
   }
 
   const numericValue = rawValue.replace(/\s*학년도\s*$/u, "").trim();
 
   if (!/^\d{4}$/.test(numericValue)) {
     if (typeof createHttpError === "function") {
-      throw createHttpError(400, "모집년도는 숫자 4자리로 입력하세요.", "INVALID_ACADEMIC_YEAR");
+      throw createHttpError(400, "학년도는 숫자 4자리로 입력하세요.", "INVALID_ACADEMIC_YEAR");
     }
 
     return "";
@@ -30,9 +30,21 @@ function normalizeAcademicYearValue(value, createHttpError = null) {
   return numericValue;
 }
 
+function normalizeSchoolSettingText(value, fieldName, maximumLength, errorCode, createHttpError) {
+  const normalizedValue = String(value ?? "").trim();
+
+  if (normalizedValue.length > maximumLength) {
+    throw createHttpError(400, `${fieldName} 값은 ${maximumLength}자 이하로 입력하세요.`, errorCode);
+  }
+
+  return normalizedValue;
+}
+
 function normalizeSchoolSettingsPayload(payload = {}, createHttpError) {
   const schoolName = String(payload.schoolName ?? "").trim();
   const academicYear = normalizeAcademicYearValue(payload.academicYear, createHttpError);
+  const campusCode = normalizeSchoolSettingText(payload.campusCode, "캠퍼스코드", 120, "INVALID_CAMPUS_CODE", createHttpError);
+  const campusName = normalizeSchoolSettingText(payload.campusName, "캠퍼스명", 120, "INVALID_CAMPUS_NAME", createHttpError);
   const logoDataUrl = String(payload.logoDataUrl ?? "").trim();
 
   if (schoolName.length > 200) {
@@ -49,6 +61,8 @@ function normalizeSchoolSettingsPayload(payload = {}, createHttpError) {
 
   return {
     academicYear,
+    campusCode,
+    campusName,
     logoDataUrl,
     schoolName,
   };
@@ -57,6 +71,8 @@ function normalizeSchoolSettingsPayload(payload = {}, createHttpError) {
 function mapSettingsRow(row = {}) {
   return {
     academicYear: normalizeAcademicYearValue(row.academicYear),
+    campusCode: String(row.campusCode || ""),
+    campusName: String(row.campusName || ""),
     logoDataUrl: String(row.logoDataUrl || ""),
     schoolCode: String(row.schoolCode || row.code || ""),
     schoolId: String(row.schoolId || ""),
@@ -89,6 +105,8 @@ function createSchoolSettingsService({ createHttpError, getDefaultSchoolId = nul
         SELECT
           school_id AS schoolId,
           school_name AS schoolName,
+          campus_name AS campusName,
+          campus_code AS campusCode,
           academic_year AS academicYear,
           logo_data_url AS logoDataUrl,
           updated_at AS updatedAt
@@ -127,16 +145,28 @@ function createSchoolSettingsService({ createHttpError, getDefaultSchoolId = nul
           id,
           school_id,
           school_name,
+          campus_name,
+          campus_code,
           academic_year,
           logo_data_url
-        ) VALUES (?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
           school_name = VALUES(school_name),
+          campus_name = VALUES(campus_name),
+          campus_code = VALUES(campus_code),
           academic_year = VALUES(academic_year),
           logo_data_url = VALUES(logo_data_url),
           updated_at = CURRENT_TIMESTAMP
       `,
-      [buildSchoolSettingsId(resolvedSchoolId), resolvedSchoolId, settings.schoolName, settings.academicYear, settings.logoDataUrl],
+      [
+        buildSchoolSettingsId(resolvedSchoolId),
+        resolvedSchoolId,
+        settings.schoolName,
+        settings.campusName,
+        settings.campusCode,
+        settings.academicYear,
+        settings.logoDataUrl,
+      ],
     );
 
     if (settings.schoolName) {

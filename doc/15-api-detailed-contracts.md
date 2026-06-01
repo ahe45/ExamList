@@ -290,7 +290,7 @@ Body:
 
 비고:
 
-- 모집년도와 로고는 학교 기본 정보 API가 아니라 `PATCH /api/school-settings`로 저장한다.
+- 학년도와 로고는 학교 기본 정보 API가 아니라 `PATCH /api/school-settings`로 저장한다.
 
 ### `DELETE /api/schools/:schoolId`
 
@@ -346,7 +346,7 @@ Body:
 |---|---|---|
 | `schoolId` | yes | 설정 저장 학교 id. |
 | `schoolName` | no | 양식에 표시할 학교명. |
-| `academicYear` | no | 모집년도. |
+| `academicYear` | no | 학년도. |
 | `logoDataUrl` | no | 로고 data URL. 빈 값이면 제거. |
 
 응답:

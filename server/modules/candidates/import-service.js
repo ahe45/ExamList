@@ -106,8 +106,6 @@ function createCandidateImportService({
             time,
             end_time AS endTime,
             track,
-            campus,
-            campus_code AS campusCode,
             admission,
             admission_code AS admissionCode,
             series,

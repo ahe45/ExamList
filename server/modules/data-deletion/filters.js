@@ -13,8 +13,6 @@ const dataDeletionFilterColumns = Object.freeze({
   admissionCode: "admission_code",
   building: "building",
   buildingCode: "building_code",
-  campus: "campus",
-  campusCode: "campus_code",
   examDate: "exam_date",
   group: "group_name",
   major: "major",
@@ -33,7 +31,6 @@ const dataDeletionFilterColumns = Object.freeze({
 });
 
 const dataDeletionResultFilterKeys = Object.freeze([
-  "campus",
   "track",
   "admission",
   "series",

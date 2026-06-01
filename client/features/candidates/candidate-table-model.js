@@ -1,8 +1,6 @@
 export const candidateGridColumns = Object.freeze([
   Object.freeze({ key: "designatedSort", label: "지정정렬", filterable: true, sortable: true }),
   Object.freeze({ key: "track", label: "모집시기", filterable: true, sortable: true }),
-  Object.freeze({ key: "campus", label: "캠퍼스명", filterable: true, sortable: true }),
-  Object.freeze({ key: "campusCode", label: "캠퍼스코드", filterable: true, sortable: true }),
   Object.freeze({ key: "admission", label: "전형명", filterable: true, sortable: true }),
   Object.freeze({ key: "admissionCode", label: "전형코드", filterable: true, sortable: true }),
   Object.freeze({ key: "series", label: "계열명", filterable: true, sortable: true }),
@@ -35,8 +33,6 @@ export const candidateGridColumns = Object.freeze([
 export const candidateDetailFields = Object.freeze([
   Object.freeze({ key: "designatedSort", label: "지정정렬", type: "text" }),
   Object.freeze({ key: "track", label: "모집시기", type: "text" }),
-  Object.freeze({ key: "campus", label: "캠퍼스명", type: "text" }),
-  Object.freeze({ key: "campusCode", label: "캠퍼스코드", type: "text" }),
   Object.freeze({ key: "admission", label: "전형명", type: "text" }),
   Object.freeze({ key: "admissionCode", label: "전형코드", type: "text" }),
   Object.freeze({ key: "series", label: "계열명", type: "text" }),

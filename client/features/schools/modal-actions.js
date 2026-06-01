@@ -2,8 +2,10 @@ import { getJson, patchJson, postJson } from "../../app/api-client.js";
 import { showToast } from "../../app/toast.js";
 import {
   formatAcademicYearForSave,
+  formatCampusNameForSave,
   formatSchoolNameForSave,
   normalizeAcademicYearInputValue,
+  normalizeCampusNameInputValue,
   normalizeSchoolNameInputValue,
 } from "./utils.js";
 
@@ -19,10 +21,11 @@ export function createSchoolModalActions({
   function getSchoolModalSnapshot(modal = appState.schools.modal) {
     return {
       academicYear: normalizeAcademicYearInputValue(modal.academicYear),
+      campusCode: String(modal.campusCode || "").trim(),
+      campusName: normalizeCampusNameInputValue(modal.campusName),
       code: String(modal.code || "").trim(),
       deletionPassword: String(modal.deletionPassword || "").trim(),
       deletionPasswordConfirm: String(modal.deletionPasswordConfirm || "").trim(),
-      description: String(modal.description || "").trim(),
       logoDataUrl: String(modal.logoDataUrl || "").trim(),
       name: normalizeSchoolNameInputValue(modal.name),
     };
@@ -31,6 +34,8 @@ export function createSchoolModalActions({
   function resetSchoolModal(overrides = {}) {
     const nextModal = {
       academicYear: "",
+      campusCode: "",
+      campusName: "",
       code: "",
       deletionPassword: "",
       deletionPasswordConfirm: "",
@@ -67,6 +72,8 @@ export function createSchoolModalActions({
     }
 
     appState.schoolSettings.academicYear = String(settings.academicYear || "");
+    appState.schoolSettings.campusCode = String(settings.campusCode || "");
+    appState.schoolSettings.campusName = String(settings.campusName || "");
     appState.schoolSettings.logoDataUrl = String(settings.logoDataUrl || "");
     appState.schoolSettings.schoolId = String(settings.schoolId || schoolId || "");
     appState.schoolSettings.schoolName = String(settings.schoolName || "");
@@ -84,6 +91,8 @@ export function createSchoolModalActions({
 
     const settings = await patchJson("/api/school-settings", {
       academicYear: formatAcademicYearForSave(appState.schools.modal.academicYear),
+      campusCode: String(appState.schools.modal.campusCode || "").trim(),
+      campusName: formatCampusNameForSave(appState.schools.modal.campusName),
       logoDataUrl: appState.schools.modal.logoDataUrl,
       schoolId: normalizedSchoolId,
       schoolName: formatSchoolNameForSave(appState.schools.modal.name),
@@ -118,7 +127,7 @@ export function createSchoolModalActions({
         code: appState.schools.modal.code,
         deletionPassword,
         deletionPasswordConfirm,
-        description: appState.schools.modal.description,
+        description: "",
         name: schoolName,
       });
       const settings = await saveSchoolModalSettings(school?.id || "");
@@ -162,7 +171,7 @@ export function createSchoolModalActions({
       const schoolName = formatSchoolNameForSave(appState.schools.modal.name);
       const school = await patchJson(`/api/schools/${encodeURIComponent(schoolId)}`, {
         code: appState.schools.modal.code,
-        description: appState.schools.modal.description,
+        description: "",
         name: schoolName,
       });
       const settings = await saveSchoolModalSettings(school.id || schoolId);
@@ -209,6 +218,8 @@ export function createSchoolModalActions({
     const modalSchoolId = String(school.id || schoolId || "");
 
     resetSchoolModal({
+      campusCode: String(school.campusCode || ""),
+      campusName: normalizeCampusNameInputValue(school.campusName || ""),
       code: String(school.code || ""),
       description: String(school.description || ""),
       isOpen: true,
@@ -227,6 +238,8 @@ export function createSchoolModalActions({
       }
 
       appState.schools.modal.academicYear = String(settings.academicYear || "");
+      appState.schools.modal.campusCode = String(settings.campusCode || "");
+      appState.schools.modal.campusName = normalizeCampusNameInputValue(settings.campusName || "");
       appState.schools.modal.logoDataUrl = String(settings.logoDataUrl || "");
       appState.schools.modal.name = normalizeSchoolNameInputValue(settings.schoolName || school.name || "");
       appState.schools.modal.initialSnapshot = getSchoolModalSnapshot(appState.schools.modal);

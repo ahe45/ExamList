@@ -304,7 +304,7 @@ test("createSchool stores the creating account id", async () => {
 
   assert.ok(insertSchoolQuery);
   assert.match(insertSchoolQuery.sql, /created_account/);
-  assert.equal(insertSchoolQuery.params[5], "owner-admin");
+  assert.equal(insertSchoolQuery.params[4], "owner-admin");
   assert.equal(school.createdAccount, "owner-admin");
 });
 
