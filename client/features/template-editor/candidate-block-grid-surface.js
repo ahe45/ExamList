@@ -5,6 +5,7 @@ import {
   isCandidateBlockGridContentPage,
 } from "./candidate-block-grid-config.js";
 import {
+  clampCandidateBlockGridPositionToDocument,
   createCandidateBlockGridElement,
   ensurePageCandidateBlockGridConfig,
 } from "./candidate-block-grid-renderer.js";
@@ -132,6 +133,8 @@ export function renderCandidateBlockGridOnSurface(surfaceElement, selectedPage) 
     }
     return;
   }
+
+  clampCandidateBlockGridPositionToDocument(config, documentElement);
 
   if (existingGridElement) {
     const nextGridElement = createCandidateBlockGridElement(config);

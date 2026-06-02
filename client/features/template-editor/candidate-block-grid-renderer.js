@@ -3,6 +3,7 @@ import { ensureDocumentElement } from "./template-document-normalizer.js";
 import {
   candidateBlockGridDefaults,
   candidateBlockGridMinimumRowHeight,
+  cssPixelToPointValue,
   getCandidateBlockGridTotal,
   normalizeCandidateBlockGridConfig,
   normalizeCandidateBlockTemplateHtml,
@@ -72,7 +73,48 @@ function getCandidateBlockGridTemplateRows(config = {}) {
   return tracks.join(" ");
 }
 
-function getCandidateBlockGridRenderedHeightPt(config = {}) {
+function roundCandidateBlockGridPoint(value) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return 0;
+  }
+
+  return Math.round(Math.max(0, numericValue) * 100) / 100;
+}
+
+function getDocumentContentSizePt(documentElement) {
+  if (!documentElement || typeof documentElement !== "object") {
+    return null;
+  }
+
+  const rect = typeof documentElement.getBoundingClientRect === "function"
+    ? documentElement.getBoundingClientRect()
+    : null;
+  const widthPx = Number(documentElement.clientWidth) || Number(rect?.width) || 0;
+  const heightPx = Number(documentElement.clientHeight) || Number(rect?.height) || 0;
+
+  if (!(widthPx > 0) || !(heightPx > 0)) {
+    return null;
+  }
+
+  return {
+    heightPt: cssPixelToPointValue(heightPx),
+    widthPt: cssPixelToPointValue(widthPx),
+  };
+}
+
+function getCandidateBlockGridRenderedWidthPt(config = {}, documentElement = null) {
+  const configuredWidthPt = Number(config.widthPt) || 0;
+
+  if (configuredWidthPt > 0) {
+    return configuredWidthPt;
+  }
+
+  return getDocumentContentSizePt(documentElement)?.widthPt || 0;
+}
+
+export function getCandidateBlockGridRenderedHeightPt(config = {}) {
   const dataHeightPt = Number(config.heightPt) || 0;
 
   if (!(dataHeightPt > 0)) {
@@ -80,6 +122,44 @@ function getCandidateBlockGridRenderedHeightPt(config = {}) {
   }
 
   return dataHeightPt + (isColumnNameRowEnabled(config) ? Number(config.columnNameRow?.heightPt) || 0 : 0);
+}
+
+export function clampCandidateBlockGridPositionToDocument(config = {}, documentElement = null) {
+  const documentSizePt = getDocumentContentSizePt(documentElement);
+
+  if (!documentSizePt) {
+    return false;
+  }
+
+  const renderedWidthPt = getCandidateBlockGridRenderedWidthPt(config, documentElement);
+  const renderedHeightPt = getCandidateBlockGridRenderedHeightPt(config);
+  let didChange = false;
+
+  if (renderedWidthPt > 0) {
+    const maxXPt = Math.max(0, documentSizePt.widthPt - renderedWidthPt);
+    const nextXPt = roundCandidateBlockGridPoint(
+      Math.min(maxXPt, Math.max(0, Number(config.xPt) || 0)),
+    );
+
+    if (nextXPt !== roundCandidateBlockGridPoint(config.xPt)) {
+      config.xPt = nextXPt;
+      didChange = true;
+    }
+  }
+
+  if (renderedHeightPt > 0) {
+    const maxYPt = Math.max(0, documentSizePt.heightPt - renderedHeightPt);
+    const nextYPt = roundCandidateBlockGridPoint(
+      Math.min(maxYPt, Math.max(0, Number(config.yPt) || 0)),
+    );
+
+    if (nextYPt !== roundCandidateBlockGridPoint(config.yPt)) {
+      config.yPt = nextYPt;
+      didChange = true;
+    }
+  }
+
+  return didChange;
 }
 
 function getCandidateBlockGridClassName(config = {}) {
@@ -205,6 +285,8 @@ function renderCandidateBlockGridDocument(container, page) {
     removeCandidateBlockGridElements(documentElement);
     return documentElement;
   }
+
+  clampCandidateBlockGridPositionToDocument(config, documentElement);
 
   const existingGridElements = getCandidateBlockGridElements(documentElement);
   const existingGridElement = existingGridElements[0] || null;

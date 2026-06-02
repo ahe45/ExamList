@@ -100,9 +100,13 @@ function isTemplateEditorInnerOuterBorderPoint(event, element, hitSlop = templat
 
 function isTemplateEditorSelectableCandidateBlockTable(tableElement) {
   const blockElement = tableElement?.closest?.("[data-candidate-block-instance]") || null;
+  const gridElement = tableElement?.closest?.("[data-candidate-block-grid], .examlist-candidate-block-grid") || null;
 
-  return !(blockElement instanceof HTMLElement) ||
-    (isCandidateBlockTemplateSource(blockElement) && blockElement.classList.contains("is-candidate-block-focus-editor"));
+  if (!(blockElement instanceof HTMLElement)) {
+    return !(gridElement instanceof HTMLElement);
+  }
+
+  return isCandidateBlockTemplateSource(blockElement) && blockElement.classList.contains("is-candidate-block-focus-editor");
 }
 
 function isTemplateEditorCandidateBlockFocusTable(tableElement) {

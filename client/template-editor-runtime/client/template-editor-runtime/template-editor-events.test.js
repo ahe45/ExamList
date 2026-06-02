@@ -316,6 +316,127 @@ test("template editor runtime captures toolbar selection control before browser 
   assert.equal(state.templateEditor.suppressToolbarSelectionChange, true);
 });
 
+test("template editor runtime lets candidate block column height input receive focus", () => {
+  let heightInputElement = null;
+  let didHandleTableObjectPointer = false;
+  const modal = createFakeEventTarget({ contains: (target) => target === heightInputElement });
+  const ownerDocument = createFakeEventTarget();
+  const ownerWindow = createFakeEventTarget();
+  const toolbarHost = createFakeEventTarget();
+  const state = { templateEditor: {} };
+  const noop = () => {};
+  const selectionSaveCalls = [];
+
+  ownerWindow.Element = class FakeElement {};
+  ownerWindow.getSelection = () => ({
+    anchorNode: null,
+    rangeCount: 0,
+  });
+  ownerWindow.setTimeout = (callback) => {
+    callback();
+    return 0;
+  };
+
+  const controller = createTemplateEditorEventController({
+    applyTemplateEditorFontFamily: noop,
+    applyTemplateEditorFontSize: noop,
+    applyToolbarColorTrigger: noop,
+    applyToolbarHexColorInput: noop,
+    clearTemplateEditorImageSelection: noop,
+    clearTemplateEditorTableHoverState: noop,
+    clearTemplateEditorTableObjectHoverState: noop,
+    clearTemplateEditorTableObjectSelection: noop,
+    clearTemplateEditorTableSelection: noop,
+    getTemplateEditorImageTarget: () => null,
+    getTemplateEditorModal: () => modal,
+    getTemplateEditorSurface: () => ({ contains: () => true, dataset: {}, matches: () => false }),
+    handleClick: noop,
+    handleKeydown: noop,
+    handleTemplateEditorTableObjectPointerDown: () => {
+      didHandleTableObjectPointer = true;
+      return true;
+    },
+    handleTemplateEditorTablePointerDown: () => false,
+    handleTemplatePageSettingChange: () => false,
+    handleTemplateTableAction: noop,
+    insertTemplateImage: noop,
+    ownerDocument,
+    ownerWindow,
+    saveTemplateEditorSelection: () => {
+      selectionSaveCalls.push(true);
+    },
+    selectTemplateEditorImage: noop,
+    shell: {
+      surfaceElement: createFakeEventTarget(),
+      toolbarHost,
+    },
+    startTemplateEditorImageMoveSession: noop,
+    state,
+    syncTemplateEditorContent: noop,
+    toolbar: {
+      closeAllEditorToolbarBorderSelectMenus: noop,
+      closeAllEditorToolbarColorPanels: noop,
+      closeAllEditorToolbarFontSizeMenus: noop,
+      closeAllEditorToolbarTableInsertPanels: noop,
+      syncEditorToolbarFontSizeMenuSelection: noop,
+    },
+    toolbarElements: {
+      fontFamily: {},
+      fontSize: {},
+      imageInput: {},
+    },
+    toolbarIds: {
+      borderColor: "borderColor",
+      borderStyle: "borderStyle",
+      borderTarget: "borderTarget",
+      borderWidth: "borderWidth",
+      cellPaddingBottom: "cellPaddingBottom",
+      cellPaddingLeft: "cellPaddingLeft",
+      cellPaddingRight: "cellPaddingRight",
+      cellPaddingTop: "cellPaddingTop",
+      cellShading: "cellShading",
+      cellSplitPanel: "cellSplitPanel",
+      fontFamily: "fontFamily",
+      fontSize: "fontSize",
+      tableColumns: "tableColumns",
+      tableRows: "tableRows",
+      textColor: "textColor",
+      textShading: "textShading",
+    },
+    redoTemplateEditorHistory: noop,
+    undoTemplateEditorHistory: noop,
+    updateTemplateEditorActiveCell: noop,
+    updateTemplateEditorFormattingControls: noop,
+    updateTemplateEditorImageSelectionOverlay: noop,
+    updateTemplateEditorTableHoverState: noop,
+    updateTemplateEditorTableObjectHoverState: noop,
+    updateTemplateEditorTableObjectOverlay: noop,
+    updateTemplateTableControls: noop,
+  });
+
+  controller.bindEvents();
+  heightInputElement = new ownerWindow.Element();
+  heightInputElement.closest = (selector) =>
+    String(selector || "").includes("[data-candidate-block-column-name-row-height-px]")
+      ? heightInputElement
+      : null;
+
+  modal.getListeners("pointerdown")[0]({
+    button: 0,
+    preventDefault: () => {},
+    target: heightInputElement,
+  });
+  modal.getListener("pointerdown")({
+    button: 0,
+    preventDefault: () => {},
+    target: heightInputElement,
+  });
+
+  assert.equal(selectionSaveCalls.length, 1);
+  assert.equal(state.templateEditor.suppressToolbarSelectionChange, true);
+  assert.equal(didHandleTableObjectPointer, false);
+});
+
 test("template editor runtime suppresses toolbar trigger selectionchange before click", () => {
   let splitToggleElement = null;
   const { FakeElement, handlePointerDown, handlePointerDownCapture, selectionSaveCalls, state } =

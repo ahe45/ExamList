@@ -4,6 +4,8 @@ export const candidateBlockGridMinimumRowHeight = 20;
 export const candidateBlockGridMinimumHeight = candidateBlockGridMinimumRowHeight;
 export const candidateBlockGridMinimumWidth = 120;
 export const candidateBlockGridColumnNameRowDefaultHeightPt = 20;
+export const candidateBlockGridColumnNameRowMinimumHeightPt = 4;
+export const candidateBlockGridColumnNameRowMaximumHeightPt = 240;
 const cssPixelsPerPoint = 96 / 72;
 export const candidateBlockGridDefaults = Object.freeze({
   blockTemplateHtml: "<p><br></p>",
@@ -130,6 +132,35 @@ export function cssPixelToPointValue(value) {
   return Math.max(0, Math.round((numericValue / cssPixelsPerPoint) * 100) / 100);
 }
 
+export function normalizeCandidateBlockColumnNameRowHeightPt(value, fallback = candidateBlockGridColumnNameRowDefaultHeightPt) {
+  return clampPointValue(
+    value,
+    fallback,
+    candidateBlockGridColumnNameRowMinimumHeightPt,
+    candidateBlockGridColumnNameRowMaximumHeightPt,
+  );
+}
+
+export function normalizeCandidateBlockColumnNameRowHeightPx(value, fallback = pointValueToCssPixel(candidateBlockGridColumnNameRowDefaultHeightPt)) {
+  const numericValue = Number(value);
+  const fallbackValue = Number(fallback);
+  const minimumPx = Math.ceil(pointValueToCssPixel(candidateBlockGridColumnNameRowMinimumHeightPt));
+  const maximumPx = Math.floor(pointValueToCssPixel(candidateBlockGridColumnNameRowMaximumHeightPt));
+  const roundedValue = Number.isFinite(numericValue)
+    ? Math.round(numericValue)
+    : Math.round(Number.isFinite(fallbackValue) ? fallbackValue : pointValueToCssPixel(candidateBlockGridColumnNameRowDefaultHeightPt));
+
+  return Math.min(maximumPx, Math.max(minimumPx, roundedValue));
+}
+
+export function cssPixelToCandidateBlockColumnNameRowHeightPt(value, fallback = candidateBlockGridColumnNameRowDefaultHeightPt) {
+  const fallbackPt = normalizeCandidateBlockColumnNameRowHeightPt(fallback);
+  const fallbackPx = pointValueToCssPixel(fallbackPt);
+  const normalizedPx = normalizeCandidateBlockColumnNameRowHeightPx(value, fallbackPx);
+
+  return normalizeCandidateBlockColumnNameRowHeightPt(cssPixelToPointValue(normalizedPx), fallbackPt);
+}
+
 export function normalizeCandidateBlockGridSortKey(value) {
   const rawValue = String(value || "").trim();
   const aliasedValue = candidateBlockGridSortKeyAliases[rawValue] || rawValue;
@@ -170,11 +201,9 @@ function normalizeCandidateBlockColumnNameRowSettings(value) {
 
   return {
     ...normalizedBase,
-    heightPt: clampPointValue(
+    heightPt: normalizeCandidateBlockColumnNameRowHeightPt(
       source.heightPt ?? source.height,
       candidateBlockGridDefaults.columnNameRow.heightPt,
-      4,
-      240,
     ),
   };
 }

@@ -78,12 +78,14 @@
 
     function isTemplateEditorSelectableTableObjectElement(tableElement) {
       const candidateBlockElement = tableElement?.closest?.("[data-candidate-block-instance]") || null;
+      const candidateBlockGridElement = tableElement?.closest?.("[data-candidate-block-grid], .examlist-candidate-block-grid") || null;
 
-      return !candidateBlockElement ||
-        (
-          isTemplateEditorCandidateBlockSourceElement(candidateBlockElement) &&
-          candidateBlockElement.classList.contains("is-candidate-block-focus-editor")
-        );
+      if (!(candidateBlockElement instanceof Element)) {
+        return !(candidateBlockGridElement instanceof Element);
+      }
+
+      return isTemplateEditorCandidateBlockSourceElement(candidateBlockElement) &&
+        candidateBlockElement.classList.contains("is-candidate-block-focus-editor");
     }
 
     function isTemplateEditorCandidateBlockFocusTableElement(tableElement) {

@@ -9,6 +9,9 @@ import {
 import {
   candidateBlockFocusTableObjectOuterHitSlop,
   candidateBlockGridColumnNameRowDefaultHeightPt,
+  cssPixelToCandidateBlockColumnNameRowHeightPt,
+  normalizeCandidateBlockColumnNameRowHeightPt,
+  normalizeCandidateBlockColumnNameRowHeightPx,
   normalizeCandidateBlockTemplateHtml,
   pointValueToCssPixel,
 } from "./candidate-block-grid-config.js";
@@ -39,6 +42,8 @@ const candidateBlockFocusVariables = Object.freeze([
   "--examlist-candidate-block-focus-backdrop-height",
   "--examlist-candidate-block-focus-editor-width",
   "--examlist-candidate-block-focus-editor-height",
+  "--examlist-candidate-block-focus-data-preview-height",
+  "--examlist-candidate-block-focus-column-row-height",
   "--examlist-candidate-block-focus-editor-scale",
   "--examlist-candidate-block-focus-editor-visual-width",
   "--examlist-candidate-block-focus-editor-visual-height",
@@ -226,14 +231,31 @@ function getCandidateBlockFocusLayer(ownerDocument = document, hostElement = nul
       <button class="examlist-candidate-block-focus-tab" data-candidate-block-focus-tab="${MODAL_TAB_EMPTY_BLOCK}" type="button" role="tab" aria-selected="false">빈 값</button>
       <button class="examlist-candidate-block-focus-tab" data-candidate-block-focus-tab="${MODAL_TAB_COLUMN_NAME}" type="button" role="tab" aria-selected="false">컬럼명</button>
     </div>
-    <label class="examlist-candidate-block-focus-switch is-hidden" data-candidate-block-feature-switch-wrap="${MODAL_TAB_EMPTY_BLOCK}">
-      <span>빈 값 표시 사용</span>
-      <input data-candidate-block-feature-switch="${MODAL_TAB_EMPTY_BLOCK}" type="checkbox" />
-    </label>
-    <label class="examlist-candidate-block-focus-switch is-hidden" data-candidate-block-feature-switch-wrap="${MODAL_TAB_COLUMN_NAME}">
-      <span>컬럼명 row 사용</span>
-      <input data-candidate-block-feature-switch="${MODAL_TAB_COLUMN_NAME}" type="checkbox" />
-    </label>
+    <div class="examlist-candidate-block-focus-switch is-hidden" data-candidate-block-feature-switch-wrap="${MODAL_TAB_EMPTY_BLOCK}">
+      <label class="examlist-candidate-block-focus-toggle">
+        <span>빈 값 표시 사용</span>
+        <input data-candidate-block-feature-switch="${MODAL_TAB_EMPTY_BLOCK}" type="checkbox" />
+      </label>
+    </div>
+    <div class="examlist-candidate-block-focus-switch is-hidden" data-candidate-block-feature-switch-wrap="${MODAL_TAB_COLUMN_NAME}">
+      <label class="examlist-candidate-block-focus-toggle">
+        <span>컬럼명 row 사용</span>
+        <input data-candidate-block-feature-switch="${MODAL_TAB_COLUMN_NAME}" type="checkbox" />
+      </label>
+      <label class="examlist-candidate-block-column-name-height-control">
+        <span>행 높이(px)</span>
+        <input
+          data-candidate-block-column-name-row-height-px
+          type="number"
+          inputmode="numeric"
+          autocomplete="off"
+          min="${normalizeCandidateBlockColumnNameRowHeightPx(-10000)}"
+          max="${normalizeCandidateBlockColumnNameRowHeightPx(10000)}"
+          step="1"
+          aria-label="컬럼명 row 높이"
+        />
+      </label>
+    </div>
     <div class="examlist-candidate-block-modal-editor-viewport" data-candidate-block-focus-viewport>
       <div
         class="examlist-candidate-block examlist-candidate-block-modal-editor-surface is-candidate-block-template-source is-candidate-block-focus-editor"
@@ -326,9 +348,9 @@ function getStateCandidateBlockGridConfig(state = candidateBlockFocusState) {
     : {};
   config.columnNameRow.enabled = config.columnNameRow.enabled === true || String(config.columnNameRow.enabled || "").trim() === "true";
   config.columnNameRow.templateHtml = normalizeCandidateBlockTemplateHtml(config.columnNameRow.templateHtml);
-  config.columnNameRow.heightPt = Math.min(
-    240,
-    Math.max(4, Number(config.columnNameRow.heightPt) || candidateBlockGridColumnNameRowDefaultHeightPt),
+  config.columnNameRow.heightPt = normalizeCandidateBlockColumnNameRowHeightPt(
+    config.columnNameRow.heightPt,
+    candidateBlockGridColumnNameRowDefaultHeightPt,
   );
 
   return config;
@@ -355,7 +377,9 @@ function isModalTabFeatureEnabled(state = candidateBlockFocusState, tabId = stat
 function getColumnNameRowLogicalHeight(state = candidateBlockFocusState) {
   const config = getStateCandidateBlockGridConfig(state);
 
-  return Math.max(1, Math.round(pointValueToCssPixel(config.columnNameRow?.heightPt || candidateBlockGridColumnNameRowDefaultHeightPt)));
+  return normalizeCandidateBlockColumnNameRowHeightPx(
+    pointValueToCssPixel(config.columnNameRow?.heightPt || candidateBlockGridColumnNameRowDefaultHeightPt),
+  );
 }
 
 function getActiveModalLogicalSize(state = candidateBlockFocusState) {
@@ -417,6 +441,64 @@ function setSurfaceEditableState(surfaceElement, enabled) {
   surfaceElement.toggleAttribute("aria-readonly", !enabled);
 }
 
+function getColumnNameRowHeightInput(layerElement) {
+  const inputElement = layerElement?.querySelector?.("[data-candidate-block-column-name-row-height-px]");
+
+  return inputElement instanceof HTMLInputElement ? inputElement : null;
+}
+
+function syncColumnNameRowHeightControl(state = candidateBlockFocusState) {
+  const inputElement = getColumnNameRowHeightInput(state?.layerElement);
+
+  if (!(inputElement instanceof HTMLInputElement)) {
+    return;
+  }
+
+  const config = getStateCandidateBlockGridConfig(state);
+  const isEnabled = Boolean(config.columnNameRow?.enabled);
+
+  inputElement.value = String(getColumnNameRowLogicalHeight(state));
+  inputElement.disabled = !isEnabled;
+  inputElement.closest?.(".examlist-candidate-block-column-name-height-control")?.classList.toggle("is-disabled", !isEnabled);
+}
+
+function applyColumnNameRowHeightInput(inputElement, state = candidateBlockFocusState) {
+  if (!(inputElement instanceof HTMLInputElement) || !state) {
+    return false;
+  }
+
+  const config = getStateCandidateBlockGridConfig(state);
+
+  if (!config.columnNameRow?.enabled) {
+    syncColumnNameRowHeightControl(state);
+    return false;
+  }
+
+  const currentHeightPt = normalizeCandidateBlockColumnNameRowHeightPt(
+    config.columnNameRow?.heightPt,
+    candidateBlockGridColumnNameRowDefaultHeightPt,
+  );
+  const currentHeightPx = pointValueToCssPixel(currentHeightPt);
+  const displayedCurrentHeightPx = normalizeCandidateBlockColumnNameRowHeightPx(currentHeightPx);
+  const nextHeightPx = normalizeCandidateBlockColumnNameRowHeightPx(inputElement.value, currentHeightPx);
+  const nextHeightPt = cssPixelToCandidateBlockColumnNameRowHeightPt(nextHeightPx, currentHeightPt);
+  const didChange = nextHeightPx !== displayedCurrentHeightPx;
+
+  inputElement.value = String(nextHeightPx);
+
+  if (!didChange) {
+    return false;
+  }
+
+  config.columnNameRow.heightPt = nextHeightPt;
+  state.needsGridRerender = true;
+  syncColumnNameRowHeightControl(state);
+  applyCandidateBlockFocusLayout(state);
+  validateActiveCandidateBlockModalContent({ inputType: "insertText", restoreCaret: false });
+  state.onDirty?.();
+  return true;
+}
+
 function syncModalTabsUi(state = candidateBlockFocusState) {
   const layerElement = state?.layerElement;
 
@@ -449,6 +531,8 @@ function syncModalTabsUi(state = candidateBlockFocusState) {
   if (columnSwitch instanceof HTMLInputElement) {
     columnSwitch.checked = Boolean(config.columnNameRow?.enabled);
   }
+
+  syncColumnNameRowHeightControl(state);
 
   Object.entries(state.modalSurfaceElements || {}).forEach(([tabId, surfaceElement]) => {
     const isActive = tabId === state.activeTab;
@@ -1200,6 +1284,15 @@ function handleLayerPointerDown(event) {
 }
 
 function handleLayerChange(event) {
+  const heightInputElement = event.target instanceof HTMLInputElement
+    ? event.target.closest("[data-candidate-block-column-name-row-height-px]")
+    : null;
+
+  if (heightInputElement instanceof HTMLInputElement) {
+    applyColumnNameRowHeightInput(heightInputElement);
+    return;
+  }
+
   const inputElement = event.target instanceof HTMLInputElement
     ? event.target.closest("[data-candidate-block-feature-switch]")
     : null;
@@ -1239,6 +1332,19 @@ function handleLayerChange(event) {
       }
     });
   }
+}
+
+function handleLayerKeyDown(event) {
+  const heightInputElement = event.target instanceof HTMLInputElement
+    ? event.target.closest("[data-candidate-block-column-name-row-height-px]")
+    : null;
+
+  if (!(heightInputElement instanceof HTMLInputElement) || event.key !== "Enter") {
+    return;
+  }
+
+  event.preventDefault();
+  applyColumnNameRowHeightInput(heightInputElement);
 }
 
 function isEventTargetInsideActiveModal(event) {
@@ -1597,6 +1703,7 @@ export function openCandidateBlockFocusEditor({
   backdropElement.addEventListener("pointerdown", handleBackdropPointerDown);
   layerElement.addEventListener("pointerdown", handleLayerPointerDown);
   layerElement.addEventListener("change", handleLayerChange);
+  layerElement.addEventListener("keydown", handleLayerKeyDown);
   ownerWindow.addEventListener("beforeinput", handleModalWindowBeforeInput, modalCapturedEventOptions);
   ownerWindow.addEventListener("compositionstart", handleModalWindowCompositionStart, modalCapturedEventOptions);
   ownerWindow.addEventListener("compositionend", handleModalWindowCompositionEnd, modalCapturedEventOptions);
@@ -1675,6 +1782,7 @@ export function closeCandidateBlockFocusEditor() {
   state.backdropElement?.removeEventListener?.("pointerdown", handleBackdropPointerDown);
   state.layerElement?.removeEventListener?.("pointerdown", handleLayerPointerDown);
   state.layerElement?.removeEventListener?.("change", handleLayerChange);
+  state.layerElement?.removeEventListener?.("keydown", handleLayerKeyDown);
   state.ownerWindow?.removeEventListener?.("resize", handleWindowLayoutChange);
   state.ownerWindow?.removeEventListener?.("scroll", handleWindowLayoutChange, true);
   state.surfaceElement?.classList?.remove("is-candidate-block-focus-active");
