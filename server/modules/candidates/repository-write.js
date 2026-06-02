@@ -1,7 +1,14 @@
 const crypto = require("crypto");
 
+function createCandidateRecordSourceId(row = {}) {
+  const examineeNo = String(row.examineeNo || "").trim();
+  const periodCode = String(row.periodCode || "").trim();
+
+  return `${examineeNo}|${periodCode}`;
+}
+
 function createCandidateRecordId({ row = {}, schoolId, sourceType }) {
-  const sourceId = row.examineeNo;
+  const sourceId = createCandidateRecordSourceId(row);
   return `candidate-${crypto
     .createHash("sha256")
     .update(`${schoolId}:${sourceType}:${sourceId}`, "utf8")
@@ -12,11 +19,13 @@ function createCandidateRecordId({ row = {}, schoolId, sourceType }) {
 function createCandidateWriteRepository({ query, resolveSchoolId }) {
   async function updateCandidateRowById(candidateId, row = {}, options = {}) {
     const schoolId = String(options.schoolId || "").trim();
+    const sourceId = createCandidateRecordSourceId(row);
 
     await query(
       `
         UPDATE candidate_records
         SET
+          source_id = ?,
           designated_sort = ?,
           admission_year = ?,
           exam_date = ?,
@@ -52,6 +61,7 @@ function createCandidateWriteRepository({ query, resolveSchoolId }) {
         ${schoolId ? "AND school_id = ?" : ""}
       `,
       [
+        sourceId,
         row.designatedSort,
         row.admissionYear,
         row.date,
@@ -90,7 +100,7 @@ function createCandidateWriteRepository({ query, resolveSchoolId }) {
 
   async function insertCandidateWorkbookRow(row = {}, sourceType = "xlsx", options = {}) {
     const schoolId = await resolveSchoolId(options.schoolId);
-    const sourceId = row.examineeNo;
+    const sourceId = createCandidateRecordSourceId(row);
     const id = createCandidateRecordId({ row, schoolId, sourceType });
 
     await query(
@@ -213,5 +223,6 @@ function createCandidateWriteRepository({ query, resolveSchoolId }) {
 
 module.exports = {
   createCandidateRecordId,
+  createCandidateRecordSourceId,
   createCandidateWriteRepository,
 };

@@ -94,6 +94,8 @@
       const borderSelectOptionTrigger = target.closest("[data-editor-border-select-option]");
       const borderWidthToggleTrigger = target.closest("[data-editor-border-width-toggle]");
       const borderWidthOptionTrigger = target.closest("[data-editor-border-width-option]");
+      const cellPaddingToggleTrigger = target.closest("[data-editor-cell-padding-toggle]");
+      const cellPaddingOptionTrigger = target.closest("[data-editor-cell-padding-option]");
       const colorToggleTrigger = target.closest("[data-editor-color-toggle]");
       const colorDirectTrigger = target.closest("[data-editor-color-direct]");
       const colorPresetTrigger = target.closest("[data-editor-color-preset]");
@@ -203,6 +205,27 @@
         }
 
         toolbar.setEditorToolbarBorderWidthMenuVisibility?.(inputId, false);
+        return;
+      }
+
+      if (cellPaddingToggleTrigger) {
+        const inputId = cellPaddingToggleTrigger.dataset.editorCellPaddingToggle || "";
+        const { menuElement } = toolbar.getEditorToolbarCellPaddingComboElements?.(inputId) || {};
+
+        toolbar.setEditorToolbarCellPaddingMenuVisibility?.(inputId, menuElement?.classList.contains("hidden") ?? true);
+        return;
+      }
+
+      if (cellPaddingOptionTrigger) {
+        const comboMenu = cellPaddingOptionTrigger.closest(".template-toolbar-combo-menu");
+        const inputId = comboMenu?.dataset.editorCellPaddingMenuFor || "";
+        const value = cellPaddingOptionTrigger.dataset.editorCellPaddingOption || "";
+
+        if (inputId && value !== "") {
+          toolbar.applyEditorToolbarCellPaddingOption?.(inputId, value);
+        }
+
+        toolbar.setEditorToolbarCellPaddingMenuVisibility?.(inputId, false);
         return;
       }
 

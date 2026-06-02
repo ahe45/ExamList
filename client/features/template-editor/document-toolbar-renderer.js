@@ -56,13 +56,13 @@ export function renderDocumentToolbar(access) {
               <input class="template-toolbar-font-size-input" id="templateEditorFontSize" type="hidden" value="11" aria-hidden="true" tabindex="-1" />
               <button class="template-toolbar-combo-value template-toolbar-font-size-value" data-action="toggle-document-font-size-menu" data-font-size-input="templateEditorFontSize" type="button" aria-label="글꼴 크기 목록 열기" aria-expanded="false" aria-controls="templateEditorFontSizeMenu">
                 <span data-editor-font-size-current>11</span>
+                <span class="template-toolbar-combo-unit" aria-hidden="true">pt</span>
                 <span class="template-toolbar-combo-caret" aria-hidden="true"></span>
               </button>
               <div class="template-toolbar-combo-menu hidden" id="templateEditorFontSizeMenu" data-editor-font-size-menu-for="templateEditorFontSize" role="listbox" aria-label="글꼴 크기 목록">
                 ${renderDocumentToolbarFontSizeOptionButtons(11)}
               </div>
             </div>
-            <span class="template-toolbar-value-unit" aria-hidden="true">pt</span>
           </div>
         </div>
       </div>

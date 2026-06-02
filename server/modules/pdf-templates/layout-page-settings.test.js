@@ -46,6 +46,7 @@ test("normalizeTemplateLayout normalizes page number settings", () => {
           settings: {
             pageNumber: {
               enabled: true,
+              position: "left",
               preset: "pageCurrentTotalEnglish",
             },
           },
@@ -55,6 +56,7 @@ test("normalizeTemplateLayout normalizes page number settings", () => {
           settings: {
             pageNumber: {
               enabled: "true",
+              position: "right",
               preset: "koreanPage",
             },
           },
@@ -64,6 +66,7 @@ test("normalizeTemplateLayout normalizes page number settings", () => {
           settings: {
             pageNumber: {
               enabled: 0,
+              position: "unsupported",
               preset: "unsupported",
             },
           },
@@ -83,14 +86,17 @@ test("normalizeTemplateLayout normalizes page number settings", () => {
 
   assert.deepEqual(layout.pages[0].settings.pageNumber, {
     enabled: false,
+    position: "left",
     preset: "pageCurrentTotalEnglish",
   });
   assert.deepEqual(layout.pages[1].settings.pageNumber, {
     enabled: true,
+    position: "right",
     preset: "koreanPage",
   });
   assert.deepEqual(layout.pages[2].settings.pageNumber, {
     enabled: false,
+    position: "center",
     preset: "numericCurrentTotal",
   });
 });

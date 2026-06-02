@@ -202,7 +202,7 @@
 
     function getTemplateEditorToolbarPointerTarget(target) {
       const toolbarTrigger = target.closest(
-        "[data-template-command], [data-template-table-action], [data-template-cell-split-step], [data-template-cell-split-toggle], [data-template-cell-split-axis-option], [data-template-cell-split-confirm], [data-template-insert], [data-template-open-image], [data-template-image-insert-toggle], [data-template-insert-school-logo], [data-template-tag], .template-tag-accordion-summary, [data-editor-color-preset], [data-editor-color-apply], [data-editor-color-toggle], [data-editor-color-direct], [data-editor-font-family-toggle], [data-editor-font-family-option], [data-editor-font-size-toggle], [data-editor-font-size-option], [data-template-line-height-toggle], [data-template-line-height-option], [data-editor-border-select-toggle], [data-editor-border-select-option], [data-editor-border-width-toggle], [data-editor-border-width-option]",
+        "[data-template-command], [data-template-table-action], [data-template-cell-split-step], [data-template-cell-split-toggle], [data-template-cell-split-axis-option], [data-template-cell-split-confirm], [data-template-insert], [data-template-open-image], [data-template-image-insert-toggle], [data-template-insert-school-logo], [data-template-tag], .template-tag-accordion-summary, [data-editor-color-preset], [data-editor-color-apply], [data-editor-color-toggle], [data-editor-color-direct], [data-editor-font-family-toggle], [data-editor-font-family-option], [data-editor-font-size-toggle], [data-editor-font-size-option], [data-template-line-height-toggle], [data-template-line-height-option], [data-editor-border-select-toggle], [data-editor-border-select-option], [data-editor-border-width-toggle], [data-editor-border-width-option], [data-editor-cell-padding-toggle], [data-editor-cell-padding-option]",
       );
       const toolbarSelectionControl = target.closest(
         `#${toolbarIds.fontFamily}, #${toolbarIds.textColor}, #${toolbarIds.textShading}, #${toolbarIds.cellShading}, #${toolbarIds.borderTarget}, #${toolbarIds.borderStyle}, #${toolbarIds.borderWidth}, #${toolbarIds.borderColor}, #${toolbarIds.cellPaddingTop}, #${toolbarIds.cellPaddingRight}, #${toolbarIds.cellPaddingBottom}, #${toolbarIds.cellPaddingLeft}, #${toolbarIds.tableRows}, #${toolbarIds.tableColumns}, #${toolbarIds.cellSplitPanel}, [data-editor-color-hex-input], [data-template-editor-runtime-page-properties] [data-template-page-setting], [data-candidate-block-feature-switch], [data-candidate-block-column-name-row-height-px]`,
@@ -491,12 +491,17 @@
         return;
       }
 
+      if (target?.closest(".template-toolbar-cell-padding-combo")) {
+        return;
+      }
+
       toolbar.closeAllEditorToolbarTableInsertPanels();
       toolbar.closeAllEditorToolbarFontFamilyMenus?.();
       toolbar.closeAllEditorToolbarFontSizeMenus();
       toolbar.closeAllEditorToolbarColorPanels();
       toolbar.closeAllEditorToolbarBorderSelectMenus?.();
       toolbar.closeAllEditorToolbarBorderWidthMenus?.();
+      toolbar.closeAllEditorToolbarCellPaddingMenus?.();
     }
 
     const disposers = [];

@@ -22,6 +22,24 @@
       return Number.isInteger(normalizedValue) ? String(normalizedValue) : normalizedValue.toFixed(1);
     }
 
+    function formatEditorToolbarCellPaddingValue(value = "") {
+      const trimmedValue = String(value ?? "").trim();
+
+      if (!trimmedValue) {
+        return "";
+      }
+
+      const numericValue = Number.parseFloat(trimmedValue);
+
+      if (!Number.isFinite(numericValue)) {
+        return "";
+      }
+
+      const normalizedValue = Math.max(0, Math.round(numericValue * 10) / 10);
+
+      return Number.isInteger(normalizedValue) ? String(normalizedValue) : normalizedValue.toFixed(1);
+    }
+
     function getEditorToolbarBorderSelectElements(inputId = "") {
       const normalizedInputId = String(inputId || "").trim();
       const selectElement = normalizedInputId ? document.getElementById(normalizedInputId) : null;
@@ -43,6 +61,20 @@
           ? document.querySelector(`.template-toolbar-border-width-combo[data-editor-border-width-combo="${normalizedInputId}"]`)
           : null);
       const toggleElement = comboElement?.querySelector("[data-editor-border-width-toggle]") || null;
+      const menuElement = comboElement?.querySelector(".template-toolbar-combo-menu") || null;
+
+      return { comboElement, inputElement, menuElement, toggleElement };
+    }
+
+    function getEditorToolbarCellPaddingComboElements(inputId = "") {
+      const normalizedInputId = String(inputId || "").trim();
+      const inputElement = normalizedInputId ? document.getElementById(normalizedInputId) : null;
+      const comboElement =
+        inputElement?.closest(".template-toolbar-cell-padding-combo") ||
+        (normalizedInputId
+          ? document.querySelector(`.template-toolbar-cell-padding-combo[data-editor-cell-padding-combo="${normalizedInputId}"]`)
+          : null);
+      const toggleElement = comboElement?.querySelector("[data-editor-cell-padding-toggle]") || null;
       const menuElement = comboElement?.querySelector(".template-toolbar-combo-menu") || null;
 
       return { comboElement, inputElement, menuElement, toggleElement };
@@ -134,6 +166,38 @@
       return normalizedValue;
     }
 
+    function syncEditorToolbarCellPaddingControl(input = null, value = "") {
+      const inputElement =
+        input instanceof HTMLInputElement
+          ? input
+          : typeof input === "string" && input
+            ? document.getElementById(input)
+            : null;
+
+      if (!inputElement) {
+        return "";
+      }
+
+      const normalizedValue = formatEditorToolbarCellPaddingValue(value || inputElement.value || "");
+      const { comboElement, menuElement } = getEditorToolbarCellPaddingComboElements(inputElement.id);
+      const currentValueElement = comboElement?.querySelector("[data-editor-cell-padding-current]") || null;
+
+      inputElement.value = normalizedValue;
+
+      if (currentValueElement) {
+        currentValueElement.textContent = normalizedValue || "-";
+      }
+
+      Array.from(menuElement?.querySelectorAll("[data-editor-cell-padding-option]") || []).forEach((buttonElement) => {
+        const isActive = normalizedValue !== "" && buttonElement.dataset.editorCellPaddingOption === normalizedValue;
+
+        buttonElement.classList.toggle("active", isActive);
+        buttonElement.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+
+      return normalizedValue;
+    }
+
     function closeAllEditorToolbarBorderIconSelectMenus(exceptInputId = "") {
       let closedAnyMenu = false;
 
@@ -186,11 +250,38 @@
       return closedAnyMenu;
     }
 
+    function closeAllEditorToolbarCellPaddingMenus(exceptInputId = "") {
+      let closedAnyMenu = false;
+
+      Array.from(document.querySelectorAll(".template-toolbar-cell-padding-combo")).forEach((comboElement) => {
+        const inputElement = comboElement.querySelector(".template-toolbar-cell-padding-input");
+        const toggleElement = comboElement.querySelector("[data-editor-cell-padding-toggle]");
+        const menuElement = comboElement.querySelector(".template-toolbar-combo-menu");
+        const shouldKeepOpen =
+          exceptInputId &&
+          inputElement?.id === exceptInputId &&
+          menuElement &&
+          !menuElement.classList.contains("hidden");
+
+        if (!menuElement || shouldKeepOpen || menuElement.classList.contains("hidden")) {
+          return;
+        }
+
+        menuElement.classList.add("hidden");
+        comboElement.classList.remove("open", "open-up", "open-down");
+        toggleElement?.setAttribute("aria-expanded", "false");
+        closedAnyMenu = true;
+      });
+
+      return closedAnyMenu;
+    }
+
     function closeAllEditorToolbarBorderSelectMenus(exceptInputId = "") {
       const closedIconMenus = closeAllEditorToolbarBorderIconSelectMenus(exceptInputId);
       const closedWidthMenus = closeAllEditorToolbarBorderWidthMenus(exceptInputId);
+      const closedCellPaddingMenus = closeAllEditorToolbarCellPaddingMenus(exceptInputId);
 
-      return closedIconMenus || closedWidthMenus;
+      return closedIconMenus || closedWidthMenus || closedCellPaddingMenus;
     }
 
     function setEditorToolbarBorderSelectMenuVisibility(inputId = "", nextVisible = false) {
@@ -203,6 +294,7 @@
       if (nextVisible) {
         closeAllEditorToolbarBorderIconSelectMenus(inputId);
         closeAllEditorToolbarBorderWidthMenus();
+        closeAllEditorToolbarCellPaddingMenus();
         closeAllEditorToolbarTableInsertPanels();
         closeAllEditorToolbarFontFamilyMenus();
         closeAllEditorToolbarFontSizeMenus();
@@ -233,11 +325,43 @@
       if (nextVisible) {
         closeAllEditorToolbarBorderWidthMenus(inputId);
         closeAllEditorToolbarBorderIconSelectMenus();
+        closeAllEditorToolbarCellPaddingMenus();
         closeAllEditorToolbarTableInsertPanels();
         closeAllEditorToolbarFontFamilyMenus();
         closeAllEditorToolbarFontSizeMenus();
         closeAllEditorToolbarColorPanels();
         syncEditorToolbarBorderWidthControl(inputElement);
+      }
+
+      menuElement.classList.toggle("hidden", !nextVisible);
+      comboElement.classList.toggle("open", nextVisible);
+      toggleElement?.setAttribute("aria-expanded", nextVisible ? "true" : "false");
+
+      if (nextVisible) {
+        updateEditorToolbarFloatingPanelPlacement(comboElement, menuElement, 6);
+      } else {
+        comboElement.classList.remove("open-up", "open-down");
+      }
+
+      return true;
+    }
+
+    function setEditorToolbarCellPaddingMenuVisibility(inputId = "", nextVisible = false) {
+      const { comboElement, inputElement, menuElement, toggleElement } = getEditorToolbarCellPaddingComboElements(inputId);
+
+      if (!inputElement || !menuElement || !comboElement) {
+        return false;
+      }
+
+      if (nextVisible) {
+        closeAllEditorToolbarCellPaddingMenus(inputId);
+        closeAllEditorToolbarBorderWidthMenus();
+        closeAllEditorToolbarBorderIconSelectMenus();
+        closeAllEditorToolbarTableInsertPanels();
+        closeAllEditorToolbarFontFamilyMenus();
+        closeAllEditorToolbarFontSizeMenus();
+        closeAllEditorToolbarColorPanels();
+        syncEditorToolbarCellPaddingControl(inputElement);
       }
 
       menuElement.classList.toggle("hidden", !nextVisible);
@@ -279,15 +403,32 @@
       return true;
     }
 
+    function applyEditorToolbarCellPaddingOption(inputId = "", value = "") {
+      const { inputElement } = getEditorToolbarCellPaddingComboElements(inputId);
+
+      if (!inputElement) {
+        return false;
+      }
+
+      syncEditorToolbarCellPaddingControl(inputElement, value);
+      inputElement.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    }
+
     return Object.freeze({
+      applyEditorToolbarCellPaddingOption,
       applyEditorToolbarBorderSelectOption,
       applyEditorToolbarBorderWidthOption,
+      closeAllEditorToolbarCellPaddingMenus,
       closeAllEditorToolbarBorderSelectMenus,
       closeAllEditorToolbarBorderWidthMenus,
+      getEditorToolbarCellPaddingComboElements,
       getEditorToolbarBorderSelectElements,
       getEditorToolbarBorderWidthComboElements,
+      setEditorToolbarCellPaddingMenuVisibility,
       setEditorToolbarBorderSelectMenuVisibility,
       setEditorToolbarBorderWidthMenuVisibility,
+      syncEditorToolbarCellPaddingControl,
       syncEditorToolbarBorderSelectControl,
       syncEditorToolbarBorderWidthControl,
     });

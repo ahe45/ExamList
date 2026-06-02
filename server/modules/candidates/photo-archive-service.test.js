@@ -107,7 +107,10 @@ test("saveCandidatePhotoArchiveSession reuses preview ZIP without binary reuploa
         return Buffer.from("zip-from-session");
       },
     },
-    query: async () => [{ examineeNo: "260100001", id: "candidate-1" }],
+    query: async () => [
+      { examineeNo: "260100001", id: "candidate-1" },
+      { examineeNo: "260100001", id: "candidate-2" },
+    ],
   });
 
   const result = await service.saveCandidatePhotoArchiveSession("session-token");
@@ -115,6 +118,6 @@ test("saveCandidatePhotoArchiveSession reuses preview ZIP without binary reuploa
   assert.equal(result.photoUploaded, 1);
   assert.equal(result.photoSkipped, 0);
   assert.equal(persisted[0].fileBuffer.toString("utf8"), "zip-from-session");
-  assert.deepEqual(updates[0].params, ["260100001.jpg", "image/jpeg", "candidate-1"]);
+  assert.deepEqual(updates[0].params, ["260100001.jpg", "image/jpeg", ["candidate-1", "candidate-2"]]);
   assert.equal(deletedToken, "session-token");
 });

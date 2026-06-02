@@ -95,23 +95,35 @@
         </div>
       </fieldset>
       <div class="template-page-property-field">
-        <span>여백 mm</span>
+        <span>여백</span>
         <div class="template-page-margin-grid">
           <label for="${escapeTemplatePageAttribute(resolvedIds.marginTop)}">
             <span>위</span>
-            <input class="template-page-property-control" id="${escapeTemplatePageAttribute(resolvedIds.marginTop)}" data-template-page-setting="marginTop" type="number" min="0" max="80" step="1" value="${escapeTemplatePageAttribute(DEFAULT_PAGE_MARGIN_MM)}" />
+            <span class="template-page-property-unit-control">
+              <input class="template-page-property-control" id="${escapeTemplatePageAttribute(resolvedIds.marginTop)}" data-template-page-setting="marginTop" type="number" min="0" max="80" step="1" value="${escapeTemplatePageAttribute(DEFAULT_PAGE_MARGIN_MM)}" />
+              <span class="template-page-property-control-unit" aria-hidden="true">mm</span>
+            </span>
           </label>
           <label for="${escapeTemplatePageAttribute(resolvedIds.marginRight)}">
             <span>오른쪽</span>
-            <input class="template-page-property-control" id="${escapeTemplatePageAttribute(resolvedIds.marginRight)}" data-template-page-setting="marginRight" type="number" min="0" max="80" step="1" value="${escapeTemplatePageAttribute(DEFAULT_PAGE_MARGIN_MM)}" />
+            <span class="template-page-property-unit-control">
+              <input class="template-page-property-control" id="${escapeTemplatePageAttribute(resolvedIds.marginRight)}" data-template-page-setting="marginRight" type="number" min="0" max="80" step="1" value="${escapeTemplatePageAttribute(DEFAULT_PAGE_MARGIN_MM)}" />
+              <span class="template-page-property-control-unit" aria-hidden="true">mm</span>
+            </span>
           </label>
           <label for="${escapeTemplatePageAttribute(resolvedIds.marginBottom)}">
             <span>아래</span>
-            <input class="template-page-property-control" id="${escapeTemplatePageAttribute(resolvedIds.marginBottom)}" data-template-page-setting="marginBottom" type="number" min="0" max="80" step="1" value="${escapeTemplatePageAttribute(DEFAULT_PAGE_MARGIN_MM)}" />
+            <span class="template-page-property-unit-control">
+              <input class="template-page-property-control" id="${escapeTemplatePageAttribute(resolvedIds.marginBottom)}" data-template-page-setting="marginBottom" type="number" min="0" max="80" step="1" value="${escapeTemplatePageAttribute(DEFAULT_PAGE_MARGIN_MM)}" />
+              <span class="template-page-property-control-unit" aria-hidden="true">mm</span>
+            </span>
           </label>
           <label for="${escapeTemplatePageAttribute(resolvedIds.marginLeft)}">
             <span>왼쪽</span>
-            <input class="template-page-property-control" id="${escapeTemplatePageAttribute(resolvedIds.marginLeft)}" data-template-page-setting="marginLeft" type="number" min="0" max="80" step="1" value="${escapeTemplatePageAttribute(DEFAULT_PAGE_MARGIN_MM)}" />
+            <span class="template-page-property-unit-control">
+              <input class="template-page-property-control" id="${escapeTemplatePageAttribute(resolvedIds.marginLeft)}" data-template-page-setting="marginLeft" type="number" min="0" max="80" step="1" value="${escapeTemplatePageAttribute(DEFAULT_PAGE_MARGIN_MM)}" />
+              <span class="template-page-property-control-unit" aria-hidden="true">mm</span>
+            </span>
           </label>
         </div>
       </div>

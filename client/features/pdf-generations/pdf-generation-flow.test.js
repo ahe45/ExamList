@@ -19,18 +19,25 @@ test("PDF generation create flow always reveals through series", () => {
   );
 });
 
-test("PDF generation create flow does not reveal unit or lower filters", () => {
+test("PDF generation create flow reveals one dependent lower filter at a time", () => {
   assert.deepEqual(
     getPdfGenerationRevealedFilterSteps(["track", "admission"], "roomCode").map((step) => step.key),
     ["track", "admission", "series"],
   );
   assert.deepEqual(
     getPdfGenerationRevealedFilterSteps(["track", "admission", "series"], "roomCode").map((step) => step.key),
-    ["track", "admission", "series"],
+    ["track", "admission", "series", "unit"],
   );
   assert.deepEqual(
     getPdfGenerationRevealedFilterSteps(["track", "admission", "series", "unit"], "roomCode").map((step) => step.key),
-    ["track", "admission", "series"],
+    ["track", "admission", "series", "unit", "major"],
+  );
+  assert.deepEqual(
+    getPdfGenerationRevealedFilterSteps(
+      ["track", "admission", "series", "unit", "major", "examDate", "time", "endTime", "period", "building"],
+      "roomCode",
+    ).map((step) => step.key),
+    ["track", "admission", "series", "unit", "major", "examDate", "time", "endTime", "period", "building", "room"],
   );
 });
 

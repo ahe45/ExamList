@@ -59,6 +59,7 @@ function hashRecordKey(record) {
         record.admissionYear || "",
         record.examDate || "",
         record.examineeNo || "",
+        record.periodCode || "",
         record.admissionCode || "",
         record.name || "",
         record.birthDate || "",
@@ -109,7 +110,7 @@ function normalizeCandidateRecordInput(input = {}, sourceType = "manual", school
     unitCode: normalizeText(raw.unitCode ?? raw.unit_code ?? input.unitCode),
   };
   const sourceId =
-    normalizeText(raw.id || input.sourceId || input.id || "", 120) ||
+    normalizeText(raw.id || input.sourceId || input.id || "", 255) ||
     `${sourceType}-${hashRecordKey(record)}`;
 
   return {

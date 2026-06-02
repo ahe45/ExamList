@@ -24,6 +24,7 @@
     Object.freeze({ label: "선 없음", value: "none" }),
   ]);
   const EDITOR_TOOLBAR_BORDER_WIDTH_OPTIONS = Object.freeze(["0", "0.5", "1", "1.5", "2", "2.5", "3"]);
+  const EDITOR_TOOLBAR_CELL_PADDING_OPTIONS = Object.freeze(Array.from({ length: 11 }, (_value, index) => String(index)));
 
   function createEditorToolbarBorderMarkup({
     EDITOR_TOOLBAR_TEXT_COLOR_PRESETS,
@@ -178,6 +179,7 @@
             aria-controls="${escapeEditorToolbarAttribute(menuId)}"
           >
             <span data-editor-border-width-current>1</span>
+            <span class="template-toolbar-border-width-unit" aria-hidden="true">pt</span>
             <span class="template-toolbar-combo-caret" aria-hidden="true"></span>
           </button>
           <div class="template-toolbar-combo-menu template-toolbar-border-width-menu hidden" id="${escapeEditorToolbarAttribute(menuId)}" data-editor-border-width-menu-for="${escapeEditorToolbarAttribute(borderWidthId)}" role="listbox" aria-label="테두리 굵기 목록">
@@ -253,17 +255,50 @@
     function renderEditorToolbarCellPaddingField({
       id = "",
       label = "",
-      value = "",
+      value = "2",
       ariaLabel = "",
     } = {}) {
+      const normalizedValue = EDITOR_TOOLBAR_CELL_PADDING_OPTIONS.includes(String(value)) ? String(value) : "2";
+      const menuId = `${id}Menu`;
+
       return `
-        <label class="template-toolbar-cell-padding-field" for="${escapeEditorToolbarAttribute(id)}">
-          <span class="template-toolbar-cell-padding-field-label">${escapeEditorToolbarHtml(label)}</span>
+        <div class="template-toolbar-cell-padding-field">
+          <span class="template-toolbar-cell-padding-field-label" id="${escapeEditorToolbarAttribute(id)}Label">${escapeEditorToolbarHtml(label)}</span>
           <span class="template-toolbar-cell-padding-control">
-            <input class="template-toolbar-number template-toolbar-cell-padding-input" id="${escapeEditorToolbarAttribute(id)}" type="number" min="0" max="72" step="0.5" value="${escapeEditorToolbarAttribute(value)}" aria-label="${escapeEditorToolbarAttribute(ariaLabel)}" />
-            <span aria-hidden="true">pt</span>
+            <span class="template-toolbar-cell-padding-combo" data-editor-cell-padding-combo="${escapeEditorToolbarAttribute(id)}">
+              <input class="template-toolbar-cell-padding-input" id="${escapeEditorToolbarAttribute(id)}" type="hidden" value="${escapeEditorToolbarAttribute(normalizedValue)}" aria-hidden="true" tabindex="-1" />
+              <button
+                class="template-toolbar-combo-value template-toolbar-cell-padding-value"
+                data-editor-cell-padding-toggle="${escapeEditorToolbarAttribute(id)}"
+                type="button"
+                aria-label="${escapeEditorToolbarAttribute(ariaLabel)} 목록 열기"
+                aria-expanded="false"
+                aria-controls="${escapeEditorToolbarAttribute(menuId)}"
+              >
+                <span data-editor-cell-padding-current>${escapeEditorToolbarHtml(normalizedValue)}</span>
+                <span class="template-toolbar-cell-padding-unit" aria-hidden="true">pt</span>
+                <span class="template-toolbar-combo-caret" aria-hidden="true"></span>
+              </button>
+              <div class="template-toolbar-combo-menu template-toolbar-cell-padding-menu hidden" id="${escapeEditorToolbarAttribute(menuId)}" data-editor-cell-padding-menu-for="${escapeEditorToolbarAttribute(id)}" role="listbox" aria-label="${escapeEditorToolbarAttribute(ariaLabel)} 목록">
+                ${EDITOR_TOOLBAR_CELL_PADDING_OPTIONS.map((optionValue) => {
+                  const isActive = optionValue === normalizedValue;
+
+                  return `
+                    <button
+                      class="template-toolbar-combo-option${isActive ? " active" : ""}"
+                      data-editor-cell-padding-option="${escapeEditorToolbarAttribute(optionValue)}"
+                      type="button"
+                      role="option"
+                      aria-selected="${isActive ? "true" : "false"}"
+                    >
+                      ${escapeEditorToolbarHtml(optionValue)}
+                    </button>
+                  `;
+                }).join("")}
+              </div>
+            </span>
           </span>
-        </label>
+        </div>
       `;
     }
 
@@ -286,26 +321,26 @@
               ${renderEditorToolbarCellPaddingField({
                 id: cellPaddingTopId,
                 label: "위",
-                value: "8",
+                value: "2",
                 ariaLabel: "셀 위쪽 내부 여백",
-              })}
-              ${renderEditorToolbarCellPaddingField({
-                id: cellPaddingRightId,
-                label: "오른쪽",
-                value: "10",
-                ariaLabel: "셀 오른쪽 내부 여백",
               })}
               ${renderEditorToolbarCellPaddingField({
                 id: cellPaddingBottomId,
                 label: "아래",
-                value: "8",
+                value: "2",
                 ariaLabel: "셀 아래쪽 내부 여백",
               })}
               ${renderEditorToolbarCellPaddingField({
                 id: cellPaddingLeftId,
-                label: "왼쪽",
-                value: "10",
+                label: "좌",
+                value: "2",
                 ariaLabel: "셀 왼쪽 내부 여백",
+              })}
+              ${renderEditorToolbarCellPaddingField({
+                id: cellPaddingRightId,
+                label: "우",
+                value: "2",
+                ariaLabel: "셀 오른쪽 내부 여백",
               })}
             </div>
           </div>

@@ -40,6 +40,7 @@ function createCandidatePhotoRecordService({
       expectedExamineeNo: existingCandidate.examineeNo,
     });
     const schoolStorageCode = await resolvePhotoStorageCode(existingCandidate.schoolId || schoolId);
+    const scopedSchoolId = String(schoolId || existingCandidate.schoolId || "").trim();
     const storedPhotoRecord = buildStoredCandidatePhotoFileRecord(photo, { schoolStorageCode });
 
     await persistStoredCandidatePhotoFile(storedPhotoRecord);
@@ -49,10 +50,10 @@ function createCandidatePhotoRecordService({
         SET
           photo_name = ?,
           photo_mime = ?
-        WHERE id = ?
-          ${schoolId ? "AND school_id = ?" : ""}
+        WHERE examinee_no = ?
+          ${scopedSchoolId ? "AND school_id = ?" : ""}
       `,
-      [storedPhotoRecord.fileName, storedPhotoRecord.mimeType, normalizedCandidateId, ...(schoolId ? [schoolId] : [])],
+      [storedPhotoRecord.fileName, storedPhotoRecord.mimeType, existingCandidate.examineeNo, ...(scopedSchoolId ? [scopedSchoolId] : [])],
     );
 
     return {

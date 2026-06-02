@@ -95,10 +95,18 @@ function createCandidatePhotoArchiveService({
             [examineeNos, ...(schoolId ? [schoolId] : [])],
           )
         : [];
-    const candidateRowsByNo = new Map(
-      existingRows.map((row) => [String(row.examineeNo || "").trim(), row]),
+    const candidateRowsByNo = existingRows.reduce((rowMap, row) => {
+      const examineeNo = String(row.examineeNo || "").trim();
+      const rows = rowMap.get(examineeNo) || [];
+
+      rows.push(row);
+      rowMap.set(examineeNo, rows);
+
+      return rowMap;
+    }, new Map());
+    const matchedPhotos = (Array.isArray(photos) ? photos : []).filter((photo) =>
+      Boolean(candidateRowsByNo.get(String(photo.examineeNo || "").trim())?.length),
     );
-    const matchedPhotos = (Array.isArray(photos) ? photos : []).filter((photo) => candidateRowsByNo.has(String(photo.examineeNo || "").trim()));
     const unmatchedPhotos = Math.max(0, (Array.isArray(photos) ? photos.length : 0) - matchedPhotos.length);
 
     if (matchedPhotos.length > 0) {
@@ -106,12 +114,13 @@ function createCandidatePhotoArchiveService({
       const connection = await getPool().getConnection();
 
       for (const photo of matchedPhotos) {
-        const candidateRow = candidateRowsByNo.get(String(photo.examineeNo || "").trim());
+        const candidateRows = candidateRowsByNo.get(String(photo.examineeNo || "").trim()) || [];
+        const candidateRow = candidateRows[0] || null;
         const schoolStorageCode = await resolvePhotoStorageCode(candidateRow?.schoolId || schoolId);
 
         storedPhotoRecords.push({
           ...buildStoredCandidatePhotoFileRecord(photo, { schoolStorageCode }),
-          candidateId: String(candidateRow?.id || ""),
+          candidateIds: candidateRows.map((row) => String(row?.id || "").trim()).filter(Boolean),
         });
       }
 
@@ -126,9 +135,9 @@ function createCandidatePhotoArchiveService({
               SET
                 photo_name = ?,
                 photo_mime = ?
-              WHERE id = ?
+              WHERE id IN (?)
             `,
-            [storedPhotoRecord.fileName, storedPhotoRecord.mimeType, storedPhotoRecord.candidateId],
+            [storedPhotoRecord.fileName, storedPhotoRecord.mimeType, storedPhotoRecord.candidateIds],
           );
         }
 

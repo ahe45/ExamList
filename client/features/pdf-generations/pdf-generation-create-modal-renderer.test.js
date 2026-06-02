@@ -26,6 +26,7 @@ function renderCreateModal(overrides = {}) {
         admission: [{ candidateCount: 1, value: "논술" }],
         series: [{ candidateCount: 1, value: "인문" }],
         track: [{ candidateCount: 1, value: "수시" }],
+        unit: [{ candidateCount: 1, value: "국어국문학과" }],
       },
       selectedFilterKeys: [],
       selectedTemplateId: "",
@@ -83,7 +84,7 @@ test("PDF generation create modal keeps series visible but disabled until admiss
   assert.doesNotMatch(getFilterSelectOpeningHtml(withAdmissionHtml, "series"), /disabled/);
 });
 
-test("PDF generation create modal shows only template through series filters", () => {
+test("PDF generation create modal reveals unit filter after series is selected", () => {
   const html = renderCreateModal({
     selectedFilterKeys: ["track", "admission", "series"],
     selectedTemplateId: "template-1",
@@ -94,5 +95,6 @@ test("PDF generation create modal shows only template through series filters", (
   assert.match(html, /data-pdf-generation-modal-filter="track"/);
   assert.match(html, /data-pdf-generation-modal-filter="admission"/);
   assert.match(html, /data-pdf-generation-modal-filter="series"/);
-  assert.doesNotMatch(html, /data-pdf-generation-modal-filter="unit"/);
+  assert.match(html, /data-pdf-generation-modal-filter="unit"/);
+  assert.doesNotMatch(html, /data-pdf-generation-modal-filter="major"/);
 });

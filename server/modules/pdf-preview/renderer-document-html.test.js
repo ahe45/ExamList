@@ -33,6 +33,7 @@ test("renderPreviewDocument renders freeform document html and strips unsafe mar
             },
             pageNumber: {
               enabled: true,
+              position: "right",
               preset: "numericCurrentTotal",
             },
             documentHtml: [
@@ -86,6 +87,7 @@ test("renderPreviewDocument renders freeform document html and strips unsafe mar
   assert.match(result.html, /preview-recognition-marks/);
   assert.equal(pageNumberMatches.length, 1);
   assert.match(result.html, />1\/1</);
+  assert.match(result.html, /class="preview-page-number" style="left:64\.35pt;right:52\.35pt;text-align:right;"/);
   assert.match(result.html, /width:12pt;height:12pt;left:20pt;top:30pt;/);
   assert.match(result.html, /width:12pt;height:12pt;right:20pt;bottom:30pt;/);
   assert.match(result.html, /style="padding: 12pt 24pt 20pt 36pt;"/);

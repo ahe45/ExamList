@@ -79,8 +79,10 @@ test("page number commit updates current appState page instead of stale bound pa
   const currentPage = structuredClone(stalePage);
   const enabledControl = new FakeInputElement({ checked: true });
   const presetControl = new FakeSelectElement({ value: "koreanPage" });
+  const positionControl = new FakeSelectElement({ value: "right" });
   const sectionElement = createSection({
     '[data-examlist-page-number-setting="enabled"]': enabledControl,
+    '[data-examlist-page-number-setting="position"]': positionControl,
     '[data-examlist-page-number-setting="preset"]': presetControl,
   });
   const pagePropertiesHost = createPagePropertiesHost(".examlist-page-number-field", sectionElement);
@@ -94,6 +96,7 @@ test("page number commit updates current appState page instead of stale bound pa
   assert.equal(committed, true);
   assert.deepEqual(currentPage.settings.pageNumber, {
     enabled: true,
+    position: "right",
     preset: "koreanPage",
   });
   assert.equal(stalePage.settings.pageNumber.enabled, false);

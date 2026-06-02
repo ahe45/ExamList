@@ -105,7 +105,7 @@ function renderUploadPolicyOptions(selectedValue = "insert-update") {
     <div class="upload-preview-policy">
       <div class="upload-preview-policy-head">
         <strong>기존 데이터 처리</strong>
-        <span class="upload-preview-caption">수험번호가 같은 데이터 기준</span>
+        <span class="upload-preview-caption">수험번호와 교시코드가 같은 데이터 기준</span>
       </div>
       <div class="upload-preview-policy-options">
         ${uploadPolicyOptions

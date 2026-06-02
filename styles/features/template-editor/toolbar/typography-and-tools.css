@@ -18,8 +18,7 @@
 
 .template-toolbar-font-family-combo,
 .template-toolbar-font-size-combo,
-.template-toolbar-line-height-combo,
-.template-toolbar-border-width-combo {
+.template-toolbar-line-height-combo {
   display: flex;
   flex: 0 0 90px;
   max-width: 90px;
@@ -31,7 +30,8 @@
 .template-toolbar-font-family-input[type="hidden"],
 .template-toolbar-font-size-input[type="hidden"],
 .template-toolbar-line-height-input[type="hidden"],
-.template-toolbar-border-width-input[type="hidden"] {
+.template-toolbar-border-width-input[type="hidden"],
+.template-toolbar-cell-padding-input[type="hidden"] {
   display: none;
 }
 
@@ -118,7 +118,8 @@
 .template-toolbar-font-family-combo.open .template-toolbar-combo-value,
 .template-toolbar-font-size-combo.open .template-toolbar-combo-value,
 .template-toolbar-line-height-combo.open .template-toolbar-combo-value,
-.template-toolbar-border-width-combo.open .template-toolbar-combo-value {
+.template-toolbar-border-width-combo.open .template-toolbar-combo-value,
+.template-toolbar-cell-padding-combo.open .template-toolbar-combo-value {
   background: rgba(241, 245, 249, 0.95);
 }
 
@@ -141,11 +142,20 @@
 .template-toolbar-combo-value [data-editor-font-family-current],
 .template-toolbar-combo-value [data-editor-font-size-current],
 .template-toolbar-combo-value [data-template-line-height-current],
-.template-toolbar-combo-value [data-editor-border-width-current] {
+.template-toolbar-combo-value [data-editor-border-width-current],
+.template-toolbar-combo-value [data-editor-cell-padding-current] {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-toolbar-combo-unit {
+  color: #69788f;
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  font-weight: 900;
   white-space: nowrap;
 }
 

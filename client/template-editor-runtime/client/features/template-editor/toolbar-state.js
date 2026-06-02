@@ -60,6 +60,7 @@
     getTemplateEditorTextShadingElement,
     syncEditorToolbarBorderSelectControl,
     syncEditorToolbarBorderWidthControl,
+    syncEditorToolbarCellPaddingControl,
     syncEditorToolbarColorControls,
     updateEditorToolbarFormattingState,
   }) {
@@ -133,6 +134,14 @@
           comboElement.querySelector("[data-editor-border-width-toggle]")?.setAttribute("aria-expanded", "false");
           comboElement.querySelector(".template-toolbar-combo-menu")?.classList.add("hidden");
         });
+
+      tableGroupElement
+        ?.querySelectorAll?.(".template-toolbar-cell-padding-combo.open")
+        .forEach((comboElement) => {
+          comboElement.classList.remove("open", "open-up", "open-down");
+          comboElement.querySelector("[data-editor-cell-padding-toggle]")?.setAttribute("aria-expanded", "false");
+          comboElement.querySelector(".template-toolbar-combo-menu")?.classList.add("hidden");
+        });
     }
 
     function getTemplateEditorCellPaddingElements() {
@@ -147,12 +156,19 @@
     function setTemplateEditorCellPaddingControlsDisabled(isDisabled) {
       getTemplateEditorCellPaddingElements().forEach((inputElement) => {
         const controlElement = inputElement.closest?.(".template-toolbar-cell-padding-control") || null;
+        const comboElement = inputElement.closest?.(".template-toolbar-cell-padding-combo") || null;
+        const toggleElement = comboElement?.querySelector?.("[data-editor-cell-padding-toggle]") || null;
 
         if (isDisabled) {
           inputElement.value = "";
+          syncEditorToolbarCellPaddingControl?.(inputElement, "");
         }
 
-        inputElement.placeholder = isDisabled ? "-" : "";
+        inputElement.disabled = isDisabled;
+        if (toggleElement) {
+          toggleElement.disabled = isDisabled;
+          toggleElement.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+        }
         controlElement?.classList.toggle("is-disabled", isDisabled);
         controlElement?.classList.toggle("is-empty", isDisabled && !String(inputElement.value || "").trim());
         controlElement?.setAttribute("aria-disabled", isDisabled ? "true" : "false");
@@ -276,8 +292,8 @@
       }
 
       const isActiveBorderDropdown =
-        Boolean(activeElement?.closest(".template-toolbar-icon-select, .template-toolbar-border-width-combo")) ||
-        Boolean(templateEditorModal?.querySelector(".template-toolbar-icon-select.open, .template-toolbar-border-width-combo.open"));
+        Boolean(activeElement?.closest(".template-toolbar-icon-select, .template-toolbar-border-width-combo, .template-toolbar-cell-padding-combo")) ||
+        Boolean(templateEditorModal?.querySelector(".template-toolbar-icon-select.open, .template-toolbar-border-width-combo.open, .template-toolbar-cell-padding-combo.open"));
       const hasDirtyBorderControl = [
         templateEditorBorderColor,
         templateEditorBorderStyle,
@@ -322,19 +338,39 @@
       }
 
       if (templateEditorCellPaddingTop) {
-        templateEditorCellPaddingTop.value = getTemplateEditorCellPaddingValue(selectedCell, "paddingTop");
+        const value = getTemplateEditorCellPaddingValue(selectedCell, "paddingTop");
+        if (typeof syncEditorToolbarCellPaddingControl === "function") {
+          syncEditorToolbarCellPaddingControl(templateEditorCellPaddingTop, value);
+        } else {
+          templateEditorCellPaddingTop.value = value;
+        }
       }
 
       if (templateEditorCellPaddingRight) {
-        templateEditorCellPaddingRight.value = getTemplateEditorCellPaddingValue(selectedCell, "paddingRight");
+        const value = getTemplateEditorCellPaddingValue(selectedCell, "paddingRight");
+        if (typeof syncEditorToolbarCellPaddingControl === "function") {
+          syncEditorToolbarCellPaddingControl(templateEditorCellPaddingRight, value);
+        } else {
+          templateEditorCellPaddingRight.value = value;
+        }
       }
 
       if (templateEditorCellPaddingBottom) {
-        templateEditorCellPaddingBottom.value = getTemplateEditorCellPaddingValue(selectedCell, "paddingBottom");
+        const value = getTemplateEditorCellPaddingValue(selectedCell, "paddingBottom");
+        if (typeof syncEditorToolbarCellPaddingControl === "function") {
+          syncEditorToolbarCellPaddingControl(templateEditorCellPaddingBottom, value);
+        } else {
+          templateEditorCellPaddingBottom.value = value;
+        }
       }
 
       if (templateEditorCellPaddingLeft) {
-        templateEditorCellPaddingLeft.value = getTemplateEditorCellPaddingValue(selectedCell, "paddingLeft");
+        const value = getTemplateEditorCellPaddingValue(selectedCell, "paddingLeft");
+        if (typeof syncEditorToolbarCellPaddingControl === "function") {
+          syncEditorToolbarCellPaddingControl(templateEditorCellPaddingLeft, value);
+        } else {
+          templateEditorCellPaddingLeft.value = value;
+        }
       }
 
       const borderControlSide = getTemplateEditorBorderControlSide(templateEditorBorderTarget);

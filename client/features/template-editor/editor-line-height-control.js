@@ -339,13 +339,13 @@ function createLineHeightControl() {
         />
         <button class="template-toolbar-combo-value template-toolbar-line-height-value" data-template-line-height-toggle type="button" aria-label="줄 간격 목록 열기" aria-expanded="false">
           <span data-template-line-height-current>${defaultEditorLineHeight}</span>
+          <span class="template-toolbar-combo-unit" aria-hidden="true">pt</span>
           <span class="template-toolbar-combo-caret" aria-hidden="true"></span>
         </button>
         <div class="template-toolbar-combo-menu hidden" role="listbox" aria-label="줄 간격 목록">
           ${renderLineHeightOptionButtons(defaultEditorLineHeight)}
         </div>
       </div>
-      <span class="template-toolbar-value-unit" aria-hidden="true">pt</span>
     </div>
   `;
 

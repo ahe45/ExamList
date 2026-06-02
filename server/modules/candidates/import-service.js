@@ -16,6 +16,10 @@ function formatCandidateImportCount(value) {
   return Number.isFinite(numericValue) ? candidateImportCountFormatter.format(Math.max(0, Math.trunc(numericValue))) : "0";
 }
 
+function createCandidateImportCompositeKey(row = {}) {
+  return `${String(row.examineeNo || "").trim()}|${String(row.periodCode || "").trim()}`;
+}
+
 function createCandidateImportService({
   createHttpError,
   insertCandidateWorkbookRow,
@@ -30,6 +34,7 @@ function createCandidateImportService({
     const normalizedEntries = (Array.isArray(duplicateEntries) ? duplicateEntries : [])
       .map((entry) => ({
         examineeNo: String(entry?.examineeNo || "").trim(),
+        periodCode: String(entry?.periodCode || "").trim(),
         rowNumbers: Array.isArray(entry?.rowNumbers) ? entry.rowNumbers : [],
       }))
       .filter((entry) => entry.examineeNo && entry.rowNumbers.length > 1);
@@ -40,11 +45,11 @@ function createCandidateImportService({
 
     const summaryText = normalizedEntries
       .slice(0, 3)
-      .map((entry) => `${entry.examineeNo}(${entry.rowNumbers.join(", ")}행)`)
+      .map((entry) => `${entry.examineeNo}/${entry.periodCode}(${entry.rowNumbers.join(", ")}행)`)
       .join(", ");
     const suffix = normalizedEntries.length > 3 ? ` 외 ${formatCandidateImportCount(normalizedEntries.length - 3)}건` : "";
 
-    return createHttpError(400, `XLSX에 중복된 수험번호가 있습니다: ${summaryText}${suffix}`, "CANDIDATE_IMPORT_DUPLICATE_NO");
+    return createHttpError(400, `XLSX에 중복된 수험번호와 교시코드 조합이 있습니다: ${summaryText}${suffix}`, "CANDIDATE_IMPORT_DUPLICATE_NO");
   }
 
   function prepareCandidateImportRows(rows = []) {
@@ -56,13 +61,15 @@ function createCandidateImportService({
     const duplicateRowMap = new Map();
 
     normalizedRows.forEach((row, index) => {
-      const duplicateEntry = duplicateRowMap.get(row.examineeNo) || {
+      const duplicateKey = createCandidateImportCompositeKey(row);
+      const duplicateEntry = duplicateRowMap.get(duplicateKey) || {
         examineeNo: row.examineeNo,
+        periodCode: row.periodCode,
         rowNumbers: [],
       };
 
       duplicateEntry.rowNumbers.push(index + 2);
-      duplicateRowMap.set(row.examineeNo, duplicateEntry);
+      duplicateRowMap.set(duplicateKey, duplicateEntry);
     });
 
     const duplicateError = buildCandidateImportDuplicateError(
@@ -76,11 +83,11 @@ function createCandidateImportService({
     return normalizedRows;
   }
 
-  async function getExistingCandidateImportRowsByNos(examineeNos = [], schoolId = "") {
+  async function getExistingCandidateImportRowsByKeys(candidateRows = [], schoolId = "") {
     const normalizedExamineeNos = Array.from(
       new Set(
-        (Array.isArray(examineeNos) ? examineeNos : [examineeNos])
-          .map((value) => String(value || "").trim())
+        (Array.isArray(candidateRows) ? candidateRows : [])
+          .map((row) => String(row?.examineeNo || "").trim())
           .filter(Boolean),
       ),
     );
@@ -138,11 +145,12 @@ function createCandidateImportService({
       );
 
       rows.forEach((row) => {
-        if (!existingRowMap.has(row.examineeNo)) {
-          const normalizedExistingRow = toCandidateWorkbookRow(row);
+        const normalizedExistingRow = toCandidateWorkbookRow(row);
+        const existingKey = createCandidateImportCompositeKey(normalizedExistingRow);
 
+        if (!existingRowMap.has(existingKey)) {
           normalizedExistingRow.id = String(row.id || "");
-          existingRowMap.set(row.examineeNo, normalizedExistingRow);
+          existingRowMap.set(existingKey, normalizedExistingRow);
         }
       });
     }
@@ -168,7 +176,7 @@ function createCandidateImportService({
 
   function classifyCandidateImportRows(normalizedRows = [], existingRowMap = new Map()) {
     return (Array.isArray(normalizedRows) ? normalizedRows : []).map((row, index) => {
-      const existingRow = existingRowMap.get(row.examineeNo) || null;
+      const existingRow = existingRowMap.get(createCandidateImportCompositeKey(row)) || null;
       const operation = existingRow ? (areCandidateImportRowsEqual(row, existingRow) ? "unchanged" : "update") : "insert";
 
       return {
@@ -219,7 +227,7 @@ function createCandidateImportService({
     const workbookRows = await parseCandidateWorkbook(payload.fileContentBase64);
     const schoolId = await resolveSchoolId(payload.schoolId);
     const normalizedRows = prepareCandidateImportRows(workbookRows);
-    const existingRowMap = await getExistingCandidateImportRowsByNos(normalizedRows.map((row) => row.examineeNo), schoolId);
+    const existingRowMap = await getExistingCandidateImportRowsByKeys(normalizedRows, schoolId);
     const classifiedRows = classifyCandidateImportRows(normalizedRows, existingRowMap);
     const previewRows = [];
     let insertCount = 0;
@@ -275,7 +283,7 @@ function createCandidateImportService({
     const schoolId = await resolveSchoolId(payload.schoolId);
     const normalizedRows = prepareCandidateImportRows(sourceRows);
     const existingDataPolicy = normalizeCandidateImportExistingDataPolicy(payload.existingDataPolicy);
-    const existingRowMap = await getExistingCandidateImportRowsByNos(normalizedRows.map((row) => row.examineeNo), schoolId);
+    const existingRowMap = await getExistingCandidateImportRowsByKeys(normalizedRows, schoolId);
     const selectedRows = classifyCandidateImportRows(normalizedRows, existingRowMap).filter((entry) =>
       shouldProcessCandidateImportOperation(entry.operation, existingDataPolicy),
     );

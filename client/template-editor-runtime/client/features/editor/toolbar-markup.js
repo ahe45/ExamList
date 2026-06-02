@@ -192,13 +192,13 @@
                   <input class="template-toolbar-font-size-input" id="${escapeEditorToolbarAttribute(fontSizeId)}" type="hidden" value="${escapeEditorToolbarAttribute(String(fontSizeValue))}" aria-hidden="true" tabindex="-1" />
                   <button class="template-toolbar-combo-value template-toolbar-font-size-value" data-editor-font-size-toggle="${escapeEditorToolbarAttribute(fontSizeId)}" type="button" aria-label="글꼴 크기 목록 열기" aria-expanded="false" aria-controls="${escapeEditorToolbarAttribute(resolvedFontSizeMenuId)}">
                     <span data-editor-font-size-current>${escapeEditorToolbarHtml(String(fontSizeValue))}</span>
+                    <span class="template-toolbar-combo-unit" aria-hidden="true">pt</span>
                     <span class="template-toolbar-combo-caret" aria-hidden="true"></span>
                   </button>
                   <div class="template-toolbar-combo-menu hidden" id="${escapeEditorToolbarAttribute(resolvedFontSizeMenuId)}" data-editor-font-size-menu-for="${escapeEditorToolbarAttribute(fontSizeId)}" role="listbox" aria-label="글꼴 크기 목록">
                     ${renderEditorToolbarFontSizeOptionButtons(fontSizeValue)}
                   </div>
                 </div>
-                <span class="template-toolbar-value-unit" aria-hidden="true">pt</span>
               </div>
             </div>
           </div>

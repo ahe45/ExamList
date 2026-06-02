@@ -203,20 +203,32 @@ export function renderPagePropertyPanel(editor, access) {
         <p class="section-kicker">여백</p>
         <div class="editor-page-margin-grid">
           <label class="form-field">
-            <span>상단 pt</span>
-            <input data-editor-page-margin-field="top" type="number" min="0" max="240" step="1" value="${escapeHtml(formatMarginInputValue(pageSafeArea.top))}" />
+            <span>상단</span>
+            <span class="template-page-property-unit-control">
+              <input data-editor-page-margin-field="top" type="number" min="0" max="240" step="1" value="${escapeHtml(formatMarginInputValue(pageSafeArea.top))}" />
+              <span class="template-page-property-control-unit" aria-hidden="true">pt</span>
+            </span>
           </label>
           <label class="form-field">
-            <span>우측 pt</span>
-            <input data-editor-page-margin-field="right" type="number" min="0" max="240" step="1" value="${escapeHtml(formatMarginInputValue(pageSafeArea.right))}" />
+            <span>우측</span>
+            <span class="template-page-property-unit-control">
+              <input data-editor-page-margin-field="right" type="number" min="0" max="240" step="1" value="${escapeHtml(formatMarginInputValue(pageSafeArea.right))}" />
+              <span class="template-page-property-control-unit" aria-hidden="true">pt</span>
+            </span>
           </label>
           <label class="form-field">
-            <span>하단 pt</span>
-            <input data-editor-page-margin-field="bottom" type="number" min="0" max="240" step="1" value="${escapeHtml(formatMarginInputValue(pageSafeArea.bottom))}" />
+            <span>하단</span>
+            <span class="template-page-property-unit-control">
+              <input data-editor-page-margin-field="bottom" type="number" min="0" max="240" step="1" value="${escapeHtml(formatMarginInputValue(pageSafeArea.bottom))}" />
+              <span class="template-page-property-control-unit" aria-hidden="true">pt</span>
+            </span>
           </label>
           <label class="form-field">
-            <span>좌측 pt</span>
-            <input data-editor-page-margin-field="left" type="number" min="0" max="240" step="1" value="${escapeHtml(formatMarginInputValue(pageSafeArea.left))}" />
+            <span>좌측</span>
+            <span class="template-page-property-unit-control">
+              <input data-editor-page-margin-field="left" type="number" min="0" max="240" step="1" value="${escapeHtml(formatMarginInputValue(pageSafeArea.left))}" />
+              <span class="template-page-property-control-unit" aria-hidden="true">pt</span>
+            </span>
           </label>
         </div>
         <p class="helper-text editor-page-margin-note">입력값은 PDF 좌표와 동일하게 pt 단위로 저장됩니다.</p>

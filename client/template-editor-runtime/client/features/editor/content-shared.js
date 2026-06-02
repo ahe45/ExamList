@@ -10,12 +10,12 @@
   const TEMPLATE_EDITOR_DEFAULT_FONT_SIZE = 11;
   const TEMPLATE_EDITOR_DEFAULT_TABLE_BORDER = "1px solid #000000";
   const TEMPLATE_EDITOR_DEFAULT_TABLE_HEADER_BACKGROUND = "#f6f8fc";
-  const TEMPLATE_EDITOR_DEFAULT_TABLE_CELL_PADDING = "8pt 10pt";
+  const TEMPLATE_EDITOR_DEFAULT_TABLE_CELL_PADDING = "2pt";
   const TEMPLATE_EDITOR_DEFAULT_TABLE_STYLE = "width: 100%; border-collapse: collapse; table-layout: fixed;";
   const TEMPLATE_EDITOR_DEFAULT_TABLE_CELL_STYLE =
-    "border: 1pt solid #000000; padding: 8pt 10pt; text-align: left; vertical-align: middle; font-size: 11pt;";
+    "border: 1pt solid #000000; padding: 2pt; text-align: left; vertical-align: middle; font-size: 11pt;";
   const TEMPLATE_EDITOR_DEFAULT_TABLE_HEADER_STYLE =
-    "border: 1pt solid #000000; padding: 8pt 10pt; text-align: left; vertical-align: middle; font-size: 11pt; background: rgba(238, 243, 251, 0.92);";
+    "border: 1pt solid #000000; padding: 2pt; text-align: left; vertical-align: middle; font-size: 11pt; background: rgba(238, 243, 251, 0.92);";
 
   function normalizeTemplateEditorFontNodes(rootElement, { appliedFontSizePt = null, appliedFontSizePx = null } = {}) {
     if (!rootElement?.querySelectorAll) {

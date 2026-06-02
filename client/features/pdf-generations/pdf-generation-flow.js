@@ -108,8 +108,20 @@ export function isPdfGenerationCreateConditionComplete(selectedFilterKeys = [], 
 export function getPdfGenerationRevealedFilterSteps(selectedFilterKeys = [], generationUnit = "") {
   const visibleSteps = getPdfGenerationVisibleFilterSteps(generationUnit);
   const alwaysRevealedStepCount = Math.min(3, visibleSteps.length);
+  const normalizedSelectedKeys = new Set(normalizePdfGenerationSelectedFilterKeys(selectedFilterKeys, generationUnit));
+  let revealedStepCount = alwaysRevealedStepCount;
 
-  return visibleSteps.slice(0, alwaysRevealedStepCount);
+  for (let index = alwaysRevealedStepCount - 1; index < visibleSteps.length; index += 1) {
+    const step = visibleSteps[index];
+
+    if (!step || !normalizedSelectedKeys.has(step.key)) {
+      break;
+    }
+
+    revealedStepCount = Math.min(index + 2, visibleSteps.length);
+  }
+
+  return visibleSteps.slice(0, revealedStepCount);
 }
 
 export function resetPdfGenerationLowerFilters(filters = {}, stepKey = "") {

@@ -449,6 +449,7 @@
         getTemplateEditorTextShadingElement: toolbarAccessors.getTextShadingElement,
         syncEditorToolbarBorderSelectControl: toolbar.syncEditorToolbarBorderSelectControl,
         syncEditorToolbarBorderWidthControl: toolbar.syncEditorToolbarBorderWidthControl,
+        syncEditorToolbarCellPaddingControl: toolbar.syncEditorToolbarCellPaddingControl,
         syncEditorToolbarColorControls: toolbar.syncEditorToolbarColorControls,
         updateEditorToolbarFormattingState: toolbar.updateEditorToolbarFormattingState,
       });

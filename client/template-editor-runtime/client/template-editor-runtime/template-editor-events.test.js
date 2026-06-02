@@ -514,6 +514,29 @@ test("template editor runtime preserves selection for border width dropdown opti
   assert.equal(didPreventDefault, true);
 });
 
+test("template editor runtime preserves selection for cell padding dropdown options", () => {
+  let cellPaddingOptionElement = null;
+  const { FakeElement, handlePointerDown, selectionSaveCalls } = createRuntimeEventHarness({
+    modalContains: (target) => target === cellPaddingOptionElement,
+  });
+  let didPreventDefault = false;
+
+  cellPaddingOptionElement = new FakeElement();
+  cellPaddingOptionElement.closest = (selector) =>
+    String(selector || "").includes("[data-editor-cell-padding-option]") ? cellPaddingOptionElement : null;
+
+  handlePointerDown({
+    button: 0,
+    preventDefault: () => {
+      didPreventDefault = true;
+    },
+    target: cellPaddingOptionElement,
+  });
+
+  assert.equal(selectionSaveCalls.length, 1);
+  assert.equal(didPreventDefault, true);
+});
+
 test("template editor runtime reapplies table selection visual state after toolbar focus", () => {
   let fontFamilyElement = null;
   let selectedCell = null;

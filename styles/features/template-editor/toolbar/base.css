@@ -166,16 +166,6 @@
   white-space: nowrap;
 }
 
-.template-toolbar-value-unit {
-  align-items: center;
-  color: var(--text-dim, var(--muted));
-  display: inline-flex;
-  font-size: 0.72rem;
-  font-weight: 900;
-  min-height: 36px;
-  white-space: nowrap;
-}
-
 .template-toolbar-input-stack {
   display: grid;
   gap: 4px;

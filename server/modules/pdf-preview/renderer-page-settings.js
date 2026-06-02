@@ -22,6 +22,8 @@ const legacyPageNumberPresetAliases = Object.freeze({
   current: "currentPageKorean",
   currentTotal: "numericCurrentTotal",
 });
+const pageNumberPositions = Object.freeze(["left", "center", "right"]);
+const pageNumberAdditionalHorizontalInsetPt = 10 * (72 / 25.4);
 
 function isCoverPage(page) {
   return String(page?.type || "").trim() === "cover";
@@ -113,9 +115,12 @@ function normalizePageNumberSettings(page) {
   const preset = Object.prototype.hasOwnProperty.call(pageNumberPresetTemplates, rawPreset)
     ? rawPreset
     : legacyPageNumberPresetAliases[rawPreset] || "numericCurrentTotal";
+  const rawPosition = String(source.position || source.align || source.textAlign || "").trim();
+  const position = pageNumberPositions.includes(rawPosition) ? rawPosition : "center";
 
   return {
     enabled: !isCoverPage(page) && (source.enabled === true || String(source.enabled || "").trim().toLowerCase() === "true"),
+    position,
     preset,
   };
 }
@@ -133,7 +138,12 @@ function renderPageNumberSetting(page, baseContext) {
     return "";
   }
 
-  return `<div class="preview-page-number">${escapeHtml(renderPageNumberText(settings, baseContext))}</div>`;
+  const safeArea = normalizeDocumentSafeArea(page);
+  const leftInset = formatPtValue(safeArea.left + pageNumberAdditionalHorizontalInsetPt);
+  const rightInset = formatPtValue(safeArea.right + pageNumberAdditionalHorizontalInsetPt);
+  const style = `left:${leftInset}pt;right:${rightInset}pt;text-align:${settings.position};`;
+
+  return `<div class="preview-page-number" style="${style}">${escapeHtml(renderPageNumberText(settings, baseContext))}</div>`;
 }
 
 module.exports = {

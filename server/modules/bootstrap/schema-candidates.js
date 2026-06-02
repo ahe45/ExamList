@@ -10,7 +10,8 @@ async function ensureCandidateRecordColumns(
   await connection.query(
     `
       ALTER TABLE \`candidate_records\`
-      MODIFY COLUMN \`source_type\` ENUM('manual', 'csv', 'xlsx') NOT NULL DEFAULT 'manual' COMMENT '데이터 입력 원본 유형'
+      MODIFY COLUMN \`source_type\` ENUM('manual', 'csv', 'xlsx') NOT NULL DEFAULT 'manual' COMMENT '데이터 입력 원본 유형',
+      MODIFY COLUMN \`source_id\` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '원본 시스템의 데이터 식별자'
     `,
   );
   await ensureColumn(connection, {
@@ -145,6 +146,11 @@ async function ensureCandidateRecordColumns(
   await ensureIndex(connection, {
     definition: "UNIQUE KEY uniq_candidate_records_school_source (school_id, source_type, source_id)",
     indexName: "uniq_candidate_records_school_source",
+    tableName: "candidate_records",
+  });
+  await ensureIndex(connection, {
+    definition: "UNIQUE KEY uniq_candidate_records_school_examinee_period (school_id, examinee_no, period_code)",
+    indexName: "uniq_candidate_records_school_examinee_period",
     tableName: "candidate_records",
   });
 }

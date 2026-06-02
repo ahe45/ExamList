@@ -137,11 +137,17 @@ function createRecognitionMarksControls(page) {
     <div class="template-page-margin-grid examlist-recognition-marks-grid">
       <label>
         <span>X 여백</span>
-        <input class="template-page-property-control" data-examlist-recognition-setting="offsetX" type="number" inputmode="decimal" autocomplete="off" min="0" max="80" step="0.5" value="${formatMillimeterInputValue(config.offsetXPt)}" aria-label="인식 기준값 X 여백 직접 입력" />
+        <span class="template-page-property-unit-control">
+          <input class="template-page-property-control" data-examlist-recognition-setting="offsetX" type="number" inputmode="decimal" autocomplete="off" min="0" max="80" step="0.5" value="${formatMillimeterInputValue(config.offsetXPt)}" aria-label="인식 기준값 X 여백 직접 입력" />
+          <span class="template-page-property-control-unit" aria-hidden="true">mm</span>
+        </span>
       </label>
       <label>
         <span>Y 여백</span>
-        <input class="template-page-property-control" data-examlist-recognition-setting="offsetY" type="number" inputmode="decimal" autocomplete="off" min="0" max="80" step="0.5" value="${formatMillimeterInputValue(config.offsetYPt)}" aria-label="인식 기준값 Y 여백 직접 입력" />
+        <span class="template-page-property-unit-control">
+          <input class="template-page-property-control" data-examlist-recognition-setting="offsetY" type="number" inputmode="decimal" autocomplete="off" min="0" max="80" step="0.5" value="${formatMillimeterInputValue(config.offsetYPt)}" aria-label="인식 기준값 Y 여백 직접 입력" />
+          <span class="template-page-property-control-unit" aria-hidden="true">mm</span>
+        </span>
       </label>
     </div>
   `;

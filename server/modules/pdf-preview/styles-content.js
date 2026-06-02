@@ -192,7 +192,7 @@ function getPreviewContentStyles() {
     .preview-document-body th,
     .preview-document-body td {
       border: 1pt solid rgba(154, 169, 191, 0.9);
-      padding: 8pt 10pt;
+      padding: 2pt;
       vertical-align: top;
     }
 

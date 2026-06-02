@@ -37,11 +37,48 @@ const legacyPageNumberPresetAliases = Object.freeze({
 });
 
 const pageNumberPresetKeys = Object.freeze(Object.keys(pageNumberPresetDefinitions));
+const pageNumberPositionDefinitions = Object.freeze({
+  left: Object.freeze({
+    cssTextAlign: "left",
+    cssJustifyContent: "flex-start",
+    label: "왼쪽",
+  }),
+  center: Object.freeze({
+    cssTextAlign: "center",
+    cssJustifyContent: "center",
+    label: "가운데",
+  }),
+  right: Object.freeze({
+    cssTextAlign: "right",
+    cssJustifyContent: "flex-end",
+    label: "오른쪽",
+  }),
+});
+const pageNumberPositionKeys = Object.freeze(Object.keys(pageNumberPositionDefinitions));
 
 const pageNumberDefaults = Object.freeze({
   enabled: false,
+  position: "center",
   preset: "numericCurrentTotal",
 });
+const millimeterToCssPixel = 96 / 25.4;
+const pageNumberAdditionalHorizontalInsetMm = 10;
+
+function parseCssPixelValue(value, fallback = 0) {
+  const parsedValue = Number.parseFloat(String(value || "").replace("px", ""));
+
+  return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : fallback;
+}
+
+function getPageNumberOverlayHorizontalInsets(surfaceElement) {
+  const style = surfaceElement ? getComputedStyle(surfaceElement) : null;
+  const additionalInset = pageNumberAdditionalHorizontalInsetMm * millimeterToCssPixel;
+
+  return {
+    left: parseCssPixelValue(style?.paddingLeft) + additionalInset,
+    right: parseCssPixelValue(style?.paddingRight) + additionalInset,
+  };
+}
 
 function isCoverTemplatePage(page) {
   return String(page?.type || "").trim() === "cover";
@@ -67,9 +104,12 @@ function normalizePageNumberConfig(value) {
   const preset = pageNumberPresetKeys.includes(rawPreset)
     ? rawPreset
     : legacyPageNumberPresetAliases[rawPreset] || pageNumberDefaults.preset;
+  const rawPosition = String(source.position || source.align || source.textAlign || "").trim();
+  const position = pageNumberPositionKeys.includes(rawPosition) ? rawPosition : pageNumberDefaults.position;
 
   return {
     enabled: source.enabled === true || String(source.enabled || "").trim().toLowerCase() === "true",
+    position,
     preset,
   };
 }
@@ -142,8 +182,16 @@ function updatePageNumberOverlay(surfaceElement, selectedPage, editorState) {
 
   const surfaceRect = surfaceElement.getBoundingClientRect();
   const canvasRect = canvasElement.getBoundingClientRect();
+  const horizontalInsets = getPageNumberOverlayHorizontalInsets(surfaceElement);
 
   overlayElement.textContent = renderPageNumberText(config, getEditorPageNumberContext(editorState, selectedPage));
+  overlayElement.dataset.pageNumberPosition = config.position;
+  overlayElement.style.justifyContent =
+    pageNumberPositionDefinitions[config.position]?.cssJustifyContent || pageNumberPositionDefinitions.center.cssJustifyContent;
+  overlayElement.style.textAlign =
+    pageNumberPositionDefinitions[config.position]?.cssTextAlign || pageNumberPositionDefinitions.center.cssTextAlign;
+  overlayElement.style.paddingLeft = `${Math.round(horizontalInsets.left * 100) / 100}px`;
+  overlayElement.style.paddingRight = `${Math.round(horizontalInsets.right * 100) / 100}px`;
   overlayElement.style.left = `${Math.round((surfaceRect.left - canvasRect.left + canvasElement.scrollLeft) * 100) / 100}px`;
   overlayElement.style.top = `${Math.round((surfaceRect.top - canvasRect.top + canvasElement.scrollTop) * 100) / 100}px`;
   overlayElement.style.width = `${Math.round(surfaceRect.width * 100) / 100}px`;
@@ -165,18 +213,32 @@ function createPageNumberControls(page) {
         <span class="examlist-switch-track" aria-hidden="true"><span></span></span>
       </label>
     </div>
-    <label>
-      <span>표시 방법</span>
-      <select class="template-page-property-control" data-examlist-page-number-setting="preset" ${config.enabled && !isCoverPage ? "" : "disabled"}>
-        ${pageNumberPresetKeys
-          .map((presetKey) => {
-            const preset = pageNumberPresetDefinitions[presetKey];
+    <div class="examlist-page-number-options-grid">
+      <label>
+        <span>표시 방법</span>
+        <select class="template-page-property-control" data-examlist-page-number-setting="preset" ${config.enabled && !isCoverPage ? "" : "disabled"}>
+          ${pageNumberPresetKeys
+            .map((presetKey) => {
+              const preset = pageNumberPresetDefinitions[presetKey];
 
-            return `<option value="${escapeHtml(presetKey)}" ${config.preset === presetKey ? "selected" : ""}>${escapeHtml(preset.label)}</option>`;
-          })
-          .join("")}
-      </select>
-    </label>
+              return `<option value="${escapeHtml(presetKey)}" ${config.preset === presetKey ? "selected" : ""}>${escapeHtml(preset.label)}</option>`;
+            })
+            .join("")}
+        </select>
+      </label>
+      <label>
+        <span>표시 위치</span>
+        <select class="template-page-property-control" data-examlist-page-number-setting="position" ${config.enabled && !isCoverPage ? "" : "disabled"}>
+          ${pageNumberPositionKeys
+            .map((positionKey) => {
+              const position = pageNumberPositionDefinitions[positionKey];
+
+              return `<option value="${escapeHtml(positionKey)}" ${config.position === positionKey ? "selected" : ""}>${escapeHtml(position.label)}</option>`;
+            })
+            .join("")}
+        </select>
+      </label>
+    </div>
   `;
 
   return sectionElement;
@@ -187,6 +249,7 @@ function syncPageNumberControls(sectionElement, page) {
   const config = getPageNumberConfig(page);
   const enabledControl = sectionElement?.querySelector?.('[data-examlist-page-number-setting="enabled"]');
   const presetControl = sectionElement?.querySelector?.('[data-examlist-page-number-setting="preset"]');
+  const positionControl = sectionElement?.querySelector?.('[data-examlist-page-number-setting="position"]');
 
   sectionElement?.classList?.toggle("is-cover-page", isCoverPage);
 
@@ -199,11 +262,17 @@ function syncPageNumberControls(sectionElement, page) {
     presetControl.value = config.preset;
     presetControl.disabled = isCoverPage || !config.enabled;
   }
+
+  if (positionControl instanceof HTMLSelectElement) {
+    positionControl.value = config.position;
+    positionControl.disabled = isCoverPage || !config.enabled;
+  }
 }
 
 function readPageNumberControls(sectionElement, fallbackConfig, page) {
   const enabledControl = sectionElement?.querySelector?.('[data-examlist-page-number-setting="enabled"]');
   const presetControl = sectionElement?.querySelector?.('[data-examlist-page-number-setting="preset"]');
+  const positionControl = sectionElement?.querySelector?.('[data-examlist-page-number-setting="position"]');
   const fallback = normalizePageNumberConfig(fallbackConfig);
 
   if (isCoverTemplatePage(page)) {
@@ -215,6 +284,7 @@ function readPageNumberControls(sectionElement, fallbackConfig, page) {
 
   return normalizePageNumberConfig({
     enabled: enabledControl instanceof HTMLInputElement ? enabledControl.checked : fallback.enabled,
+    position: positionControl instanceof HTMLSelectElement ? positionControl.value : fallback.position,
     preset: presetControl instanceof HTMLSelectElement ? presetControl.value : fallback.preset,
   });
 }

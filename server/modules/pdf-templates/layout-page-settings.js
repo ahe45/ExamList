@@ -21,6 +21,7 @@ const legacyPageNumberPresetAliases = Object.freeze({
   current: "currentPageKorean",
   currentTotal: "numericCurrentTotal",
 });
+const supportedPageNumberPositions = Object.freeze(["left", "center", "right"]);
 
 function normalizeRecognitionMarks(settings) {
   const source = settings && typeof settings === "object" ? settings : {};
@@ -39,9 +40,12 @@ function normalizePageNumberSettings(settings) {
   const preset = supportedPageNumberPresets.includes(rawPreset)
     ? rawPreset
     : legacyPageNumberPresetAliases[rawPreset] || "numericCurrentTotal";
+  const rawPosition = String(source.position || source.align || source.textAlign || "").trim();
+  const position = supportedPageNumberPositions.includes(rawPosition) ? rawPosition : "center";
 
   return {
     enabled: normalizeBoolean(source.enabled, false),
+    position,
     preset,
   };
 }
@@ -160,5 +164,6 @@ module.exports = {
   normalizePageNumberSettings,
   normalizePageSettings,
   normalizeRecognitionMarks,
+  supportedPageNumberPositions,
   supportedPageNumberPresets,
 };

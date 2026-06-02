@@ -10,6 +10,11 @@ const candidateExportColumns = candidateFields.createWorkbookTextColumns({
 });
 const optionalCandidateTemplateColumnKeys = new Set(candidateFields.optionalTemplateFieldKeys);
 const legacyCandidateTemplateHeaders = candidateFields.legacyTemplateHeaders;
+const candidateTemplateRequiredHeaderFill = Object.freeze({
+  fgColor: { argb: "FFFFF2CC" },
+  pattern: "solid",
+  type: "pattern",
+});
 
 function createCandidateWorkbookService({ createHttpError }) {
   function normalizeText(value, fieldName, rowNumber) {
@@ -28,23 +33,7 @@ function createCandidateWorkbookService({ createHttpError }) {
   }
 
   function normalizeTime(value, fieldName, rowNumber) {
-    const normalizedValue = normalizeText(value, fieldName, rowNumber);
-
-    if (!/^\d{2}:\d{2}$/.test(normalizedValue)) {
-      const suffix = Number.isFinite(rowNumber) && rowNumber >= 0 ? ` (${rowNumber}행)` : "";
-      throw createHttpError(400, `${fieldName} 형식은 HH:MM이어야 합니다.${suffix}`, "CANDIDATE_TIME_INVALID");
-    }
-
-    const [hourText, minuteText] = normalizedValue.split(":");
-    const hour = Number(hourText);
-    const minute = Number(minuteText);
-
-    if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-      const suffix = Number.isFinite(rowNumber) && rowNumber >= 0 ? ` (${rowNumber}행)` : "";
-      throw createHttpError(400, `${fieldName} 값이 올바르지 않습니다.${suffix}`, "CANDIDATE_TIME_INVALID");
-    }
-
-    return normalizedValue;
+    return normalizeText(value, fieldName, rowNumber);
   }
 
   function normalizeOptionalTime(value, fieldName, rowNumber) {
@@ -54,7 +43,7 @@ function createCandidateWorkbookService({ createHttpError }) {
       return "";
     }
 
-    return normalizeTime(normalizedValue, fieldName, rowNumber);
+    return normalizedValue;
   }
 
   function normalizeYear(value, fieldName, rowNumber) {
@@ -74,10 +63,10 @@ function createCandidateWorkbookService({ createHttpError }) {
     return {
       admission: normalizeText(candidateInput.admission ?? candidateInput.exam, "전형명", rowNumber),
       admissionYear: normalizeOptionalText(candidateInput.admissionYear),
-      admissionCode: normalizeOptionalText(candidateInput.admissionCode),
+      admissionCode: normalizeText(candidateInput.admissionCode, "전형코드", rowNumber),
       birth: normalizeText(candidateInput.birth ?? candidateInput.birthDate, "생년월일", rowNumber),
       building: normalizeText(candidateInput.building, "고사건물명", rowNumber),
-      buildingCode: normalizeOptionalText(candidateInput.buildingCode),
+      buildingCode: normalizeText(candidateInput.buildingCode, "고사건물코드", rowNumber),
       campus: normalizeOptionalText(candidateInput.campus ?? candidateInput.campusName),
       campusCode: normalizeOptionalText(candidateInput.campusCode),
       date: normalizeText(candidateInput.date ?? candidateInput.examDate, "시험날짜", rowNumber),
@@ -93,9 +82,9 @@ function createCandidateWorkbookService({ createHttpError }) {
       opt4: normalizeOptionalText(candidateInput.opt4 ?? candidateInput.OPT4),
       opt5: normalizeOptionalText(candidateInput.opt5 ?? candidateInput.OPT5),
       period: normalizeText(candidateInput.period ?? candidateInput.periodName, "교시명", rowNumber),
-      periodCode: normalizeOptionalText(candidateInput.periodCode),
+      periodCode: normalizeText(candidateInput.periodCode, "교시코드", rowNumber),
       room: normalizeText(candidateInput.room, "고사실명", rowNumber),
-      roomCode: normalizeOptionalText(candidateInput.roomCode),
+      roomCode: normalizeText(candidateInput.roomCode, "고사실코드", rowNumber),
       series: normalizeText(candidateInput.series, "계열명", rowNumber),
       seriesCode: normalizeOptionalText(candidateInput.seriesCode),
       temporaryNo: normalizeOptionalText(candidateInput.temporaryNo),
@@ -103,7 +92,7 @@ function createCandidateWorkbookService({ createHttpError }) {
       endTime: normalizeOptionalTime(candidateInput.endTime ?? candidateInput.examEndTime, "종료시간", rowNumber),
       track: normalizeText(candidateInput.track, "모집시기", rowNumber),
       unit: normalizeText(candidateInput.unit, "모집단위명", rowNumber),
-      unitCode: normalizeOptionalText(candidateInput.unitCode),
+      unitCode: normalizeText(candidateInput.unitCode, "모집단위코드", rowNumber),
     };
   }
 
@@ -163,6 +152,14 @@ function createCandidateWorkbookService({ createHttpError }) {
       pattern: "solid",
       type: "pattern",
     };
+  }
+
+  function applyCandidateTemplateRequiredHeaderStyle(worksheet) {
+    candidateTemplateColumns.forEach((column, columnIndex) => {
+      if (!optionalCandidateTemplateColumnKeys.has(column.key)) {
+        worksheet.getRow(1).getCell(columnIndex + 1).fill = candidateTemplateRequiredHeaderFill;
+      }
+    });
   }
 
   function buildWorkbookSheet(workbook, sheetName, columns, rows) {
@@ -242,6 +239,7 @@ function createCandidateWorkbookService({ createHttpError }) {
     }));
 
     applyWorkbookHeaderStyle(worksheet);
+    applyCandidateTemplateRequiredHeaderStyle(worksheet);
     worksheet.addRow(
       candidateTemplateColumns.reduce((row, column) => {
         row[column.key] = column.sample;

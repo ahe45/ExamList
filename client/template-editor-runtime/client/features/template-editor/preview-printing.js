@@ -111,7 +111,7 @@
         }
         .template-render-sheet table { width: 100%; border-collapse: collapse; margin: 1pt 0; table-layout: fixed; }
         .template-render-sheet th,
-        .template-render-sheet td { border: 1pt solid rgba(154, 169, 191, 0.9); padding: 8pt 10pt; text-align: left; vertical-align: top; font-size: 11pt; }
+        .template-render-sheet td { border: 1pt solid rgba(154, 169, 191, 0.9); padding: 2pt; text-align: left; vertical-align: top; font-size: 11pt; }
         .template-render-sheet th { background: rgba(238, 243, 251, 0.92); font-weight: 800; }
         .template-render-sheet hr { border: 0; border-top: 1pt solid #d8e0ea; margin: 20pt 0; }
         @media print {
