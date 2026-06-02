@@ -627,6 +627,46 @@ function getCandidateBlockPreviewSize(config = {}) {
   };
 }
 
+function isColumnNameRowEnabled(config = {}) {
+  return Boolean(config?.columnNameRow?.enabled);
+}
+
+function getCandidateBlockRenderedHeightPt(config = {}) {
+  const dataHeightPt = Number(config.heightPt) || 0;
+
+  if (!(dataHeightPt > 0)) {
+    return 0;
+  }
+
+  return dataHeightPt + (isColumnNameRowEnabled(config) ? Number(config.columnNameRow?.heightPt) || 0 : 0);
+}
+
+function getRenderedCandidateBlockGridRow(row = 1, hasColumnNameRow = false) {
+  const safeRow = Math.max(1, Math.round(Number(row)) || 1);
+
+  return hasColumnNameRow ? 2 + (safeRow - 1) * 2 : safeRow;
+}
+
+function getCandidateBlockGridRowTemplateValue(config = {}, formatPtValue = (value) => value) {
+  const rowCount = Math.max(1, Math.round(Number(config.rows)) || 1);
+
+  if (!isColumnNameRowEnabled(config)) {
+    return `repeat(${rowCount}, minmax(0, 1fr))`;
+  }
+
+  const tracks = [`${formatPtValue(config.columnNameRow?.heightPt || 0)}pt`];
+
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+    tracks.push("minmax(0, 1fr)");
+
+    if (rowIndex < rowCount - 1) {
+      tracks.push(`${formatPtValue(config.gapYPt)}pt`);
+    }
+  }
+
+  return tracks.join(" ");
+}
+
 function getColumnMajorGridPosition(slotIndex = 0, config = {}) {
   const rowCount = Math.max(1, Math.round(Number(config.rows)) || 1);
   const columnIndex = Math.floor(Math.max(0, slotIndex) / rowCount);
@@ -641,6 +681,7 @@ function getColumnMajorGridPosition(slotIndex = 0, config = {}) {
 function getCandidateBlockGridClassName(config = {}) {
   return [
     "preview-candidate-block-grid",
+    isColumnNameRowEnabled(config) ? "has-candidate-block-column-name-row" : "",
     Number(config.gapXPt) === 0 ? "is-candidate-block-zero-gap-x" : "",
     Number(config.gapYPt) === 0 ? "is-candidate-block-zero-gap-y" : "",
   ].filter(Boolean).join(" ");
@@ -719,16 +760,57 @@ function createCandidateBlockGridRenderer({
     }));
     const blockSize = getCandidateBlockPreviewSize(config);
     const blockEntries = createColumnMajorCandidateBlockEntries(rows, config);
+    const hasColumnNameRow = isColumnNameRowEnabled(config);
+    const renderedHeightPt = getCandidateBlockRenderedHeightPt(config);
+    const rowTemplateValue = getCandidateBlockGridRowTemplateValue(config, formatPtValue);
+    const rowGapPt = hasColumnNameRow ? 0 : config.gapYPt;
+    const columnNameHtml = hasColumnNameRow
+      ? Array.from({ length: Math.max(1, Number(config.columns) || 1) }, (_item, columnIndex) => {
+          const column = columnIndex + 1;
+          const headerContext = {
+            ...baseContext,
+            __emptyValueData: baseContext.__emptyValueData,
+            __sampleData: baseContext.__sampleData,
+            __sampleFallbackForEmptyDataTags: true,
+            __styleEmptyValueFallback: true,
+            candidate: buildCandidateTokenMap({}, baseContext.school),
+            room: {
+              ...buildRoomTokenMap({}, baseContext._roomAssignmentCountMap),
+              otherRoom: baseContext.room?.otherRoom || "",
+            },
+            row: {
+              index: "",
+              indexInPage: "",
+              indexInUnit: "",
+            },
+          };
+
+          return `
+            <div class="preview-candidate-block preview-candidate-block-column-name" data-candidate-block-column-name="true" data-candidate-block-grid-row="1" data-candidate-block-grid-column="${column}" style="grid-row:1;grid-column:${column};">
+              ${renderCandidateBlockTemplateHtml(config.columnNameRow.templateHtml, headerContext, {
+                heightPx: (Number(config.columnNameRow.heightPt) || 0) * cssPixelsPerPoint,
+                widthPx: blockSize.widthPx,
+              })}
+            </div>
+          `;
+        }).join("")
+      : "";
 
     return `
       <div
         class="${getCandidateBlockGridClassName(config)}"
         data-candidate-block-grid="true"
-        style="grid-auto-flow:column;grid-template-columns:repeat(${config.columns}, minmax(0, 1fr));grid-template-rows:repeat(${config.rows}, minmax(0, 1fr));gap:${formatPtValue(config.gapYPt)}pt ${formatPtValue(config.gapXPt)}pt;${config.xPt > 0 || config.yPt > 0 ? `position:absolute;left:${formatPtValue(config.xPt)}pt;top:${formatPtValue(config.yPt)}pt;` : ""}${config.widthPt > 0 ? `width:${formatPtValue(config.widthPt)}pt;` : ""}${config.heightPt > 0 ? `height:${formatPtValue(config.heightPt)}pt;` : ""}"
+        style="grid-auto-flow:column;grid-template-columns:repeat(${config.columns}, minmax(0, 1fr));grid-template-rows:${rowTemplateValue};gap:${formatPtValue(rowGapPt)}pt ${formatPtValue(config.gapXPt)}pt;${config.xPt > 0 || config.yPt > 0 ? `position:absolute;left:${formatPtValue(config.xPt)}pt;top:${formatPtValue(config.yPt)}pt;` : ""}${config.widthPt > 0 ? `width:${formatPtValue(config.widthPt)}pt;` : ""}${renderedHeightPt > 0 ? `height:${formatPtValue(renderedHeightPt)}pt;` : ""}"
       >
+        ${columnNameHtml}
         ${blockEntries
           .map(({ rowEntry, slotIndex }) => {
             const gridPosition = getColumnMajorGridPosition(slotIndex, config);
+            const renderedGridRow = getRenderedCandidateBlockGridRow(gridPosition.row, hasColumnNameRow);
+            const canRenderEmptyBlockLayer = baseContext.__isOtherRoomPage !== true;
+            const blockTemplateHtml = canRenderEmptyBlockLayer && rowEntry.isEmpty && config.emptyBlockLayer?.enabled
+              ? config.emptyBlockLayer.templateHtml
+              : config.blockTemplateHtml;
             const rowContext = {
               ...baseContext,
               __emptyValueData: baseContext.__emptyValueData,
@@ -748,8 +830,8 @@ function createCandidateBlockGridRenderer({
             };
 
             return `
-              <div class="preview-candidate-block" data-candidate-block-grid-row="${gridPosition.row}" data-candidate-block-grid-column="${gridPosition.column}" data-candidate-block-index="${slotIndex + 1}" style="grid-row:${gridPosition.row};grid-column:${gridPosition.column};">
-                ${renderCandidateBlockTemplateHtml(config.blockTemplateHtml, rowContext, blockSize)}
+              <div class="preview-candidate-block" data-candidate-block-grid-row="${renderedGridRow}" data-candidate-block-grid-column="${gridPosition.column}" data-candidate-block-index="${slotIndex + 1}" style="grid-row:${renderedGridRow};grid-column:${gridPosition.column};">
+                ${renderCandidateBlockTemplateHtml(blockTemplateHtml, rowContext, blockSize)}
               </div>
             `;
           })

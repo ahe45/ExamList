@@ -117,6 +117,7 @@
       getTemplateEditorSelectionNode,
       getTemplateEditorSurface,
       getTemplateEditorTableLogicalColumnWidth,
+      getTemplateEditorTableLogicalRowHeight,
       setTemplateEditorTableLogicalColumnWidth,
       setTemplateEditorTableLogicalColumnWidths,
       setTemplateEditorTableLogicalRowHeight,

@@ -75,11 +75,36 @@ function normalizeCandidateBlockGridSettings(settings) {
   const blockTemplateHtml = isSmokeCandidateBlockTemplateHtml(rawBlockTemplateHtml)
     ? "<p><br></p>"
     : rawBlockTemplateHtml || "<p><br></p>";
+  const normalizeCandidateBlockTemplateHtml = (value) => {
+    const rawValue = String(value || "").trim();
+
+    return isSmokeCandidateBlockTemplateHtml(rawValue) ? "<p><br></p>" : rawValue || "<p><br></p>";
+  };
+  const normalizeTemplateFeature = (value) => {
+    const featureSource = value && typeof value === "object" ? value : {};
+
+    return {
+      enabled: normalizeBoolean(featureSource.enabled, false),
+      templateHtml: normalizeCandidateBlockTemplateHtml(featureSource.templateHtml ?? featureSource.blockTemplateHtml),
+    };
+  };
+  const columnNameRowSource = source.columnNameRow ?? source.fieldNameRow;
+  const columnNameRow = normalizeTemplateFeature(columnNameRowSource);
 
   return {
     blockTemplateHtml,
+    columnNameRow: {
+      ...columnNameRow,
+      heightPt: normalizeFiniteNumber(
+        columnNameRowSource?.heightPt ?? columnNameRowSource?.height,
+        20,
+        4,
+        240,
+      ),
+    },
     columns: Math.round(normalizeFiniteNumber(source.columns, 2, 1, 4)),
     enabled: normalizeBoolean(source.enabled, false),
+    emptyBlockLayer: normalizeTemplateFeature(source.emptyBlockLayer ?? source.emptyValueLayer),
     fillEmptyBlocks: normalizeBoolean(source.fillEmptyBlocks, true),
     gapXPt: normalizeFiniteNumber(source.gapXPt ?? source.gapX, 4, 0, 48),
     gapYPt: normalizeFiniteNumber(source.gapYPt ?? source.gapY, 4, 0, 48),

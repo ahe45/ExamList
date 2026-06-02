@@ -2,6 +2,7 @@ const dataFitMinimumFontSizePx = 5;
 const dataFitBaseTolerancePx = 1.25;
 const dataFitMaxHeightTolerancePx = 4;
 const dataFitRowspanToleranceStepPx = 0.75;
+const dataFitIntrinsicHeightTolerancePx = 8;
 
 function getPreviewDataFitHeightTolerancePx(rowSpan = 1) {
   const safeRowSpan = Math.max(1, Math.round(Number(rowSpan)) || 1);
@@ -17,6 +18,7 @@ function getPreviewDataFitScript() {
               const cssPixelsPerPoint = 96 / 72;
               const minimumFontSizePx = ${dataFitMinimumFontSizePx};
               const tolerancePx = ${dataFitBaseTolerancePx};
+              const intrinsicHeightTolerancePx = ${dataFitIntrinsicHeightTolerancePx};
 
               function parseCssLength(value) {
                 const match = String(value || "").trim().match(/^(-?\\d+(?:\\.\\d+)?)(px|pt)?$/i);
@@ -93,14 +95,108 @@ function getPreviewDataFitScript() {
                 return height;
               }
 
-              function getCellTargetHeightPx(cell) {
-                const cellHeight = getDeclaredHeightPx(cell);
+              function getTableDeclaredRowsHeightPx(table) {
+                const rows = Array.from(table?.rows || []);
 
-                if (cellHeight > 0) {
-                  return cellHeight;
+                if (!rows.length) {
+                  return 0;
                 }
 
-                return getSpannedRowHeightPx(cell);
+                return rows.reduce((height, row) => {
+                  const rowHeight = getDeclaredHeightPx(row) || getRowFallbackHeightPx(row);
+
+                  return rowHeight > 0 ? height + rowHeight : height;
+                }, 0);
+              }
+
+              function shouldUseRenderedTableLayoutHeight(cell, targetHeightPx) {
+                const table = cell?.closest?.("table") || null;
+                const tableHeight = getDeclaredHeightPx(table);
+                const renderedCellHeight = cell?.getBoundingClientRect?.().height || 0;
+
+                if (!(renderedCellHeight > targetHeightPx + tolerancePx)) {
+                  return false;
+                }
+
+                const renderedTableHeight = table.getBoundingClientRect?.().height || 0;
+                const declaredRowsHeight = getTableDeclaredRowsHeightPx(table);
+                const isCandidateBlockTableLayout = Boolean(table?.closest?.(".preview-candidate-block"));
+                const renderedTableLayoutExpanded =
+                  isCandidateBlockTableLayout && renderedTableHeight > declaredRowsHeight + tolerancePx;
+                const declaredTableLayoutExpanded =
+                  tableHeight > 0 && tableHeight > declaredRowsHeight + tolerancePx;
+
+                return (
+                  declaredRowsHeight > 0 &&
+                  renderedTableHeight > 0 &&
+                  (declaredTableLayoutExpanded || renderedTableLayoutExpanded)
+                );
+              }
+
+              function getComputedPixelValue(value) {
+                const parsedValue = parseFloat(value);
+
+                return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 0;
+              }
+
+              function getCellVerticalBoxHeightPx(cell) {
+                const computedStyle = window.getComputedStyle(cell);
+
+                return (
+                  getComputedPixelValue(computedStyle.paddingTop) +
+                  getComputedPixelValue(computedStyle.paddingBottom) +
+                  getComputedPixelValue(computedStyle.borderTopWidth) +
+                  getComputedPixelValue(computedStyle.borderBottomWidth)
+                );
+              }
+
+              function getCellSingleLineContentHeightPx(cell) {
+                return Array.from(cell.querySelectorAll(fitSelector)).reduce((height, element) => {
+                  if (!(element instanceof HTMLElement)) {
+                    return height;
+                  }
+
+                  const computedStyle = window.getComputedStyle(element);
+                  const fontSize = getComputedPixelValue(computedStyle.fontSize);
+                  const lineHeight = getComputedPixelValue(computedStyle.lineHeight) || fontSize * 1.2;
+
+                  return Math.max(height, lineHeight);
+                }, 0);
+              }
+
+              function shouldUseRenderedIntrinsicHeight(cell, targetHeightPx) {
+                const renderedCellHeight = cell?.getBoundingClientRect?.().height || 0;
+
+                if (!(renderedCellHeight > targetHeightPx + tolerancePx)) {
+                  return false;
+                }
+
+                const intrinsicSingleLineHeight = getCellVerticalBoxHeightPx(cell) + getCellSingleLineContentHeightPx(cell);
+
+                return (
+                  intrinsicSingleLineHeight > targetHeightPx + tolerancePx &&
+                  renderedCellHeight <= intrinsicSingleLineHeight + intrinsicHeightTolerancePx &&
+                  cell.scrollHeight <= cell.clientHeight + tolerancePx
+                );
+              }
+
+              function shouldUseRenderedCellHeight(cell, targetHeightPx) {
+                return (
+                  shouldUseRenderedTableLayoutHeight(cell, targetHeightPx) ||
+                  shouldUseRenderedIntrinsicHeight(cell, targetHeightPx)
+                );
+              }
+
+              function getCellTargetHeightPx(cell) {
+                const cellHeight = getDeclaredHeightPx(cell);
+                const spannedRowHeight = getSpannedRowHeightPx(cell);
+                const targetHeight = Math.max(cellHeight, spannedRowHeight);
+
+                if (targetHeight > 0 && shouldUseRenderedCellHeight(cell, targetHeight)) {
+                  return Math.max(targetHeight, cell.getBoundingClientRect().height || 0);
+                }
+
+                return targetHeight;
               }
 
               function getCellFitHeightTolerancePx(cell) {
@@ -118,6 +214,10 @@ function getPreviewDataFitScript() {
                 }
 
                 return fallback;
+              }
+
+              function getSavedCellTargetHeightPx(cell) {
+                return getBaseNumber(cell, "data-template-data-fit-target-height", 0);
               }
 
               function getFitItems(cell) {
@@ -150,7 +250,8 @@ function getPreviewDataFitScript() {
               function applyScale(items, scale) {
                 items.forEach((item) => {
                   const fontSize = Math.max(minimumFontSizePx, item.baseFontSize * scale);
-                  const lineHeight = Math.max(fontSize * 1.05, item.baseLineHeight * scale);
+                  const effectiveScale = item.baseFontSize > 0 ? fontSize / item.baseFontSize : scale;
+                  const lineHeight = Math.max(1, item.baseLineHeight * effectiveScale);
 
                   item.element.style.fontSize = formatPx(fontSize);
                   item.element.style.lineHeight = formatPx(lineHeight);
@@ -161,7 +262,10 @@ function getPreviewDataFitScript() {
                 const rectHeight = cell.getBoundingClientRect().height;
                 const heightTolerancePx = getCellFitHeightTolerancePx(cell);
 
-                if (rectHeight > targetHeightPx + heightTolerancePx) {
+                if (
+                  rectHeight > targetHeightPx + heightTolerancePx &&
+                  !shouldUseRenderedTableLayoutHeight(cell, targetHeightPx)
+                ) {
                   return false;
                 }
 
@@ -173,7 +277,7 @@ function getPreviewDataFitScript() {
                   return;
                 }
 
-                const targetHeightPx = getCellTargetHeightPx(cell);
+                const targetHeightPx = Math.max(getSavedCellTargetHeightPx(cell), getCellTargetHeightPx(cell));
 
                 if (!(targetHeightPx > 0)) {
                   return;
@@ -186,6 +290,7 @@ function getPreviewDataFitScript() {
                 }
 
                 cell.classList.add("preview-data-fit-cell");
+                cell.setAttribute("data-template-data-fit-target-height", String(targetHeightPx));
                 cell.style.height = formatPx(targetHeightPx);
                 cell.style.maxHeight = formatPx(targetHeightPx);
                 cell.style.overflow = "hidden";

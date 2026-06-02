@@ -2,12 +2,12 @@ import {
   candidateBlockGridMinimumHeight,
   candidateBlockGridMinimumRowHeight,
   candidateBlockGridMinimumWidth,
+  pointValueToCssPixel,
 } from "./candidate-block-grid-config.js";
 import { getCandidateBlockGridTableMinimumSize } from "./candidate-block-grid-table-normalizer.js";
 import { getObjectCandidateBlockVisualScale } from "./object-alignment-runtime.js";
 import { templateEditorObjectMinimumSize } from "./object-toolbar-constants.js";
 import {
-  parseObjectSizeInlinePixelValue,
   parseObjectSizePixelValue,
 } from "./object-size-values.js";
 
@@ -43,9 +43,16 @@ export function getCandidateBlockGridMinimumSize(gridElement) {
   const tableMinimumSize = getCandidateBlockGridTableMinimumSize(gridElement);
   const gridStyle = window.getComputedStyle(gridElement);
   const rowCount = Math.max(1, Math.round(Number(gridElement?.dataset?.candidateBlockRows) || 1));
-  const rowGap = parseObjectSizePixelValue(gridStyle.rowGap || gridStyle.gap, 0);
+  const hasColumnNameRow = gridElement?.dataset?.candidateBlockColumnNameRowEnabled === "true";
+  const columnNameRowHeight = hasColumnNameRow
+    ? parseObjectSizePixelValue(String(gridStyle.gridTemplateRows || "").split(/\s+/)[0], 0)
+    : 0;
+  const rowGap = hasColumnNameRow
+    ? pointValueToCssPixel(Number(gridElement?.dataset?.candidateBlockGapYPt) || 0)
+    : parseObjectSizePixelValue(gridStyle.rowGap || gridStyle.gap, 0);
   const rowMinimumHeight = Math.ceil(
     rowCount * candidateBlockGridMinimumRowHeight +
+      columnNameRowHeight +
       Math.max(0, rowCount - 1) * rowGap,
   );
 
@@ -82,23 +89,10 @@ export function getObjectTableCollapsedBorderAdjustment(tableElement) {
   );
 }
 
-export function getObjectTableRenderedTargetWidth(tableElement, targetWidth) {
-  const inlineWidth = parseObjectSizeInlinePixelValue(tableElement?.style?.width, 0);
-  const rectWidth = tableElement?.getBoundingClientRect?.().width || 0;
-  const visualScale = getObjectCandidateBlockVisualScale(tableElement);
-  const scaleX = Math.max(visualScale.x || 1, 0.01);
-  const logicalRectWidth = rectWidth > 0 ? rectWidth / scaleX : 0;
-  const renderedWidthAdjustment = inlineWidth > 0 && logicalRectWidth > inlineWidth
-    ? Math.ceil(logicalRectWidth - inlineWidth)
-    : 0;
-
+export function getObjectTableRenderedTargetWidth(_tableElement, targetWidth) {
   return Math.max(
     templateEditorObjectMinimumSize,
-    Math.round(targetWidth) -
-      Math.max(
-        renderedWidthAdjustment,
-        Math.max(0, Math.ceil(getObjectTableCollapsedBorderAdjustment(tableElement))),
-    ),
+    Math.round(targetWidth),
   );
 }
 

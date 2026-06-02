@@ -3,11 +3,21 @@ export const candidateBlockFocusTableObjectOuterHitSlop = 24;
 export const candidateBlockGridMinimumRowHeight = 20;
 export const candidateBlockGridMinimumHeight = candidateBlockGridMinimumRowHeight;
 export const candidateBlockGridMinimumWidth = 120;
+export const candidateBlockGridColumnNameRowDefaultHeightPt = 20;
 const cssPixelsPerPoint = 96 / 72;
 export const candidateBlockGridDefaults = Object.freeze({
   blockTemplateHtml: "<p><br></p>",
+  columnNameRow: Object.freeze({
+    enabled: false,
+    heightPt: candidateBlockGridColumnNameRowDefaultHeightPt,
+    templateHtml: "<p><br></p>",
+  }),
   columns: 2,
   enabled: false,
+  emptyBlockLayer: Object.freeze({
+    enabled: false,
+    templateHtml: "<p><br></p>",
+  }),
   fillEmptyBlocks: true,
   gapXPt: 4,
   gapYPt: 4,
@@ -141,6 +151,34 @@ export function normalizeCandidateBlockTemplateHtml(value) {
   return normalizedValue || candidateBlockGridDefaults.blockTemplateHtml;
 }
 
+function normalizeCandidateBlockOptionalTemplateSettings(value, defaults = {}) {
+  const source = value && typeof value === "object" ? value : {};
+  const fallback = defaults && typeof defaults === "object" ? defaults : {};
+
+  return {
+    enabled: source.enabled === true || String(source.enabled || "").trim() === "true",
+    templateHtml: normalizeCandidateBlockTemplateHtml(source.templateHtml ?? source.blockTemplateHtml ?? fallback.templateHtml),
+  };
+}
+
+function normalizeCandidateBlockColumnNameRowSettings(value) {
+  const source = value && typeof value === "object" ? value : {};
+  const normalizedBase = normalizeCandidateBlockOptionalTemplateSettings(
+    source,
+    candidateBlockGridDefaults.columnNameRow,
+  );
+
+  return {
+    ...normalizedBase,
+    heightPt: clampPointValue(
+      source.heightPt ?? source.height,
+      candidateBlockGridDefaults.columnNameRow.heightPt,
+      4,
+      240,
+    ),
+  };
+}
+
 function isSmokeCandidateBlockTemplateHtml(value) {
   const normalizedText = String(value || "")
     .replace(/<br\s*\/?>/gi, "")
@@ -157,8 +195,13 @@ export function normalizeCandidateBlockGridConfig(value) {
 
   return {
     blockTemplateHtml: normalizeCandidateBlockTemplateHtml(source.blockTemplateHtml),
+    columnNameRow: normalizeCandidateBlockColumnNameRowSettings(source.columnNameRow ?? source.fieldNameRow),
     columns: clampInteger(source.columns, candidateBlockGridDefaults.columns, 1, 4),
     enabled: source.enabled === true || String(source.enabled || "").trim() === "true",
+    emptyBlockLayer: normalizeCandidateBlockOptionalTemplateSettings(
+      source.emptyBlockLayer ?? source.emptyValueLayer,
+      candidateBlockGridDefaults.emptyBlockLayer,
+    ),
     fillEmptyBlocks: source.fillEmptyBlocks === false || String(source.fillEmptyBlocks || "").trim() === "false"
       ? false
       : candidateBlockGridDefaults.fillEmptyBlocks,

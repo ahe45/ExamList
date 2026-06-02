@@ -192,7 +192,16 @@ function clearPageCanvasContent(page) {
     settings.candidateBlockGrid = {
       ...settings.candidateBlockGrid,
       blockTemplateHtml: "<p><br></p>",
+      columnNameRow: {
+        enabled: false,
+        heightPt: 20,
+        templateHtml: "<p><br></p>",
+      },
       enabled: false,
+      emptyBlockLayer: {
+        enabled: false,
+        templateHtml: "<p><br></p>",
+      },
     };
   }
 

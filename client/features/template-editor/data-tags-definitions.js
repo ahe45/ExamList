@@ -108,6 +108,76 @@ function getTokenIconMarkup(definition = {}, viewOptions = getDataTagViewOptions
   return definition.iconMarkup || renderDataTagIcon(definition.iconKey || getDataTagGroupForKey(definition.key)?.icon || "more");
 }
 
+function getDirectTokenIconElement(tokenElement) {
+  return Array.from(tokenElement?.children || []).find((childElement) =>
+    String(childElement?.tagName || "").toLowerCase() === "svg"
+  ) || null;
+}
+
+function setTokenIconMarkupPreservingText(tokenElement, iconMarkup) {
+  if (!tokenElement) {
+    return;
+  }
+
+  const normalizedIconMarkup = String(iconMarkup || "").trim();
+  const currentIconElement = getDirectTokenIconElement(tokenElement);
+
+  if (!normalizedIconMarkup) {
+    currentIconElement?.remove?.();
+    return;
+  }
+
+  if (currentIconElement) {
+    currentIconElement.outerHTML = normalizedIconMarkup;
+    return;
+  }
+
+  tokenElement.insertAdjacentHTML?.("afterbegin", normalizedIconMarkup);
+}
+
+function isInsideTokenIcon(node) {
+  return Boolean(node?.parentElement?.closest?.("svg"));
+}
+
+function isTokenIconElement(element) {
+  return String(element?.tagName || "").toLowerCase() === "svg";
+}
+
+function setTokenTextPreservingMarkup(tokenElement, nextText) {
+  if (!tokenElement) {
+    return;
+  }
+
+  const normalizedText = String(nextText ?? "");
+  const textNodes = [];
+  const walker = document.createTreeWalker(tokenElement, NodeFilter.SHOW_TEXT);
+
+  while (walker.nextNode()) {
+    if (!isInsideTokenIcon(walker.currentNode)) {
+      textNodes.push(walker.currentNode);
+    }
+  }
+
+  const meaningfulTextNodes = textNodes.filter((textNode) =>
+    String(textNode.textContent || "").replace(/\u00a0/g, " ").trim() !== ""
+  );
+
+  if (meaningfulTextNodes.length > 0) {
+    meaningfulTextNodes[0].textContent = normalizedText;
+    meaningfulTextNodes.slice(1).forEach((textNode) => textNode.remove?.());
+    return;
+  }
+
+  const styledTextHost = Array.from(tokenElement.children || []).find((childElement) => !isTokenIconElement(childElement));
+
+  if (styledTextHost) {
+    styledTextHost.textContent = normalizedText;
+    return;
+  }
+
+  tokenElement.append?.(document.createTextNode(normalizedText));
+}
+
 export function normalizeTokenLabels(rootElement, tagDefinitions = [], viewOptions = getDataTagViewOptions()) {
   const options = normalizeDataTagViewOptions(viewOptions);
 
@@ -126,6 +196,7 @@ export function normalizeTokenLabels(rootElement, tagDefinitions = [], viewOptio
     tokenElement.title = [definition.label, definition.example].map((value) => String(value || "").trim()).filter(Boolean).join(" · ");
     tokenElement.classList.toggle("template-token-icons-hidden", !options.showIcons);
     tokenElement.classList.toggle("template-token-sample-display", options.showSampleData);
-    tokenElement.innerHTML = `${getTokenIconMarkup(definition, options)}${escapeHtml(getTokenDisplayText(definition, options))}`;
+    setTokenIconMarkupPreservingText(tokenElement, getTokenIconMarkup(definition, options));
+    setTokenTextPreservingMarkup(tokenElement, getTokenDisplayText(definition, options));
   });
 }

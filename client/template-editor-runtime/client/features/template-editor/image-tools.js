@@ -90,6 +90,7 @@
       decorateTemplateEditorImages,
       ensureTemplateEditorImageOverlay,
       getTemplateEditorImageTarget,
+      handleTemplateEditorImageResizeStart,
       nudgeSelectedTemplateEditorImage,
       releaseTemplateEditorImageMoveSession,
       releaseTemplateEditorImageResizeSession,

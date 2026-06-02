@@ -59,6 +59,10 @@ function writeRecognitionMarksConfigToPage(page, config) {
   page.settings.recognitionMarks = normalizeRecognitionMarksConfig(config);
 }
 
+function hasRecognitionMarksConfig(page) {
+  return Boolean(page?.settings?.recognitionMarks && typeof page.settings.recognitionMarks === "object");
+}
+
 function formatMillimeterInputValue(pointValue) {
   return String(toMillimeterValue(pointValue)).replace(/\.0$/, "");
 }
@@ -202,7 +206,12 @@ export function commitRecognitionMarksControlsToPage({
 
   const nextConfig = readRecognitionMarksControls(sectionElement, getPageRecognitionMarksConfig(activePage));
 
-  writeRecognitionMarksConfigToPage(activePage, nextConfig);
+  if (nextConfig.enabled || hasRecognitionMarksConfig(activePage)) {
+    writeRecognitionMarksConfigToPage(activePage, nextConfig);
+  } else if (activePage.settings && typeof activePage.settings === "object") {
+    delete activePage.settings.recognitionMarks;
+  }
+
   if (syncControls) {
     syncRecognitionMarksControls(sectionElement, nextConfig);
   }

@@ -28,6 +28,7 @@
     "getTemplateEditorSelectedTable",
     "getTemplateEditorTableLogicalColumnWidth",
     "getTemplateEditorTableLogicalRowHeight",
+    "handleTemplateEditorImageResizeStart",
     "handleTemplateEditorTableObjectPointerDown",
     "handleTemplateEditorTablePointerDown",
     "handleTemplatePageSettingChange",

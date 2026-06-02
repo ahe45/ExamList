@@ -106,6 +106,10 @@ function getPreviewContentStyles() {
       overflow: hidden;
     }
 
+    .preview-candidate-block-column-name {
+      background: #f8fafc;
+    }
+
     .preview-candidate-block-grid.is-candidate-block-zero-gap-x .preview-candidate-block,
     .preview-candidate-block-grid.is-candidate-block-zero-gap-y .preview-candidate-block {
       clip-path: inset(-1pt);
@@ -122,12 +126,26 @@ function getPreviewContentStyles() {
       max-height: none !important;
     }
 
+    .preview-candidate-block-grid.has-candidate-block-column-name-row .preview-candidate-block[data-candidate-block-grid-row="1"],
+    .preview-candidate-block-grid.has-candidate-block-column-name-row .preview-candidate-block[data-candidate-block-grid-row="2"] {
+      clip-path: inset(-1pt);
+      overflow: visible;
+    }
+
+    .preview-candidate-block-grid.has-candidate-block-column-name-row .preview-candidate-block[data-candidate-block-grid-row="2"] table {
+      height: 100% !important;
+      max-height: none !important;
+    }
+
     .preview-candidate-block-grid.is-candidate-block-zero-gap-x .preview-candidate-block:not([data-candidate-block-grid-column="1"]) table,
     .preview-candidate-block-grid.is-candidate-block-zero-gap-x .preview-candidate-block:not([data-candidate-block-grid-column="1"]) table th:first-child,
     .preview-candidate-block-grid.is-candidate-block-zero-gap-x .preview-candidate-block:not([data-candidate-block-grid-column="1"]) table td:first-child {
       border-left-width: 0 !important;
     }
 
+    .preview-candidate-block-grid.has-candidate-block-column-name-row .preview-candidate-block[data-candidate-block-grid-row="2"] table,
+    .preview-candidate-block-grid.has-candidate-block-column-name-row .preview-candidate-block[data-candidate-block-grid-row="2"] table tr:first-child th,
+    .preview-candidate-block-grid.has-candidate-block-column-name-row .preview-candidate-block[data-candidate-block-grid-row="2"] table tr:first-child td,
     .preview-candidate-block-grid.is-candidate-block-zero-gap-y .preview-candidate-block:not([data-candidate-block-grid-row="1"]) table,
     .preview-candidate-block-grid.is-candidate-block-zero-gap-y .preview-candidate-block:not([data-candidate-block-grid-row="1"]) table tr:first-child th,
     .preview-candidate-block-grid.is-candidate-block-zero-gap-y .preview-candidate-block:not([data-candidate-block-grid-row="1"]) table tr:first-child td {

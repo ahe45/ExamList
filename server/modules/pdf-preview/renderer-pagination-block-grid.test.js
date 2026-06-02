@@ -476,6 +476,152 @@ test("renderPreviewDocument uses empty value data for empty candidate block valu
   assert.ok(fallbackMatches.length >= 3);
 });
 
+test("renderPreviewDocument preserves styled data tag markup inside candidate block tables", () => {
+  const layout = normalizeTemplateLayout(
+    {
+      pages: [
+        {
+          repeatable: true,
+          settings: {
+            documentHtml: '<div class="template-doc"><div data-candidate-block-grid="true"></div></div>',
+            editorMode: "document",
+            candidateBlockGrid: {
+              blockTemplateHtml:
+                '<table><tbody><tr><td><span class="template-token" data-template-tag-value="candidate.name"><span style="font-size:18pt;color:#dc2626;font-weight:700;">#성명</span></span></td></tr></tbody></table>',
+              columns: 1,
+              enabled: true,
+              rows: 1,
+              variant: "photo",
+            },
+          },
+          type: "content",
+        },
+      ],
+    },
+    {
+      description: "미리보기 테스트",
+      generationUnit: "room",
+      name: "데이터블록 데이터태그 서식 테스트",
+      orientation: "portrait",
+      paperPreset: "A4",
+    },
+    "template-preview-block-grid-styled-token-test",
+  );
+  const result = renderPreviewDocument({
+    candidates: [{ name: "홍길동", roomName: "101호" }],
+    generatedAt: new Date("2026-04-20T09:00:00+09:00"),
+    template: createTemplate(layout),
+  });
+
+  assert.match(result.html, /preview-candidate-block/);
+  assert.match(
+    result.html,
+    /<span><span style="font-size:18pt;color:#dc2626;font-weight:700;"><span class="template-data-fit" data-template-data-fit="true">홍길동<\/span><\/span><\/span>/,
+  );
+});
+
+test("renderPreviewDocument adds enabled candidate block column name rows above data rows", () => {
+  const layout = normalizeTemplateLayout(
+    {
+      pages: [
+        {
+          repeatable: true,
+          settings: {
+            documentHtml: '<div class="template-doc"><div data-candidate-block-grid="true"></div></div>',
+            editorMode: "document",
+            candidateBlockGrid: {
+              blockTemplateHtml: "<p>{{candidate.name}}</p>",
+              columnNameRow: {
+                enabled: true,
+                heightPt: 12,
+                templateHtml: "<table><tbody><tr><th>성명</th></tr></tbody></table>",
+              },
+              columns: 2,
+              enabled: true,
+              heightPt: 80,
+              rows: 2,
+              variant: "photo",
+            },
+          },
+          type: "content",
+        },
+      ],
+    },
+    {
+      description: "미리보기 테스트",
+      generationUnit: "room",
+      name: "데이터블록 컬럼명 테스트",
+      orientation: "portrait",
+      paperPreset: "A4",
+    },
+    "template-preview-block-grid-column-name-test",
+  );
+  const result = renderPreviewDocument({
+    candidates: [
+      { name: "홍길동", roomName: "101호" },
+      { name: "김영희", roomName: "101호" },
+    ],
+    generatedAt: new Date("2026-04-20T09:00:00+09:00"),
+    template: createTemplate(layout),
+  });
+
+  const columnNameMatches = result.html.match(/data-candidate-block-column-name="true"/g) || [];
+
+  assert.equal(columnNameMatches.length, 2);
+  assert.match(result.html, /has-candidate-block-column-name-row/);
+  assert.match(result.html, /grid-template-rows:12pt minmax\(0, 1fr\) 4pt minmax\(0, 1fr\)/);
+  assert.match(result.html, /gap:0pt 4pt/);
+  assert.match(result.html, /height:92pt/);
+  assert.match(result.html, /data-candidate-block-grid-row="2" data-candidate-block-grid-column="1" data-candidate-block-index="1"/);
+  assert.match(result.html, /data-candidate-block-grid-row="4" data-candidate-block-grid-column="1" data-candidate-block-index="2"/);
+  assert.match(result.html, /\.preview-candidate-block-grid\.has-candidate-block-column-name-row \.preview-candidate-block\[data-candidate-block-grid-row="2"\] table/);
+});
+
+test("renderPreviewDocument uses empty block layer template for empty candidate slots", () => {
+  const layout = normalizeTemplateLayout(
+    {
+      pages: [
+        {
+          repeatable: true,
+          settings: {
+            documentHtml: '<div class="template-doc"><div data-candidate-block-grid="true"></div></div>',
+            editorMode: "document",
+            candidateBlockGrid: {
+              blockTemplateHtml: "<p>{{candidate.name}}</p>",
+              columns: 1,
+              enabled: true,
+              emptyBlockLayer: {
+                enabled: true,
+                templateHtml: "<p>빈 자리</p>",
+              },
+              fillEmptyBlocks: true,
+              rows: 2,
+              variant: "photo",
+            },
+          },
+          type: "content",
+        },
+      ],
+    },
+    {
+      description: "미리보기 테스트",
+      generationUnit: "room",
+      name: "데이터블록 빈 슬롯 레이어 테스트",
+      orientation: "portrait",
+      paperPreset: "A4",
+    },
+    "template-preview-block-grid-empty-layer-test",
+  );
+  const result = renderPreviewDocument({
+    candidates: [{ name: "홍길동", roomName: "101호" }],
+    generatedAt: new Date("2026-04-20T09:00:00+09:00"),
+    template: createTemplate(layout),
+  });
+
+  assert.match(result.html, /홍길동/);
+  assert.match(result.html, /빈 자리/);
+});
+
 test("renderPreviewDocument uses candidate photo empty value text when block photo data is empty", () => {
   const layout = normalizeTemplateLayout(
     {

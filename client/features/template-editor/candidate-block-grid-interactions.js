@@ -26,6 +26,8 @@ export function deleteCandidateBlockGridObject(
 
   config.enabled = false;
   config.blockTemplateHtml = candidateBlockGridDefaults.blockTemplateHtml;
+  config.columnNameRow = { ...candidateBlockGridDefaults.columnNameRow };
+  config.emptyBlockLayer = { ...candidateBlockGridDefaults.emptyBlockLayer };
   removeCandidateBlockGridFlowSpacers(documentElement);
   gridElement.remove();
   clearSelection?.();

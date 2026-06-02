@@ -51,8 +51,11 @@ const allowedStyleProperties = new Set([
   "font-style",
   "font-weight",
   "gap",
+  "grid-area",
+  "grid-column",
   "grid-template-columns",
   "grid-template-rows",
+  "grid-row",
   "height",
   "left",
   "line-height",
@@ -100,8 +103,15 @@ const blockedTags = new Set([
 
 const allowedDataAttributes = new Set([
   "data-candidate-block-columns",
+  "data-candidate-block-column-name",
+  "data-candidate-block-column-name-row-enabled",
+  "data-candidate-block-column-name-row-height-pt",
+  "data-candidate-block-gap-xpt",
+  "data-candidate-block-gap-ypt",
   "data-candidate-block-grid",
+  "data-candidate-block-grid-column",
   "data-candidate-block-grid-move-handle",
+  "data-candidate-block-grid-row",
   "data-candidate-block-grid-resize-corner",
   "data-candidate-block-grid-resize-handle",
   "data-candidate-block-instance",
@@ -347,7 +357,7 @@ export function stripTransientDocumentState(rootElement) {
 
   rootElement
     .querySelectorAll(
-      ".template-editor-image-selection, .template-editor-image-resize-handle, .examlist-object-selection, .examlist-object-resize-handle",
+      ".template-editor-image-selection, .template-editor-image-resize-handle, .examlist-object-selection, .examlist-object-resize-handle, .template-editor-table-selection, .template-editor-table-handle, .template-editor-table-move-handle, .template-editor-table-select-handle",
     )
     .forEach((element) => element.remove());
 

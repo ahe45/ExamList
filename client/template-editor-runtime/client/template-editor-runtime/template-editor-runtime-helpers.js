@@ -30,6 +30,7 @@
       getTemplateEditorTableLogicalColumnWidth: () => "",
       getTemplateEditorTableLogicalRowHeight: () => "",
       handleTemplateEditorTableObjectPointerDown: () => false,
+      handleTemplateEditorImageResizeStart: () => {},
       handleTemplateEditorTablePointerDown: () => false,
       handleTemplatePageSettingChange: () => false,
       handleTemplateTableAction: () => {},

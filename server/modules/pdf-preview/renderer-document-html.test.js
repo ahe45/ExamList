@@ -301,6 +301,10 @@ test("renderPreviewDocument styles other room empty value fallbacks only inside 
                 '<table><tbody><tr><td><span class="template-token" data-template-tag-value="candidate.name">#이름</span></td><td>{{candidate.examNo}}</td><td><img class="template-generated-object template-generated-object-barcode" data-template-object-type="barcode" data-template-object-source="candidate.examNo" src="" alt="바코드" /></td></tr></tbody></table>',
               columns: 1,
               enabled: true,
+              emptyBlockLayer: {
+                enabled: true,
+                templateHtml: '<p>타고사실 빈 블록 레이어</p>',
+              },
               fillEmptyBlocks: true,
               rows: 1,
               variant: "photo",
@@ -346,6 +350,7 @@ test("renderPreviewDocument styles other room empty value fallbacks only inside 
   assert.match(outsideTokenHtml, /title="수험번호 바코드"/);
   assert.match(outsideTokenHtml, /template-generated-object-barcode/);
   assert.doesNotMatch(outsideTokenHtml, /preview-empty-data-fallback/);
+  assert.doesNotMatch(otherRoomPageHtml, /타고사실 빈 블록 레이어/);
   assert.match(blockTokenHtml, /<span class="preview-empty-data-fallback">빈 이름<\/span>/);
   assert.match(blockTokenHtml, /<span class="preview-empty-data-fallback">빈 수험번호<\/span>/);
   assert.doesNotMatch(blockTokenHtml, /template-generated-object-barcode/);

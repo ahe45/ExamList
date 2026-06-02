@@ -75,11 +75,27 @@ function normalizeCandidateBlockGridConfig(page) {
     ? page.settings.candidateBlockGrid
     : {};
   const variant = String(source.variant || "photo").trim() === "list" ? "list" : "photo";
+  const normalizeCandidateBlockTemplateHtml = (value) => String(value || "").trim() || "<p><br></p>";
+  const normalizeTemplateFeature = (value) => {
+    const featureSource = value && typeof value === "object" ? value : {};
+
+    return {
+      enabled: featureSource.enabled === true || String(featureSource.enabled || "").trim() === "true",
+      templateHtml: normalizeCandidateBlockTemplateHtml(featureSource.templateHtml ?? featureSource.blockTemplateHtml),
+    };
+  };
+  const columnNameRowSource = source.columnNameRow ?? source.fieldNameRow;
+  const columnNameRow = normalizeTemplateFeature(columnNameRowSource);
 
   return {
     blockTemplateHtml: String(source.blockTemplateHtml || "").trim() || "<p><br></p>",
+    columnNameRow: {
+      ...columnNameRow,
+      heightPt: normalizeFiniteNumber(columnNameRowSource?.heightPt ?? columnNameRowSource?.height, 20, 4, 240),
+    },
     columns: normalizeInteger(source.columns, 2, 1, 4),
     enabled: !isCoverPage(page) && (source.enabled === true || String(source.enabled || "").trim() === "true"),
+    emptyBlockLayer: normalizeTemplateFeature(source.emptyBlockLayer ?? source.emptyValueLayer),
     fillEmptyBlocks: source.fillEmptyBlocks !== false,
     gapXPt: normalizeFiniteNumber(source.gapXPt ?? source.gapX, 4, 0, 48),
     gapYPt: normalizeFiniteNumber(source.gapYPt ?? source.gapY, 4, 0, 48),

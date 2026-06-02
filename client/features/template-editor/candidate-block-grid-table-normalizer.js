@@ -1,4 +1,7 @@
-import { normalizeCandidateBlockTemplateHtml } from "./candidate-block-grid-config.js";
+import {
+  normalizeCandidateBlockTemplateHtml,
+  pointValueToCssPixel,
+} from "./candidate-block-grid-config.js";
 import { parseCandidateBlockPixelValue } from "./candidate-block-grid-pixels.js";
 import {
   buildCandidateBlockTableCellEntries,
@@ -585,8 +588,11 @@ export function getCandidateBlockGridTableMinimumSize(gridElement) {
   const gridStyle = window.getComputedStyle(gridElement);
   const gridColumnCount = Math.max(1, Math.round(Number(gridElement.dataset.candidateBlockColumns) || 1));
   const gridRowCount = Math.max(1, Math.round(Number(gridElement.dataset.candidateBlockRows) || 1));
+  const hasColumnNameRow = gridElement.dataset?.candidateBlockColumnNameRowEnabled === "true";
   const columnGap = parseCandidateBlockPixelValue(gridStyle.columnGap);
-  const rowGap = parseCandidateBlockPixelValue(gridStyle.rowGap);
+  const rowGap = hasColumnNameRow
+    ? pointValueToCssPixel(Number(gridElement.dataset?.candidateBlockGapYPt) || 0)
+    : parseCandidateBlockPixelValue(gridStyle.rowGap);
 
   return {
     height: Math.floor(minimumBlockHeight * gridRowCount + Math.max(0, gridRowCount - 1) * rowGap),

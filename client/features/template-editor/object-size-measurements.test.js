@@ -232,6 +232,30 @@ test("candidate block grid minimum size prefers row gap over generic gap", async
   assert.equal(getCandidateBlockGridMinimumSize(gridElement).height, candidateBlockGridMinimumRowHeight * 2 + 5);
 });
 
+test("candidate block grid minimum size does not add a gap between column names and data rows", async () => {
+  const { getCandidateBlockGridMinimumSize } = await importClientModule("object-size-measurements.js");
+  const {
+    candidateBlockGridMinimumRowHeight,
+    pointValueToCssPixel,
+  } = await importClientModule("candidate-block-grid-config.js");
+  const gridElement = new FakeHTMLElement({
+    cssProperties: {
+      gridTemplateRows: "16px 20px 5.33px 20px",
+      rowGap: "0px",
+    },
+    dataset: {
+      candidateBlockColumnNameRowEnabled: "true",
+      candidateBlockGapYPt: "4",
+      candidateBlockRows: "2",
+    },
+  });
+
+  assert.equal(
+    getCandidateBlockGridMinimumSize(gridElement).height,
+    Math.ceil(candidateBlockGridMinimumRowHeight * 2 + 16 + pointValueToCssPixel(4)),
+  );
+});
+
 test("candidate block grid minimum size includes table minimum size", async () => {
   const { getCandidateBlockGridMinimumSize } = await importClientModule("object-size-measurements.js");
   const cellStyle = {
@@ -321,7 +345,7 @@ test("object table collapsed border adjustment uses the widest table edge or out
   assert.equal(getObjectTableCollapsedBorderAdjustment(tableElement), 7.2);
 });
 
-test("object table rendered target width subtracts collapsed border adjustment", async () => {
+test("object table rendered target width preserves the requested width for collapsed borders", async () => {
   const { getObjectTableRenderedTargetWidth } = await importClientModule("object-size-measurements.js");
   const tableElement = new FakeTableElement({
     cssProperties: {
@@ -331,10 +355,10 @@ test("object table rendered target width subtracts collapsed border adjustment",
     },
   });
 
-  assert.equal(getObjectTableRenderedTargetWidth(tableElement, 100.4), 95);
+  assert.equal(getObjectTableRenderedTargetWidth(tableElement, 100.4), 100);
 });
 
-test("object table rendered target width subtracts rendered overflow from scaled rect", async () => {
+test("object table rendered target width preserves requested width when rendered rect is larger", async () => {
   const { getObjectTableRenderedTargetWidth } = await importClientModule("object-size-measurements.js");
   const blockElement = new FakeHTMLElement({
     dataset: {
@@ -348,20 +372,15 @@ test("object table rendered target width subtracts rendered overflow from scaled
     style: { width: "100px" },
   });
 
-  assert.equal(getObjectTableRenderedTargetWidth(tableElement, 200), 150);
+  assert.equal(getObjectTableRenderedTargetWidth(tableElement, 200), 200);
 });
 
-test("object table rendered target width clamps to the object minimum", async () => {
+test("object table rendered target width clamps requested values below the object minimum", async () => {
   const { getObjectTableRenderedTargetWidth } = await importClientModule("object-size-measurements.js");
   const { templateEditorObjectMinimumSize } = await importClientModule("object-toolbar-constants.js");
-  const tableElement = new FakeTableElement({
-    cssProperties: {
-      borderCollapse: "collapse",
-      borderLeftWidth: "20px",
-    },
-  });
+  const tableElement = new FakeTableElement();
 
-  assert.equal(getObjectTableRenderedTargetWidth(tableElement, 10), templateEditorObjectMinimumSize);
+  assert.equal(getObjectTableRenderedTargetWidth(tableElement, 1), templateEditorObjectMinimumSize);
 });
 
 test("object table column widths prefer inline style and clamp to the object minimum", async () => {

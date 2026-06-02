@@ -49,6 +49,18 @@ function getObjectFinitePixelValue(value) {
   return Number.isFinite(numericValue) ? numericValue : 0;
 }
 
+function getObjectExplicitPixelValue(value) {
+  const normalizedValue = String(value || "").trim();
+
+  if (!/^-?\d+(?:\.\d+)?px$/i.test(normalizedValue)) {
+    return 0;
+  }
+
+  const numericValue = Number.parseFloat(normalizedValue);
+
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
 export function getObjectCandidateBlockModalElement(element, surfaceElement) {
   const modalElement = element?.closest?.("[data-candidate-block-modal-editor-surface]") || null;
 
@@ -370,9 +382,13 @@ export function getObjectElementSize(element, surfaceElement) {
   const scaleX = getObjectCandidateBlockModalElement(element, surfaceElement) ? candidateBlockScale.x : canvasMetrics.scaleX;
   const scaleY = getObjectCandidateBlockModalElement(element, surfaceElement) ? candidateBlockScale.y : canvasMetrics.scaleY;
   const objectRect = element.getBoundingClientRect();
-  const width = roundObjectAlignmentValue(objectRect.width / Math.max(scaleX || 1, 0.01)) ||
+  const inlineWidth = element instanceof HTMLTableElement ? getObjectExplicitPixelValue(element.style.width) : 0;
+  const inlineHeight = element instanceof HTMLTableElement ? getObjectExplicitPixelValue(element.style.height) : 0;
+  const width = inlineWidth ||
+    roundObjectAlignmentValue(objectRect.width / Math.max(scaleX || 1, 0.01)) ||
     parseObjectAlignmentPixelValue(element.style.width, element.offsetWidth || 0);
-  const height = roundObjectAlignmentValue(objectRect.height / Math.max(scaleY || 1, 0.01)) ||
+  const height = inlineHeight ||
+    roundObjectAlignmentValue(objectRect.height / Math.max(scaleY || 1, 0.01)) ||
     parseObjectAlignmentPixelValue(element.style.height, element.offsetHeight || 0);
 
   return {

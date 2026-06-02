@@ -7,6 +7,46 @@ function importClientModule(fileName) {
   return import(pathToFileURL(path.join(__dirname, fileName)).href);
 }
 
+class FakeHTMLElement {
+  constructor({
+    clientHeight = 0,
+    clientWidth = 0,
+    closestGrid = null,
+    cssProperties = {},
+    dataset = {},
+    offsetHeight = 0,
+    offsetWidth = 0,
+    rect = {},
+  } = {}) {
+    this.clientHeight = clientHeight;
+    this.clientWidth = clientWidth;
+    this.closestGrid = closestGrid;
+    this.cssProperties = cssProperties;
+    this.dataset = dataset;
+    this.offsetHeight = offsetHeight;
+    this.offsetWidth = offsetWidth;
+    this.ownerDocument = {
+      defaultView: {
+        getComputedStyle(element) {
+          return element?.cssProperties || {};
+        },
+      },
+    };
+    this.rect = {
+      height: rect.height || 0,
+      width: rect.width || 0,
+    };
+  }
+
+  closest(selector) {
+    return selector === "[data-candidate-block-grid]" ? this.closestGrid : null;
+  }
+
+  getBoundingClientRect() {
+    return this.rect;
+  }
+}
+
 test("candidate block focus pixel helpers normalize finite positive values", async () => {
   const { parseCssPixelValue, toFinitePixelValue } = await importClientModule("candidate-block-grid-focus-layout.js");
 
@@ -145,4 +185,44 @@ test("calculateCandidateBlockFocusLayout keeps the previous minimum shrink scale
       visualWidth: 500,
     },
   );
+});
+
+test("candidate block focus size prefers the selected data row over column row grid estimates", async () => {
+  global.HTMLElement = FakeHTMLElement;
+  global.window = {
+    getComputedStyle(element) {
+      return element?.cssProperties || {};
+    },
+  };
+  const { getCandidateBlockFocusBlockLogicalSize } = await importClientModule("candidate-block-grid-focus-editor.js");
+  const gridElement = new FakeHTMLElement({
+    cssProperties: {
+      columnGap: "0px",
+    },
+    dataset: {
+      candidateBlockColumnNameRowEnabled: "true",
+      candidateBlockColumnNameRowHeightPt: "20",
+      candidateBlockColumns: "1",
+      candidateBlockGapYPt: "4",
+      candidateBlockRows: "2",
+    },
+    rect: {
+      height: 400,
+      width: 500,
+    },
+  });
+  const blockElement = new FakeHTMLElement({
+    closestGrid: gridElement,
+    offsetHeight: 160,
+    offsetWidth: 500,
+    rect: {
+      height: 120,
+      width: 375,
+    },
+  });
+
+  assert.deepEqual(getCandidateBlockFocusBlockLogicalSize(blockElement), {
+    height: 160,
+    width: 500,
+  });
 });

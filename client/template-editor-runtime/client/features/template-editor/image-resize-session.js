@@ -211,7 +211,10 @@
       event.preventDefault();
       event.stopPropagation();
 
-      const normalizedCorner = geometry.normalizeTemplateEditorImageResizeCorner(event.currentTarget?.dataset?.templateResizeCorner);
+      const normalizedCorner = geometry.normalizeTemplateEditorImageResizeCorner(
+        event.currentTarget?.dataset?.templateResizeCorner ||
+          event.target?.closest?.("[data-template-resize-corner]")?.dataset?.templateResizeCorner,
+      );
       const directions = geometry.getTemplateEditorImageResizeDirections(normalizedCorner);
       const initialCellElement = getTemplateEditorImageTableCell(selectedImage, templateEditorSurface);
       const cellStartingPosition = initialCellElement

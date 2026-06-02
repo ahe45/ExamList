@@ -58,6 +58,72 @@ function isDocumentToolbarTarget(target) {
   return Boolean(target?.closest?.(".editor-toolbar, #templateEditorToolbarHost, .template-toolbar-table-insert-popover"));
 }
 
+function isTemplateEditorSelectionPreservingChromeTarget(target) {
+  return Boolean(
+    target?.closest?.(
+      [
+        ".editor-toolbar",
+        "#templateEditorToolbarHost",
+        ".template-tag-panel",
+        "#templateTagStrip",
+        ".template-toolbar-table-insert-popover",
+        ".template-editor-image-selection",
+        ".template-editor-table-selection",
+        ".examlist-object-selection",
+      ].join(", "),
+    ),
+  );
+}
+
+function clearRuntimeTableObjectSelection() {
+  const runtime = window.ExamListTemplateEditorRuntime || null;
+
+  if (typeof runtime?.clearTableObjectSelection === "function") {
+    runtime.clearTableObjectHoverState?.({ updateOverlay: false });
+    runtime.clearTableObjectSelection();
+    return;
+  }
+
+  const editorState = runtime?.state?.templateEditor || null;
+  const selectedTable = editorState?.selectedTableElement || null;
+
+  selectedTable?.classList?.remove?.("is-selected-object", "is-selected-table-object");
+
+  if (editorState) {
+    editorState.selectedTableElement = null;
+  }
+
+  runtime?.updateTableObjectOverlay?.();
+}
+
+function handleCandidateBlockModalImageResizePointerDown(event) {
+  if (event.defaultPrevented || event.button !== 0 || !isCandidateBlockModalEditorOpen()) {
+    return;
+  }
+
+  const target = event.target instanceof Element ? event.target : null;
+  const imageResizeHandle = target?.closest?.(".template-editor-image-resize-handle") || null;
+  const runtime = window.ExamListTemplateEditorRuntime || null;
+  const activeSurface = window.ExamListCandidateBlockModalEditor?.getActiveSurface?.() || null;
+  const selectedImage =
+    runtime?.state?.templateEditor?.selectedImageElement ||
+    activeSurface?.querySelector?.("img.is-selected-object") ||
+    null;
+
+  if (
+    !imageResizeHandle ||
+    !(activeSurface instanceof HTMLElement) ||
+    !(selectedImage instanceof HTMLImageElement) ||
+    !activeSurface.contains(selectedImage) ||
+    typeof runtime.handleImageResizeStart !== "function"
+  ) {
+    return;
+  }
+
+  runtime.state.templateEditor.selectedImageElement = selectedImage;
+  runtime.handleImageResizeStart(event);
+}
+
 function getKeyboardEventDocumentSurface(event) {
   const target = event.target instanceof Element ? event.target : null;
   const activeElement = document.activeElement;
@@ -228,6 +294,7 @@ export function bindTemplateEditorPointerKeyEvents({
 }) {
   document.addEventListener("keydown", handleSelectedCandidateBlockGridBackspace, true);
   document.addEventListener("pointerdown", handleGeneratedObjectInsertButtonClick, true);
+  document.addEventListener("pointerdown", handleCandidateBlockModalImageResizePointerDown, true);
   document.addEventListener("click", handleGeneratedObjectInsertButtonClick, true);
 
   document.addEventListener("mousedown", (event) => {
@@ -245,6 +312,8 @@ export function bindTemplateEditorPointerKeyEvents({
     const editorSidebarButton = event.target.closest(EDITOR_SIDEBAR_ACTION_SELECTOR);
 
     if (editorSidebarButton) {
+      clearDocumentImageSelection({ pageId: appState.templateEditor.selectedPageId });
+      clearRuntimeTableObjectSelection();
       event.preventDefault();
       return;
     }
@@ -260,6 +329,11 @@ export function bindTemplateEditorPointerKeyEvents({
     }
 
     const imageResizeHandle = event.target.closest(".template-editor-image-resize-handle");
+
+    if (imageResizeHandle && isCandidateBlockModalEditorOpen()) {
+      event.preventDefault();
+      return;
+    }
 
     if (imageResizeHandle) {
       event.preventDefault();
@@ -292,6 +366,12 @@ export function bindTemplateEditorPointerKeyEvents({
 
     if (documentSurface) {
       clearDocumentImageSelection({ pageId: documentSurface.dataset.pageId || appState.templateEditor.selectedPageId });
+      return;
+    }
+
+    if (!isTemplateEditorSelectionPreservingChromeTarget(event.target)) {
+      clearDocumentImageSelection({ pageId: appState.templateEditor.selectedPageId });
+      clearRuntimeTableObjectSelection();
     }
   });
 

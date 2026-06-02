@@ -14,6 +14,7 @@
     clearTemplateEditorTableObjectSelection,
     clearTemplateEditorTableSelection,
     getHtml,
+    handleTemplateEditorImageResizeStart,
     insertTemplateHtml,
     insertTemplateImage,
     insertTemplateImageSource,
@@ -55,8 +56,11 @@
 
     return Object.freeze({
       applyCommand: applyTemplateEditorCommand,
+      clearTableObjectHoverState: clearTemplateEditorTableObjectHoverState,
+      clearTableObjectSelection: clearTemplateEditorTableObjectSelection,
       destroy,
       getHtml,
+      handleImageResizeStart: handleTemplateEditorImageResizeStart,
       insertHtml: insertTemplateHtml,
       insertImage: insertTemplateImage,
       insertImageSource: insertTemplateImageSource,

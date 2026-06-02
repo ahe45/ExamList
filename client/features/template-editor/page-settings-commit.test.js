@@ -129,6 +129,31 @@ test("recognition marks commit updates current appState page instead of stale bo
   assert.equal(stalePage.settings.recognitionMarks.enabled, false);
 });
 
+test("recognition marks commit does not create disabled default config", async () => {
+  installDomStubs();
+  const { commitRecognitionMarksControlsToPage } = await importClientModule("recognition-marks-controls.js");
+  const page = {
+    id: "page-cover",
+    settings: {},
+    type: "cover",
+  };
+  const sectionElement = createSection({
+    '[data-examlist-recognition-setting="enabled"]': new FakeInputElement({ checked: false }),
+    '[data-examlist-recognition-setting="offsetX"]': new FakeInputElement({ type: "number", value: "5" }),
+    '[data-examlist-recognition-setting="offsetY"]': new FakeInputElement({ type: "number", value: "5" }),
+  });
+  const pagePropertiesHost = createPagePropertiesHost(".examlist-recognition-marks-field", sectionElement);
+
+  const committed = commitRecognitionMarksControlsToPage({
+    appState: createAppState(page),
+    pagePropertiesHost,
+    selectedPage: page,
+  });
+
+  assert.equal(committed, true);
+  assert.equal(Object.hasOwn(page.settings, "recognitionMarks"), false);
+});
+
 test("other room page commit updates current appState page instead of stale bound page", async () => {
   installDomStubs();
   const { commitOtherRoomPageControlsToPage } = await importClientModule("other-room-page-controls.js");

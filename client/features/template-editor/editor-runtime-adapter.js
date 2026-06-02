@@ -82,6 +82,14 @@ function normalizeComparableTemplateValue(value) {
   return value;
 }
 
+function getCandidateBlockGridRuntimeComparableValue(config = {}) {
+  return JSON.stringify(normalizeComparableTemplateValue({
+    blockTemplateHtml: config?.blockTemplateHtml || "",
+    columnNameRow: config?.columnNameRow || null,
+    emptyBlockLayer: config?.emptyBlockLayer || null,
+  }));
+}
+
 function stripRuntimeOwnedPageFields(template) {
   if (!template || typeof template !== "object") {
     return template;
@@ -100,6 +108,8 @@ function stripRuntimeOwnedPageFields(template) {
 
     if (page.settings.candidateBlockGrid && typeof page.settings.candidateBlockGrid === "object") {
       delete page.settings.candidateBlockGrid.blockTemplateHtml;
+      delete page.settings.candidateBlockGrid.columnNameRow;
+      delete page.settings.candidateBlockGrid.emptyBlockLayer;
     }
   });
 
@@ -131,9 +141,13 @@ function syncRuntimeOwnedSelectedPageFieldsToSavedSnapshot(appState, selectedPag
     savedPage.settings.candidateBlockGrid = {
       ...(savedPage.settings.candidateBlockGrid || {}),
       blockTemplateHtml: selectedPage.settings.candidateBlockGrid.blockTemplateHtml,
+      columnNameRow: structuredClone(selectedPage.settings.candidateBlockGrid.columnNameRow || {}),
+      emptyBlockLayer: structuredClone(selectedPage.settings.candidateBlockGrid.emptyBlockLayer || {}),
     };
   } else if (savedPage.settings.candidateBlockGrid && typeof savedPage.settings.candidateBlockGrid === "object") {
     delete savedPage.settings.candidateBlockGrid.blockTemplateHtml;
+    delete savedPage.settings.candidateBlockGrid.columnNameRow;
+    delete savedPage.settings.candidateBlockGrid.emptyBlockLayer;
   }
 
   if (selectedPage.settings.safeArea && typeof selectedPage.settings.safeArea === "object") {
@@ -196,7 +210,9 @@ function hasSelectedPageRuntimeChanges(appState, selectedPage, currentHtml) {
     return true;
   }
 
-  const nextBlockHtml = normalizeComparableHtml(selectedPage?.settings?.candidateBlockGrid?.blockTemplateHtml || "");
+  const nextBlockHtml = normalizeComparableHtml(
+    getCandidateBlockGridRuntimeComparableValue(selectedPage?.settings?.candidateBlockGrid),
+  );
 
   return Boolean(mountedBaselineBlockHtml || nextBlockHtml) && mountedBaselineBlockHtml !== nextBlockHtml;
 }
@@ -204,7 +220,9 @@ function hasSelectedPageRuntimeChanges(appState, selectedPage, currentHtml) {
 function updateMountedRuntimeBaseline(selectedPage, html = "") {
   mountedHasBaseline = true;
   mountedBaselineHtml = normalizeComparableHtml(html || normalizeSavedRuntimeHtml(mountedEditor?.getHtml?.() || "", mountedTagDefinitions));
-  mountedBaselineBlockHtml = normalizeComparableHtml(selectedPage?.settings?.candidateBlockGrid?.blockTemplateHtml || "");
+  mountedBaselineBlockHtml = normalizeComparableHtml(
+    getCandidateBlockGridRuntimeComparableValue(selectedPage?.settings?.candidateBlockGrid),
+  );
 }
 
 function updateSaveButtonState() {

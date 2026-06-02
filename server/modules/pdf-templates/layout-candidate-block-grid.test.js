@@ -12,7 +12,16 @@ test("normalizeTemplateLayout normalizes candidate block grid settings", () => {
           settings: {
             candidateBlockGrid: {
               blockTemplateHtml: "<table><tbody><tr><td>{{candidate.name}}</td></tr></tbody></table>",
+              columnNameRow: {
+                enabled: true,
+                heightPt: 18.5,
+                templateHtml: "<table><tbody><tr><th>성명</th></tr></tbody></table>",
+              },
               columns: 8,
+              emptyBlockLayer: {
+                enabled: true,
+                templateHtml: "<p>빈 좌석</p>",
+              },
               fillEmptyBlocks: false,
               gapXPt: 6.25,
               gapYPt: 5.5,
@@ -57,8 +66,17 @@ test("normalizeTemplateLayout normalizes candidate block grid settings", () => {
 
   assert.deepEqual(layout.pages[0].settings.candidateBlockGrid, {
     blockTemplateHtml: "<table><tbody><tr><td>{{candidate.name}}</td></tr></tbody></table>",
+    columnNameRow: {
+      enabled: true,
+      heightPt: 18.5,
+      templateHtml: "<table><tbody><tr><th>성명</th></tr></tbody></table>",
+    },
     columns: 4,
     enabled: false,
+    emptyBlockLayer: {
+      enabled: true,
+      templateHtml: "<p>빈 좌석</p>",
+    },
     fillEmptyBlocks: false,
     gapXPt: 6.25,
     gapYPt: 5.5,
@@ -74,6 +92,9 @@ test("normalizeTemplateLayout normalizes candidate block grid settings", () => {
   assert.equal(layout.pages[1].settings.candidateBlockGrid.variant, "photo");
   assert.equal(layout.pages[1].settings.candidateBlockGrid.columns, 2);
   assert.equal(layout.pages[1].settings.candidateBlockGrid.rows, 10);
+  assert.equal(layout.pages[1].settings.candidateBlockGrid.columnNameRow.enabled, false);
+  assert.equal(layout.pages[1].settings.candidateBlockGrid.columnNameRow.heightPt, 20);
+  assert.equal(layout.pages[1].settings.candidateBlockGrid.emptyBlockLayer.enabled, false);
   assert.equal(layout.pages[1].settings.candidateBlockGrid.sortKey, "examineeNo");
   assert.equal(layout.pages[1].settings.candidateBlockGrid.sortDirection, "asc");
   assert.equal(layout.pages[2].settings.candidateBlockGrid.enabled, false);

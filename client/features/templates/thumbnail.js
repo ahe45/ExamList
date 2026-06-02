@@ -95,6 +95,45 @@ function replacePreviewTokens(value) {
   });
 }
 
+function getColumnMajorGridPosition(slotIndex = 0, config = {}) {
+  const rowCount = Math.max(1, Math.round(Number(config.rows)) || 1);
+  const columnIndex = Math.floor(Math.max(0, slotIndex) / rowCount);
+  const rowIndex = Math.max(0, slotIndex) % rowCount;
+
+  return {
+    column: columnIndex + 1,
+    row: rowIndex + 1,
+  };
+}
+
+function getRenderedCandidateBlockGridRow(row = 1, hasColumnNameRow = false) {
+  const safeRow = Math.max(1, Math.round(Number(row)) || 1);
+
+  return hasColumnNameRow ? 2 + (safeRow - 1) * 2 : safeRow;
+}
+
+function getCandidateBlockGridTemplateRows(config = {}, columnNameRowHeight = 0) {
+  const rowCount = Math.max(1, Math.round(Number(config.rows)) || 1);
+  const dataRowTrack = `minmax(${candidateBlockGridMinimumRowHeight}px, 1fr)`;
+
+  if (!config.columnNameRow?.enabled) {
+    return `repeat(${rowCount}, ${dataRowTrack})`;
+  }
+
+  const tracks = [formatPx(columnNameRowHeight)];
+  const dataRowGapPx = pointValueToCssPixel(config.gapYPt || 0);
+
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+    tracks.push(dataRowTrack);
+
+    if (rowIndex < rowCount - 1) {
+      tracks.push(formatPx(dataRowGapPx));
+    }
+  }
+
+  return tracks.join(" ");
+}
+
 function getElementStyle(element, extraStyles = "") {
   return [
     "position:absolute",
@@ -279,16 +318,26 @@ function renderLegacyElement(element) {
 function renderCandidateBlockGrid(config = {}) {
   const normalizedConfig = normalizeCandidateBlockGridConfig(config);
   const totalBlocks = getCandidateBlockGridTotal(normalizedConfig);
+  const hasColumnNameRow = Boolean(normalizedConfig.columnNameRow?.enabled);
+  const columnNameRowHeight = hasColumnNameRow
+    ? pointValueToCssPixel(normalizedConfig.columnNameRow?.heightPt || 0)
+    : 0;
   const x = pointValueToCssPixel(normalizedConfig.xPt);
   const y = pointValueToCssPixel(normalizedConfig.yPt);
   const width = pointValueToCssPixel(normalizedConfig.widthPt);
-  const height = pointValueToCssPixel(normalizedConfig.heightPt);
+  const height = pointValueToCssPixel(
+    normalizedConfig.heightPt > 0
+      ? normalizedConfig.heightPt + (hasColumnNameRow ? normalizedConfig.columnNameRow?.heightPt || 0 : 0)
+      : 0,
+  );
   const blockTemplateHtml = replacePreviewTokens(normalizedConfig.blockTemplateHtml);
+  const columnNameTemplateHtml = replacePreviewTokens(normalizedConfig.columnNameRow?.templateHtml || "");
   const hasTable = /<table[\s>]/i.test(blockTemplateHtml);
   const style = [
     `grid-template-columns:repeat(${normalizedConfig.columns}, minmax(0, 1fr))`,
-    `grid-template-rows:repeat(${normalizedConfig.rows}, minmax(${candidateBlockGridMinimumRowHeight}px, 1fr))`,
-    `gap:${normalizedConfig.gapYPt}pt ${normalizedConfig.gapXPt}pt`,
+    `grid-template-rows:${getCandidateBlockGridTemplateRows(normalizedConfig, columnNameRowHeight)}`,
+    `row-gap:${hasColumnNameRow ? 0 : normalizedConfig.gapYPt}pt`,
+    `column-gap:${normalizedConfig.gapXPt}pt`,
     x > 0 || y > 0 ? `position:absolute;left:${formatPx(x)};top:${formatPx(y)}` : "",
     width > 0 ? `width:${formatPx(width)}` : "",
     height > 0 ? `height:${formatPx(height)}` : "",
@@ -296,11 +345,21 @@ function renderCandidateBlockGrid(config = {}) {
 
   return `
     <div class="examlist-candidate-block-grid template-card-candidate-block-grid" style="${style}">
-      ${Array.from({ length: totalBlocks }, (_, index) => `
-        <div class="examlist-candidate-block${hasTable ? " has-candidate-block-table" : ""}" data-candidate-block-instance="${index + 1}">
-          ${blockTemplateHtml}
+      ${hasColumnNameRow ? Array.from({ length: normalizedConfig.columns }, (_item, index) => `
+        <div class="examlist-candidate-block examlist-candidate-block-column-name" data-candidate-block-column-name="true" style="grid-row:1;grid-column:${index + 1};">
+          ${columnNameTemplateHtml}
         </div>
-      `).join("")}
+      `).join("") : ""}
+      ${Array.from({ length: totalBlocks }, (_item, index) => {
+        const gridPosition = getColumnMajorGridPosition(index, normalizedConfig);
+        const renderedRow = getRenderedCandidateBlockGridRow(gridPosition.row, hasColumnNameRow);
+
+        return `
+          <div class="examlist-candidate-block${hasTable ? " has-candidate-block-table" : ""}" data-candidate-block-instance="${index + 1}" style="grid-row:${renderedRow};grid-column:${gridPosition.column};">
+            ${blockTemplateHtml}
+          </div>
+        `;
+      }).join("")}
     </div>
   `;
 }

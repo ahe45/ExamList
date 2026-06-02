@@ -30,9 +30,62 @@ function getColumnMajorGridPosition(slotIndex = 0, config = {}) {
   };
 }
 
+function isColumnNameRowEnabled(config = {}) {
+  return Boolean(config?.columnNameRow?.enabled);
+}
+
+function getColumnNameRowHeightPx(config = {}) {
+  return isColumnNameRowEnabled(config)
+    ? pointValueToCssPixel(config.columnNameRow?.heightPt || 0)
+    : 0;
+}
+
+function getCandidateBlockDataRowGapPx(config = {}) {
+  return pointValueToCssPixel(config.gapYPt || 0);
+}
+
+function getRenderedCandidateBlockGridRow(row = 1, hasColumnNameRow = false) {
+  const safeRow = Math.max(1, Math.round(Number(row)) || 1);
+
+  return hasColumnNameRow ? 2 + (safeRow - 1) * 2 : safeRow;
+}
+
+function getCandidateBlockGridTemplateRows(config = {}) {
+  const rowCount = Math.max(1, Math.round(Number(config.rows)) || 1);
+  const dataRowTrack = `minmax(${candidateBlockGridMinimumRowHeight}px, 1fr)`;
+
+  if (!isColumnNameRowEnabled(config)) {
+    return `repeat(${rowCount}, ${dataRowTrack})`;
+  }
+
+  const tracks = [`${getColumnNameRowHeightPx(config)}px`];
+  const dataRowGapPx = getCandidateBlockDataRowGapPx(config);
+
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+    tracks.push(dataRowTrack);
+
+    if (rowIndex < rowCount - 1) {
+      tracks.push(`${dataRowGapPx}px`);
+    }
+  }
+
+  return tracks.join(" ");
+}
+
+function getCandidateBlockGridRenderedHeightPt(config = {}) {
+  const dataHeightPt = Number(config.heightPt) || 0;
+
+  if (!(dataHeightPt > 0)) {
+    return 0;
+  }
+
+  return dataHeightPt + (isColumnNameRowEnabled(config) ? Number(config.columnNameRow?.heightPt) || 0 : 0);
+}
+
 function getCandidateBlockGridClassName(config = {}) {
   return [
     "examlist-candidate-block-grid",
+    isColumnNameRowEnabled(config) ? "has-candidate-block-column-name-row" : "",
     Number(config.gapXPt) === 0 ? "is-candidate-block-zero-gap-x" : "",
     Number(config.gapYPt) === 0 ? "is-candidate-block-zero-gap-y" : "",
   ].filter(Boolean).join(" ");
@@ -41,12 +94,19 @@ function getCandidateBlockGridClassName(config = {}) {
 export function createCandidateBlockGridElement(config) {
   const normalizedConfig = normalizeCandidateBlockGridConfig(config);
   const blockTemplateHtml = normalizeCandidateBlockTemplateHtml(normalizedConfig.blockTemplateHtml);
+  const columnNameTemplateHtml = normalizeCandidateBlockTemplateHtml(normalizedConfig.columnNameRow?.templateHtml);
+  const columnNameRowEnabled = isColumnNameRowEnabled(normalizedConfig);
+  const columnNameRowHeightPx = getColumnNameRowHeightPx(normalizedConfig);
   const gridElement = document.createElement("div");
   const totalBlocks = getCandidateBlockGridTotal(normalizedConfig);
 
   gridElement.className = getCandidateBlockGridClassName(normalizedConfig);
   gridElement.dataset.candidateBlockGrid = "true";
   gridElement.dataset.candidateBlockColumns = String(normalizedConfig.columns);
+  gridElement.dataset.candidateBlockColumnNameRowEnabled = columnNameRowEnabled ? "true" : "false";
+  gridElement.dataset.candidateBlockColumnNameRowHeightPt = String(normalizedConfig.columnNameRow?.heightPt || 0);
+  gridElement.dataset.candidateBlockGapXPt = String(normalizedConfig.gapXPt || 0);
+  gridElement.dataset.candidateBlockGapYPt = String(normalizedConfig.gapYPt || 0);
   gridElement.dataset.candidateBlockRows = String(normalizedConfig.rows);
   gridElement.dataset.candidateBlockVariant = normalizedConfig.variant;
   gridElement.dataset.candidateBlockObject = "true";
@@ -55,9 +115,14 @@ export function createCandidateBlockGridElement(config) {
   gridElement.setAttribute("contenteditable", "false");
   gridElement.style.position = normalizedConfig.xPt > 0 || normalizedConfig.yPt > 0 ? "absolute" : "relative";
   gridElement.style.gridTemplateColumns = `repeat(${normalizedConfig.columns}, minmax(0, 1fr))`;
-  gridElement.style.gridTemplateRows = `repeat(${normalizedConfig.rows}, minmax(${candidateBlockGridMinimumRowHeight}px, 1fr))`;
-  gridElement.style.gap = `${normalizedConfig.gapYPt}pt ${normalizedConfig.gapXPt}pt`;
-  gridElement.style.minHeight = `calc(${normalizedConfig.rows * candidateBlockGridMinimumRowHeight}px + ${Math.max(0, normalizedConfig.rows - 1) * normalizedConfig.gapYPt}pt)`;
+  gridElement.style.gridTemplateRows = getCandidateBlockGridTemplateRows(normalizedConfig);
+  gridElement.style.rowGap = columnNameRowEnabled ? "0px" : `${normalizedConfig.gapYPt}pt`;
+  gridElement.style.columnGap = `${normalizedConfig.gapXPt}pt`;
+  gridElement.style.minHeight = `calc(${
+    normalizedConfig.rows * candidateBlockGridMinimumRowHeight + columnNameRowHeightPx
+  }px + ${
+    Math.max(0, normalizedConfig.rows - 1) * normalizedConfig.gapYPt
+  }pt)`;
 
   if (normalizedConfig.xPt > 0 || normalizedConfig.yPt > 0) {
     gridElement.style.left = `${pointValueToCssPixel(normalizedConfig.xPt)}px`;
@@ -71,18 +136,42 @@ export function createCandidateBlockGridElement(config) {
     gridElement.style.width = `${pointValueToCssPixel(normalizedConfig.widthPt)}px`;
   }
 
-  if (normalizedConfig.heightPt > 0) {
-    gridElement.style.height = `${pointValueToCssPixel(normalizedConfig.heightPt)}px`;
+  const renderedHeightPt = getCandidateBlockGridRenderedHeightPt(normalizedConfig);
+
+  if (renderedHeightPt > 0) {
+    gridElement.style.height = `${pointValueToCssPixel(renderedHeightPt)}px`;
+  }
+
+  if (columnNameRowEnabled) {
+    for (let columnIndex = 0; columnIndex < normalizedConfig.columns; columnIndex += 1) {
+      const columnNameElement = document.createElement("div");
+
+      columnNameElement.className = "examlist-candidate-block examlist-candidate-block-column-name";
+      columnNameElement.dataset.candidateBlockColumnName = "true";
+      columnNameElement.dataset.candidateBlockGridColumn = String(columnIndex + 1);
+      columnNameElement.dataset.candidateBlockGridRow = "1";
+      columnNameElement.setAttribute("aria-label", "수험생 데이터 컬럼명");
+      columnNameElement.setAttribute("aria-readonly", "true");
+      columnNameElement.setAttribute("contenteditable", "false");
+      columnNameElement.style.gridColumn = String(columnIndex + 1);
+      columnNameElement.style.gridRow = "1";
+      columnNameElement.innerHTML = columnNameTemplateHtml;
+      normalizeCandidateBlockTables(columnNameElement);
+      gridElement.append(columnNameElement);
+    }
   }
 
   for (let index = 0; index < totalBlocks; index += 1) {
     const blockElement = document.createElement("div");
     const gridPosition = getColumnMajorGridPosition(index, normalizedConfig);
+    const renderedRow = getRenderedCandidateBlockGridRow(gridPosition.row, columnNameRowEnabled);
 
     blockElement.className = "examlist-candidate-block";
     blockElement.dataset.candidateBlockGridColumn = String(gridPosition.column);
-    blockElement.dataset.candidateBlockGridRow = String(gridPosition.row);
+    blockElement.dataset.candidateBlockGridRow = String(renderedRow);
     blockElement.dataset.candidateBlockInstance = String(index + 1);
+    blockElement.style.gridColumn = String(gridPosition.column);
+    blockElement.style.gridRow = String(renderedRow);
     blockElement.innerHTML = blockTemplateHtml;
     normalizeCandidateBlockTables(blockElement);
     gridElement.append(blockElement);

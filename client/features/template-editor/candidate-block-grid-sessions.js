@@ -4,6 +4,7 @@ import {
   candidateBlockGridMinimumWidth,
   cssPixelToPointValue,
   objectResizeCorners,
+  pointValueToCssPixel,
 } from "./candidate-block-grid-config.js";
 import { parseCandidateBlockPixelValue } from "./candidate-block-grid-pixels.js";
 import { ensurePageCandidateBlockGridConfig } from "./candidate-block-grid-renderer.js";
@@ -45,7 +46,11 @@ export function writeCandidateBlockGridSizeToConfig(selectedPage, gridElement) {
   }
 
   if (rect.height > 0) {
-    config.heightPt = cssPixelToPointValue(rect.height);
+    const columnNameRowHeightPt = gridElement.dataset?.candidateBlockColumnNameRowEnabled === "true"
+      ? Number(gridElement.dataset?.candidateBlockColumnNameRowHeightPt) || 0
+      : 0;
+
+    config.heightPt = Math.max(0, cssPixelToPointValue(rect.height) - columnNameRowHeightPt);
   }
 
   if (gridElement.style.position === "absolute") {
@@ -144,9 +149,16 @@ function getCandidateBlockGridMinimumSize(gridElement) {
   const tableMinimumSize = getCandidateBlockGridTableMinimumSize(gridElement);
   const gridStyle = window.getComputedStyle(gridElement);
   const gridRowCount = Math.max(1, Math.round(Number(gridElement?.dataset?.candidateBlockRows) || 1));
-  const rowGap = parseCandidateBlockPixelValue(gridStyle.rowGap, 0);
+  const hasColumnNameRow = gridElement?.dataset?.candidateBlockColumnNameRowEnabled === "true";
+  const columnNameRowHeight = hasColumnNameRow
+    ? parseCandidateBlockPixelValue(gridStyle.gridTemplateRows?.split?.(" ")?.[0], 0)
+    : 0;
+  const rowGap = hasColumnNameRow
+    ? pointValueToCssPixel(Number(gridElement?.dataset?.candidateBlockGapYPt) || 0)
+    : parseCandidateBlockPixelValue(gridStyle.rowGap, 0);
   const rowMinimumHeight = Math.ceil(
     gridRowCount * candidateBlockGridMinimumRowHeight +
+      columnNameRowHeight +
       Math.max(0, gridRowCount - 1) * rowGap,
   );
   const tableMinimumHeight = Math.max(

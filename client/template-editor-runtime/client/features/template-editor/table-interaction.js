@@ -32,6 +32,7 @@
     getTemplateEditorSelectionNode,
     getTemplateEditorSurface,
     getTemplateEditorTableLogicalColumnWidth,
+    getTemplateEditorTableLogicalRowHeight,
     setTemplateEditorTableLogicalColumnWidth,
     setTemplateEditorTableLogicalColumnWidths,
     setTemplateEditorTableLogicalRowHeight,
@@ -40,6 +41,7 @@
     updateTemplateTableControls,
   }) {
     let clearTemplateEditorTableSelection = () => {};
+    let getTemplateEditorSelectedCell = () => null;
     let getTemplateEditorTableCellTarget = () => null;
 
     const tableResizeController = createTemplateEditorTableResizeController({
@@ -52,6 +54,8 @@
       getTemplateEditorSurface,
       getTemplateEditorTableCellTarget: (...args) => getTemplateEditorTableCellTarget(...args),
       getTemplateEditorTableLogicalColumnWidth,
+      getTemplateEditorTableLogicalRowHeight,
+      getTemplateEditorSelectedCell: (...args) => getTemplateEditorSelectedCell(...args),
       setTemplateEditorTableLogicalColumnWidth,
       setTemplateEditorTableLogicalColumnWidths,
       setTemplateEditorTableLogicalRowHeight,

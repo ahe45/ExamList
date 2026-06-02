@@ -43,14 +43,44 @@
       return blockElement instanceof HTMLElement ? blockElement : null;
     }
 
-    function getTemplateEditorTableConfiguredRowHeight(rowElement) {
+    function getTemplateEditorTableRenderedRowHeight(rowElement, minimumRowHeight = 1) {
+      const renderedHeight = Math.round(rowElement?.getBoundingClientRect?.().height || 0);
+
+      return Math.max(minimumRowHeight, renderedHeight || minimumRowHeight);
+    }
+
+    function getTemplateEditorTableConfiguredRowHeight(rowElement, minimumRowHeight = 1) {
       const configuredHeight = parseTemplateEditorPixelStyle(rowElement?.style?.height, 0);
 
       if (configuredHeight > 0) {
         return configuredHeight;
       }
 
-      return Math.max(1, Math.round(rowElement?.getBoundingClientRect?.().height || 0));
+      return getTemplateEditorTableRenderedRowHeight(rowElement, minimumRowHeight);
+    }
+
+    function shouldUseRenderedTableRowHeights(table, configuredHeights, tolerancePx = 2) {
+      if (!(table instanceof HTMLTableElement) || !configuredHeights.length) {
+        return false;
+      }
+
+      const configuredTotalHeight = configuredHeights.reduce((heightSum, height) => heightSum + Math.max(0, height || 0), 0);
+      const renderedTableHeight = Math.round(table.getBoundingClientRect?.().height || 0);
+
+      return renderedTableHeight > configuredTotalHeight + tolerancePx;
+    }
+
+    function getTemplateEditorTableRowHeights(table, minimumRowHeight = getTemplateEditorTableMinimumRowHeight(table)) {
+      const rows = Array.from(table?.rows || []);
+      const configuredHeights = rows.map((rowElement) =>
+        Math.max(minimumRowHeight, Math.round(getTemplateEditorTableConfiguredRowHeight(rowElement, minimumRowHeight))),
+      );
+
+      if (shouldUseRenderedTableRowHeights(table, configuredHeights)) {
+        return rows.map((rowElement) => getTemplateEditorTableRenderedRowHeight(rowElement, minimumRowHeight));
+      }
+
+      return configuredHeights;
     }
 
     function getTemplateEditorTableMinimumRowHeight(table) {
@@ -115,11 +145,8 @@
       }
 
       const maxTableHeight = getTemplateEditorTableMaxHeight(table);
-      const totalHeight = Array.from(table.rows || []).reduce(
-        (heightSum, rowElement) =>
-          heightSum + Math.max(minimumRowHeight, Math.round(getTemplateEditorTableConfiguredRowHeight(rowElement))),
-        0,
-      );
+      const totalHeight = getTemplateEditorTableRowHeights(table, minimumRowHeight)
+        .reduce((heightSum, rowHeight) => heightSum + Math.max(minimumRowHeight, Math.round(rowHeight)), 0);
 
       if (!(totalHeight > 0)) {
         return false;
@@ -273,13 +300,7 @@
         return minimumRowHeight;
       }
 
-      const configuredHeight = parseTemplateEditorPixelStyle(targetRow.style.height, 0);
-
-      if (configuredHeight >= minimumRowHeight) {
-        return configuredHeight;
-      }
-
-      return Math.max(minimumRowHeight, Math.round(targetRow.getBoundingClientRect().height));
+      return getTemplateEditorTableRowHeights(table, minimumRowHeight)[rowIndex] || minimumRowHeight;
     }
 
     function setTemplateEditorTableLogicalRowHeight(table, rowIndex, height) {
@@ -292,32 +313,48 @@
       const minimumRowHeight = getTemplateEditorTableMinimumRowHeight(table);
       const requestedHeight = Math.max(minimumRowHeight, Math.round(height));
       const maxTableHeight = getTemplateEditorTableMaxHeight(table);
-      const otherRowsHeight = Array.from(table.rows || []).reduce((heightSum, rowElement, currentRowIndex) => {
+      const rowHeights = getTemplateEditorTableRowHeights(table, minimumRowHeight);
+      const otherRowsHeight = rowHeights.reduce((heightSum, rowHeight, currentRowIndex) => {
         if (currentRowIndex === rowIndex) {
           return heightSum;
         }
 
-        return heightSum + Math.max(minimumRowHeight, getTemplateEditorTableConfiguredRowHeight(rowElement));
+        return heightSum + Math.max(minimumRowHeight, Math.round(rowHeight));
       }, 0);
       const maxRowHeight = Math.max(minimumRowHeight, maxTableHeight - otherRowsHeight);
       const safeHeight = Math.min(requestedHeight, maxRowHeight);
-      const { matrix, entries } = buildTemplateTableCellMap(table);
-      const rowCells = new Set();
+      const { entries } = buildTemplateTableCellMap(table);
 
-      (matrix[rowIndex] || []).forEach((cell) => {
-        const entry = cell ? entries.get(cell) : null;
+      rowHeights[rowIndex] = safeHeight;
 
-        if (entry && entry.rowIndex === rowIndex) {
-          rowCells.add(cell);
+      Array.from(table.rows || []).forEach((rowElement, currentRowIndex) => {
+        rowElement.style.height = `${rowHeights[currentRowIndex] || minimumRowHeight}px`;
+      });
+      entries.forEach((entry, cell) => {
+        const cellHeight = rowHeights
+          .slice(entry.rowIndex, entry.rowIndex + entry.rowSpan)
+          .reduce((heightSum, rowHeight) => heightSum + Math.max(0, rowHeight || 0), 0);
+
+        if (cellHeight > 0) {
+          cell.style.height = `${cellHeight}px`;
         }
       });
 
-      targetRow.style.height = `${safeHeight}px`;
-      rowCells.forEach((cell) => {
-        cell.style.height = `${safeHeight}px`;
-      });
+      const totalHeight = rowHeights.reduce(
+        (heightSum, rowHeight) => heightSum + Math.max(minimumRowHeight, Math.round(rowHeight || 0)),
+        0,
+      );
 
-      syncTemplateEditorTableLogicalHeight(table, minimumRowHeight);
+      if (totalHeight > 0) {
+        table.style.height = `${Math.min(maxTableHeight, totalHeight)}px`;
+      } else {
+        syncTemplateEditorTableLogicalHeight(table, minimumRowHeight);
+      }
+
+      if (getTemplateEditorCandidateBlockHost(table)) {
+        table.style.maxHeight = "100%";
+      }
+
       return true;
     }
 

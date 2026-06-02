@@ -294,13 +294,23 @@
 
     function getTemplateEditorTableObjectRowHeights(tableElement) {
       const minimumSize = getTemplateEditorTableObjectSegmentMinimumSize(tableElement, "row");
-
-      return Array.from(tableElement?.rows || []).map((rowElement) =>
+      const rows = Array.from(tableElement?.rows || []);
+      const configuredHeights = rows.map((rowElement) =>
         Math.max(
           minimumSize,
           parseTemplateEditorPixelStyle(rowElement.style.height, Math.round(rowElement.getBoundingClientRect().height || 0)),
         ),
       );
+      const configuredTotalHeight = configuredHeights.reduce((heightSum, height) => heightSum + Math.max(0, height || 0), 0);
+      const renderedTableHeight = Math.round(tableElement?.getBoundingClientRect?.().height || 0);
+
+      if (renderedTableHeight > configuredTotalHeight + 2) {
+        return rows.map((rowElement) =>
+          Math.max(minimumSize, Math.round(rowElement.getBoundingClientRect?.().height || 0)),
+        );
+      }
+
+      return configuredHeights;
     }
 
     function normalizeTemplateEditorTableObjectSegmentSizes(

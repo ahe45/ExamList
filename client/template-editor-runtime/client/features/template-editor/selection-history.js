@@ -70,6 +70,22 @@
       recordTemplateEditorHistorySnapshot({ force: true });
     }
 
+    function getTemplateEditorSnapshotText(html = "") {
+      const sourceHtml = String(html || "");
+      const ownerDocument =
+        getTemplateEditorSurface()?.ownerDocument ||
+        (typeof document !== "undefined" ? document : null);
+
+      if (ownerDocument?.createElement) {
+        const container = ownerDocument.createElement("div");
+
+        container.innerHTML = sourceHtml;
+        return String(container.textContent || "").trim();
+      }
+
+      return sourceHtml.replace(/<[^>]*>/g, "").trim();
+    }
+
     function applyTemplateEditorHistorySnapshot(snapshot, { verifyNativeHistory = true } = {}) {
       const templateEditorSurface = getTemplateEditorSurface();
 
@@ -126,7 +142,15 @@
       const currentSnapshot = state.templateEditor.historyEntries[state.templateEditor.historyIndex] || null;
 
       if (currentSnapshot?.html === state.templateEditor.draftHtml) {
-        currentSnapshot.selection = createTemplateEditorSelectionSnapshot();
+        const currentHtml = getTemplateEditorSerializedHtml();
+        const hasMeaningfulUnrecordedChange =
+          getTemplateEditorSnapshotText(currentHtml) !== getTemplateEditorSnapshotText(currentSnapshot.html);
+
+        if (hasMeaningfulUnrecordedChange) {
+          recordTemplateEditorHistorySnapshot();
+        } else {
+          currentSnapshot.selection = createTemplateEditorSelectionSnapshot();
+        }
       } else {
         recordTemplateEditorHistorySnapshot();
       }

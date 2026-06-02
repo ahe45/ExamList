@@ -6,11 +6,22 @@ import {
   parseCssPixelValue,
   toFinitePixelValue,
 } from "./candidate-block-grid-focus-layout.js";
-import { candidateBlockFocusTableObjectOuterHitSlop } from "./candidate-block-grid-config.js";
+import {
+  candidateBlockFocusTableObjectOuterHitSlop,
+  candidateBlockGridColumnNameRowDefaultHeightPt,
+  normalizeCandidateBlockTemplateHtml,
+  pointValueToCssPixel,
+} from "./candidate-block-grid-config.js";
 import { normalizeCandidateBlockTables } from "./candidate-block-grid-dom.js";
-import { syncCandidateBlockTemplateFromSurface } from "./candidate-block-grid-surface.js";
+import {
+  renderCandidateBlockGridOnSurface,
+  syncCandidateBlockTemplateFromSurface,
+} from "./candidate-block-grid-surface.js";
 
 const MODAL_EMPTY_HTML = "<p><br></p>";
+const MODAL_TAB_DATA_BLOCK = "dataBlock";
+const MODAL_TAB_EMPTY_BLOCK = "emptyBlock";
+const MODAL_TAB_COLUMN_NAME = "columnName";
 const MODAL_CONTENT_OVERFLOW_TOLERANCE_PX = 2;
 const MODAL_OVERFLOW_MESSAGE = "데이터 블록 영역을 초과했습니다. 닫기 전 내용이나 개체 크기를 조정하세요.";
 const MODAL_OVERFLOW_MESSAGE_INTERVAL_MS = 800;
@@ -92,30 +103,53 @@ function getCanvasBackdropRect(surfaceElement) {
   });
 }
 
-function getBlockLogicalSize(blockElement) {
-  const rect = blockElement.getBoundingClientRect();
+function getBlockLogicalBorderBoxSize(element, chromeSize = { horizontal: 0, vertical: 0 }) {
+  if (!(element instanceof HTMLElement)) {
+    return { height: 0, width: 0 };
+  }
+
+  const rect = element.getBoundingClientRect();
+  const offsetWidth = toFinitePixelValue(element.offsetWidth, 0);
+  const offsetHeight = toFinitePixelValue(element.offsetHeight, 0);
+  const clientWidth = toFinitePixelValue(element.clientWidth, 0);
+  const clientHeight = toFinitePixelValue(element.clientHeight, 0);
+
+  return {
+    height:
+      offsetHeight ||
+      (clientHeight > 0 ? clientHeight + Math.max(0, chromeSize.vertical) : 0) ||
+      toFinitePixelValue(rect.height, 0),
+    width:
+      offsetWidth ||
+      (clientWidth > 0 ? clientWidth + Math.max(0, chromeSize.horizontal) : 0) ||
+      toFinitePixelValue(rect.width, 0),
+  };
+}
+
+export function getCandidateBlockFocusBlockLogicalSize(blockElement) {
   const gridElement = blockElement.closest?.("[data-candidate-block-grid]") || null;
   const gridRect = gridElement?.getBoundingClientRect?.();
   const gridStyle = gridElement instanceof HTMLElement ? getOwnerWindow(gridElement).getComputedStyle(gridElement) : null;
   const chromeSize = getElementChromeSize(blockElement);
+  const measuredBlockSize = getBlockLogicalBorderBoxSize(blockElement, chromeSize);
   const columnCount = Math.max(1, Number(gridElement?.dataset?.candidateBlockColumns) || 1);
   const rowCount = Math.max(1, Number(gridElement?.dataset?.candidateBlockRows) || 1);
+  const hasColumnNameRow = gridElement?.dataset?.candidateBlockColumnNameRowEnabled === "true";
+  const columnNameRowHeight = hasColumnNameRow
+    ? pointValueToCssPixel(Number(gridElement?.dataset?.candidateBlockColumnNameRowHeightPt) || 0)
+    : 0;
   const columnGap = Number.parseFloat(gridStyle?.columnGap || gridStyle?.gap || "0") || 0;
-  const rowGap = Number.parseFloat(gridStyle?.rowGap || gridStyle?.gap || "0") || 0;
+  const rowGap = hasColumnNameRow
+    ? pointValueToCssPixel(Number(gridElement?.dataset?.candidateBlockGapYPt) || 0)
+    : Number.parseFloat(gridStyle?.rowGap || gridStyle?.gap || "0") || 0;
   const gridTrackWidth = gridRect?.width
     ? (gridRect.width - columnGap * Math.max(0, columnCount - 1)) / columnCount
     : 0;
   const gridTrackHeight = gridRect?.height
-    ? (gridRect.height - rowGap * Math.max(0, rowCount - 1)) / rowCount
+    ? (gridRect.height - columnNameRowHeight - rowGap * Math.max(0, rowCount - 1)) / rowCount
     : 0;
-  const width = Math.max(
-    toFinitePixelValue(rect.width, blockElement.offsetWidth || 1),
-    toFinitePixelValue(gridTrackWidth, 0),
-  );
-  const height = Math.max(
-    toFinitePixelValue(rect.height, blockElement.offsetHeight || 1),
-    toFinitePixelValue(gridTrackHeight, 0),
-  );
+  const width = measuredBlockSize.width || toFinitePixelValue(gridTrackWidth, 1);
+  const height = measuredBlockSize.height || toFinitePixelValue(gridTrackHeight, 1);
 
   return {
     height: Math.max(1, Math.round(height - chromeSize.vertical)),
@@ -125,7 +159,7 @@ function getBlockLogicalSize(blockElement) {
 
 function getCandidateBlockFocusLayout(surfaceElement, blockElement, logicalSize = null) {
   const canvasRect = getVisibleCanvasRect(surfaceElement);
-  const resolvedLogicalSize = logicalSize || getBlockLogicalSize(blockElement);
+  const resolvedLogicalSize = logicalSize || getCandidateBlockFocusBlockLogicalSize(blockElement);
 
   return calculateCandidateBlockFocusLayout(canvasRect, resolvedLogicalSize);
 }
@@ -187,9 +221,23 @@ function getCandidateBlockFocusLayer(ownerDocument = document, hostElement = nul
   layerElement.innerHTML = `
     <div class="examlist-candidate-block-focus-title">데이터 블록 편집</div>
     <button class="examlist-candidate-block-focus-close" data-candidate-block-focus-close type="button" aria-label="데이터 블록 편집 닫기">×</button>
-    <div class="examlist-candidate-block-modal-editor-viewport">
+    <div class="examlist-candidate-block-focus-tabs" role="tablist" aria-label="데이터 블록 편집 탭">
+      <button class="examlist-candidate-block-focus-tab is-active" data-candidate-block-focus-tab="${MODAL_TAB_DATA_BLOCK}" type="button" role="tab" aria-selected="true">데이터 블록</button>
+      <button class="examlist-candidate-block-focus-tab" data-candidate-block-focus-tab="${MODAL_TAB_EMPTY_BLOCK}" type="button" role="tab" aria-selected="false">빈 값</button>
+      <button class="examlist-candidate-block-focus-tab" data-candidate-block-focus-tab="${MODAL_TAB_COLUMN_NAME}" type="button" role="tab" aria-selected="false">컬럼명</button>
+    </div>
+    <label class="examlist-candidate-block-focus-switch is-hidden" data-candidate-block-feature-switch-wrap="${MODAL_TAB_EMPTY_BLOCK}">
+      <span>빈 값 표시 사용</span>
+      <input data-candidate-block-feature-switch="${MODAL_TAB_EMPTY_BLOCK}" type="checkbox" />
+    </label>
+    <label class="examlist-candidate-block-focus-switch is-hidden" data-candidate-block-feature-switch-wrap="${MODAL_TAB_COLUMN_NAME}">
+      <span>컬럼명 row 사용</span>
+      <input data-candidate-block-feature-switch="${MODAL_TAB_COLUMN_NAME}" type="checkbox" />
+    </label>
+    <div class="examlist-candidate-block-modal-editor-viewport" data-candidate-block-focus-viewport>
       <div
         class="examlist-candidate-block examlist-candidate-block-modal-editor-surface is-candidate-block-template-source is-candidate-block-focus-editor"
+        data-candidate-block-editor-surface-id="${MODAL_TAB_DATA_BLOCK}"
         data-candidate-block-instance="modal-editor"
         data-candidate-block-template-role="source"
         data-candidate-block-modal-editor-surface="true"
@@ -199,6 +247,31 @@ function getCandidateBlockFocusLayer(ownerDocument = document, hostElement = nul
         spellcheck="false"
         tabindex="0"
       ></div>
+      <div
+        class="examlist-candidate-block is-hidden"
+        data-candidate-block-editor-surface-id="${MODAL_TAB_EMPTY_BLOCK}"
+        data-candidate-block-template-role="source"
+        aria-label="빈 값 데이터 블록 편집 영역"
+        contenteditable="false"
+        spellcheck="false"
+        tabindex="0"
+      ></div>
+      <div
+        class="examlist-candidate-block is-candidate-block-column-name-editor is-hidden"
+        data-candidate-block-editor-surface-id="${MODAL_TAB_COLUMN_NAME}"
+        data-candidate-block-template-role="source"
+        aria-label="컬럼명 row 편집 영역"
+        contenteditable="false"
+        spellcheck="false"
+        tabindex="0"
+      ></div>
+      <div
+        class="examlist-candidate-block is-candidate-block-template-preview is-candidate-block-column-data-preview is-hidden"
+        data-candidate-block-column-data-preview="true"
+        aria-label="데이터 블록 읽기 전용 미리보기"
+        aria-readonly="true"
+        contenteditable="false"
+      ></div>
     </div>
   `;
   resolvedHost.append(layerElement);
@@ -207,6 +280,255 @@ function getCandidateBlockFocusLayer(ownerDocument = document, hostElement = nul
 
 function getModalSurfaceElement(layerElement) {
   return layerElement?.querySelector?.("[data-candidate-block-modal-editor-surface]") || null;
+}
+
+function getModalSurfaceElementByTab(layerElement, tabId = MODAL_TAB_DATA_BLOCK) {
+  return layerElement?.querySelector?.(`[data-candidate-block-editor-surface-id="${tabId}"]`) || null;
+}
+
+function getColumnDataPreviewElement(layerElement) {
+  return layerElement?.querySelector?.("[data-candidate-block-column-data-preview]") || null;
+}
+
+function getStateCandidateBlockGridConfig(state = candidateBlockFocusState) {
+  const selectedPage = state?.selectedPage;
+
+  if (!selectedPage) {
+    return {
+      blockTemplateHtml: MODAL_EMPTY_HTML,
+      columnNameRow: {
+        enabled: false,
+        heightPt: candidateBlockGridColumnNameRowDefaultHeightPt,
+        templateHtml: MODAL_EMPTY_HTML,
+      },
+      emptyBlockLayer: {
+        enabled: false,
+        templateHtml: MODAL_EMPTY_HTML,
+      },
+    };
+  }
+
+  selectedPage.settings = selectedPage?.settings && typeof selectedPage.settings === "object" ? selectedPage.settings : {};
+  selectedPage.settings.candidateBlockGrid =
+    selectedPage.settings.candidateBlockGrid && typeof selectedPage.settings.candidateBlockGrid === "object"
+      ? selectedPage.settings.candidateBlockGrid
+      : {};
+
+  const config = selectedPage.settings.candidateBlockGrid;
+
+  config.emptyBlockLayer = config.emptyBlockLayer && typeof config.emptyBlockLayer === "object"
+    ? config.emptyBlockLayer
+    : {};
+  config.emptyBlockLayer.enabled = config.emptyBlockLayer.enabled === true || String(config.emptyBlockLayer.enabled || "").trim() === "true";
+  config.emptyBlockLayer.templateHtml = normalizeCandidateBlockTemplateHtml(config.emptyBlockLayer.templateHtml);
+  config.columnNameRow = config.columnNameRow && typeof config.columnNameRow === "object"
+    ? config.columnNameRow
+    : {};
+  config.columnNameRow.enabled = config.columnNameRow.enabled === true || String(config.columnNameRow.enabled || "").trim() === "true";
+  config.columnNameRow.templateHtml = normalizeCandidateBlockTemplateHtml(config.columnNameRow.templateHtml);
+  config.columnNameRow.heightPt = Math.min(
+    240,
+    Math.max(4, Number(config.columnNameRow.heightPt) || candidateBlockGridColumnNameRowDefaultHeightPt),
+  );
+
+  return config;
+}
+
+function isModalTabFeatureEnabled(state = candidateBlockFocusState, tabId = state?.activeTab) {
+  if (tabId === MODAL_TAB_DATA_BLOCK) {
+    return true;
+  }
+
+  const config = getStateCandidateBlockGridConfig(state);
+
+  if (tabId === MODAL_TAB_EMPTY_BLOCK) {
+    return Boolean(config.emptyBlockLayer?.enabled);
+  }
+
+  if (tabId === MODAL_TAB_COLUMN_NAME) {
+    return Boolean(config.columnNameRow?.enabled);
+  }
+
+  return true;
+}
+
+function getColumnNameRowLogicalHeight(state = candidateBlockFocusState) {
+  const config = getStateCandidateBlockGridConfig(state);
+
+  return Math.max(1, Math.round(pointValueToCssPixel(config.columnNameRow?.heightPt || candidateBlockGridColumnNameRowDefaultHeightPt)));
+}
+
+function getActiveModalLogicalSize(state = candidateBlockFocusState) {
+  const blockSize = state?.logicalSize || { height: 1, width: 1 };
+
+  if (state?.activeTab === MODAL_TAB_COLUMN_NAME) {
+    return {
+      height: blockSize.height + getColumnNameRowLogicalHeight(state),
+      width: blockSize.width,
+    };
+  }
+
+  return blockSize;
+}
+
+function getActiveModalEditorLogicalHeight(state = candidateBlockFocusState) {
+  return state?.activeTab === MODAL_TAB_COLUMN_NAME
+    ? getColumnNameRowLogicalHeight(state)
+    : Math.max(1, Number(state?.logicalSize?.height) || 1);
+}
+
+function getModalTabTemplateHtml(state = candidateBlockFocusState, tabId = MODAL_TAB_DATA_BLOCK) {
+  const config = getStateCandidateBlockGridConfig(state);
+
+  if (tabId === MODAL_TAB_EMPTY_BLOCK) {
+    return normalizeCandidateBlockTemplateHtml(config.emptyBlockLayer?.templateHtml);
+  }
+
+  if (tabId === MODAL_TAB_COLUMN_NAME) {
+    return normalizeCandidateBlockTemplateHtml(config.columnNameRow?.templateHtml);
+  }
+
+  return normalizeCandidateBlockTemplateHtml(state?.blockElement?.innerHTML || config.blockTemplateHtml);
+}
+
+function addModalSurfaceEventListeners(surfaceElement) {
+  surfaceElement?.addEventListener?.("beforeinput", handleModalBeforeInput, modalCapturedEventOptions);
+  surfaceElement?.addEventListener?.("compositionstart", handleModalCompositionStart, modalCapturedEventOptions);
+  surfaceElement?.addEventListener?.("compositionend", handleModalCompositionEnd, modalCapturedEventOptions);
+  surfaceElement?.addEventListener?.("input", handleModalInput, modalCapturedEventOptions);
+  surfaceElement?.addEventListener?.("keydown", handleModalKeyDown, modalCapturedEventOptions);
+}
+
+function removeModalSurfaceEventListeners(surfaceElement) {
+  surfaceElement?.removeEventListener?.("beforeinput", handleModalBeforeInput, modalCapturedEventOptions);
+  surfaceElement?.removeEventListener?.("compositionstart", handleModalCompositionStart, modalCapturedEventOptions);
+  surfaceElement?.removeEventListener?.("compositionend", handleModalCompositionEnd, modalCapturedEventOptions);
+  surfaceElement?.removeEventListener?.("input", handleModalInput, modalCapturedEventOptions);
+  surfaceElement?.removeEventListener?.("keydown", handleModalKeyDown, modalCapturedEventOptions);
+}
+
+function setSurfaceEditableState(surfaceElement, enabled) {
+  if (!(surfaceElement instanceof HTMLElement)) {
+    return;
+  }
+
+  surfaceElement.setAttribute("contenteditable", enabled ? "true" : "false");
+  surfaceElement.classList.toggle("is-candidate-block-modal-editor-disabled", !enabled);
+  surfaceElement.toggleAttribute("aria-readonly", !enabled);
+}
+
+function syncModalTabsUi(state = candidateBlockFocusState) {
+  const layerElement = state?.layerElement;
+
+  if (!(layerElement instanceof HTMLElement)) {
+    return;
+  }
+
+  layerElement.querySelectorAll("[data-candidate-block-focus-tab]").forEach((tabElement) => {
+    const isActive = tabElement.dataset.candidateBlockFocusTab === state.activeTab;
+
+    tabElement.classList.toggle("is-active", isActive);
+    tabElement.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+
+  layerElement.querySelectorAll("[data-candidate-block-feature-switch-wrap]").forEach((wrapElement) => {
+    wrapElement.classList.toggle(
+      "is-hidden",
+      wrapElement.dataset.candidateBlockFeatureSwitchWrap !== state.activeTab,
+    );
+  });
+
+  const config = getStateCandidateBlockGridConfig(state);
+  const emptySwitch = layerElement.querySelector(`[data-candidate-block-feature-switch="${MODAL_TAB_EMPTY_BLOCK}"]`);
+  const columnSwitch = layerElement.querySelector(`[data-candidate-block-feature-switch="${MODAL_TAB_COLUMN_NAME}"]`);
+
+  if (emptySwitch instanceof HTMLInputElement) {
+    emptySwitch.checked = Boolean(config.emptyBlockLayer?.enabled);
+  }
+
+  if (columnSwitch instanceof HTMLInputElement) {
+    columnSwitch.checked = Boolean(config.columnNameRow?.enabled);
+  }
+
+  Object.entries(state.modalSurfaceElements || {}).forEach(([tabId, surfaceElement]) => {
+    const isActive = tabId === state.activeTab;
+
+    surfaceElement.classList.toggle("is-hidden", !isActive);
+    surfaceElement.classList.toggle("examlist-candidate-block-modal-editor-surface", isActive);
+    surfaceElement.classList.toggle("is-candidate-block-template-source", isActive);
+    surfaceElement.classList.toggle("is-candidate-block-focus-editor", isActive);
+    if (isActive) {
+      surfaceElement.dataset.candidateBlockModalEditorSurface = "true";
+      surfaceElement.dataset.candidateBlockInstance = "modal-editor";
+      surfaceElement.dataset.templateEditorAllowOverflowSync = "true";
+      surfaceElement.dataset.templateEditorRuntimeActiveSurface = "true";
+    } else {
+      surfaceElement.removeAttribute("data-candidate-block-instance");
+      surfaceElement.removeAttribute("data-candidate-block-modal-editor-surface");
+      surfaceElement.removeAttribute("data-template-editor-allow-overflow-sync");
+      surfaceElement.removeAttribute("data-template-editor-runtime-active-surface");
+    }
+    setSurfaceEditableState(surfaceElement, isActive && isModalTabFeatureEnabled(state, tabId));
+  });
+
+  state.columnDataPreviewElement?.classList?.toggle("is-hidden", state.activeTab !== MODAL_TAB_COLUMN_NAME);
+  state.layerElement.classList.toggle("is-candidate-block-feature-tab", state.activeTab !== MODAL_TAB_DATA_BLOCK);
+  state.layerElement.classList.toggle("is-candidate-block-column-name-tab", state.activeTab === MODAL_TAB_COLUMN_NAME);
+}
+
+function refreshColumnDataPreview(state = candidateBlockFocusState) {
+  const previewElement = state?.columnDataPreviewElement;
+
+  if (!(previewElement instanceof HTMLElement)) {
+    return;
+  }
+
+  previewElement.innerHTML = getModalTabTemplateHtml(state, MODAL_TAB_DATA_BLOCK);
+  normalizeCandidateBlockTables(previewElement);
+}
+
+function setActiveModalSurface(state, nextTab) {
+  const nextSurface = state?.modalSurfaceElements?.[nextTab] || null;
+
+  if (!(nextSurface instanceof HTMLElement)) {
+    return false;
+  }
+
+  const isSameSurface = state.modalSurfaceElement === nextSurface && state.hasModalSurfaceListeners;
+
+  if (!isSameSurface && state.modalSurfaceElement instanceof HTMLElement) {
+    removeModalSurfaceEventListeners(state.modalSurfaceElement);
+    state.modalMutationObserver?.disconnect?.();
+    state.modalMutationObserver = null;
+  }
+
+  state.activeTab = nextTab;
+  state.modalSurfaceElement = nextSurface;
+  if (!applyCandidateBlockFocusLayout(state)) {
+    return false;
+  }
+  syncModalTabsUi(state);
+  nextSurface.innerHTML = getModalTabTemplateHtml(state, nextTab);
+  ensureModalEditableHost(nextSurface);
+  normalizeCandidateBlockTables(nextSurface);
+  refreshColumnDataPreview(state);
+  state.beforeInputHtml = getNormalizedModalHtml(nextSurface);
+  state.lastValidHtml = getNormalizedModalHtml(nextSurface);
+  if (!isSameSurface) {
+    addModalSurfaceEventListeners(nextSurface);
+    state.hasModalSurfaceListeners = true;
+    state.modalMutationObserver = observeModalContentChanges(state);
+  }
+
+  if (isModalTabFeatureEnabled(state, nextTab)) {
+    state.ownerWindow.requestAnimationFrame(() => {
+      if (candidateBlockFocusState === state && state.modalSurfaceElement === nextSurface) {
+        placeCaretAtEndOfSurface(nextSurface, state.editor);
+      }
+    });
+  }
+
+  return true;
 }
 
 function getNormalizedModalHtml(modalSurfaceElement) {
@@ -701,11 +1023,26 @@ function syncActiveCandidateBlockModalEditor({ markDirty = false, validateOverfl
     state.lastValidHtml = getNormalizedModalHtml(state.modalSurfaceElement);
   }
 
-  state.blockElement.innerHTML = getNormalizedModalHtml(state.modalSurfaceElement);
-  normalizeCandidateBlockTables(state.blockElement);
+  const normalizedHtml = getNormalizedModalHtml(state.modalSurfaceElement);
 
-  if (state.selectedPage) {
-    syncCandidateBlockTemplateFromSurface(state.surfaceElement, state.selectedPage, state.blockElement);
+  if (state.activeTab === MODAL_TAB_DATA_BLOCK) {
+    state.blockElement.innerHTML = normalizedHtml;
+    normalizeCandidateBlockTables(state.blockElement);
+
+    if (state.selectedPage) {
+      syncCandidateBlockTemplateFromSurface(state.surfaceElement, state.selectedPage, state.blockElement);
+    }
+
+    refreshColumnDataPreview(state);
+  } else {
+    const config = getStateCandidateBlockGridConfig(state);
+
+    if (state.activeTab === MODAL_TAB_EMPTY_BLOCK) {
+      config.emptyBlockLayer.templateHtml = normalizedHtml;
+    } else if (state.activeTab === MODAL_TAB_COLUMN_NAME) {
+      config.columnNameRow.templateHtml = normalizedHtml;
+      state.needsGridRerender = true;
+    }
   }
 
   restoreModalCaretFocusIfLoose(state);
@@ -815,12 +1152,35 @@ function isPointerNearActiveModalTableObject(event, state = candidateBlockFocusS
 
 function handleLayerPointerDown(event) {
   const closeButton = event.target?.closest?.("[data-candidate-block-focus-close]");
+  const tabButton = event.target?.closest?.("[data-candidate-block-focus-tab]");
   const modalSurfaceElement = candidateBlockFocusState?.modalSurfaceElement;
 
   if (closeButton) {
     event.preventDefault();
     event.stopPropagation();
     closeCandidateBlockFocusEditor();
+    return;
+  }
+
+  if (tabButton) {
+    const state = candidateBlockFocusState;
+    const nextTab = tabButton.dataset.candidateBlockFocusTab;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (!state || !nextTab || nextTab === state.activeTab) {
+      return;
+    }
+
+    if (!syncActiveCandidateBlockModalEditor({ markDirty: true, validateOverflow: true })) {
+      return;
+    }
+
+    setActiveModalSurface(state, nextTab);
+    return;
+  }
+
+  if (event.target?.closest?.("[data-candidate-block-feature-switch-wrap]")) {
     return;
   }
 
@@ -836,6 +1196,48 @@ function handleLayerPointerDown(event) {
     event.preventDefault();
     event.stopPropagation();
     placeCaretAtEndOfSurface(modalSurfaceElement, candidateBlockFocusState?.editor);
+  }
+}
+
+function handleLayerChange(event) {
+  const inputElement = event.target instanceof HTMLInputElement
+    ? event.target.closest("[data-candidate-block-feature-switch]")
+    : null;
+  const state = candidateBlockFocusState;
+
+  if (!(inputElement instanceof HTMLInputElement) || !state) {
+    return;
+  }
+
+  const featureTab = inputElement.dataset.candidateBlockFeatureSwitch;
+  const config = getStateCandidateBlockGridConfig(state);
+
+  if (featureTab === MODAL_TAB_EMPTY_BLOCK) {
+    if (state.activeTab === MODAL_TAB_EMPTY_BLOCK && inputElement.checked === false) {
+      syncActiveCandidateBlockModalEditor({ markDirty: true, validateOverflow: true });
+    }
+    config.emptyBlockLayer.enabled = inputElement.checked;
+  } else if (featureTab === MODAL_TAB_COLUMN_NAME) {
+    if (state.activeTab === MODAL_TAB_COLUMN_NAME && inputElement.checked === false) {
+      syncActiveCandidateBlockModalEditor({ markDirty: true, validateOverflow: true });
+    }
+    config.columnNameRow.enabled = inputElement.checked;
+    state.needsGridRerender = true;
+  } else {
+    return;
+  }
+
+  syncModalTabsUi(state);
+  refreshColumnDataPreview(state);
+  applyCandidateBlockFocusLayout(state);
+  state.onDirty?.();
+
+  if (inputElement.checked && state.modalSurfaceElement instanceof HTMLElement) {
+    state.ownerWindow.requestAnimationFrame(() => {
+      if (candidateBlockFocusState === state && isModalTabFeatureEnabled(state, state.activeTab)) {
+        placeCaretAtEndOfSurface(state.modalSurfaceElement, state.editor);
+      }
+    });
   }
 }
 
@@ -1030,19 +1432,25 @@ function applyCandidateBlockFocusLayout(state = candidateBlockFocusState) {
   }
 
   const ownerDocument = blockElement.ownerDocument || document;
-  const layout = getCandidateBlockFocusLayout(surfaceElement, blockElement, state.logicalSize);
+  const activeLogicalSize = getActiveModalLogicalSize(state);
+  const activeEditorHeight = getActiveModalEditorLogicalHeight(state);
+  const dataPreviewHeight = Math.max(1, Number(state.logicalSize?.height) || activeEditorHeight);
+  const columnNameRowHeight = getColumnNameRowLogicalHeight(state);
+  const layout = getCandidateBlockFocusLayout(surfaceElement, blockElement, activeLogicalSize);
   const backdropRect = getCanvasBackdropRect(surfaceElement);
 
   modalSurfaceElement.dataset.candidateBlockLogicalWidth = String(layout.editorWidth);
-  modalSurfaceElement.dataset.candidateBlockLogicalHeight = String(layout.editorHeight);
+  modalSurfaceElement.dataset.candidateBlockLogicalHeight = String(activeEditorHeight);
   modalSurfaceElement.dataset.candidateBlockLogicalContentWidth = String(layout.editorWidth);
-  modalSurfaceElement.dataset.candidateBlockLogicalContentHeight = String(layout.editorHeight);
+  modalSurfaceElement.dataset.candidateBlockLogicalContentHeight = String(activeEditorHeight);
   setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-panel-left", `${layout.panelLeft}px`);
   setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-panel-top", `${layout.panelTop}px`);
   setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-panel-width", `${layout.panelWidth}px`);
   setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-panel-height", `${layout.panelHeight}px`);
   setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-width", `${layout.editorWidth}px`);
-  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-height", `${layout.editorHeight}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-height", `${activeEditorHeight}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-data-preview-height", `${dataPreviewHeight}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-column-row-height", `${columnNameRowHeight}px`);
   setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-scale", String(layout.scale));
   setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-visual-width", `${layout.visualWidth}px`);
   setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-visual-height", `${layout.visualHeight}px`);
@@ -1130,27 +1538,39 @@ export function openCandidateBlockFocusEditor({
   const backdropElement = getCandidateBlockFocusBackdrop(ownerDocument, layerHostElement);
   const layerElement = getCandidateBlockFocusLayer(ownerDocument, layerHostElement);
   const modalSurfaceElement = getModalSurfaceElement(layerElement);
+  const emptySurfaceElement = getModalSurfaceElementByTab(layerElement, MODAL_TAB_EMPTY_BLOCK);
+  const columnSurfaceElement = getModalSurfaceElementByTab(layerElement, MODAL_TAB_COLUMN_NAME);
+  const columnDataPreviewElement = getColumnDataPreviewElement(layerElement);
 
-  if (!(modalSurfaceElement instanceof HTMLElement)) {
+  if (
+    !(modalSurfaceElement instanceof HTMLElement) ||
+    !(emptySurfaceElement instanceof HTMLElement) ||
+    !(columnSurfaceElement instanceof HTMLElement)
+  ) {
     return false;
   }
 
   modalSurfaceElement.innerHTML = String(blockElement.innerHTML || "").trim() || MODAL_EMPTY_HTML;
   ensureModalEditableHost(modalSurfaceElement);
-  modalSurfaceElement.dataset.templateEditorRuntimeActiveSurface = "true";
-  modalSurfaceElement.dataset.candidateBlockModalEditorSurface = "true";
-  modalSurfaceElement.dataset.templateEditorAllowOverflowSync = "true";
-  modalSurfaceElement.setAttribute("contenteditable", "true");
-  modalSurfaceElement.removeAttribute("aria-readonly");
+  emptySurfaceElement.innerHTML = MODAL_EMPTY_HTML;
+  columnSurfaceElement.innerHTML = MODAL_EMPTY_HTML;
+  columnDataPreviewElement?.replaceChildren?.();
 
   candidateBlockFocusState = {
+    activeTab: MODAL_TAB_DATA_BLOCK,
     backdropElement,
     blockElement,
     canvasElement: surfaceElement.closest(".template-editor-page") || surfaceElement,
     editor,
     layerElement,
-    logicalSize: getBlockLogicalSize(blockElement),
+    logicalSize: getCandidateBlockFocusBlockLogicalSize(blockElement),
     modalSurfaceElement,
+    modalSurfaceElements: {
+      [MODAL_TAB_DATA_BLOCK]: modalSurfaceElement,
+      [MODAL_TAB_EMPTY_BLOCK]: emptySurfaceElement,
+      [MODAL_TAB_COLUMN_NAME]: columnSurfaceElement,
+    },
+    columnDataPreviewElement,
     onDirty,
     ownerDocument,
     ownerWindow,
@@ -1162,6 +1582,8 @@ export function openCandidateBlockFocusEditor({
     lastInputType: "",
     lastOverflowMessageAt: 0,
     lastValidHtml: getNormalizedModalHtml(modalSurfaceElement),
+    hasModalSurfaceListeners: false,
+    needsGridRerender: false,
     mutationFrame: 0,
     restoreFrame: 0,
     restoreTimer: 0,
@@ -1174,11 +1596,7 @@ export function openCandidateBlockFocusEditor({
   candidateBlockFocusState.canvasElement.classList.add("is-candidate-block-focus-active");
   backdropElement.addEventListener("pointerdown", handleBackdropPointerDown);
   layerElement.addEventListener("pointerdown", handleLayerPointerDown);
-  modalSurfaceElement.addEventListener("beforeinput", handleModalBeforeInput, modalCapturedEventOptions);
-  modalSurfaceElement.addEventListener("compositionstart", handleModalCompositionStart, modalCapturedEventOptions);
-  modalSurfaceElement.addEventListener("compositionend", handleModalCompositionEnd, modalCapturedEventOptions);
-  modalSurfaceElement.addEventListener("input", handleModalInput, modalCapturedEventOptions);
-  modalSurfaceElement.addEventListener("keydown", handleModalKeyDown, modalCapturedEventOptions);
+  layerElement.addEventListener("change", handleLayerChange);
   ownerWindow.addEventListener("beforeinput", handleModalWindowBeforeInput, modalCapturedEventOptions);
   ownerWindow.addEventListener("compositionstart", handleModalWindowCompositionStart, modalCapturedEventOptions);
   ownerWindow.addEventListener("compositionend", handleModalWindowCompositionEnd, modalCapturedEventOptions);
@@ -1187,12 +1605,13 @@ export function openCandidateBlockFocusEditor({
   ownerWindow.addEventListener("resize", handleWindowLayoutChange);
   ownerWindow.addEventListener("scroll", handleWindowLayoutChange, true);
 
+  setActiveModalSurface(candidateBlockFocusState, MODAL_TAB_DATA_BLOCK);
+
   if (!applyCandidateBlockFocusLayout(candidateBlockFocusState)) {
     return false;
   }
 
   validateActiveCandidateBlockModalContent({ inputType: "open", restoreCaret: false });
-  candidateBlockFocusState.modalMutationObserver = observeModalContentChanges(candidateBlockFocusState);
 
   ownerWindow.requestAnimationFrame(() => {
     if (
@@ -1245,11 +1664,9 @@ export function closeCandidateBlockFocusEditor() {
   state.modalMutationObserver?.disconnect?.();
   candidateBlockFocusState = null;
   clearModalSelectionIfNeeded(state);
-  state.modalSurfaceElement?.removeEventListener?.("beforeinput", handleModalBeforeInput, modalCapturedEventOptions);
-  state.modalSurfaceElement?.removeEventListener?.("compositionstart", handleModalCompositionStart, modalCapturedEventOptions);
-  state.modalSurfaceElement?.removeEventListener?.("compositionend", handleModalCompositionEnd, modalCapturedEventOptions);
-  state.modalSurfaceElement?.removeEventListener?.("input", handleModalInput, modalCapturedEventOptions);
-  state.modalSurfaceElement?.removeEventListener?.("keydown", handleModalKeyDown, modalCapturedEventOptions);
+  Object.values(state.modalSurfaceElements || {}).forEach((surfaceElement) => {
+    removeModalSurfaceEventListeners(surfaceElement);
+  });
   state.ownerWindow?.removeEventListener?.("beforeinput", handleModalWindowBeforeInput, modalCapturedEventOptions);
   state.ownerWindow?.removeEventListener?.("compositionstart", handleModalWindowCompositionStart, modalCapturedEventOptions);
   state.ownerWindow?.removeEventListener?.("compositionend", handleModalWindowCompositionEnd, modalCapturedEventOptions);
@@ -1257,12 +1674,16 @@ export function closeCandidateBlockFocusEditor() {
   state.ownerWindow?.removeEventListener?.("keydown", handleModalWindowKeyDown, modalCapturedEventOptions);
   state.backdropElement?.removeEventListener?.("pointerdown", handleBackdropPointerDown);
   state.layerElement?.removeEventListener?.("pointerdown", handleLayerPointerDown);
+  state.layerElement?.removeEventListener?.("change", handleLayerChange);
   state.ownerWindow?.removeEventListener?.("resize", handleWindowLayoutChange);
   state.ownerWindow?.removeEventListener?.("scroll", handleWindowLayoutChange, true);
   state.surfaceElement?.classList?.remove("is-candidate-block-focus-active");
   state.canvasElement?.classList?.remove("is-candidate-block-focus-active");
   state.backdropElement?.remove?.();
   state.layerElement?.remove?.();
+  if (state.needsGridRerender && state.surfaceElement && state.selectedPage) {
+    renderCandidateBlockGridOnSurface(state.surfaceElement, state.selectedPage);
+  }
   clearDocumentFocusVariables(state.ownerDocument);
   return true;
 }

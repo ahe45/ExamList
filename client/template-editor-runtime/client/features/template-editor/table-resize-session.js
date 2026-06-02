@@ -19,6 +19,8 @@
     getTemplateEditorTableColumnCount,
     getTemplateEditorTableLineCells,
     getTemplateEditorTableLogicalColumnWidth,
+    getTemplateEditorTableLogicalRowHeight,
+    getTemplateEditorSelectedCell,
     state,
     syncTemplateEditorContent,
     updateTemplateTableControls,
@@ -88,7 +90,7 @@
       clearTemplateEditorTableHoverState();
 
       if (sync && resizeSession.didChange) {
-        focusTemplateEditorCell(resizeSession.cell);
+        focusTemplateEditorCell(resizeSession.focusCell || resizeSession.cell);
         syncTemplateEditorContent();
         updateTemplateTableControls();
         return;
@@ -137,6 +139,8 @@
 
       const cellRect = resizeHit.cell.getBoundingClientRect();
       const focusScale = getCandidateBlockFocusScale(resizeHit.cell);
+      const selectedCell = getTemplateEditorSelectedCell?.();
+      const focusCell = selectedCell?.closest?.("table") === resizeHit.table ? selectedCell : resizeHit.cell;
       const startSize =
         cellOnly
           ? Math.max(
@@ -145,7 +149,7 @@
             )
           : resizeHit.kind === "column"
           ? getTemplateEditorTableLogicalColumnWidth(resizeHit.table, resizeHit.lineIndex)
-          : Math.max(Math.round(resizeHit.cell.getBoundingClientRect().height / focusScale), TEMPLATE_EDITOR_TABLE_MIN_SIZE);
+          : getTemplateEditorTableLogicalRowHeight(resizeHit.table, resizeHit.lineIndex);
       const columnCount = !cellOnly && resizeHit.kind === "column" ? getTemplateEditorTableColumnCount(resizeHit.table) : 0;
       const nextLineIndex = !cellOnly && resizeHit.kind === "column" && resizeHit.lineIndex + 1 < columnCount ? resizeHit.lineIndex + 1 : null;
       const nextStartSize = !cellOnly && Number.isInteger(nextLineIndex)
@@ -167,6 +171,7 @@
         nextStartSize,
         focusScale,
         targetCells,
+        focusCell,
         cellOnlyColumnLayout,
         cellOnlyRowLayout,
         cellOnlyPlan: null,
