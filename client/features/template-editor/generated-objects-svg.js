@@ -1,3 +1,4 @@
+import { buildCode128Svg } from "./code128-svg.js";
 import { normalizeGeneratedObjectType } from "./generated-objects-config.js";
 
 export function createGeneratedObjectSvgDataUrl(svgMarkup) {
@@ -70,41 +71,5 @@ export function buildGeneratedObjectSvg(objectType, objectValue) {
     `;
   }
 
-  const barWidths = normalizedValue
-    .split("")
-    .flatMap((character, index) => {
-      const code = character.charCodeAt(0);
-
-      return [
-        1 + ((code + index) % 3),
-        1 + (((code >> 2) + index) % 4),
-        1 + (((code >> 4) + index) % 3),
-      ];
-    });
-  barWidths.unshift(2, 1, 1);
-  barWidths.push(2, 1, 3);
-  const svgWidth = 240;
-  const marginX = 0;
-  const barAreaWidth = svgWidth - marginX * 2;
-  const totalUnits = barWidths.reduce((sum, width) => sum + width, Math.max(0, barWidths.length - 1));
-  const unitWidth = barAreaWidth / Math.max(totalUnits, 1);
-  const gapWidth = unitWidth;
-  let cursorX = marginX;
-  const bars = barWidths
-    .map((width) => {
-      const barWidth = Math.max(1, Math.round(width * unitWidth * 100) / 100);
-      const x = Math.round(cursorX * 100) / 100;
-      const markup = `<rect x="${x}" y="0" width="${barWidth}" height="72" fill="#111827" />`;
-
-      cursorX += barWidth + gapWidth;
-      return markup;
-    })
-    .join("");
-
-  return `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="72" viewBox="0 0 ${svgWidth} 72" preserveAspectRatio="none" fill="none" shape-rendering="crispEdges">
-      <rect width="${svgWidth}" height="72" fill="#ffffff"/>
-      ${bars}
-    </svg>
-  `;
+  return buildCode128Svg(normalizedValue);
 }

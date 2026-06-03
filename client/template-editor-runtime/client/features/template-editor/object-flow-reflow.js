@@ -30,6 +30,7 @@
     "[data-candidate-block-grid]",
     ".examlist-candidate-block-grid",
     "[data-candidate-block-instance]",
+    "[data-candidate-block-column-name]",
     ".examlist-candidate-block",
   ].join(",");
   let objectFlowReflowIdCounter = 0;
@@ -66,10 +67,6 @@
 
     if (!kind || objectElement.closest(transientSelector)) {
       return false;
-    }
-
-    if (kind === "table") {
-      return !objectElement.closest("[data-candidate-block-instance]");
     }
 
     return false;
@@ -111,13 +108,9 @@
 
   function removeUnsupportedFlowSpacers(documentElement) {
     Array.from(documentElement?.querySelectorAll?.("[data-template-object-flow-spacer]") || [])
-      .forEach((element) => {
-        if (String(element.dataset?.templateObjectFlowKind || "").trim() === "candidate-block-grid") {
-          element.remove();
-        }
-      });
+      .forEach((element) => element.remove());
 
-    Array.from(documentElement?.querySelectorAll?.("[data-candidate-block-grid], .examlist-candidate-block-grid") || [])
+    Array.from(documentElement?.querySelectorAll?.("[data-template-object-flow-id]") || [])
       .forEach((element) => element.removeAttribute("data-template-object-flow-id"));
   }
 
@@ -577,10 +570,7 @@ function getFlowObjectMetrics(objectElement, documentElement, geometry = {}, min
     }
 
     removeUnsupportedFlowSpacers(documentElement);
-
-    return getAbsoluteFlowObjects(documentElement, null)
-      .map((objectElement) => syncAbsoluteFlowObjectToSpacer(objectElement, documentElement, options))
-      .filter(Boolean);
+    return [];
   }
 
   function pushOverlappingFlowObjects(documentElement, activeElement, activeSpacer, activeMetrics, options = {}) {
@@ -681,79 +671,13 @@ function getFlowObjectMetrics(objectElement, documentElement, geometry = {}, min
   function reflowTemplateEditorObjectRows(activeElement, options = {}) {
     const documentElement = options.documentElement || activeElement?.closest?.(".template-doc") || null;
 
-    if (!isFlowObjectElement(activeElement, documentElement)) {
-      return {
-        shiftedObjects: [],
-        spacerElement: null,
-      };
+    if (isHtmlElement(documentElement)) {
+      removeUnsupportedFlowSpacers(documentElement);
     }
 
-    removeUnsupportedFlowSpacers(documentElement);
-
-    const activeSpacer = ensureFlowSpacer(activeElement, documentElement);
-
-    if (!isHtmlElement(activeSpacer)) {
-      return {
-        shiftedObjects: [],
-        spacerElement: null,
-      };
-    }
-
-  const activeMetrics = getFlowObjectMetrics(activeElement, documentElement, {
-    height: options.activeHeight,
-    strictGeometry: options.strictGeometry === true,
-    top: options.activeTop,
-  }, options.minimumHeight);
-    const movementY = Number(options.movementY) || 0;
-    const isMovingDown = movementY > 0.5;
-    const shouldReorderByPosition =
-      options.reorderByPosition === true ||
-      (options.reorderByPosition !== false && Math.abs(movementY) > 0.5);
-    const previousHeight = activeSpacer.style.height;
-
-    if (shouldReorderByPosition) {
-      activeSpacer.style.height = "0px";
-    }
-
-    splitFlowTextBlockAtTarget(
-      documentElement,
-      activeElement,
-      activeSpacer,
-      isMovingDown ? activeMetrics.bottom : activeMetrics.top,
-    );
-
-    const referenceElement = findFlowReferenceChild(documentElement, activeElement, activeSpacer, activeMetrics, {
-      movingDown: isMovingDown,
-    });
-
-    if (referenceElement) {
-      documentElement.insertBefore(activeSpacer, referenceElement);
-    } else {
-      documentElement.append(activeSpacer);
-    }
-
-    if (shouldReorderByPosition) {
-      activeSpacer.style.height = previousHeight;
-    }
-
-    syncFlowSpacer(activeElement, documentElement, {
-      height: activeMetrics.height,
-      top: activeMetrics.top,
-    }, options.minimumHeight);
-
-    const shiftedObjects = isMovingDown
-      ? pullPrecedingFlowObjectsAboveActive(documentElement, activeElement, activeSpacer, activeMetrics, options)
-      : pushOverlappingFlowObjects(
-          documentElement,
-          activeElement,
-          activeSpacer,
-          activeMetrics,
-          options,
-        );
     return {
-      activeTop: activeMetrics.top,
-      shiftedObjects,
-      spacerElement: activeSpacer,
+      shiftedObjects: [],
+      spacerElement: null,
     };
   }
 

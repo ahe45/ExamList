@@ -1,5 +1,3 @@
-const { formatDateValue } = require("./token-formatters");
-
 function buildCandidateTokenMap(candidate = {}, school = {}) {
   const schoolAdmissionYear = String(school?.academicYear || school?.year || "").trim();
   const schoolCampusCode = String(school?.campusCode || "").trim();
@@ -8,11 +6,11 @@ function buildCandidateTokenMap(candidate = {}, school = {}) {
   return {
     ...candidate,
     admissionYear: schoolAdmissionYear || String(candidate.admissionYear || ""),
-    birthDate: formatDateValue(candidate.birthDate),
+    birthDate: String(candidate.birthDate || ""),
     campus: schoolCampusName || String(candidate.campus || candidate.campusName || ""),
     campusCode: schoolCampusCode || String(candidate.campusCode || ""),
     campusName: schoolCampusName || String(candidate.campusName || candidate.campus || ""),
-    examDate: formatDateValue(candidate.examDate),
+    examDate: String(candidate.examDate || ""),
     examEndTime: String(candidate.examEndTime || candidate.endTime || ""),
     examStartTime: String(candidate.examStartTime || candidate.time || ""),
     photo: String(candidate.photoUrl || candidate.photoFileId || ""),

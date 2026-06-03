@@ -173,6 +173,7 @@ export const appState = {
     upload: {
       dataFileName: "",
       dataFile: null,
+      errorDialogOpen: false,
       errorMessage: "",
       existingDataPolicy: "insert-update",
       isOpen: false,

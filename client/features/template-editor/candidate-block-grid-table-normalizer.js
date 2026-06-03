@@ -277,6 +277,19 @@ function getCandidateBlockVisualScale(blockElement) {
   };
 }
 
+function hasCandidateBlockLogicalSize(blockElement) {
+  if (!(blockElement instanceof HTMLElement)) {
+    return false;
+  }
+
+  return (
+    parseCandidateBlockPixelValue(blockElement.dataset?.candidateBlockLogicalContentWidth || "", 0) > 0 ||
+    parseCandidateBlockPixelValue(blockElement.dataset?.candidateBlockLogicalContentHeight || "", 0) > 0 ||
+    parseCandidateBlockPixelValue(blockElement.dataset?.candidateBlockLogicalWidth || "", 0) > 0 ||
+    parseCandidateBlockPixelValue(blockElement.dataset?.candidateBlockLogicalHeight || "", 0) > 0
+  );
+}
+
 function getCandidateBlockTableColumnTotalWidth(tableElement) {
   return Array.from(tableElement?.querySelectorAll?.("colgroup col") || []).reduce(
     (widthSum, columnElement) =>
@@ -367,7 +380,7 @@ function normalizeCandidateBlockTableElement(tableElement, blockElement = null) 
   tableElement.style.borderCollapse = "collapse";
   tableElement.style.boxSizing = "border-box";
 
-  if (blockElement instanceof HTMLElement && blockElement.isConnected) {
+  if (blockElement instanceof HTMLElement && (blockElement.isConnected || hasCandidateBlockLogicalSize(blockElement))) {
     const { height, width } = getCandidateBlockInnerSize(blockElement);
     const renderedSize = getCandidateBlockTableRenderedSize(tableElement);
     const maxWidth = Math.max(1, width);
@@ -442,6 +455,22 @@ function normalizeCandidateBlockTableElement(tableElement, blockElement = null) 
   }
 }
 
+function isCandidateBlockTableRoot(element) {
+  return element instanceof HTMLElement && Boolean(
+    element.matches?.("[data-candidate-block-instance], [data-candidate-block-column-name]"),
+  );
+}
+
+function getCandidateBlockTableRootElements(rootElement) {
+  if (isCandidateBlockTableRoot(rootElement)) {
+    return [rootElement];
+  }
+
+  return Array.from(
+    rootElement.querySelectorAll?.("[data-candidate-block-instance], [data-candidate-block-column-name]") || [],
+  );
+}
+
 function removeCandidateBlockTableCompanionsForFullHeightTable(tableRoot, blockElement, candidateTables) {
   if (!(tableRoot instanceof HTMLElement) || !(blockElement instanceof HTMLElement) || !candidateTables.length) {
     return false;
@@ -484,15 +513,13 @@ export function normalizeCandidateBlockTables(rootElement) {
     return;
   }
 
-  const blockElements = rootElement.matches?.("[data-candidate-block-instance]")
-    ? [rootElement]
-    : Array.from(rootElement.querySelectorAll("[data-candidate-block-instance]"));
+  const blockElements = getCandidateBlockTableRootElements(rootElement);
   const shouldNormalizeTemplateFragment =
     !blockElements.length && rootElement.nodeType === Node.DOCUMENT_FRAGMENT_NODE;
   const tableRoots = blockElements.length ? blockElements : shouldNormalizeTemplateFragment ? [rootElement] : [];
 
   tableRoots.forEach((tableRoot) => {
-    const blockElement = tableRoot.matches?.("[data-candidate-block-instance]") ? tableRoot : null;
+    const blockElement = isCandidateBlockTableRoot(tableRoot) ? tableRoot : null;
     const canUnwrapTableContainer = Boolean(blockElement) || tableRoot.nodeType === Node.DOCUMENT_FRAGMENT_NODE;
     let candidateTables = Array.from(tableRoot.querySelectorAll("table"));
 
@@ -508,7 +535,7 @@ export function normalizeCandidateBlockTables(rootElement) {
         parentElement instanceof HTMLElement &&
         parentElement !== tableRoot &&
         /^(P|DIV)$/i.test(String(parentElement.tagName || "")) &&
-        parentElement.closest?.("[data-candidate-block-instance]") === blockElement &&
+        parentElement.closest?.("[data-candidate-block-instance], [data-candidate-block-column-name]") === blockElement &&
         !String(parentElement.textContent || "").replace(/\u00a0/g, " ").trim() &&
         parentElement.querySelectorAll("table").length === 1
       ) {
@@ -541,7 +568,10 @@ export function normalizeCandidateBlockTables(rootElement) {
     }
 
     candidateTables.forEach((tableElement) => {
-      normalizeCandidateBlockTableElement(tableElement, blockElement || tableElement.closest?.("[data-candidate-block-instance]") || null);
+      normalizeCandidateBlockTableElement(
+        tableElement,
+        blockElement || tableElement.closest?.("[data-candidate-block-instance], [data-candidate-block-column-name]") || null,
+      );
     });
 
     tableRoot.querySelectorAll("table ~ p, table ~ div").forEach((element) => {

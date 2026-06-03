@@ -53,7 +53,7 @@ function createBaseContext({
       unitName: String(candidate.roomName || candidate.examName || candidate.admissionTypeName || ""),
     },
     exam: {
-      date: formatDateValue(candidate.examDate),
+      date: String(candidate.examDate || ""),
       endTime: String(candidate.examEndTime || candidate.endTime || ""),
       name: String(candidate.examName || ""),
       startTime: String(candidate.examStartTime || candidate.time || ""),

@@ -4,6 +4,7 @@ import {
   resetCandidateBlockGridState,
   syncCandidateBlockTemplateFromSurface,
 } from "./candidate-block-grid-adapter.js";
+import { normalizeCandidateBlockTables } from "./candidate-block-grid-dom.js";
 import { canUseAccess } from "../../app/access.js";
 import {
   flattenTemplateTags,
@@ -436,6 +437,7 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
       toolbarHost,
     });
     syncCoverPageDisabledState({ pagePropertiesHost, selectedPage, surfaceElement });
+    normalizeCandidateBlockTables(surfaceElement);
     return mountedEditor;
   }
 
@@ -482,6 +484,7 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
       });
     },
   });
+  normalizeCandidateBlockTables(surfaceElement);
   renderGroupedDataTagPanel(tagHost, tagDefinitions, canEdit);
   removeGlobalEditorRuntimeStylesheets();
   prependPageSwitcher(pagePropertiesHost, appState.templateEditor);

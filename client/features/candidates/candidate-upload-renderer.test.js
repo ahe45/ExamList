@@ -68,3 +68,21 @@ test("candidate photo preview progress uses the common busy overlay", () => {
   assert.doesNotMatch(html, /candidate-preview-progress-card/);
   assert.doesNotMatch(html, /candidate-upload-progress-track/);
 });
+
+test("candidate upload modal renders persistent error dialog", () => {
+  const html = renderCandidateUploadModal({
+    upload: {
+      errorDialogOpen: true,
+      errorMessage: "XLSX 데이터 셀은 텍스트 서식이어야 합니다. (2행, 시험날짜)",
+      existingDataPolicy: "insert-update",
+      isOpen: true,
+      mode: "workbook",
+    },
+  });
+
+  assert.match(html, /role="alertdialog"/);
+  assert.match(html, /candidate-upload-error-modal/);
+  assert.match(html, /수험생 데이터 업로드를 진행할 수 없습니다/);
+  assert.match(html, /XLSX 데이터 셀은 텍스트 서식이어야 합니다\. \(2행, 시험날짜\)/);
+  assert.match(html, /data-action="close-candidate-upload-error-modal"/);
+});

@@ -237,18 +237,6 @@ function sanitizeElementAttributes(element) {
       return;
     }
 
-    if (attributeName === "data-template-object-flow-id") {
-      return;
-    }
-
-    if (attributeName === "data-template-object-flow-kind") {
-      return;
-    }
-
-    if (attributeName === "data-template-object-flow-spacer") {
-      return;
-    }
-
     if (attributeName === "data-template-tag-value") {
       return;
     }
@@ -348,11 +336,11 @@ export function stripTransientDocumentState(rootElement) {
   }
 
   rootElement
-    .querySelectorAll("[data-template-object-flow-spacer][data-template-object-flow-kind=\"candidate-block-grid\"]")
+    .querySelectorAll("[data-template-object-flow-spacer]")
     .forEach((element) => element.remove());
 
   rootElement
-    .querySelectorAll("[data-candidate-block-grid], .examlist-candidate-block-grid")
+    .querySelectorAll("[data-template-object-flow-id]")
     .forEach((element) => element.removeAttribute("data-template-object-flow-id"));
 
   rootElement

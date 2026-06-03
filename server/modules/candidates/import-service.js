@@ -160,7 +160,7 @@ function createCandidateImportService({
 
   function areCandidateImportRowsEqual(leftRow = {}, rightRow = {}) {
     return CANDIDATE_IMPORT_COMPARISON_FIELDS.every(
-      (fieldKey) => String(leftRow?.[fieldKey] || "").trim() === String(rightRow?.[fieldKey] || "").trim(),
+      (fieldKey) => String(leftRow?.[fieldKey] || "") === String(rightRow?.[fieldKey] || ""),
     );
   }
 

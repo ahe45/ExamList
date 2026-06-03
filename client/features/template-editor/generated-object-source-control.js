@@ -5,6 +5,7 @@ import {
   buildGeneratedObjectPreviewData,
 } from "./generated-object-controller-patch.js";
 import {
+  filterGeneratedObjectSourceOptionsForType,
   getGeneratedObjectSourceOptions as getGeneratedObjectSourceOptionsFromDefinitions,
   normalizeGeneratedObjectSourceKey as normalizeGeneratedObjectSourceKeyFromConfig,
   normalizeGeneratedObjectType as normalizeGeneratedObjectTypeFromConfig,
@@ -50,6 +51,13 @@ function getGeneratedObjectSourceOptions(tagDefinitions = []) {
   return getGeneratedObjectSourceOptionsFromDefinitions(tagDefinitions);
 }
 
+function getGeneratedObjectSourceOptionsForType(tagDefinitions = [], objectType = "barcode") {
+  return filterGeneratedObjectSourceOptionsForType(
+    getGeneratedObjectSourceOptions(tagDefinitions).filter(isVisibleTemplateTag),
+    objectType,
+  );
+}
+
 function getDefaultGeneratedObjectSourceKey(options = []) {
   const sourceOptions = Array.isArray(options) ? options : [];
 
@@ -90,8 +98,9 @@ function getGroupedGeneratedObjectSourceOptions(options = []) {
   return groups.filter((group) => group.sourceOptions.length);
 }
 
-export function renderGeneratedObjectSourceOptions(options = [], selectedSourceKey = defaultGeneratedObjectSourceKey) {
-  const groups = getGroupedGeneratedObjectSourceOptions(options);
+export function renderGeneratedObjectSourceOptions(options = [], selectedSourceKey = defaultGeneratedObjectSourceKey, objectType = "") {
+  const sourceOptions = objectType ? filterGeneratedObjectSourceOptionsForType(options, objectType) : options;
+  const groups = getGroupedGeneratedObjectSourceOptions(sourceOptions);
   const normalizedSelectedSourceKey = normalizeGeneratedObjectSourceKey(selectedSourceKey);
 
   if (!groups.length) {
@@ -195,7 +204,7 @@ function restoreGeneratedObjectSelection(surfaceElement) {
 
 function createGeneratedObjectSourcePicker(tagDefinitions = []) {
   const modalElement = document.createElement("div");
-  const options = getGeneratedObjectSourceOptions(tagDefinitions).filter(isVisibleTemplateTag);
+  const options = getGeneratedObjectSourceOptionsForType(tagDefinitions, "barcode");
   const selectedSourceKey = getDefaultGeneratedObjectSourceKey(options);
 
   modalElement.className = "modal-overlay examlist-generated-object-source-modal hidden";
@@ -223,13 +232,26 @@ function createGeneratedObjectSourcePicker(tagDefinitions = []) {
   return modalElement;
 }
 
+function renderGeneratedObjectSourcePickerOptions(pickerElement, objectType, tagDefinitions = []) {
+  const normalizedType = normalizeGeneratedObjectType(objectType);
+  const options = getGeneratedObjectSourceOptionsForType(tagDefinitions, normalizedType);
+  const selectedSourceKey = getDefaultGeneratedObjectSourceKey(options);
+  const optionsContainer = pickerElement?.querySelector?.(".examlist-generated-object-source-options");
+
+  if (optionsContainer) {
+    optionsContainer.innerHTML = renderGeneratedObjectSourceOptions(options, selectedSourceKey);
+  }
+
+  return selectedSourceKey;
+}
+
 function closeGeneratedObjectSourceGroups(pickerElement) {
   pickerElement?.querySelectorAll?.(".template-tag-accordion-group").forEach((groupElement) => {
     groupElement.open = false;
   });
 }
 
-function setGeneratedObjectSourcePickerVisibility(pickerElement, objectType, isVisible) {
+function setGeneratedObjectSourcePickerVisibility(pickerElement, objectType, isVisible, tagDefinitions = []) {
   if (!(pickerElement instanceof HTMLElement)) {
     return;
   }
@@ -247,12 +269,7 @@ function setGeneratedObjectSourcePickerVisibility(pickerElement, objectType, isV
   pickerElement.setAttribute("aria-hidden", isVisible ? "false" : "true");
 
   if (isVisible) {
-    const options = Array.from(pickerElement.querySelectorAll("[data-examlist-generated-object-source-option]"));
-    const defaultSourceKey = getDefaultGeneratedObjectSourceKey(
-      options.map((option) => ({
-        key: option.getAttribute("data-examlist-generated-object-source-option"),
-      })),
-    );
+    const defaultSourceKey = renderGeneratedObjectSourcePickerOptions(pickerElement, normalizedType, tagDefinitions);
     const firstSummary = pickerElement.querySelector(".template-tag-accordion-summary");
 
     syncGeneratedObjectSourcePickerSelection(pickerElement, defaultSourceKey);
@@ -266,6 +283,10 @@ function setGeneratedObjectSourcePickerVisibility(pickerElement, objectType, isV
 
 function syncGeneratedObjectSourcePickerSelection(pickerElement, sourceKey) {
   const normalizedSourceKey = normalizeGeneratedObjectSourceKey(sourceKey);
+
+  if (pickerElement instanceof HTMLElement) {
+    pickerElement.dataset.examlistGeneratedObjectSourceKey = normalizedSourceKey;
+  }
 
   pickerElement?.querySelectorAll?.("[data-examlist-generated-object-source-option]").forEach((optionElement) => {
     const isSelected = optionElement.getAttribute("data-examlist-generated-object-source-option") === normalizedSourceKey;
@@ -309,7 +330,7 @@ export function bindGeneratedObjectSourceControl({ editor, surfaceElement, tagDe
     }
   };
   const hidePicker = () => {
-    setGeneratedObjectSourcePickerVisibility(pickerElement, pickerElement.dataset.examlistGeneratedObjectType, false);
+    setGeneratedObjectSourcePickerVisibility(pickerElement, pickerElement.dataset.examlistGeneratedObjectType, false, tagDefinitions);
   };
   const insertGeneratedObject = (objectType, objectSourceKey) => {
     const normalizedSourceKey = normalizeGeneratedObjectSourceKey(objectSourceKey);
@@ -352,6 +373,7 @@ export function bindGeneratedObjectSourceControl({ editor, surfaceElement, tagDe
       pickerElement,
       objectType,
       pickerElement.classList.contains("hidden") || pickerElement.dataset.examlistGeneratedObjectType !== objectType,
+      tagDefinitions,
     );
   };
   const handleModalClick = (event) => {

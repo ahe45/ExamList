@@ -97,7 +97,7 @@ export function createDataDeletionDeleteActions({
       await refreshModalAfterDeletion?.();
       state.statusMessage = successMessage;
       state.statusType = "success";
-      showToast(successMessage, { duration: 4600 });
+      showToast(successMessage);
     } catch (error) {
       state.statusMessage = error.message;
       state.statusType = "warning";

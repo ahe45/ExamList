@@ -24,6 +24,7 @@
     ensureTemplateEditorTableColGroup,
     normalizeCandidateBlockTableAppearance,
   } = tableSizingUtils;
+  const candidateBlockTableHostSelector = "[data-candidate-block-instance], [data-candidate-block-column-name]";
 
   function isTemplateEditorPixelLength(value = "") {
     return /^-?\d+(?:\.\d+)?px$/i.test(String(value || "").trim());
@@ -45,7 +46,7 @@
 
   function getTemplateEditorConfiguredTableRowHeights(table) {
     const minimumRowHeight =
-      table.closest?.("[data-candidate-block-instance]") || table.dataset?.templateCellOnlyRowLayout === "true"
+      table.closest?.(candidateBlockTableHostSelector) || table.dataset?.templateCellOnlyRowLayout === "true"
         ? 1
         : TEMPLATE_EDITOR_TABLE_MIN_SIZE;
 
@@ -91,7 +92,7 @@
     }
 
     const minimumRowHeight =
-      table.closest?.("[data-candidate-block-instance]") || table.dataset?.templateCellOnlyRowLayout === "true"
+      table.closest?.(candidateBlockTableHostSelector) || table.dataset?.templateCellOnlyRowLayout === "true"
         ? 1
         : TEMPLATE_EDITOR_TABLE_MIN_SIZE;
     const currentTotalHeight = getTemplateEditorConfiguredTableRowTotalHeight(table);
@@ -112,7 +113,7 @@
 
       if (cellHeight > 0) {
         cellElement.style.height = `${cellHeight}px`;
-        cellElement.style.minHeight = table.closest?.("[data-candidate-block-instance]") ? "0" : `${cellHeight}px`;
+        cellElement.style.minHeight = table.closest?.(candidateBlockTableHostSelector) ? "0" : `${cellHeight}px`;
       }
     });
     syncTemplateEditorConfiguredTableRowGroupHeights(table, rowHeights);

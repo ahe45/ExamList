@@ -45,6 +45,46 @@ function getCandidateBlockDataRowGapPx(config = {}) {
   return pointValueToCssPixel(config.gapYPt || 0);
 }
 
+function getCandidateBlockGridColumnWidthPx(config = {}) {
+  const columnCount = Math.max(1, Math.round(Number(config.columns)) || 1);
+  const widthPx = pointValueToCssPixel(Number(config.widthPt) || 0);
+
+  if (!(widthPx > 0)) {
+    return 0;
+  }
+
+  const gapWidthPx = pointValueToCssPixel(Number(config.gapXPt) || 0) * Math.max(0, columnCount - 1);
+  return Math.max(1, (widthPx - gapWidthPx) / columnCount);
+}
+
+function getCandidateBlockGridDataRowHeightPx(config = {}) {
+  const rowCount = Math.max(1, Math.round(Number(config.rows)) || 1);
+  const heightPx = pointValueToCssPixel(Number(config.heightPt) || 0);
+
+  if (!(heightPx > 0)) {
+    return 0;
+  }
+
+  const gapHeightPx = getCandidateBlockDataRowGapPx(config) * Math.max(0, rowCount - 1);
+  return Math.max(1, (heightPx - gapHeightPx) / rowCount);
+}
+
+function writeCandidateBlockLogicalSize(blockElement, widthPx, heightPx) {
+  if (!(blockElement instanceof HTMLElement)) {
+    return;
+  }
+
+  if (widthPx > 0) {
+    blockElement.dataset.candidateBlockLogicalWidth = String(widthPx);
+    blockElement.dataset.candidateBlockLogicalContentWidth = String(widthPx);
+  }
+
+  if (heightPx > 0) {
+    blockElement.dataset.candidateBlockLogicalHeight = String(heightPx);
+    blockElement.dataset.candidateBlockLogicalContentHeight = String(heightPx);
+  }
+}
+
 function getRenderedCandidateBlockGridRow(row = 1, hasColumnNameRow = false) {
   const safeRow = Math.max(1, Math.round(Number(row)) || 1);
 
@@ -177,6 +217,8 @@ export function createCandidateBlockGridElement(config) {
   const columnNameTemplateHtml = normalizeCandidateBlockTemplateHtml(normalizedConfig.columnNameRow?.templateHtml);
   const columnNameRowEnabled = isColumnNameRowEnabled(normalizedConfig);
   const columnNameRowHeightPx = getColumnNameRowHeightPx(normalizedConfig);
+  const blockColumnWidthPx = getCandidateBlockGridColumnWidthPx(normalizedConfig);
+  const dataRowHeightPx = getCandidateBlockGridDataRowHeightPx(normalizedConfig);
   const gridElement = document.createElement("div");
   const totalBlocks = getCandidateBlockGridTotal(normalizedConfig);
 
@@ -235,6 +277,7 @@ export function createCandidateBlockGridElement(config) {
       columnNameElement.setAttribute("contenteditable", "false");
       columnNameElement.style.gridColumn = String(columnIndex + 1);
       columnNameElement.style.gridRow = "1";
+      writeCandidateBlockLogicalSize(columnNameElement, blockColumnWidthPx, columnNameRowHeightPx);
       columnNameElement.innerHTML = columnNameTemplateHtml;
       normalizeCandidateBlockTables(columnNameElement);
       gridElement.append(columnNameElement);
@@ -252,6 +295,7 @@ export function createCandidateBlockGridElement(config) {
     blockElement.dataset.candidateBlockInstance = String(index + 1);
     blockElement.style.gridColumn = String(gridPosition.column);
     blockElement.style.gridRow = String(renderedRow);
+    writeCandidateBlockLogicalSize(blockElement, blockColumnWidthPx, dataRowHeightPx);
     blockElement.innerHTML = blockTemplateHtml;
     normalizeCandidateBlockTables(blockElement);
     gridElement.append(blockElement);

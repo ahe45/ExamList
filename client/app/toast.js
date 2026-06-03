@@ -1,4 +1,5 @@
 let toastTimer = 0;
+const toastDurationMs = 5000;
 
 function getToastRoot() {
   const toastRoot = document.getElementById("examlist-toast-root");
@@ -50,7 +51,6 @@ export function showToast(message = "", options = {}) {
   const toastRoot = ensureToastRoot();
   const toastMessage = document.createElement("div");
   const tone = String(normalizedOptions.tone || "").trim().toLowerCase();
-  const duration = Math.max(1200, Math.min(10000, Number(normalizedOptions.duration) || 2600));
   const toneClass = ["error", "warning"].includes(tone) ? ` is-${tone}` : "";
 
   toastMessage.className = `toast-message${toneClass}`;
@@ -62,5 +62,5 @@ export function showToast(message = "", options = {}) {
   toastTimer = window.setTimeout(() => {
     toastTimer = 0;
     hideToast();
-  }, duration);
+  }, toastDurationMs);
 }

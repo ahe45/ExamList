@@ -126,3 +126,46 @@ test("candidate photo archive submit reuses preview token instead of reuploading
   assert.equal(upload.photoPreviewToken, "");
   assert.equal(loadCount, 1);
 });
+
+test("candidate workbook submit opens a persistent error dialog when no file is selected", async () => {
+  const upload = {
+    dataFile: null,
+    dataFileName: "",
+    errorDialogOpen: false,
+    errorMessage: "",
+    existingDataPolicy: "insert-update",
+    isOpen: true,
+    isUploading: false,
+    mode: "workbook",
+    preview: null,
+    progressOverlay: { isOpen: false },
+    successMessage: "",
+  };
+  const appState = {
+    candidates: {
+      successMessage: "",
+      upload,
+    },
+  };
+  let stateChangeCount = 0;
+
+  const actions = createCandidateUploadSubmitActions({
+    appState,
+    canManageCandidates: () => true,
+    ensureCandidateUploadState: () => upload,
+    getCurrentSchoolId: () => "school-1",
+    loadCandidates: async () => {},
+    onStateChange: async () => {
+      stateChangeCount += 1;
+    },
+    previewWorkbookFile: async () => {},
+    setCandidateUploadProgressOverlay: async () => {},
+    waitForProgressPaint: async () => {},
+  });
+
+  await actions.uploadSelectedCandidateFile();
+
+  assert.equal(upload.errorDialogOpen, true);
+  assert.equal(upload.errorMessage, "XLSX 파일을 먼저 선택하세요.");
+  assert.equal(stateChangeCount, 1);
+});

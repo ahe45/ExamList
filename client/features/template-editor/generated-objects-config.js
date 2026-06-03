@@ -62,6 +62,26 @@ export const generatedObjectPreviewValues = Object.freeze({
   "school.name": "한국대학교",
 });
 
+export const code128GeneratedObjectSourceKeys = new Set([
+  "school.code",
+  "candidate.campusCode",
+  "candidate.admissionTypeCode",
+  "candidate.seriesCode",
+  "candidate.departmentCode",
+  "candidate.majorCode",
+  "candidate.examDate",
+  "candidate.examStartTime",
+  "candidate.examEndTime",
+  "candidate.periodCode",
+  "candidate.buildingCode",
+  "candidate.roomCode",
+  "room.assignedCount",
+  "candidate.examNo",
+  "candidate.temporaryNo",
+  "candidate.birthDate",
+  "row.indexInPage",
+]);
+
 export const generatedObjectSourceAliases = Object.freeze({
   "candidate.admissionYear": Object.freeze(["candidate.admissionYear", "admissionYear"]),
   "candidate.designatedSort": Object.freeze(["candidate.designatedSort", "designatedSort"]),
@@ -116,6 +136,20 @@ export function resolveGeneratedObjectType(value) {
 
 export function normalizeGeneratedObjectSourceKey(value) {
   return String(value || "").trim() || "candidate.examNo";
+}
+
+export function isCode128GeneratedObjectSourceKey(value) {
+  return code128GeneratedObjectSourceKeys.has(normalizeGeneratedObjectSourceKey(value));
+}
+
+export function filterGeneratedObjectSourceOptionsForType(options = [], objectType = "barcode") {
+  const sourceOptions = Array.isArray(options) ? options : [];
+
+  if (normalizeGeneratedObjectType(objectType) !== "barcode") {
+    return sourceOptions;
+  }
+
+  return sourceOptions.filter((option) => isCode128GeneratedObjectSourceKey(option?.key || option?.dataKey || option?.token));
 }
 
 export function getGeneratedObjectConfig(objectType) {

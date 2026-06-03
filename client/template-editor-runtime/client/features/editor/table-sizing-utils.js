@@ -193,8 +193,10 @@
     });
   }
 
+  const candidateBlockTableHostSelector = "[data-candidate-block-instance], [data-candidate-block-column-name]";
+
   function getCandidateBlockTableHost(table) {
-    const blockElement = table?.closest?.("[data-candidate-block-instance]") || null;
+    const blockElement = table?.closest?.(candidateBlockTableHostSelector) || null;
 
     return blockElement instanceof HTMLElement ? blockElement : null;
   }

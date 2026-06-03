@@ -6,6 +6,7 @@ const {
   normalizeArchiveGenerationIds,
   writeZipArchive,
 } = require("./archives");
+const { sortGenerationFilesForMergedDownload } = require("./archive-ordering");
 const { formatTimestamp, sanitizeFileName } = require("./file-name");
 
 function normalizeMergedPdfFileName(fileName, fallbackName = "pdf-generations") {
@@ -52,8 +53,11 @@ function createPdfGenerationArchiveService({
           s.code AS schoolCode,
           file_name AS fileName,
           file_path AS filePath,
+          generation_unit AS generationUnit,
           purged_at AS purgedAt,
-          status
+          request_json AS requestJson,
+          status,
+          target_name AS targetName
         FROM pdf_generation_histories
         LEFT JOIN schools s
           ON s.id = pdf_generation_histories.school_id
@@ -84,9 +88,12 @@ function createPdfGenerationArchiveService({
       files.push({
         fileName: generationRow.fileName,
         filePath,
+        generationUnit: generationRow.generationUnit,
         generationId,
+        requestJson: generationRow.requestJson,
         schoolCode: generationRow.schoolCode,
         schoolId: generationRow.schoolId,
+        targetName: generationRow.targetName,
       });
     }
 
@@ -165,10 +172,12 @@ function createPdfGenerationArchiveService({
     }
 
     const { PDFDocument } = require("pdf-lib");
-    const generationFiles = await resolveCompletedGenerationFiles(
-      generationIds,
-      "PDF_MERGE_GENERATION_NOT_FOUND",
-      "병합할 PDF 생성 이력을 찾을 수 없습니다.",
+    const generationFiles = sortGenerationFilesForMergedDownload(
+      await resolveCompletedGenerationFiles(
+        generationIds,
+        "PDF_MERGE_GENERATION_NOT_FOUND",
+        "병합할 PDF 생성 이력을 찾을 수 없습니다.",
+      ),
     );
     const storageRoot = await resolvePdfStorageRootForSchool(
       generationFiles[0]?.schoolId,

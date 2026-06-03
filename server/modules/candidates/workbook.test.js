@@ -2,7 +2,12 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const ExcelJS = require("exceljs");
 
+const candidateFields = require("../../../shared/domain/candidate-fields");
 const { createCandidateWorkbookService } = require("./workbook");
+
+const candidateTemplateColumns = candidateFields.createTemplateColumns({
+  keys: candidateFields.candidateWorkbookFieldKeys,
+});
 
 function createHttpError(statusCode, message, errorCode = "") {
   const error = new Error(message);
@@ -32,6 +37,41 @@ function createCandidateWorkbookInput(overrides = {}) {
     unitCode: "KOR",
     ...overrides,
   };
+}
+
+async function createCandidateWorkbookBase64(rowValues = {}, cellFormatOverrides = {}) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("수험생업로드");
+
+  worksheet.columns = candidateTemplateColumns.map((column) => ({
+    header: column.header,
+    key: column.key,
+    style: { numFmt: "@" },
+    width: column.width,
+  }));
+  worksheet.addRow(
+    candidateTemplateColumns.reduce((row, column) => {
+      row[column.key] = rowValues[column.key] ?? column.sample;
+      return row;
+    }, {}),
+  );
+
+  for (let rowIndex = 1; rowIndex <= worksheet.rowCount; rowIndex += 1) {
+    for (let columnIndex = 1; columnIndex <= candidateTemplateColumns.length; columnIndex += 1) {
+      worksheet.getRow(rowIndex).getCell(columnIndex).numFmt = "@";
+    }
+  }
+
+  Object.entries(cellFormatOverrides).forEach(([key, numFmt]) => {
+    const columnIndex = candidateTemplateColumns.findIndex((column) => column.key === key) + 1;
+
+    if (columnIndex > 0) {
+      worksheet.getRow(2).getCell(columnIndex).numFmt = numFmt;
+    }
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer).toString("base64");
 }
 
 test("normalizeCandidateWorkbookInput maps required XLSX fields", () => {
@@ -94,6 +134,23 @@ test("normalizeCandidateWorkbookInput accepts free-form date text", () => {
 
   assert.equal(row.date, "2026/03/28");
   assert.equal(row.birth, "2006년 1월 2일");
+});
+
+test("normalizeCandidateWorkbookInput preserves uploaded text values", () => {
+  const service = createCandidateWorkbookService({ createHttpError });
+
+  const row = service.normalizeCandidateWorkbookInput(
+    createCandidateWorkbookInput({
+      date: " 2026-11-28 ",
+      name: " 홍길동 ",
+      opt1: " 값 앞뒤 공백 ",
+    }),
+    0,
+  );
+
+  assert.equal(row.date, " 2026-11-28 ");
+  assert.equal(row.name, " 홍길동 ");
+  assert.equal(row.opt1, " 값 앞뒤 공백 ");
 });
 
 test("normalizeCandidateWorkbookInput accepts free-form time text", () => {
@@ -168,6 +225,40 @@ test("buildCandidateTemplateBuffer highlights required column headers", async ()
   assert.equal(getHeaderFill("지정정렬"), "FFF4F7FB");
   assert.equal(getHeaderFill("종료시간"), "FFF4F7FB");
   assert.equal(getHeaderFill("계열코드"), "FFF4F7FB");
+});
+
+test("parseCandidateWorkbook preserves text-formatted cell values", async () => {
+  const service = createCandidateWorkbookService({ createHttpError });
+  const rows = await service.parseCandidateWorkbook(
+    await createCandidateWorkbookBase64({
+      birth: "2006/01/02",
+      date: "2026-11-28",
+      name: " 홍길동 ",
+      opt1: " 값 앞뒤 공백 ",
+      time: "오전 9시 시작",
+    }),
+  );
+
+  assert.equal(rows[0].date, "2026-11-28");
+  assert.equal(rows[0].birth, "2006/01/02");
+  assert.equal(rows[0].name, " 홍길동 ");
+  assert.equal(rows[0].opt1, " 값 앞뒤 공백 ");
+  assert.equal(rows[0].time, "오전 9시 시작");
+});
+
+test("parseCandidateWorkbook rejects populated cells without text format", async () => {
+  const service = createCandidateWorkbookService({ createHttpError });
+  const fileContentBase64 = await createCandidateWorkbookBase64(
+    { date: "2026-11-28" },
+    { date: "yyyy-mm-dd" },
+  );
+
+  await assert.rejects(
+    () => service.parseCandidateWorkbook(fileContentBase64),
+    (error) =>
+      error.errorCode === "CANDIDATE_IMPORT_CELL_FORMAT_INVALID" &&
+      error.message === "XLSX 데이터 셀은 텍스트 서식이어야 합니다. (2행, 시험날짜)",
+  );
 });
 
 test("buildCandidateExportBuffer creates XLSX buffer for rows", async () => {

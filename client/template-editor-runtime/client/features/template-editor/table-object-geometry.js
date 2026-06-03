@@ -7,6 +7,7 @@
   globalScope.ExamListTemplateEditorTableObjectGeometry = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
   let templateEditorObjectFlowIdCounter = 0;
+  const candidateBlockTableHostSelector = "[data-candidate-block-instance], [data-candidate-block-column-name]";
 
   function createTemplateEditorTableObjectGeometryController({
     TEMPLATE_EDITOR_TABLE_MIN_SIZE,
@@ -156,51 +157,9 @@
       return spacerElement;
     }
 
-    function syncTemplateEditorTableObjectFlowSpacer(tableElement, geometry = {}) {
-      const documentElement = getTemplateEditorDocumentElement();
-
-      if (
-        !(tableElement instanceof HTMLElement) ||
-        !(documentElement instanceof HTMLElement) ||
-        !documentElement.contains(tableElement) ||
-        tableElement.closest("[data-candidate-block-instance]")
-      ) {
-        return null;
-      }
-
-      if (String(tableElement.style.position || "") !== "absolute") {
-        const staleFlowId = String(tableElement.dataset?.templateObjectFlowId || "").trim();
-        const staleSpacer = getTemplateEditorObjectFlowSpacer(documentElement, staleFlowId);
-
-        staleSpacer?.remove();
-        return null;
-      }
-
-      const spacerElement = ensureTemplateEditorTableObjectFlowSpacer(tableElement, documentElement);
-
-      if (!(spacerElement instanceof HTMLElement)) {
-        return null;
-      }
-
-      const documentRect = documentElement.getBoundingClientRect();
-      const spacerRect = spacerElement.getBoundingClientRect();
-      const tableRect = tableElement.getBoundingClientRect();
-      const renderedTop = tableRect.top - documentRect.top;
-      const renderedHeight = Math.max(0, tableRect.height || 0);
-      const styleTop = parseTemplateEditorPixelStyle(tableElement.style.top, renderedTop);
-      const objectTop = Number.isFinite(Number(geometry.top))
-        ? Math.min(Number(geometry.top), renderedTop)
-        : Math.min(styleTop, renderedTop);
-      const objectHeight = Math.max(
-        TEMPLATE_EDITOR_TABLE_MIN_SIZE,
-        Math.round(Number(geometry.height) || tableElement.offsetHeight || tableRect.height || 0),
-      );
-      const objectBottom = Math.max(objectTop + objectHeight, renderedTop + renderedHeight);
-      const spacerTop = Math.max(0, spacerRect.top - documentRect.top);
-      const reservedHeight = Math.max(objectHeight, objectBottom - spacerTop);
-
-      spacerElement.style.height = `${Math.max(0, Math.ceil(reservedHeight))}px`;
-      return spacerElement;
+    function syncTemplateEditorTableObjectFlowSpacer(tableElement, _geometry = {}) {
+      removeTemplateEditorTableObjectFlowSpacer(tableElement);
+      return null;
     }
 
     function removeTemplateEditorTableObjectFlowSpacer(tableElement) {
@@ -261,7 +220,7 @@
     }
 
     function getTemplateEditorTableObjectSegmentMinimumSize(tableElement, axis) {
-      if (!tableElement.closest("[data-candidate-block-instance]")) {
+      if (!tableElement.closest(candidateBlockTableHostSelector)) {
         return TEMPLATE_EDITOR_TABLE_MIN_SIZE;
       }
 
@@ -413,7 +372,7 @@
       }
 
       const { columns, cellMap } = ensureTemplateEditorTableColGroup(tableElement);
-      const isCandidateBlockTable = Boolean(tableElement.closest("[data-candidate-block-instance]"));
+      const isCandidateBlockTable = Boolean(tableElement.closest(candidateBlockTableHostSelector));
 
       if (!columns.length) {
         tableElement.style.width = `${Math.max(getTemplateEditorTableObjectSegmentMinimumSize(tableElement, "column"), Math.round(targetWidth))}px`;
@@ -451,7 +410,7 @@
       }
 
       const rows = Array.from(tableElement.rows || []);
-      const isCandidateBlockTable = Boolean(tableElement.closest("[data-candidate-block-instance]"));
+      const isCandidateBlockTable = Boolean(tableElement.closest(candidateBlockTableHostSelector));
 
       if (!rows.length) {
         tableElement.style.height = `${Math.max(getTemplateEditorTableObjectSegmentMinimumSize(tableElement, "row"), Math.round(targetHeight))}px`;
@@ -476,7 +435,7 @@
 
         if (cellHeight > 0) {
           cellElement.style.height = `${cellHeight}px`;
-          cellElement.style.minHeight = tableElement.closest("[data-candidate-block-instance]") ? "0" : `${cellHeight}px`;
+          cellElement.style.minHeight = tableElement.closest(candidateBlockTableHostSelector) ? "0" : `${cellHeight}px`;
         }
       });
       syncTemplateEditorTableObjectRowGroupHeights(tableElement, nextHeights);
@@ -491,7 +450,7 @@
         return null;
       }
 
-      if (tableElement.closest("[data-candidate-block-instance]")) {
+      if (tableElement.closest(candidateBlockTableHostSelector)) {
         return null;
       }
 
@@ -528,8 +487,6 @@
               (tableRect.top - documentOrigin.top) / scaleY,
               documentElement.clientHeight - height,
             );
-
-      ensureTemplateEditorTableObjectFlowSpacer(tableElement, documentElement);
 
       tableElement.style.position = "absolute";
       tableElement.style.left = `${left}px`;

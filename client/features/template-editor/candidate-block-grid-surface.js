@@ -141,9 +141,11 @@ export function renderCandidateBlockGridOnSurface(surfaceElement, selectedPage) 
 
     clearCandidateBlockGridSelection();
     existingGridElement.replaceWith(nextGridElement);
+    normalizeCandidateBlockTables(nextGridElement);
   } else {
     hydrateCandidateBlockGridObjects(surfaceElement);
     clearCandidateBlockGridSelection();
+    normalizeCandidateBlockTables(surfaceElement);
   }
 
   removeCandidateBlockGridFlowSpacers(documentElement);
@@ -236,6 +238,7 @@ export function insertCandidateBlockGridAtSelection(surfaceElement, selectedPage
     documentElement.append(gridElement);
   }
 
+  normalizeCandidateBlockTables(gridElement);
   ensureCandidateBlockGridOutsideEditableHost(documentElement);
   selectCandidateBlockGridElement(gridElement);
   normalizeTokenLabels(surfaceElement);

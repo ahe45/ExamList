@@ -196,6 +196,22 @@ async function runTableObjectSelectionScenario(context) {
       `,
       "일반 표 개체 이동 핸들 클릭 시 크기 유지",
     );
+    const plainTableObjectFlowBefore = JSON.parse(
+      await evaluate(
+        client,
+        `
+          JSON.stringify((() => {
+            const followingText = document.querySelector('#plainTableAfterMoveText');
+            const textRect = followingText?.getBoundingClientRect();
+
+            return {
+              spacerCount: document.querySelectorAll('[data-template-object-flow-spacer]').length,
+              textTop: Math.round(textRect?.top || 0)
+            };
+          })())
+        `,
+      ),
+    );
     const plainTableObjectDragPoint = await getBrowserPoint(
       client,
       `(() => {
@@ -224,6 +240,7 @@ async function runTableObjectSelectionScenario(context) {
           const rect = table?.getBoundingClientRect();
           const textRect = followingText?.getBoundingClientRect();
           const before = ${JSON.stringify(plainTableObjectMoveBefore)};
+          const flowBefore = ${JSON.stringify(plainTableObjectFlowBefore)};
 
           return Boolean(
             table &&
@@ -233,13 +250,17 @@ async function runTableObjectSelectionScenario(context) {
               table.style.position === 'absolute' &&
               Math.round(rect.left) >= before.left + 30 &&
               Math.round(rect.top) >= before.top + 20 &&
-              textRect.top >= rect.bottom - 1 &&
+              Math.abs(Math.round(textRect.top) - flowBefore.textTop) <= 2 &&
+              Math.round(rect.bottom) > Math.round(textRect.top) + 1 &&
               Math.abs(Math.round(rect.width) - before.width) <= 1 &&
-              Math.abs(Math.round(rect.height) - before.height) <= 1
+              Math.abs(Math.round(rect.height) - before.height) <= 1 &&
+              flowBefore.spacerCount === 0 &&
+              document.querySelectorAll('[data-template-object-flow-spacer]').length === 0 &&
+              !table.hasAttribute('data-template-object-flow-id')
           );
         })()
       `,
-      "일반 표 개체 위치 이동 핸들 드래그",
+      "일반 표 개체 위치 이동 중 주변 텍스트 미이동",
     );
     const plainTableObjectKeyboardBefore = JSON.parse(
       await evaluate(

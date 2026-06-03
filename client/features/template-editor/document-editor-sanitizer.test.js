@@ -133,3 +133,30 @@ test("document sanitizer strips transient table object overlays before sanitizin
 
   assert.deepEqual(removed, ["selection", "resize-handle", "move-handle", "select-handle"]);
 });
+
+test("document sanitizer strips stale object flow spacers and ids", async () => {
+  global.Node = { ELEMENT_NODE: 1, TEXT_NODE: 3 };
+  const { stripTransientDocumentState } = await importClientModule("document-editor-sanitizer.js");
+  const removed = [];
+  const strippedAttributes = [];
+  const spacer = { remove: () => removed.push("spacer") };
+  const flowObject = { removeAttribute: (name) => strippedAttributes.push(name) };
+  const root = {
+    querySelectorAll(selector) {
+      if (selector === "[data-template-object-flow-spacer]") {
+        return [spacer];
+      }
+
+      if (selector === "[data-template-object-flow-id]") {
+        return [flowObject];
+      }
+
+      return [];
+    },
+  };
+
+  stripTransientDocumentState(root);
+
+  assert.deepEqual(removed, ["spacer"]);
+  assert.deepEqual(strippedAttributes, ["data-template-object-flow-id"]);
+});

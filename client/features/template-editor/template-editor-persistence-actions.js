@@ -217,9 +217,7 @@ export function createTemplateEditorPersistenceActions({
 
     const syncedFromRuntime = syncTemplateEditorRuntimeToStateAction({ appState });
 
-    if (syncedFromRuntime) {
-      refreshDocumentEditorRuntime();
-    } else {
+    if (!syncedFromRuntime) {
       syncSelectedPageDocumentHtml({
         collapseCandidateBlockGridForStorage: true,
         forceHistory: true,

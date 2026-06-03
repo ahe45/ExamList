@@ -6,6 +6,8 @@
 
   globalScope.ExamListTemplateEditorTableToolsLogicalSizing = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
+  const candidateBlockTableHostSelector = "[data-candidate-block-instance], [data-candidate-block-column-name]";
+
   function createTemplateEditorTableLogicalSizingController({
     TEMPLATE_EDITOR_TABLE_MIN_SIZE,
     buildTemplateTableCellMap,
@@ -38,7 +40,7 @@
     }
 
     function getTemplateEditorCandidateBlockHost(table) {
-      const blockElement = table?.closest?.("[data-candidate-block-instance]") || null;
+      const blockElement = table?.closest?.(candidateBlockTableHostSelector) || null;
 
       return blockElement instanceof HTMLElement ? blockElement : null;
     }

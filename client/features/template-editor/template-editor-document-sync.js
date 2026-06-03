@@ -152,7 +152,7 @@ export function createSelectedPageDocumentHtmlSync({
           overflowRevertMessage,
         );
         postSyncToastMessage = overflowRevertMessage;
-        postSyncToastOptions = { duration: 3600, tone: "error" };
+        postSyncToastOptions = { tone: "error" };
         revertedOverflowToLastValidHtml = true;
       } else {
         setDocumentOverflowState(pageId, overflowInfo);

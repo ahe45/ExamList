@@ -674,7 +674,7 @@ function showModalOverflowMessage(state = candidateBlockFocusState) {
     state.lastOverflowMessageAt = now;
   }
 
-  showToast(MODAL_OVERFLOW_MESSAGE, { duration: 3600, tone: "warning" });
+  showToast(MODAL_OVERFLOW_MESSAGE, { tone: "warning" });
 }
 
 function isModalSelectAllShortcut(event) {

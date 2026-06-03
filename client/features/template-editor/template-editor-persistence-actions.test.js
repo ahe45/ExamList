@@ -285,7 +285,7 @@ test("saveTemplateLayout skips legacy document sync after runtime sync", async (
   await actions.saveTemplateLayout();
 
   assert.equal(legacySyncCalls, 0);
-  assert.equal(refreshCalls, 1);
+  assert.equal(refreshCalls, 0);
   assert.equal(savedTemplate.layout.pages[0].settings.documentHtml, runtimeHtml);
   assert.equal(appState.templateEditor.isDirty, false);
 });

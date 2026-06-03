@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
+const { buildCandidateTokenMap } = require("./tokens");
 const { replaceTemplateTokens } = require("./renderer-test-helpers");
 
 test("replaceTemplateTokens supports format, default, phone, number, mask, and conditional syntax", () => {
@@ -64,4 +65,22 @@ test("replaceTemplateTokens prefers preview sample data by exact tag key", () =>
   });
 
   assert.equal(renderedText, "샘플이름 5");
+});
+
+test("replaceTemplateTokens preserves unfiltered uploaded date-like candidate values", () => {
+  const renderedText = replaceTemplateTokens(
+    [
+      "{{candidate.examDate}}",
+      "{{candidate.birthDate}}",
+      '{{candidate.examDate | date: "YYYY.MM.DD"}}',
+    ].join("\n"),
+    {
+      candidate: buildCandidateTokenMap({
+        birthDate: "2006/01/02",
+        examDate: "2026-11-28",
+      }),
+    },
+  );
+
+  assert.equal(renderedText, "2026-11-28\n2006/01/02\n2026.11.28");
 });

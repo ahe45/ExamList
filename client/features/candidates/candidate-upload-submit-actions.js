@@ -6,6 +6,10 @@ import {
   readFileAsArrayBuffer,
 } from "./candidate-action-utils.js";
 import {
+  clearCandidateUploadErrorDialog,
+  openCandidateUploadErrorDialog,
+} from "./candidate-upload-error-state.js";
+import {
   createFileProgressDetail,
   emptyCandidateUploadProgressOverlay,
 } from "./candidate-upload-progress.js";
@@ -31,14 +35,13 @@ export function createCandidateUploadSubmitActions({
     const file = mode === "photo-archive" ? upload.photoFile : upload.dataFile;
 
     if (!file) {
-      upload.errorMessage = mode === "photo-archive" ? "사진 ZIP 파일을 먼저 선택하세요." : "XLSX 파일을 먼저 선택하세요.";
-      showToast(upload.errorMessage, { tone: "warning" });
+      openCandidateUploadErrorDialog(upload, mode === "photo-archive" ? "사진 ZIP 파일을 먼저 선택하세요." : "XLSX 파일을 먼저 선택하세요.");
       await onStateChange();
       return;
     }
 
     upload.isUploading = true;
-    upload.errorMessage = "";
+    clearCandidateUploadErrorDialog(upload);
     upload.successMessage = "";
     upload.progressOverlay = {
       ...emptyCandidateUploadProgressOverlay,
@@ -147,7 +150,7 @@ export function createCandidateUploadSubmitActions({
       const successMessage = createUploadResultMessage(result);
 
       upload.successMessage = successMessage;
-      upload.errorMessage = "";
+      clearCandidateUploadErrorDialog(upload);
       await setCandidateUploadProgressOverlay({
         detail: successMessage,
         isIndeterminate: true,
@@ -176,7 +179,7 @@ export function createCandidateUploadSubmitActions({
       });
       showToast(appState.candidates.successMessage);
     } catch (error) {
-      upload.errorMessage = error.message;
+      openCandidateUploadErrorDialog(upload, error.message);
       await setCandidateUploadProgressOverlay({
         detail: error.message,
         isIndeterminate: false,
@@ -185,7 +188,6 @@ export function createCandidateUploadSubmitActions({
         percent: 100,
         stageLabel: "오류",
       });
-      showToast(upload.errorMessage, { tone: "error" });
     } finally {
       if (ensureCandidateUploadState().progressOverlay.isOpen) {
         await new Promise((resolve) => setTimeout(resolve, 350));
@@ -218,6 +220,7 @@ export function createCandidateUploadSubmitActions({
 
   async function closeCandidateUploadModal() {
     appState.candidates.upload.isOpen = false;
+    clearCandidateUploadErrorDialog(appState.candidates.upload);
     await onStateChange();
   }
 

@@ -58,7 +58,7 @@ export function bindEditorStatusToast(surfaceElement) {
 
       lastWarningToastMessage = message;
       lastWarningToastAt = now;
-      showToast(message, { duration: 3600, tone: "error" });
+      showToast(message, { tone: "error" });
     };
 
     pendingFrameId = window.requestAnimationFrame(() => {

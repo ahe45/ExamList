@@ -24,6 +24,7 @@
   const { createTemplateEditorTableBorderActionController } = tableBorderActionsModule;
   const { createTemplateEditorTableSizingController } = tableSizingModule;
   const { createTemplateEditorTableStructureController } = tableStructureModule;
+  const candidateBlockTableHostSelector = "[data-candidate-block-instance], [data-candidate-block-column-name]";
   const tableDimensionPreservingActions = new Set([
     "merge-selection",
     "merge-right",
@@ -327,7 +328,7 @@
       });
 
       rowIndexesByTable.forEach((rowIndexes, table) => {
-        const minimumRowHeight = table.closest?.("[data-candidate-block-instance]") ? 1 : TEMPLATE_EDITOR_TABLE_MIN_SIZE;
+        const minimumRowHeight = table.closest?.(candidateBlockTableHostSelector) ? 1 : TEMPLATE_EDITOR_TABLE_MIN_SIZE;
 
         rowIndexes.forEach((rowIndex) => {
           setTemplateEditorTableLogicalRowHeight(
@@ -347,7 +348,7 @@
       const selectedCell = getTemplateEditorSelectedCell();
       const tableSelection = getTemplateEditorActiveTableSelection();
       const table = selectedCell?.closest?.("table") || tableSelection?.table || null;
-      const candidateBlockElement = table?.closest?.("[data-candidate-block-instance]") || null;
+      const candidateBlockElement = table?.closest?.(candidateBlockTableHostSelector) || null;
 
       if (!(table instanceof HTMLTableElement) || !(candidateBlockElement instanceof HTMLElement)) {
         return null;
@@ -395,7 +396,7 @@
         return false;
       }
 
-      const blockElement = table.closest?.("[data-candidate-block-instance]") || null;
+      const blockElement = table.closest?.(candidateBlockTableHostSelector) || null;
 
       if (!(blockElement instanceof HTMLElement)) {
         return false;

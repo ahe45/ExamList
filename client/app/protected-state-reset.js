@@ -14,6 +14,8 @@ export function resetCandidateState(appState) {
     isOpen: false,
   };
   appState.candidates.upload.isOpen = false;
+  appState.candidates.upload.errorDialogOpen = false;
+  appState.candidates.upload.errorMessage = "";
   appState.candidates.upload.dataFile = null;
   appState.candidates.upload.dataFileName = "";
   appState.candidates.upload.preview = null;

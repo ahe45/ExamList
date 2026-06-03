@@ -204,6 +204,38 @@ function renderPhotoArchiveUploadPanel(upload = {}) {
   `;
 }
 
+function renderCandidateUploadErrorDialog(upload = {}) {
+  const errorMessage = String(upload.errorMessage || "").trim();
+
+  if (!upload.errorDialogOpen || !errorMessage) {
+    return "";
+  }
+
+  return `
+    <div
+      class="candidate-upload-error-modal-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="candidateUploadErrorTitle"
+      aria-describedby="candidateUploadErrorMessage"
+    >
+      <section class="modal-card candidate-upload-error-modal">
+        <div class="modal-header">
+          <div>
+            <p class="modal-kicker">업로드 오류</p>
+            <h2 id="candidateUploadErrorTitle">수험생 데이터 업로드를 진행할 수 없습니다</h2>
+          </div>
+          <button class="icon-button" data-action="close-candidate-upload-error-modal" type="button" aria-label="닫기">×</button>
+        </div>
+        <p class="candidate-upload-error-message" id="candidateUploadErrorMessage">${escapeHtml(errorMessage)}</p>
+        <div class="modal-actions">
+          <button class="primary-button" data-action="close-candidate-upload-error-modal" type="button">확인</button>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
 export function renderCandidateUploadProgressOverlay(candidates = {}) {
   const progress = candidates.upload?.progressOverlay || {};
 
@@ -281,6 +313,7 @@ export function renderCandidateUploadModal(candidates = {}, options = {}) {
           </button>
         </div>
       </div>
+      ${renderCandidateUploadErrorDialog(upload)}
       ${includeBusyOverlays ? renderCandidatePreviewProgressOverlay(upload.previewProgress) : ""}
     </div>
   `;

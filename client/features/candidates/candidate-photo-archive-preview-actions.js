@@ -1,5 +1,8 @@
-import { showToast } from "../../app/toast.js";
 import { postBinaryJsonWithProgress } from "./candidate-action-utils.js";
+import {
+  clearCandidateUploadErrorDialog,
+  openCandidateUploadErrorDialog,
+} from "./candidate-upload-error-state.js";
 import {
   createFileProgressDetail,
   emptyCandidatePreviewProgress,
@@ -21,13 +24,12 @@ export function createCandidatePhotoArchivePreviewActions({
     }
 
     if (!file.name.toLowerCase().endsWith(".zip")) {
-      appState.candidates.upload.errorMessage = "수험생 사진은 ZIP 파일로만 업로드할 수 있습니다.";
+      openCandidateUploadErrorDialog(appState.candidates.upload, "수험생 사진은 ZIP 파일로만 업로드할 수 있습니다.");
       appState.candidates.upload.photoPreview = null;
       appState.candidates.upload.photoPreviewToken = "";
       if (showProgress) {
         ensureCandidateUploadState().previewProgress = { ...emptyCandidatePreviewProgress };
       }
-      showToast(appState.candidates.upload.errorMessage, { tone: "warning" });
       await onStateChange();
       return;
     }
@@ -36,7 +38,7 @@ export function createCandidatePhotoArchivePreviewActions({
 
     upload.photoFileName = file.name;
     upload.photoFile = file;
-    upload.errorMessage = "";
+    clearCandidateUploadErrorDialog(upload);
     upload.photoPreview = null;
     upload.photoPreviewToken = "";
 
@@ -95,12 +97,11 @@ export function createCandidatePhotoArchivePreviewActions({
         });
       }
 
-      appState.candidates.upload.errorMessage = "";
+      clearCandidateUploadErrorDialog(appState.candidates.upload);
     } catch (error) {
-      appState.candidates.upload.errorMessage = error.message;
+      openCandidateUploadErrorDialog(appState.candidates.upload, error.message);
       appState.candidates.upload.photoPreview = null;
       appState.candidates.upload.photoPreviewToken = "";
-      showToast(appState.candidates.upload.errorMessage, { tone: "error" });
     }
 
     if (showProgress) {

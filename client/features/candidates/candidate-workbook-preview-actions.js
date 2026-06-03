@@ -1,9 +1,12 @@
-import { showToast } from "../../app/toast.js";
 import {
   arrayBufferToBase64,
   postJsonWithProgress,
   readFileAsArrayBuffer,
 } from "./candidate-action-utils.js";
+import {
+  clearCandidateUploadErrorDialog,
+  openCandidateUploadErrorDialog,
+} from "./candidate-upload-error-state.js";
 import {
   createFileProgressDetail,
   emptyCandidatePreviewProgress,
@@ -25,12 +28,11 @@ export function createCandidateWorkbookPreviewActions({
     }
 
     if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      appState.candidates.upload.errorMessage = "현재는 XLSX 파일만 업로드할 수 있습니다.";
+      openCandidateUploadErrorDialog(appState.candidates.upload, "현재는 XLSX 파일만 업로드할 수 있습니다.");
       appState.candidates.upload.preview = null;
       if (showProgress) {
         ensureCandidateUploadState().previewProgress = { ...emptyCandidatePreviewProgress };
       }
-      showToast(appState.candidates.upload.errorMessage, { tone: "warning" });
       await onStateChange();
       return;
     }
@@ -39,7 +41,7 @@ export function createCandidateWorkbookPreviewActions({
 
     upload.dataFileName = file.name;
     upload.dataFile = file;
-    upload.errorMessage = "";
+    clearCandidateUploadErrorDialog(upload);
     upload.preview = null;
 
     if (showProgress) {
@@ -106,11 +108,10 @@ export function createCandidateWorkbookPreviewActions({
         });
       }
 
-      appState.candidates.upload.errorMessage = "";
+      clearCandidateUploadErrorDialog(appState.candidates.upload);
     } catch (error) {
-      appState.candidates.upload.errorMessage = error.message;
+      openCandidateUploadErrorDialog(appState.candidates.upload, error.message);
       appState.candidates.upload.preview = null;
-      showToast(appState.candidates.upload.errorMessage, { tone: "error" });
     }
 
     if (showProgress) {

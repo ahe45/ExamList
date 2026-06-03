@@ -19,6 +19,7 @@
 
   const { createTemplateEditorTableSizingScopeController } = tableSizingScopeModule;
   const { createTemplateEditorTableSizingValueController } = tableSizingValuesModule;
+  const candidateBlockTableHostSelector = "[data-candidate-block-instance], [data-candidate-block-column-name]";
 
   function createTemplateEditorTableSizingController({
     TEMPLATE_EDITOR_TABLE_MIN_SIZE,
@@ -150,7 +151,7 @@
         return false;
       }
 
-      const minimumRowHeight = table.closest?.("[data-candidate-block-instance]") ? 1 : TEMPLATE_EDITOR_TABLE_MIN_SIZE;
+      const minimumRowHeight = table.closest?.(candidateBlockTableHostSelector) ? 1 : TEMPLATE_EDITOR_TABLE_MIN_SIZE;
       const normalizedEntries = rowHeightEntries
         .map((entry) => ({
           height: Math.max(minimumRowHeight, Math.round(Number(entry?.height) || minimumRowHeight)),
@@ -195,7 +196,7 @@
         table.style.height = `${Math.round(totalHeight)}px`;
       }
 
-      if (table.closest?.("[data-candidate-block-instance]")) {
+      if (table.closest?.(candidateBlockTableHostSelector)) {
         table.style.maxHeight = "100%";
       }
 

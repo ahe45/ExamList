@@ -18,18 +18,18 @@ const candidateTemplateRequiredHeaderFill = Object.freeze({
 
 function createCandidateWorkbookService({ createHttpError }) {
   function normalizeText(value, fieldName, rowNumber) {
-    const normalizedValue = String(value ?? "").trim();
+    const sourceValue = String(value ?? "");
 
-    if (!normalizedValue) {
+    if (!sourceValue.trim()) {
       const suffix = Number.isFinite(rowNumber) && rowNumber >= 0 ? ` (${rowNumber}행)` : "";
       throw createHttpError(400, `${fieldName} 값을 입력하세요.${suffix}`, "CANDIDATE_FIELD_REQUIRED");
     }
 
-    return normalizedValue;
+    return sourceValue;
   }
 
   function normalizeOptionalText(value) {
-    return String(value ?? "").trim();
+    return String(value ?? "");
   }
 
   function normalizeTime(value, fieldName, rowNumber) {
@@ -138,11 +138,33 @@ function createCandidateWorkbookService({ createHttpError }) {
     return "";
   }
 
-  function getExcelCellText(cell) {
-    return extractExcelCellValue(cell?.value)
+  function getExcelCellText(cell, options = {}) {
+    const shouldTrim = options.trim !== false;
+    const value = extractExcelCellValue(cell?.value)
       .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "\n")
-      .trim();
+      .replace(/\r/g, "\n");
+
+    return shouldTrim ? value.trim() : value;
+  }
+
+  function isExcelTextFormattedCell(cell) {
+    return String(cell?.numFmt || cell?.style?.numFmt || "").trim() === "@";
+  }
+
+  function assertExcelTextFormattedCell(cell, column, rowNumber) {
+    if (!cell || getExcelCellText(cell, { trim: false }) === "") {
+      return;
+    }
+
+    if (isExcelTextFormattedCell(cell)) {
+      return;
+    }
+
+    throw createHttpError(
+      400,
+      `XLSX 데이터 셀은 텍스트 서식이어야 합니다. (${rowNumber}행, ${column.header})`,
+      "CANDIDATE_IMPORT_CELL_FORMAT_INVALID",
+    );
   }
 
   function applyWorkbookHeaderStyle(worksheet) {
@@ -318,7 +340,10 @@ function createCandidateWorkbookService({ createHttpError }) {
 
       candidateTemplateColumns.forEach((column) => {
         const columnIndex = columnIndexes[column.key];
-        const value = columnIndex > 0 ? getExcelCellText(row.getCell(columnIndex)) : "";
+        const cell = columnIndex > 0 ? row.getCell(columnIndex) : null;
+        const value = cell ? getExcelCellText(cell, { trim: false }) : "";
+
+        assertExcelTextFormattedCell(cell, column, rowNumber);
 
         candidate[column.key] = value;
         hasAnyValue = hasAnyValue || value !== "";

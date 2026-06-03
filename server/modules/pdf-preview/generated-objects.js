@@ -4,6 +4,7 @@ const {
   resolveDataPathWithoutSampleData,
   splitTokenPipeline,
 } = require("./token-expressions");
+const { buildCode128Svg } = require("./code128");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -75,43 +76,7 @@ function buildDocumentGeneratedObjectSvg(objectType, objectValue) {
     `;
   }
 
-  const barWidths = normalizedValue
-    .split("")
-    .flatMap((character, index) => {
-      const code = character.charCodeAt(0);
-
-      return [
-        1 + ((code + index) % 3),
-        1 + (((code >> 2) + index) % 4),
-        1 + (((code >> 4) + index) % 3),
-      ];
-    });
-  barWidths.unshift(2, 1, 1);
-  barWidths.push(2, 1, 3);
-  const svgWidth = 240;
-  const marginX = 0;
-  const barAreaWidth = svgWidth - marginX * 2;
-  const totalUnits = barWidths.reduce((sum, width) => sum + width, Math.max(0, barWidths.length - 1));
-  const unitWidth = barAreaWidth / Math.max(totalUnits, 1);
-  const gapWidth = unitWidth;
-  let cursorX = marginX;
-  const bars = barWidths
-    .map((width) => {
-      const barWidth = Math.max(1, Math.round(width * unitWidth * 100) / 100);
-      const x = Math.round(cursorX * 100) / 100;
-      const markup = `<rect x="${x}" y="0" width="${barWidth}" height="72" fill="#111827" />`;
-
-      cursorX += barWidth + gapWidth;
-      return markup;
-    })
-    .join("");
-
-  return `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="72" viewBox="0 0 ${svgWidth} 72" preserveAspectRatio="none" fill="none" shape-rendering="crispEdges">
-      <rect width="${svgWidth}" height="72" fill="#ffffff"/>
-      ${bars}
-    </svg>
-  `;
+  return buildCode128Svg(normalizedValue);
 }
 
 function replaceOrAppendHtmlAttribute(markup, attributeName, attributeValue) {
@@ -168,8 +133,66 @@ const generatedObjectSourceLabelMap = Object.freeze({
   "school.name": "학교명",
 });
 
+const generatedObjectSourceAliasMap = Object.freeze({
+  admissionYear: "candidate.admissionYear",
+  designatedSort: "candidate.designatedSort",
+  examNo: "candidate.examNo",
+  examineeNo: "candidate.examNo",
+  temporaryNo: "candidate.temporaryNo",
+  name: "candidate.name",
+  birth: "candidate.birthDate",
+  time: "candidate.examStartTime",
+  session: "candidate.examStartTime",
+  endTime: "candidate.examEndTime",
+  examEndTime: "candidate.examEndTime",
+  exam: "candidate.examName",
+  track: "candidate.examName",
+  campus: "candidate.campusName",
+  campusCode: "candidate.campusCode",
+  admission: "candidate.admissionTypeName",
+  admissionCode: "candidate.admissionTypeCode",
+  series: "candidate.seriesName",
+  seriesCode: "candidate.seriesCode",
+  unit: "candidate.departmentName",
+  unitCode: "candidate.departmentCode",
+  major: "candidate.majorName",
+  majorCode: "candidate.majorCode",
+  building: "candidate.buildingName",
+  buildingCode: "candidate.buildingCode",
+  room: "candidate.roomName",
+  roomCode: "candidate.roomCode",
+  assignedCount: "room.assignedCount",
+  "room.count": "room.assignedCount",
+  otherRoom: "room.otherRoom",
+  period: "candidate.periodName",
+  periodCode: "candidate.periodCode",
+  photo: "candidate.photo",
+  photoUrl: "candidate.photo",
+  photoFileId: "candidate.photo",
+  opt1: "candidate.opt1",
+  opt2: "candidate.opt2",
+  opt3: "candidate.opt3",
+  opt4: "candidate.opt4",
+  opt5: "candidate.opt5",
+  group: "candidate.groupName",
+});
+
+function normalizeGeneratedObjectSourcePath(sourcePath) {
+  const normalizedSourcePath = String(sourcePath || "").trim();
+
+  return generatedObjectSourceAliasMap[normalizedSourcePath] || normalizedSourcePath || "candidate.examNo";
+}
+
+function normalizeGeneratedObjectSourceExpression(sourceExpression) {
+  const pipelineParts = splitTokenPipeline(sourceExpression);
+  const sourcePath = normalizeGeneratedObjectSourcePath(pipelineParts[0]);
+
+  return [sourcePath, ...pipelineParts.slice(1)].join(" | ");
+}
+
 function getGeneratedObjectSourceLabel(sourceKey) {
-  const normalizedSourceKey = String(sourceKey || "").trim();
+  const [sourcePath] = splitTokenPipeline(sourceKey);
+  const normalizedSourceKey = normalizeGeneratedObjectSourcePath(sourcePath);
 
   return generatedObjectSourceLabelMap[normalizedSourceKey] || normalizedSourceKey || "데이터";
 }
@@ -190,7 +213,7 @@ function replaceTemplateGeneratedObjectImagesInHtml(text, context, options = {})
     (matchedMarkup, _quote, objectTypeValue) => {
       const matchedSource = matchedMarkup.match(/\sdata-template-object-source=(['"])(.*?)\1/i);
       const normalizedType = String(objectTypeValue || "").trim().toLowerCase() === "qrcode" ? "qrcode" : "barcode";
-      const objectSource = String(matchedSource?.[2] || "candidate.examNo").trim() || "candidate.examNo";
+      const objectSource = normalizeGeneratedObjectSourceExpression(matchedSource?.[2] || "candidate.examNo");
 
       if (shouldSuppressGeneratedObjectForEmptySource(objectSource, context, options)) {
         return "";

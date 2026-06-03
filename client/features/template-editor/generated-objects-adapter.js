@@ -1,8 +1,11 @@
 export {
+  code128GeneratedObjectSourceKeys,
+  filterGeneratedObjectSourceOptionsForType,
   generatedObjectDefaults,
   generatedObjectPreviewValues,
   generatedObjectSourceAliases,
   getGeneratedObjectConfig,
+  isCode128GeneratedObjectSourceKey,
   normalizeGeneratedObjectSourceKey,
   normalizeGeneratedObjectType,
   resolveGeneratedObjectType,

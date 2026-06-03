@@ -219,7 +219,7 @@ function normalizeDisplayValue(value) {
     return value ? "Y" : "";
   }
 
-  return formatDateValue(String(value), ".");
+  return String(value);
 }
 
 module.exports = {

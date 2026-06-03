@@ -196,3 +196,32 @@
 .candidate-upload-progress-overlay {
   z-index: 1660;
 }
+
+.candidate-upload-error-modal-overlay {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.38);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 1680;
+}
+
+.candidate-upload-error-modal {
+  max-width: 520px;
+  width: min(100%, 520px);
+}
+
+.candidate-upload-error-message {
+  background: var(--warning-soft);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: 12px;
+  color: #92400e;
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.6;
+  margin: 0 0 16px;
+  padding: 14px;
+  white-space: pre-wrap;
+}

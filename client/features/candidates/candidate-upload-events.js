@@ -1,5 +1,8 @@
-import { showToast } from "../../app/toast.js";
 import { fetchBlob, triggerBlobDownload } from "./candidate-action-utils.js";
+import {
+  clearCandidateUploadErrorDialog,
+  openCandidateUploadErrorDialog,
+} from "./candidate-upload-error-state.js";
 
 export async function handleCandidateUploadChange(event, context) {
   const { appState, onStateChange, previewPhotoArchiveFile, previewWorkbookFile } = context;
@@ -32,8 +35,7 @@ export async function handleCandidateUploadAction(actionTarget, action, context)
     try {
       triggerBlobDownload(await fetchBlob("/api/candidates/template.xlsx", {}, "업로드 양식을 다운로드할 수 없습니다."), "수험생 데이터 업로드 양식.xlsx");
     } catch (error) {
-      appState.candidates.upload.errorMessage = error.message;
-      showToast(appState.candidates.upload.errorMessage, { tone: "error" });
+      openCandidateUploadErrorDialog(appState.candidates.upload, error.message);
       await onStateChange();
     }
     return true;
@@ -48,6 +50,7 @@ export async function handleCandidateUploadAction(actionTarget, action, context)
       ...appState.candidates.upload,
       dataFileName: "",
       dataFile: null,
+      errorDialogOpen: false,
       errorMessage: "",
       isOpen: true,
       photoFileName: "",
@@ -79,13 +82,20 @@ export async function handleCandidateUploadAction(actionTarget, action, context)
 
   if (action === "close-candidate-upload-modal") {
     appState.candidates.upload.isOpen = false;
+    clearCandidateUploadErrorDialog(appState.candidates.upload);
+    await onStateChange();
+    return true;
+  }
+
+  if (action === "close-candidate-upload-error-modal") {
+    clearCandidateUploadErrorDialog(appState.candidates.upload);
     await onStateChange();
     return true;
   }
 
   if (action === "set-candidate-upload-mode") {
     appState.candidates.upload.mode = actionTarget.dataset.uploadMode === "photo-archive" ? "photo-archive" : "workbook";
-    appState.candidates.upload.errorMessage = "";
+    clearCandidateUploadErrorDialog(appState.candidates.upload);
     appState.candidates.upload.successMessage = "";
     await onStateChange();
     return true;
