@@ -47,7 +47,7 @@ Responsibilities:
 - Host to runtime: `editor-runtime-loader.js`, `editor-runtime-adapter.js`, `template-editor-reset-runtime.js`
 - Runtime to host: runtime API events, document state snapshots, dirty state sync
 - Host to server: `template-api.js`, template request payload builders
-- Server to client: normalized template layout and preview HTML
+- Server to client: normalized template layout, preview HTML, and PDF preview metadata/URL. Template editor PDF preview stores response `pdfUrl` as host state `previewPdfUrl`.
 
 ## Refactoring Rules
 

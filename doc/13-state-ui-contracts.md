@@ -119,7 +119,7 @@
 | `limit` | 목록 API limit. 기본 30. |
 | `loading` | 목록 로딩 상태. |
 | `errorMessage` | 목록/삭제/저장 오류. |
-| `filters.keyword` | 학교명, 코드, 설명 검색어. |
+| `filters.keyword` | 학교명, 코드, 캠퍼스명, 캠퍼스 코드 검색어. |
 | `detail` | 선택 학교 상세. |
 | `modal` | 생성/수정 modal draft. |
 
@@ -132,7 +132,10 @@
 | `schoolId` | 수정 대상 id. |
 | `name` | 학교명 draft. 입력 UI는 `대학교` suffix를 붙여 표시하고 저장 전 정규화한다. |
 | `code` | 학교 코드. |
-| `academicYear` | 학년도. 숫자 입력, 1900-2999 범위 UI. |
+| `academicYear` | 학년도. 현재 연도 기준 앞뒤 5년 범위 select UI. |
+| `campusName` | 학교 설정의 캠퍼스명 draft. |
+| `campusCode` | 학교 설정의 캠퍼스 코드 draft. |
+| `description` | legacy draft field. 현재 학교 modal renderer와 서버 학교 API payload에서는 사용하지 않는다. |
 | `deletionPassword`, `deletionPasswordConfirm` | 생성 시 삭제 비밀번호와 확인값. `deleteSchoolsWithoutPassword`가 없으면 required. |
 | `logoDataUrl` | 학교 로고 data URL preview와 저장값. |
 | `settingsLoading` | 학교 설정 로딩 중 로고/년도 입력 비활성화. |
@@ -152,7 +155,6 @@
 | `[data-school-modal-field]` | modal input 상태 갱신. |
 | `[data-school-modal-logo-file]` | 로고 파일 선택. accept는 PNG/JPEG/WebP. |
 | `[data-action="clear-school-modal-logo"]` | 로고 삭제. |
-| `[data-action="step-school-academic-year"][data-school-year-step]` | 학년도 증감. |
 | `[data-action="close-school-modal"]` | modal close. |
 
 ### 화면 요소
@@ -163,10 +165,10 @@
   - `새 학교`: `manageTemplates`가 있을 때만 표시.
 - 검색 form:
   - label `학교 검색`
-  - placeholder `학교명, 코드, 설명`
+  - placeholder `학교명, 코드, 캠퍼스명`
 - 학교 row:
   - 학교명.
-  - 학교 코드 또는 `코드 없음`.
+  - 캠퍼스명 또는 `캠퍼스 미설정`.
   - `양식 N개`.
   - `수험생 N건`.
   - `최종수정일시 : YYYY년 MM월 DD일 HH시 mm분`.
@@ -503,23 +505,21 @@ Page size option:
 생성 step 순서:
 
 1. `template`: 양식
-2. `campus`: 캠퍼스
-3. `track`: 모집시기
-4. `admission`: 전형
-5. `series`: 계열
-6. `unit`: 모집단위
-7. `major`: 전공
-8. `examDate`: 시험날짜
-9. `time`: 시작시간
-10. `endTime`: 종료시간
-11. `period`: 교시
-12. `building`: 고사건물
-13. `room`: 고사실
-14. `group`: 조
+2. `track`: 모집시기
+3. `admission`: 전형
+4. `series`: 계열
+5. `unit`: 모집단위
+6. `major`: 전공
+7. `examDate`: 시험날짜
+8. `time`: 시작시간
+9. `endTime`: 종료시간
+10. `period`: 교시
+11. `building`: 고사건물
+12. `room`: 고사실
+13. `group`: 조
 
 필수 선택 filter:
 
-- `campus`
 - `track`
 - `admission`
 
@@ -627,7 +627,7 @@ Submit 가능 조건:
 - 현재 학교가 있다.
 - 삭제 scope가 유효하다.
 - 템플릿 scope면 `selectedTemplateIds`가 1개 이상이다.
-- 템플릿 외 scope면 `campus`, `track`, `admission` 선택 조건이 완료되어 있다.
+- 템플릿 외 scope면 `track`, `admission` 선택 조건이 완료되어 있다.
 - summary가 있고 삭제 대상 총 건수가 1건 이상이다.
 - option/summary 로딩 중이 아니고 삭제 중이 아니다.
 
@@ -652,7 +652,8 @@ Submit 가능 조건:
 | `isSavingDataTagSettings` | data tag 설정만 저장 중. |
 | `isPreviewOpen` | 미리보기 modal 표시. |
 | `isPreviewLoading` | 미리보기 생성 중. |
-| `previewHtml` | 미리보기 iframe `srcdoc`. |
+| `previewHtml` | legacy HTML preview 값. 편집기 PDF preview 성공 시 빈 문자열로 유지된다. |
+| `previewPdfUrl` | 편집기 미리보기 PDF iframe `src` URL. |
 | `previewPageCount` | 미리보기 page 수. |
 | `previewCandidateCount` | 미리보기 candidate 수. |
 | `previewWarnings` | 미리보기 경고 배열. |

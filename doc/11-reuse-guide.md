@@ -215,7 +215,7 @@ Toast:
 
 - 서버 권한 검증을 우회하지 않는다.
 - 학교 route key는 code처럼 보일 수 있지만 서버 저장은 `school.id` 기준이다.
-- 수험생 업로드의 중복 기준은 학교와 수험번호 기반 source id이다.
+- 수험생 업로드의 중복 기준은 학교별 수험번호와 교시코드 조합이다.
 - PDF 생성 목록은 기본적으로 completed 상태만 조회한다.
 - 템플릿 편집 저장 전 화면 이동은 guard 대상이다.
 - 기본 memory queue는 서버 프로세스 안에서 순차 처리된다. BullMQ를 사용하면 Redis와 `PDF_QUEUE_PROCESS_IN_WEB`, `PDF_QUEUE_CONCURRENCY` 설정을 함께 검토해야 한다.

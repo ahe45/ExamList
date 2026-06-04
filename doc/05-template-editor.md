@@ -352,9 +352,10 @@ API:
 
 ### 미리보기
 
-- 일반 템플릿 미리보기: `POST /api/pdf-preview`.
+- 편집기 PDF 미리보기: `POST /api/pdf-preview/pdf`.
+- 템플릿 HTML 미리보기 API: `POST /api/pdf-preview`. PDF 생성 모달의 템플릿 preview와 서버 내부 HTML 렌더링 검증에 사용한다.
 - PDF 생성 첫 대상 미리보기: `POST /api/pdf-generations/preview`.
-- 미리보기 결과는 HTML iframe 또는 PDF URL iframe으로 표시된다.
+- 편집기 미리보기 결과는 응답의 `pdfUrl`을 iframe `src`로 표시한다.
 
 ## Unsaved guard
 

@@ -278,7 +278,6 @@ UI hook:
 지원 sort key:
 
 - `designatedSort`
-- `campus`, `campusCode`
 - `track`
 - `admission`, `admissionCode`
 - `series`, `seriesCode`
@@ -508,7 +507,7 @@ Modal:
 
 - `.editor-preview-modal`
 - `[data-action="close-template-preview"]`
-- `.editor-preview-frame[srcdoc]`
+- `.editor-preview-frame[src]`
 - 데이터 태그 샘플/빈 값 modal
 - 생성 단위 설정 modal
 - 바코드/QR 소스 선택 modal
@@ -762,10 +761,10 @@ Preview value는 `generatedObjectPreviewValues`의 샘플값을 사용한다. �
 2. runtime HTML을 appState로 동기화.
 3. `isPreviewOpen=true`, `isPreviewLoading=true`.
 4. data tag sample/empty value payload 생성.
-5. `POST /api/pdf-preview` 호출.
-6. 성공 시 `previewHtml`, `previewPageCount`, `previewCandidateCount`, `previewWarnings` 저장.
-7. 실패 시 `previewErrorMessage` 저장, `previewHtml` 초기화, error toast 표시.
-8. modal iframe `srcdoc`에 `previewHtml` 표시.
+5. `POST /api/pdf-preview/pdf` 호출.
+6. 성공 시 `previewPdfUrl`, `previewPageCount`, `previewCandidateCount` 저장.
+7. 실패 시 `previewErrorMessage` 저장, `previewHtml`과 `previewPdfUrl` 초기화, error toast 표시.
+8. modal iframe `src`에 `previewPdfUrl` 표시.
 
 미리보기 sample limit:
 
@@ -895,7 +894,7 @@ Form event 처리:
 - 편집기 view renderer, actions, runtime adapter를 함께 옮긴다.
 - `client/template-editor-runtime/**` 전체와 runtime CSS를 함께 옮긴다.
 - `server/modules/pdf-templates/layout*.js` 정규화 규칙을 유지한다.
-- `server/modules/pdf-preview/**`를 함께 옮겨야 저장된 HTML을 실제 PDF preview로 볼 수 있다.
+- `server/modules/pdf-preview/**`와 PDF 생성 preview 저장소를 함께 옮겨야 저장된 HTML을 실제 PDF preview로 볼 수 있다.
 - data tag catalog와 token mapping을 같이 옮긴다.
 - `appState.templateEditor` slice를 그대로 준비한다.
 - `manageTemplates`, `previewTemplates`, `viewTemplates` 권한 key를 유지한다.

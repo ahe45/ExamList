@@ -109,19 +109,18 @@ Header:
 
 - 키워드 input.
 - 검색 버튼.
-- 검색 대상: 학교명, 코드, 설명.
+- 검색 대상: 학교명, 코드, 캠퍼스명, 캠퍼스 코드.
 - API: `GET /api/schools?keyword=&limit=&page=`.
 
 학교 목록 row:
 
 - 학교명.
-- 학교 코드.
-- 설명.
+- 캠퍼스명. 값이 없으면 `캠퍼스 미설정`으로 표시.
 - 양식 개수 badge.
 - 수험생 건수 badge.
 - 최종 수정 일시 badge.
 - 생성 계정 badge.
-- row 클릭 시 `/schools/:schoolCode/templates`로 이동.
+- row 클릭 시 `/schools/:schoolCode/templates`로 이동. route param은 학교 코드가 우선이며, 서버 상세 조회는 id 또는 code를 허용한다.
 - 수정 버튼: `manageTemplates` 필요.
 - 삭제 버튼: `manageTemplates` 필요.
 - `한국대학교`는 기본 보호 학교로 삭제 버튼 비활성 처리.
@@ -142,10 +141,8 @@ Empty state:
   - 서버 검증: `[A-Z0-9_-]{2,80}`.
   - unique.
 - 학년도
-  - 1900에서 2999 사이 숫자.
-  - `학년도` suffix 표시.
-- 설명
-  - 최대 255자.
+  - 현재 연도 기준 앞뒤 5년 범위 select.
+  - UI는 `학년도` suffix를 표시하고 서버는 4자리 연도 문자열로 저장한다.
 - 삭제 비밀번호
   - 학교 생성 시 입력.
   - `deleteSchoolsWithoutPassword` 권한이 없으면 필수.
@@ -156,6 +153,8 @@ Empty state:
 
 - 학교 표시명.
 - 학년도.
+- 캠퍼스명.
+- 캠퍼스 코드.
 - 로고 이미지.
   - PNG/JPEG/WebP.
   - 클라이언트 1MB 이하 제한.

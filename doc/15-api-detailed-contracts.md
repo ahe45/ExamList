@@ -211,7 +211,7 @@ Query:
 
 | field | required | 설명 |
 |---|---|---|
-| `keyword` | no | 학교명, 코드, 설명 검색. |
+| `keyword` | no | 학교명, 코드, 캠퍼스명, 캠퍼스 코드 검색. |
 | `limit` | no | 페이지 크기. |
 | `page` | no | 페이지 번호. |
 
@@ -227,7 +227,9 @@ Query:
 - `id`
 - `code`
 - `name`
-- `description`
+- `description`: legacy 호환용 빈 문자열.
+- `campusName`
+- `campusCode`
 - `createdAccount`
 - `canManage`
 - `templateCount`
@@ -244,7 +246,6 @@ Body:
 |---|---|---|
 | `name` | yes | 학교명. 클라이언트는 `대학교` suffix 입력 UI를 정규화한다. |
 | `code` | no | 학교 코드. 비어 있으면 서버가 `SCHOOL-...` 형식으로 생성한다. |
-| `description` | no | 설명. |
 | `deletionPassword` | 조건부 | `deleteSchoolsWithoutPassword` 권한이 없으면 필요. |
 | `deletionPasswordConfirm` | no | 삭제 비밀번호 확인. 입력된 경우 `deletionPassword`와 일치해야 한다. |
 
@@ -281,7 +282,6 @@ Body:
 |---|---|
 | `name` | 학교명. |
 | `code` | 학교 코드. |
-| `description` | 설명. |
 
 응답:
 
@@ -290,7 +290,7 @@ Body:
 
 비고:
 
-- 학년도와 로고는 학교 기본 정보 API가 아니라 `PATCH /api/school-settings`로 저장한다.
+- 학년도, 캠퍼스, 로고는 학교 기본 정보 API가 아니라 `PATCH /api/school-settings`로 저장한다.
 
 ### `DELETE /api/schools/:schoolId`
 
@@ -326,13 +326,16 @@ Query:
 
 | field | required | 설명 |
 |---|---|---|
-| `schoolId` | yes | 설정 조회 학교 id. |
+| `schoolId` | no | 설정 조회 학교 id. 비어 있으면 기본 학교를 사용한다. |
 
 응답:
 
 - `schoolId`
+- `schoolCode`
 - `schoolName`
 - `academicYear`
+- `campusName`
+- `campusCode`
 - `logoDataUrl`
 - `updatedAt`
 
@@ -346,7 +349,9 @@ Body:
 |---|---|---|
 | `schoolId` | yes | 설정 저장 학교 id. |
 | `schoolName` | no | 양식에 표시할 학교명. |
-| `academicYear` | no | 학년도. |
+| `academicYear` | no | 학년도. UI는 `YYYY학년도`를 보낼 수 있고 서버는 4자리 연도 문자열로 정규화한다. |
+| `campusName` | no | 양식에 표시할 캠퍼스명. |
+| `campusCode` | no | 양식에 표시할 캠퍼스 코드. |
 | `logoDataUrl` | no | 로고 data URL. 빈 값이면 제거. |
 
 응답:
@@ -534,7 +539,7 @@ Body:
 | `template` | 현재 편집 중인 템플릿 payload. |
 | `sampleData` | 태그별 샘플 데이터. |
 | `emptyValueData` | 태그별 빈 값 대체 데이터. |
-| `sampleLimit` | 샘플 수험생 제한. 편집기는 60을 사용한다. |
+| `sampleLimit` | 샘플 수험생 제한. |
 
 응답:
 
@@ -544,6 +549,37 @@ Body:
 | `pageCount` | 미리보기 page 수. |
 | `candidateCount` | 샘플/대상 수험생 수. |
 | `warnings` | 경고 배열. |
+
+### `POST /api/pdf-preview/pdf`
+
+Permission: `previewTemplates`.
+
+Body:
+
+| field | 설명 |
+|---|---|
+| `schoolId` | 미리보기 학교 id. |
+| `templateId` | 저장된 템플릿 id. |
+| `template` | 현재 편집 중인 템플릿 payload. |
+| `sampleData` | 태그별 샘플 데이터. |
+| `emptyValueData` | 태그별 빈 값 대체 데이터. |
+| `sampleLimit` | 샘플 수험생 제한. 편집기는 60을 사용한다. |
+| `previewMode` | 편집기는 `template`을 보낸다. |
+| `renderActualCandidates` | 편집기는 false를 보낸다. |
+
+응답:
+
+| field | 설명 |
+|---|---|
+| `id` | `pdf-generation-preview-...` 형식 preview id. |
+| `pdfUrl` | iframe `src`와 inline 다운로드에 사용할 preview PDF URL. |
+| `fileName` | preview PDF 파일명. |
+| `fileSizeBytes` | PDF byte 크기. |
+| `pageCount` | preview PDF page 수. |
+| `candidateCount` | 샘플/대상 수험생 수. |
+| `templateId` | 미리보기 대상 템플릿 id. |
+| `templateName` | 미리보기 대상 템플릿명. |
+| `createdAt` | preview 생성 시각. |
 
 ## 8. 수험생 API
 
@@ -585,14 +621,17 @@ Body:
 |---|---|
 | `schoolId` | 업로드 대상 학교 id. |
 | `fileName` | 표시 파일명. |
-| `dataUrl` 또는 workbook payload | 클라이언트 업로드 구현이 전달하는 XLSX 데이터. |
-| `existingDataPolicy` | `insert-only`, `insert-update`, `all`. |
+| `fileContentBase64` | XLSX 파일 base64 payload. |
 
 응답:
 
 - status 200
-- preview 결과
-- 신규/수정/동일/오류 row 집계
+- `fileName`
+- `totalRows`
+- `insertCount`
+- `updateCount`
+- `unchangedCount`
+- `previewRows`
 
 ### `POST /api/candidates/import`
 
@@ -603,13 +642,14 @@ Body:
 | field | 설명 |
 |---|---|
 | `schoolId` | 업로드 대상 학교 id. |
-| `rows` 또는 preview token/payload | 반영할 수험생 row. |
+| `fileName` | 표시 파일명. |
+| `fileContentBase64` | XLSX 파일 base64 payload. |
 | `existingDataPolicy` | 업로드 정책. |
 
 응답:
 
 - status 200
-- insert/update/skip/error 집계와 저장 결과
+- `processed`: 저장 처리된 row 수.
 
 ### `POST /api/candidates/photo-archive/preview`
 
@@ -674,7 +714,6 @@ Query:
 | `admissionCode` | `admission_code` | 전형코드 filter. |
 | `building` |  | 고사건물 filter. |
 | `buildingCode` | `building_code` | 고사건물코드 filter. |
-| `campus` |  | 캠퍼스 filter. |
 | `examDate` | `date` | 시험날짜 filter. |
 | `group` |  | 조 filter. |
 | `major` |  | 전공 filter. |
@@ -732,7 +771,7 @@ Query:
 - `designatedSort`
 - `admissionYear`
 - `track`
-- `campus`, `campusCode`
+- `campus`, `campusCode`: legacy 호환 field. 현재 수험생 목록 SELECT와 XLSX 템플릿에서는 빈 값이다. 양식 태그의 캠퍼스 값은 `school_settings`를 우선 사용한다.
 - `admission`, `admissionCode`
 - `series`, `seriesCode`
 - `unit`, `unitCode`
@@ -1246,13 +1285,13 @@ Body:
 
 공통 filter:
 
-| canonical | alias |
+| canonical | alias/비고 |
 |---|---|
 | `admission` | 없음 |
 | `admissionCode` | `admission_code` |
 | `building` | 없음 |
 | `buildingCode` | `building_code` |
-| `campus` | 없음 |
+| `campus` | legacy reader만 보존. 현재 UI step, 후보자 option, 데이터 삭제 SQL filter에는 포함되지 않는다. |
 | `examDate` | `date` |
 | `group` | 없음 |
 | `major` | 없음 |

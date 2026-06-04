@@ -2,7 +2,7 @@
 
 작성 기준일: 2026-05-23
 
-최근 재검증일: 2026-05-30
+최근 재검증일: 2026-06-04
 
 문서 분리 과정에서 기존 명세가 실제 구현된 시스템과 맞는지 핵심 항목을 다시 대조했다. 이 파일은 검증 범위와 근거를 남기는 목적의 문서이다.
 
@@ -32,7 +32,7 @@
 - 수험생 상세 필드는 `candidateDetailFields`와 일치한다.
 - XLSX 업로드 필수/선택 필드는 `server/modules/candidates/workbook.js`의 정규화 로직과 `optionalTemplateFieldKeys` 기준으로 대조했다.
 - PDF 생성 필터 단계는 `pdfGenerationFilterSteps`와 일치한다.
-- PDF 생성 필수 선택 조건은 `pdfGenerationCreateRequiredFilterKeys = ["campus", "track", "admission"]`와 일치한다.
+- PDF 생성 필수 선택 조건은 `pdfGenerationCreateRequiredFilterKeys = ["track", "admission"]`와 일치한다.
 - 생성 단위별 마지막 필터는 `pdfGenerationUnitFilterKeyMap`와 일치한다.
 - 데이터 삭제 확인 문구는 클라이언트와 서버 모두 `전체 데이터 삭제`를 사용한다.
 - 데이터 삭제 기본 generation unit은 `roomCode`이다.
@@ -115,3 +115,14 @@ rg "creationMode|DEFAULT_TEMPLATE_NOT_FOUND|preserveLayoutSettings|clearSnapshot
 - `db/schema.sql`, `server/modules/bootstrap/schema-schools.js`: `schools.is_active`는 현재 schema에서 제거되었고, `created_account`가 학교 생성 계정 컬럼이다.
 - `server/http/routes/schools.js`, `server/modules/schools/service.js`: 학교 기본 정보 API는 학년도와 로고를 직접 저장하지 않고, 해당 값은 `school-settings` API로 저장한다.
 - `deploy/README.md`: 업데이트 절차를 `update-server.bat`의 실제 명령 순서와 맞췄다.
+
+## 2026-06-04 문서 재검증 보정
+
+다음 항목은 전체 코드와 README/하위 문서를 다시 대조해 반영했다.
+
+- `db/schema.sql`, `server/modules/schools/validators.js`: `schools.description` 컬럼과 학교 기본 정보 설명 필드는 없다. 학교 검색은 학교명, 코드, 캠퍼스명, 캠퍼스 코드 기준이다.
+- `server/modules/school-settings/service.js`: 학교 설정 payload는 `schoolName`, `academicYear`, `campusName`, `campusCode`, `logoDataUrl`를 저장/조회한다.
+- `shared/domain/candidate-field-definitions.js`, `server/modules/candidates/workbook.js`: XLSX 업로드 양식은 캠퍼스 컬럼을 제외하며, 필수 코드 필드는 전형코드, 모집단위코드, 교시코드, 고사건물코드, 고사실코드다.
+- `server/modules/candidates/import-service.js`: XLSX 중복 기준은 학교별 `수험번호 + 교시코드` 조합이다.
+- `client/features/pdf-generations/pdf-generation-flow.js`: PDF 생성과 데이터 삭제 필터 단계에는 캠퍼스 단계가 없고, 필수 선택은 모집시기와 전형이다.
+- `server/http/routes/pdf-preview.js`, `client/features/template-editor/template-api.js`: 편집기 PDF 미리보기는 `POST /api/pdf-preview/pdf`를 호출하고 PDF URL을 iframe에 표시한다.

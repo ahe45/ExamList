@@ -78,7 +78,6 @@ Header:
 
 - 기본 generation unit: `roomCode`.
 - 표시 단계:
-  - 캠퍼스.
   - 모집시기.
   - 전형.
   - 계열.
@@ -99,7 +98,7 @@ Header:
 
 삭제 단위 완료 조건:
 
-- 양식 scope가 아니면 캠퍼스, 모집시기, 전형까지 선택되어야 한다.
+- 양식 scope가 아니면 모집시기와 전형까지 선택되어야 한다.
 - 양식 scope면 1개 이상의 templateId가 선택되어야 한다.
 
 ## 양식 scope 선택 UI

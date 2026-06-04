@@ -53,6 +53,7 @@
 | POST | `/api/pdf-templates/:templateId/duplicate` | `manageTemplates` | 템플릿 복사 |
 | GET | `/api/pdf-data-tags?schoolId=` | `viewTemplates` | 데이터 태그 catalog |
 | POST | `/api/pdf-preview` | `previewTemplates` | 템플릿 HTML preview |
+| POST | `/api/pdf-preview/pdf` | `previewTemplates` | 편집기 PDF preview |
 
 ## 수험생
 

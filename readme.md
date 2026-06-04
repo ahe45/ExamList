@@ -50,11 +50,11 @@ npm run start
 
 Windows 11 PC를 실제 서버처럼 사용할 경우에는 프로젝트 루트의 `start-server.bat`를 실행합니다. 최초 실행이면 `.env` 생성, 의존성 설치, DB 스키마 준비, 기본 슈퍼 관리자 계정과 `한국대학교`의 `기본 템플릿` 생성 후 서버를 시작하고, 이미 구성되어 있으면 바로 서버를 시작합니다. 자세한 내용은 [Windows 간편 배포 가이드](deploy/README.md)를 참고합니다.
 
-Git clone으로 설치한 서버를 GitHub 최신 코드로 갱신할 때는 서버를 중지한 뒤 `update-server.bat`를 실행합니다. 이 배치 파일은 `git pull --ff-only`, `npm install`, `npm run setup:db`를 순서대로 실행하고, 완료 후 `start-server.bat`로 서버를 다시 시작하도록 안내합니다.
+Git clone으로 설치한 서버를 GitHub 최신 코드로 갱신할 때는 서버를 중지한 뒤 `update-server.bat`를 실행합니다. 이 배치 파일은 `git fetch`, `git pull --ff-only origin <branch>`, `npm install`, `npm run setup:db`를 순서대로 실행하고, 완료 후 `start-server.bat`로 서버를 다시 시작하도록 안내합니다.
 
 ## 핵심 기능 요약
 
-- 학교 관리: 학교 목록 검색, 학교 생성/수정/삭제, 학교별 로고와 학년도 설정.
+- 학교 관리: 학교 목록 검색, 학교 생성/수정/삭제, 학교별 표시명, 캠퍼스, 로고와 학년도 설정.
 - 계정 관리: 운영자 계정 생성/수정/삭제, 권한 부여.
 - 양식 관리: 학교별 PDF 템플릿 생성, 복사, 수정, 삭제.
 - 양식 편집: 문서 HTML 편집, 표/이미지/바코드/QR/데이터 태그/수험생 블록 구성, 표/텍스트 포커스 유지형 toolbar 편집.

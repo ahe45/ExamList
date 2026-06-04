@@ -27,7 +27,6 @@
 - `id`: 학교 식별자.
 - `code`: 학교 코드, unique.
 - `name`: 학교명.
-- `description`: 설명.
 - `deletion_password_hash`: 학교 삭제 비밀번호 hash.
 - `created_account`: 학교 생성 계정 ID. 학교 수정/삭제 권한 판정에 사용된다.
 - `created_at`, `updated_at`, `deleted_at`.
@@ -40,6 +39,8 @@
 - `school_id`: unique.
 - `school_name`: 양식에 표시할 학교명.
 - `academic_year`: 학년도.
+- `campus_name`: 양식에 표시할 캠퍼스명.
+- `campus_code`: 양식에 표시할 캠퍼스 코드.
 - `logo_data_url`: 로고 data URL.
 - `updated_at`.
 
@@ -152,6 +153,7 @@
 유니크 기준:
 
 - `(school_id, source_type, source_id)`.
+- `(school_id, examinee_no, period_code)`.
 
 ## `pdf_generation_histories`
 
