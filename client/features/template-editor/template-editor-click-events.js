@@ -1,5 +1,9 @@
 import { syncTemplateEditorRuntimeToState } from "./editor-runtime-adapter.js";
 import { applyDocumentTableAction, splitCurrentDocumentCell } from "./document-table-actions.js";
+import {
+  resetTemplateEditorCanvasZoom,
+  stepTemplateEditorCanvasZoom,
+} from "./canvas-zoom.js";
 
 function isTemplateEditorRuntimeObjectInteractionActive() {
   const templateEditorState = window.ExamListTemplateEditorRuntime?.state?.templateEditor || null;
@@ -25,6 +29,7 @@ export function bindTemplateEditorClickEvents({
   applyDocumentCommand,
   applyDocumentFontFamily,
   applyDocumentFontSize,
+  closeDataTagFormatModal,
   closeDataTagSampleModal,
   closeGenerationUnitSettingsModal,
   closeTemplatePreview,
@@ -35,6 +40,7 @@ export function bindTemplateEditorClickEvents({
   insertDocumentQrCode,
   insertDocumentTable,
   onStateChange,
+  openDataTagFormatModal,
   openDataTagSampleModal,
   openGenerationUnitSettingsModal,
   openTemplatePreview,
@@ -43,6 +49,7 @@ export function bindTemplateEditorClickEvents({
   requestUnsavedTemplateEditorAction,
   resetDataTagSampleModal,
   saveTemplateLayout,
+  saveDataTagFormatModal,
   saveGenerationUnitSettingsModal,
   saveDataTagSampleModal,
   setDocumentColorPanelVisibility,
@@ -53,9 +60,27 @@ export function bindTemplateEditorClickEvents({
   setSelectedPage,
   syncSelectedPageDocumentHtml,
   triggerDocumentImageSelection,
+  updateDocumentImageSelectionOverlay,
 }) {
   document.addEventListener("click", async (event) => {
     if (event.defaultPrevented) {
+      return;
+    }
+
+    const clickedToken = event.target.closest?.(".template-token[data-template-tag-value]");
+    const documentSurface = document.getElementById("templateEditorSurface");
+
+    if (
+      clickedToken &&
+      documentSurface?.contains(clickedToken) &&
+      clickedToken.dataset.templateTagFormatSupported === "true"
+    ) {
+      if (isTemplateEditorRuntimeObjectInteractionActive()) {
+        return;
+      }
+
+      event.preventDefault();
+      await openDataTagFormatModal?.(clickedToken);
       return;
     }
 
@@ -74,9 +99,13 @@ export function bindTemplateEditorClickEvents({
       "close-data-tag-sample-modal",
       "reset-data-tag-sample-modal",
       "save-data-tag-sample-modal",
+      "close-data-tag-format-modal",
+      "save-data-tag-format-modal",
       "open-generation-unit-settings-modal",
       "close-generation-unit-settings-modal",
       "save-generation-unit-settings-modal",
+      "reset-template-editor-canvas-zoom",
+      "step-template-editor-canvas-zoom",
     ].includes(actionName);
 
     if (!canRunDuringObjectInteraction && isTemplateEditorRuntimeObjectInteractionActive()) {
@@ -118,6 +147,16 @@ export function bindTemplateEditorClickEvents({
       return;
     }
 
+    if (actionName === "close-data-tag-format-modal") {
+      await closeDataTagFormatModal();
+      return;
+    }
+
+    if (actionName === "save-data-tag-format-modal") {
+      await saveDataTagFormatModal();
+      return;
+    }
+
     if (actionName === "reset-data-tag-sample-modal") {
       await resetDataTagSampleModal();
       return;
@@ -130,6 +169,22 @@ export function bindTemplateEditorClickEvents({
 
     if (actionName === "close-template-preview") {
       closeTemplatePreview();
+      return;
+    }
+
+    if (actionName === "step-template-editor-canvas-zoom") {
+      const direction = Number(actionTarget.dataset.templateEditorCanvasZoomDirection) || 0;
+
+      stepTemplateEditorCanvasZoom(appState, direction, {
+        onAfterApply: () => updateDocumentImageSelectionOverlay?.(),
+      });
+      return;
+    }
+
+    if (actionName === "reset-template-editor-canvas-zoom") {
+      resetTemplateEditorCanvasZoom(appState, {
+        onAfterApply: () => updateDocumentImageSelectionOverlay?.(),
+      });
       return;
     }
 

@@ -71,6 +71,17 @@ function pointValueToCssPixel(value) {
   return Math.round(normalizeRecognitionMarkPoint(value, 0, 1000) * cssPixelsPerPoint * 100) / 100;
 }
 
+function getRecognitionMarksSurfaceScale(surfaceElement) {
+  const rect = surfaceElement?.getBoundingClientRect?.();
+  const width = surfaceElement?.clientWidth || 0;
+  const height = surfaceElement?.clientHeight || 0;
+
+  return {
+    x: Math.max(width > 0 && rect?.width > 0 ? rect.width / width : 1, 0.01),
+    y: Math.max(height > 0 && rect?.height > 0 ? rect.height / height : 1, 0.01),
+  };
+}
+
 function cssPixelToPointValue(value) {
   const numericValue = Number(value);
 
@@ -111,14 +122,16 @@ function updateRecognitionMarksOverlay(surfaceElement, page) {
   const offsetX = pointValueToCssPixel(config.offsetXPt);
   const offsetY = pointValueToCssPixel(config.offsetYPt);
   const markSize = pointValueToCssPixel(config.sizePt);
+  const surfaceScale = getRecognitionMarksSurfaceScale(surfaceElement);
+  const markScale = Math.max(Math.min(surfaceScale.x, surfaceScale.y), 0.01);
 
   overlayElement.style.left = `${Math.round((surfaceRect.left - canvasRect.left + canvasElement.scrollLeft) * 100) / 100}px`;
   overlayElement.style.top = `${Math.round((surfaceRect.top - canvasRect.top + canvasElement.scrollTop) * 100) / 100}px`;
   overlayElement.style.width = `${Math.round(surfaceRect.width * 100) / 100}px`;
   overlayElement.style.height = `${Math.round(surfaceRect.height * 100) / 100}px`;
-  overlayElement.style.setProperty("--recognition-mark-offset-x", `${offsetX}px`);
-  overlayElement.style.setProperty("--recognition-mark-offset-y", `${offsetY}px`);
-  overlayElement.style.setProperty("--recognition-mark-size", `${markSize}px`);
+  overlayElement.style.setProperty("--recognition-mark-offset-x", `${Math.round(offsetX * surfaceScale.x * 100) / 100}px`);
+  overlayElement.style.setProperty("--recognition-mark-offset-y", `${Math.round(offsetY * surfaceScale.y * 100) / 100}px`);
+  overlayElement.style.setProperty("--recognition-mark-size", `${Math.round(markSize * markScale * 100) / 100}px`);
 }
 
 function createRecognitionMarksControls(page) {
@@ -285,12 +298,14 @@ export function bindRecognitionMarksControls({ appState = null, onDirty = null, 
   const resizeObserver = typeof ResizeObserver === "function"
     ? new ResizeObserver(scheduleOverlayUpdate)
     : null;
+  const handleCanvasZoomChange = scheduleOverlayUpdate;
 
   sectionElement.addEventListener("input", handleRecognitionControlChange);
   sectionElement.addEventListener("change", handleRecognitionControlChange);
   sectionElement.addEventListener("focusout", handleRecognitionControlFocusOut);
   pagePropertiesHost.addEventListener("input", handlePageSettingChange);
   pagePropertiesHost.addEventListener("change", handlePageSettingChange);
+  surfaceElement.addEventListener("template-editor-canvas-zoom-change", handleCanvasZoomChange);
   resizeObserver?.observe(surfaceElement);
 
   return () => {
@@ -299,6 +314,7 @@ export function bindRecognitionMarksControls({ appState = null, onDirty = null, 
     sectionElement.removeEventListener("focusout", handleRecognitionControlFocusOut);
     pagePropertiesHost.removeEventListener("input", handlePageSettingChange);
     pagePropertiesHost.removeEventListener("change", handlePageSettingChange);
+    surfaceElement.removeEventListener("template-editor-canvas-zoom-change", handleCanvasZoomChange);
     resizeObserver?.disconnect();
     sectionElement.remove();
     removeRecognitionMarksOverlay(surfaceElement);

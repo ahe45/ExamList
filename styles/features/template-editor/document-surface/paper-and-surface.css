@@ -15,8 +15,12 @@
 
 .editor-paper-scale-box {
   flex: 0 0 auto;
+  height: var(--template-editor-canvas-scaled-height, calc(var(--template-editor-canvas-height, 1123px) * var(--template-editor-canvas-zoom, 1)));
   margin: 0 auto;
+  min-height: var(--template-editor-canvas-scaled-height, calc(var(--template-editor-canvas-height, 1123px) * var(--template-editor-canvas-zoom, 1)));
+  min-width: var(--template-editor-canvas-scaled-width, calc(var(--template-editor-canvas-width, 794px) * var(--template-editor-canvas-zoom, 1)));
   position: relative;
+  width: var(--template-editor-canvas-scaled-width, calc(var(--template-editor-canvas-width, 794px) * var(--template-editor-canvas-zoom, 1)));
 }
 
 .editor-paper {
@@ -30,6 +34,7 @@
   outline: none;
   overflow: hidden;
   position: relative;
+  transform: scale(var(--template-editor-canvas-zoom, 1));
   transform-origin: top left;
 }
 

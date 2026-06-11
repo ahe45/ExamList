@@ -54,6 +54,22 @@ export function getPdfGenerationTableState(appState) {
   return appState.pdfGenerations.table;
 }
 
+export function getPdfGenerationArtifactTableState(appState) {
+  appState.pdfGenerations.artifactTable = {
+    filterMenuKey: "",
+    filterMenuPosition: null,
+    filterMenuSearch: "",
+    filters: {},
+    page: 1,
+    pageSize: 30,
+    pageSizeMenuOpen: false,
+    sortRules: [{ key: "createdAt", direction: "desc" }],
+    ...(appState.pdfGenerations.artifactTable || {}),
+  };
+
+  return appState.pdfGenerations.artifactTable;
+}
+
 export function getCreateModalState(appState) {
   const modal = appState.pdfGenerations.createModal || {};
   const defaults = {

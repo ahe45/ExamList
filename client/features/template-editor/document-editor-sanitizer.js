@@ -130,6 +130,8 @@ const allowedDataAttributes = new Set([
   "data-template-page-width-px",
   "data-template-cell-only-row-layout",
   "data-template-tag-example",
+  "data-template-tag-format",
+  "data-template-tag-format-type",
 ]);
 
 function sanitizeStyleValue(styleValue) {

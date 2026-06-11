@@ -7,8 +7,12 @@ import {
   renderDataTagIcon,
 } from "./data-tags-config.js";
 import { applyDataTagSampleValuesToDefinitions } from "./data-tag-samples.js";
+import { isDataTagFormatSupported } from "./data-tag-format-types.js";
+import { formatDataTagSampleValue } from "./data-tag-value-formatting.js";
 import { getDataTagViewOptions, normalizeDataTagViewOptions } from "./data-tags-view-options.js";
 import { generatedObjectPreviewValues } from "./generated-objects-config.js";
+
+const tokenTitleSeparator = " · ";
 
 export function uniqueDataTagValues(values) {
   return Array.from(new Set((Array.isArray(values) ? values : []).map((value) => String(value || "").trim()).filter(Boolean)));
@@ -90,9 +94,25 @@ function findTagDefinitionByToken(rawToken, tagDefinitions = []) {
   }) || null;
 }
 
-function getTokenDisplayText(definition = {}, viewOptions = getDataTagViewOptions()) {
-  const options = normalizeDataTagViewOptions(viewOptions);
+function getFormattedTokenSampleText(definition = {}, tokenElement = null) {
   const sampleText = String(definition.example || "").trim();
+  const formatValue = String(tokenElement?.dataset?.templateTagFormat || "").trim();
+
+  if (!sampleText || !formatValue) {
+    return sampleText;
+  }
+
+  return formatDataTagSampleValue(
+    definition,
+    sampleText,
+    formatValue,
+    tokenElement?.dataset?.templateTagFormatType || "",
+  ) || sampleText;
+}
+
+function getTokenDisplayText(definition = {}, viewOptions = getDataTagViewOptions(), tokenElement = null) {
+  const options = normalizeDataTagViewOptions(viewOptions);
+  const sampleText = getFormattedTokenSampleText(definition, tokenElement);
   const labelText = String(definition.label || definition.key || "").trim();
 
   return options.showSampleData && sampleText ? sampleText : labelText;
@@ -188,15 +208,22 @@ export function normalizeTokenLabels(rootElement, tagDefinitions = [], viewOptio
       return;
     }
 
+    const displaySampleText = getFormattedTokenSampleText(definition, tokenElement);
+
     tokenElement.dataset.templateTagValue = definition.key;
     tokenElement.dataset.templateTagLabel = definition.label;
     tokenElement.dataset.templateTagExample = String(definition.example || "");
+    if (isDataTagFormatSupported(definition)) {
+      tokenElement.dataset.templateTagFormatSupported = "true";
+    } else {
+      delete tokenElement.dataset.templateTagFormatSupported;
+    }
     tokenElement.setAttribute("contenteditable", "false");
     tokenElement.setAttribute("spellcheck", "false");
-    tokenElement.title = [definition.label, definition.example].map((value) => String(value || "").trim()).filter(Boolean).join(" · ");
+    tokenElement.title = [definition.label, displaySampleText].map((value) => String(value || "").trim()).filter(Boolean).join(tokenTitleSeparator);
     tokenElement.classList.toggle("template-token-icons-hidden", !options.showIcons);
     tokenElement.classList.toggle("template-token-sample-display", options.showSampleData);
     setTokenIconMarkupPreservingText(tokenElement, getTokenIconMarkup(definition, options));
-    setTokenTextPreservingMarkup(tokenElement, getTokenDisplayText(definition, options));
+    setTokenTextPreservingMarkup(tokenElement, getTokenDisplayText(definition, options, tokenElement));
   });
 }

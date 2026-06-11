@@ -121,7 +121,7 @@ test("enqueuePdfGenerationBatch queues one generation job per selected target", 
       }
 
       if (sql.includes("UPDATE pdf_generation_batches")) {
-        const row = batchRows.get(params[15]);
+        const row = batchRows.get(params[9]);
 
         if (row) {
           row.status = params[0];

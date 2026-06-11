@@ -15,6 +15,7 @@ export function createPdfGenerationBatchActions({
   appState,
   getCurrentSchoolId,
   hasPermission,
+  loadArtifacts = async () => {},
   loadGenerations,
   onStateChange,
   setRerunningGenerationIds,
@@ -44,6 +45,7 @@ export function createPdfGenerationBatchActions({
 
       if (payload?.downloadUrl) {
         triggerDownload(payload.downloadUrl, payload.archiveFileName || payload.mergedFileName || "");
+        await loadArtifacts();
         showToast(isMergeMode ? "선택한 PDF 병합 다운로드를 시작했습니다." : "선택한 PDF ZIP 다운로드를 시작했습니다.");
       }
 
@@ -82,19 +84,13 @@ export function createPdfGenerationBatchActions({
     await onStateChange();
 
     try {
-      if (!isMergeMode && modal.archiveDownloadUrl) {
-        triggerDownload(modal.archiveDownloadUrl, modal.archiveFileName || "");
-        showToast("이번에 생성된 PDF ZIP 다운로드를 시작했습니다.");
-        modal.isOpen = false;
-        return;
-      }
-
       const payload = await postJson(isMergeMode ? "/api/pdf-generations/merge" : "/api/pdf-generations/archive", {
         generationIds,
       });
 
       if (payload?.downloadUrl) {
         triggerDownload(payload.downloadUrl, payload.archiveFileName || payload.mergedFileName || "");
+        await loadArtifacts();
         showToast(isMergeMode ? "이번에 생성된 PDF 병합 다운로드를 시작했습니다." : "이번에 생성된 PDF ZIP 다운로드를 시작했습니다.");
       }
 
@@ -138,10 +134,6 @@ export function createPdfGenerationBatchActions({
 
       appState.pdfGenerations.lastBatchRerun = payload || null;
       appState.pdfGenerations.rerunErrorMessage = "";
-
-      if (payload?.archiveDownloadUrl) {
-        triggerDownload(payload.archiveDownloadUrl, payload.archiveFileName || "");
-      }
 
       showToast(`PDF 재생성을 요청했습니다. 성공 ${formatCount(payload?.succeededCount)}건 / 실패 ${formatCount(payload?.failedCount)}건`);
       await loadGenerations();

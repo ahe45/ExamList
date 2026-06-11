@@ -118,7 +118,6 @@
             "direction": "asc"
           }
         ],
-        "fileNamePattern": "{{exam.name}}_{{room.name}}_수험생확인대장.pdf",
         "unitFields": [
           "date",
           "periodCode",

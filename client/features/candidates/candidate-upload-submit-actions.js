@@ -224,12 +224,18 @@ export function createCandidateUploadSubmitActions({
     await onStateChange();
   }
 
+  async function closeCandidateUploadErrorModal() {
+    clearCandidateUploadErrorDialog(appState.candidates.upload);
+    await onStateChange();
+  }
+
   async function saveCandidateUploadAndClose() {
     await uploadSelectedCandidateFile();
     return !appState.candidates.upload.isOpen;
   }
 
   return Object.freeze({
+    closeCandidateUploadErrorModal,
     closeCandidateUploadModal,
     isCandidateUploadDirty,
     saveCandidateUploadAndClose,

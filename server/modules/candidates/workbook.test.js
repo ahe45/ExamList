@@ -119,7 +119,7 @@ test("normalizeCandidateWorkbookInput requires configured code fields", () => {
   });
 });
 
-test("normalizeCandidateWorkbookInput accepts free-form date text", () => {
+test("normalizeCandidateWorkbookInput leaves date and time free-form without upload validation", () => {
   const service = createCandidateWorkbookService({ createHttpError });
 
   const row = service.normalizeCandidateWorkbookInput(
@@ -128,15 +128,135 @@ test("normalizeCandidateWorkbookInput accepts free-form date text", () => {
       birth: "2006년 1월 2일",
       campus: "서울캠퍼스",
       date: "2026/03/28",
+      endTime: "시험 종료 후",
+      time: "오전 9시 시작",
     }),
     2,
   );
 
   assert.equal(row.date, "2026/03/28");
   assert.equal(row.birth, "2006년 1월 2일");
+  assert.equal(row.time, "오전 9시 시작");
+  assert.equal(row.endTime, "시험 종료 후");
 });
 
-test("normalizeCandidateWorkbookInput preserves uploaded text values", () => {
+test("normalizeCandidateWorkbookInput validates uploaded date format", () => {
+  const service = createCandidateWorkbookService({ createHttpError });
+  const row = service.normalizeCandidateWorkbookInput(
+    createCandidateWorkbookInput({
+      birth: " 2006-01-02 ",
+      date: " 2026-03-28 ",
+    }),
+    0,
+    { validateUploadDateTimeFormat: true },
+  );
+
+  assert.equal(row.date, "2026-03-28");
+  assert.equal(row.birth, "2006-01-02");
+
+  assert.throws(
+    () =>
+      service.normalizeCandidateWorkbookInput(
+        createCandidateWorkbookInput({
+          date: "2026/03/28",
+        }),
+        2,
+        { validateUploadDateTimeFormat: true },
+      ),
+    (error) =>
+      error.errorCode === "CANDIDATE_DATE_FORMAT_INVALID" &&
+      error.message === "시험날짜 형식은 yyyy-mm-dd여야 합니다. (4행)",
+  );
+
+  assert.throws(
+    () =>
+      service.normalizeCandidateWorkbookInput(
+        createCandidateWorkbookInput({
+          birth: "2006/01/02",
+        }),
+        0,
+        { validateUploadDateTimeFormat: true },
+      ),
+    (error) =>
+      error.errorCode === "CANDIDATE_DATE_FORMAT_INVALID" &&
+      error.message === "생년월일 형식은 yyyy-mm-dd여야 합니다. (2행)",
+  );
+
+  assert.throws(
+    () =>
+      service.normalizeCandidateWorkbookInput(
+        createCandidateWorkbookInput({
+          date: "2026-02-29",
+        }),
+        0,
+        { validateUploadDateTimeFormat: true },
+      ),
+    (error) => error.errorCode === "CANDIDATE_DATE_FORMAT_INVALID",
+  );
+
+  assert.throws(
+    () =>
+      service.normalizeCandidateWorkbookInput(
+        createCandidateWorkbookInput({
+          birth: "2006-02-29",
+        }),
+        0,
+        { validateUploadDateTimeFormat: true },
+      ),
+    (error) => error.errorCode === "CANDIDATE_DATE_FORMAT_INVALID",
+  );
+});
+
+test("normalizeCandidateWorkbookInput validates uploaded time format", () => {
+  const service = createCandidateWorkbookService({ createHttpError });
+  const row = service.normalizeCandidateWorkbookInput(
+    createCandidateWorkbookInput({
+      endTime: " 10:00 ",
+      time: " 08:40 ",
+    }),
+    0,
+    { validateUploadDateTimeFormat: true },
+  );
+
+  assert.equal(row.time, "08:40");
+  assert.equal(row.endTime, "10:00");
+  assert.equal(
+    service.normalizeCandidateWorkbookInput(createCandidateWorkbookInput({ endTime: "" }), 0, {
+      validateUploadDateTimeFormat: true,
+    }).endTime,
+    "",
+  );
+
+  assert.throws(
+    () =>
+      service.normalizeCandidateWorkbookInput(
+        createCandidateWorkbookInput({
+          time: "오전 9시 시작",
+        }),
+        0,
+        { validateUploadDateTimeFormat: true },
+      ),
+    (error) =>
+      error.errorCode === "CANDIDATE_TIME_FORMAT_INVALID" &&
+      error.message === "시작시간 형식은 hh:mm이어야 합니다. (2행)",
+  );
+
+  assert.throws(
+    () =>
+      service.normalizeCandidateWorkbookInput(
+        createCandidateWorkbookInput({
+          endTime: "24:00",
+        }),
+        0,
+        { validateUploadDateTimeFormat: true },
+      ),
+    (error) =>
+      error.errorCode === "CANDIDATE_TIME_FORMAT_INVALID" &&
+      error.message === "종료시간 형식은 hh:mm이어야 합니다. (2행)",
+  );
+});
+
+test("normalizeCandidateWorkbookInput preserves text values without upload validation", () => {
   const service = createCandidateWorkbookService({ createHttpError });
 
   const row = service.normalizeCandidateWorkbookInput(
@@ -151,21 +271,6 @@ test("normalizeCandidateWorkbookInput preserves uploaded text values", () => {
   assert.equal(row.date, " 2026-11-28 ");
   assert.equal(row.name, " 홍길동 ");
   assert.equal(row.opt1, " 값 앞뒤 공백 ");
-});
-
-test("normalizeCandidateWorkbookInput accepts free-form time text", () => {
-  const service = createCandidateWorkbookService({ createHttpError });
-
-  const row = service.normalizeCandidateWorkbookInput(
-    createCandidateWorkbookInput({
-      endTime: "시험 종료 후",
-      time: "오전 9시 시작",
-    }),
-    0,
-  );
-
-  assert.equal(row.time, "오전 9시 시작");
-  assert.equal(row.endTime, "시험 종료 후");
 });
 
 test("normalizeCandidateWorkbookInput does not require campus fields", () => {
@@ -227,6 +332,49 @@ test("buildCandidateTemplateBuffer highlights required column headers", async ()
   assert.equal(getHeaderFill("계열코드"), "FFF4F7FB");
 });
 
+test("buildCandidateTemplateBuffer adds header notes for fixed-format columns", async () => {
+  const service = createCandidateWorkbookService({ createHttpError });
+  const buffer = await service.buildCandidateTemplateBuffer();
+  const workbook = new ExcelJS.Workbook();
+
+  await workbook.xlsx.load(buffer);
+
+  const worksheet = workbook.worksheets[0];
+  const headerRow = worksheet.getRow(1);
+  const getNoteText = (note) => {
+    if (!note) {
+      return "";
+    }
+
+    if (typeof note === "string") {
+      return note;
+    }
+
+    if (Array.isArray(note.texts)) {
+      return note.texts.map((textRun) => String(textRun?.text || "")).join("");
+    }
+
+    return String(note.text || "");
+  };
+  const getHeaderNote = (headerText) => {
+    let cellIndex = 0;
+
+    headerRow.eachCell((cell, index) => {
+      if (!cellIndex && String(cell.value || "") === headerText) {
+        cellIndex = index;
+      }
+    });
+
+    return cellIndex ? getNoteText(headerRow.getCell(cellIndex).note) : "";
+  };
+
+  assert.equal(getHeaderNote("시험날짜"), "yyyy-mm-dd 형식으로 입력하세요. 예: 2026-03-28");
+  assert.equal(getHeaderNote("생년월일"), "yyyy-mm-dd 형식으로 입력하세요. 예: 2006-01-02");
+  assert.equal(getHeaderNote("시작시간"), "hh:mm 형식으로 입력하세요. 예: 08:40");
+  assert.equal(getHeaderNote("종료시간"), "선택 입력입니다. 입력 시 hh:mm 형식으로 입력하세요. 예: 10:00");
+  assert.equal(getHeaderNote("수험번호"), "");
+});
+
 test("parseCandidateWorkbook preserves text-formatted cell values", async () => {
   const service = createCandidateWorkbookService({ createHttpError });
   const rows = await service.parseCandidateWorkbook(
@@ -235,7 +383,7 @@ test("parseCandidateWorkbook preserves text-formatted cell values", async () => 
       date: "2026-11-28",
       name: " 홍길동 ",
       opt1: " 값 앞뒤 공백 ",
-      time: "오전 9시 시작",
+      time: "08:40",
     }),
   );
 
@@ -243,7 +391,7 @@ test("parseCandidateWorkbook preserves text-formatted cell values", async () => 
   assert.equal(rows[0].birth, "2006/01/02");
   assert.equal(rows[0].name, " 홍길동 ");
   assert.equal(rows[0].opt1, " 값 앞뒤 공백 ");
-  assert.equal(rows[0].time, "오전 9시 시작");
+  assert.equal(rows[0].time, "08:40");
 });
 
 test("parseCandidateWorkbook rejects populated cells without text format", async () => {

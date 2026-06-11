@@ -168,3 +168,101 @@ test("PDF generation grid page-size picker uses the admitcard option set", () =>
   assert.match(html, /모두 표시/);
   assert.doesNotMatch(html, /data-pdf-generation-page-size-option="20"/);
 });
+
+test("PDF generation artifact tab renders merged and zip downloads", () => {
+  const html = renderPdfGenerationView({
+    access,
+    pdfGenerations: {
+      activeTab: "artifacts",
+      artifactItems: [
+        {
+          createdAt: "2026-05-20T01:02:03.000Z",
+          downloadUrl: "/api/pdf-generations/merged/pdf-merged-1/download?name=merged.pdf",
+          fileExists: true,
+          fileName: "merged.pdf",
+          fileSizeBytes: 1536,
+          generationCount: 2,
+          id: "pdf-merged-1",
+          kind: "merged",
+          pageCount: 6,
+        },
+        {
+          createdAt: "2026-05-20T02:03:04.000Z",
+          downloadUrl: "/api/pdf-generations/archives/pdf-archive-1/download?name=archive.zip",
+          fileExists: true,
+          fileName: "archive.zip",
+          fileSizeBytes: 2048,
+          generationCount: 3,
+          id: "pdf-archive-1",
+          kind: "archive",
+        },
+        {
+          createdAt: "2026-05-20T03:04:05.000Z",
+          downloadUrl: "/api/pdf-generations/merged/pdf-merged-2/download?name=merged-2.pdf",
+          fileExists: true,
+          fileName: "merged-2.pdf",
+          fileSizeBytes: 4096,
+          generationCount: 1,
+          id: "pdf-merged-2",
+          kind: "merged",
+          pageCount: 12,
+        },
+      ],
+      artifactLoading: false,
+      artifactTable: {
+        filterMenuKey: "kind",
+        filterMenuPosition: null,
+        filterMenuSearch: "",
+        filters: {},
+        page: 1,
+        pageSize: 30,
+        pageSizeMenuOpen: true,
+        sortRules: [{ direction: "desc", key: "createdAt" }],
+      },
+      items: [],
+      rerunningGenerationIds: [],
+      selectedGenerationIds: [],
+      table: {
+        filters: {},
+        page: 1,
+        pageSize: 30,
+        sortRules: [],
+      },
+      totalArtifacts: 3,
+    },
+  });
+
+  assert.match(html, /data-pdf-generation-tab="artifacts"/);
+  const sectionHeaderIndex = html.indexOf('<div class="section-header">');
+  const tabIndex = html.indexOf('class="pdf-generation-view-tabs"');
+  const headerActionsIndex = html.indexOf('class="table-header-actions pdf-generation-header-actions"');
+  const artifactTableIndex = html.indexOf('class="table-wrap pdf-generation-artifact-table-wrap"');
+
+  assert.ok(sectionHeaderIndex >= 0);
+  assert.ok(tabIndex > sectionHeaderIndex);
+  assert.ok(headerActionsIndex > tabIndex);
+  assert.ok(artifactTableIndex > headerActionsIndex);
+  assert.match(html, /병합\/ZIP 파일/);
+  assert.match(html, /merged\.pdf/);
+  assert.match(html, /archive\.zip/);
+  assert.match(html, /병합 PDF/);
+  assert.match(html, /파일 내용/);
+  assert.match(html, /다운로드/);
+  assert.match(html, /12페이지/);
+  assert.match(html, /6페이지/);
+  assert.match(html, /PDF 3개/);
+  assert.match(html, /data-pdf-generation-artifact-grid-sort="createdAt"/);
+  assert.match(html, /data-pdf-generation-artifact-grid-filter="kind"/);
+  assert.match(html, /data-pdf-generation-artifact-page-size-option="2000"/);
+  assert.match(html, /data-pdf-generation-artifact-grid-nav="next"/);
+  assert.match(html, /data-pdf-generation-artifact-grid-page-picker/);
+  assert.match(html, /pdf-generation-artifact-filter-menu/);
+  assert.match(html, /data-pdf-generation-artifact-filter-option/);
+  assert.match(html, /data-action="open-pdf-generation-download-modal"[\s\S]*?disabled/);
+  assert.match(html, /data-action="open-pdf-generation-create-modal"[\s\S]*?disabled/);
+  assert.match(html, /data-action="open-pdf-generation-delete-confirm"[\s\S]*?disabled/);
+  assert.doesNotMatch(html, /상태\/다운로드/);
+  assert.doesNotMatch(html, /다운로드 가능/);
+  assert.match(html, /data-action="download-pdf-generation-artifact"/);
+  assert.match(html, /refresh-pdf-generation-artifacts/);
+});

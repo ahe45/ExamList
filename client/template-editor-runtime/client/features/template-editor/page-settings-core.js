@@ -197,10 +197,18 @@
     const pageElement = element.closest?.(".template-editor-page") || null;
     const layoutElement = element.closest?.(".template-editor-modal-body, .template-editor-runtime-shell") || null;
     const modalSheetElement = layoutElement?.closest?.(".template-editor-modal-sheet") || null;
+    const canvasZoom = Math.max(
+      Number.parseFloat(String(pageElement?.style?.getPropertyValue?.("--template-editor-canvas-zoom") || "1")) || 1,
+      0.01,
+    );
+    const scaledWidth = `${Math.round(dimensions.width * canvasZoom * 100) / 100}px`;
+    const scaledHeight = `${Math.round(dimensions.height * canvasZoom * 100) / 100}px`;
 
     if (pageElement?.style) {
       pageElement.style.setProperty("--template-editor-canvas-width", `${dimensions.width}px`);
       pageElement.style.setProperty("--template-editor-canvas-height", `${dimensions.height}px`);
+      pageElement.style.setProperty("--template-editor-canvas-scaled-width", scaledWidth);
+      pageElement.style.setProperty("--template-editor-canvas-scaled-height", scaledHeight);
       pageElement.dataset.templatePageOrientation = normalizedSettings.orientation;
     }
 

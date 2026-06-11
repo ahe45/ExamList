@@ -31,6 +31,20 @@ export function parseDocumentPixelValue(value, fallback = 0) {
   return Number.isFinite(parsedValue) ? parsedValue : fallback;
 }
 
+export function getDocumentElementDisplayScale(element, fallbackScale = editorCanvasDisplayScale) {
+  const rect = element?.getBoundingClientRect?.();
+  const logicalWidth = element?.clientWidth || element?.offsetWidth || 0;
+  const logicalHeight = element?.clientHeight || element?.offsetHeight || 0;
+  const fallback = Math.max(Number(fallbackScale) || 1, 0.01);
+  const scaleX = logicalWidth > 0 && rect?.width > 0 ? rect.width / logicalWidth : fallback;
+  const scaleY = logicalHeight > 0 && rect?.height > 0 ? rect.height / logicalHeight : fallback;
+
+  return {
+    x: Math.max(Number.isFinite(scaleX) && scaleX > 0 ? scaleX : fallback, 0.01),
+    y: Math.max(Number.isFinite(scaleY) && scaleY > 0 ? scaleY : fallback, 0.01),
+  };
+}
+
 export function normalizeObjectResizeCorner(value) {
   return documentImageResizeCorners.includes(value) ? value : "bottom-right";
 }

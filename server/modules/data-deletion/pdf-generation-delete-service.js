@@ -60,6 +60,30 @@ async function collectPdfMergedAuditRows(queryFn) {
   return Array.isArray(rows) ? rows : [];
 }
 
+async function collectPdfAuditRowsByMetadataValues(queryFn, values = []) {
+  const uniqueValues = createUniqueValueList(values);
+
+  if (!uniqueValues.length) {
+    return [];
+  }
+
+  const rows = await queryFn(
+    `
+      SELECT
+        id,
+        action,
+        entity_type AS entityType,
+        entity_id AS entityId,
+        metadata_json AS metadataJson
+      FROM pdf_audit_logs
+      WHERE ${uniqueValues.map(() => "metadata_json LIKE ?").join(" OR ")}
+    `,
+    uniqueValues.map((value) => `%${value}%`),
+  );
+
+  return Array.isArray(rows) ? rows : [];
+}
+
 function normalizeMetadataList(...values) {
   return createUniqueValueList(values.flatMap((value) => {
     if (Array.isArray(value)) {
@@ -68,6 +92,22 @@ function normalizeMetadataList(...values) {
 
     return value ? [value] : [];
   }));
+}
+
+function getAuditMetadataScope(metadata = {}) {
+  return {
+    archiveIds: normalizeMetadataList(metadata.archiveId, metadata.archiveIds),
+    batchIds: normalizeMetadataList(metadata.batchId, metadata.batchIds),
+    generationIds: normalizeMetadataList(
+      metadata.generationId,
+      metadata.generationIds,
+      metadata.rerunSourceGenerationId,
+      metadata.rerunSourceGenerationIds,
+      metadata.sourceGenerationId,
+      metadata.sourceGenerationIds,
+    ),
+    schoolIds: normalizeMetadataList(metadata.schoolId, metadata.schoolIds),
+  };
 }
 
 function getMergedAuditMetadataScope(metadata = {}) {
@@ -79,6 +119,53 @@ function getMergedAuditMetadataScope(metadata = {}) {
       metadata.sourceGenerationIds,
     ),
     schoolIds: normalizeMetadataList(metadata.schoolId, metadata.schoolIds),
+  };
+}
+
+function selectPdfMetadataAuditData({
+  filters = {},
+  metadataAuditRows = [],
+  schoolId = "",
+  selection,
+  skippedAuditIds = [],
+  skippedEntityIds = [],
+} = {}) {
+  const isFiltered = hasDataDeletionFilters(filters);
+  const selectedArchiveIdSet = new Set(selection.archiveIds);
+  const selectedAuditIdSet = new Set(skippedAuditIds);
+  const selectedBatchIdSet = new Set(selection.batchIds);
+  const selectedEntityIdSet = new Set(skippedEntityIds);
+  const selectedGenerationIdSet = new Set(selection.generationIds);
+  const selectedRows = [];
+
+  (Array.isArray(metadataAuditRows) ? metadataAuditRows : []).forEach((row) => {
+    const rowId = String(row.id || "").trim();
+    const entityId = String(row.entityId || "").trim();
+
+    if (!rowId || selectedAuditIdSet.has(rowId) || selectedEntityIdSet.has(entityId)) {
+      return;
+    }
+
+    const metadata = parseJsonColumn(row.metadataJson, {});
+    const {
+      archiveIds,
+      batchIds,
+      generationIds,
+      schoolIds,
+    } = getAuditMetadataScope(metadata);
+    const matchesSchoolScope = !isFiltered && schoolIds.includes(schoolId);
+    const matchesSelectedGeneration = generationIds.some((generationId) => selectedGenerationIdSet.has(generationId));
+    const matchesSelectedBatch = batchIds.some((batchId) => selectedBatchIdSet.has(batchId));
+    const matchesSelectedArchive = archiveIds.some((archiveId) => selectedArchiveIdSet.has(archiveId));
+
+    if (matchesSchoolScope || matchesSelectedGeneration || matchesSelectedBatch || matchesSelectedArchive) {
+      selectedRows.push(row);
+    }
+  });
+
+  return {
+    auditIds: createUniqueValueList(selectedRows.map((row) => row.id)),
+    rows: selectedRows,
   };
 }
 
@@ -175,6 +262,20 @@ function createPdfGenerationDeleteService({ pathModule = require("path"), rootDi
       schoolId,
       selection,
     });
+    const metadataAuditRows = await collectPdfAuditRowsByMetadataValues(queryFn, [
+      schoolId,
+      ...selection.generationIds,
+      ...selection.batchIds,
+      ...selection.archiveIds,
+    ]);
+    const metadataAuditSelection = selectPdfMetadataAuditData({
+      filters,
+      metadataAuditRows,
+      schoolId,
+      selection,
+      skippedAuditIds: mergedAuditSelection.auditIds,
+      skippedEntityIds: selection.auditEntityIds,
+    });
     const pdfAuditLogs = selection.auditEntityIds.length
       ? await countRows(
         queryFn,
@@ -185,7 +286,7 @@ function createPdfGenerationDeleteService({ pathModule = require("path"), rootDi
     const pdfFiles = selection.pdfFilePaths.length + mergedAuditSelection.filePaths.length;
 
     return {
-      pdfAuditLogs: pdfAuditLogs + mergedAuditSelection.rows.length,
+      pdfAuditLogs: pdfAuditLogs + mergedAuditSelection.rows.length + metadataAuditSelection.rows.length,
       pdfFiles,
       pdfGenerationBatches: selection.selectedBatchRows.length,
       pdfGenerationHistories: selection.selectedGenerationRows.length,
@@ -205,6 +306,20 @@ function createPdfGenerationDeleteService({ pathModule = require("path"), rootDi
       schoolId,
       selection,
     });
+    const metadataAuditRows = await collectPdfAuditRowsByMetadataValues(transactionQuery, [
+      schoolId,
+      ...selection.generationIds,
+      ...selection.batchIds,
+      ...selection.archiveIds,
+    ]);
+    const metadataAuditSelection = selectPdfMetadataAuditData({
+      filters,
+      metadataAuditRows,
+      schoolId,
+      selection,
+      skippedAuditIds: mergedAuditSelection.auditIds,
+      skippedEntityIds: selection.auditEntityIds,
+    });
     let deletedAuditLogs = 0;
 
     if (selection.auditEntityIds.length) {
@@ -220,6 +335,11 @@ function createPdfGenerationDeleteService({ pathModule = require("path"), rootDi
     if (mergedAuditSelection.auditIds.length) {
       deletedAuditLogs += mergedAuditSelection.rows.length;
       await deleteRowsByIds(transactionQuery, "DELETE FROM pdf_audit_logs WHERE id IN", mergedAuditSelection.auditIds);
+    }
+
+    if (metadataAuditSelection.auditIds.length) {
+      deletedAuditLogs += metadataAuditSelection.rows.length;
+      await deleteRowsByIds(transactionQuery, "DELETE FROM pdf_audit_logs WHERE id IN", metadataAuditSelection.auditIds);
     }
 
     const historiesResult = hasDataDeletionFilters(filters)

@@ -391,6 +391,71 @@ test("deleteProjectData deletes filtered PDF histories and only fully matched ba
   ]);
 });
 
+test("deleteProjectData removes pdf audit logs linked through metadata", async () => {
+  const queries = [];
+  const service = createDataDeletionService({
+    createHttpError,
+    fs: {
+      existsSync: () => false,
+      promises: {
+        rm: async () => {},
+      },
+    },
+    getSchoolById: async () => ({ id: "school-1", name: "?쒖슱??숆탳" }),
+    query: async (sql, params = []) => {
+      queries.push({ params, sql });
+      const compactSql = sql.replace(/\s+/g, " ");
+
+      if (compactSql.includes("FROM pdf_generation_histories WHERE school_id = ?")) {
+        return [{ filePath: "C:\\pdf\\school-1.pdf", id: "generation-1" }];
+      }
+
+      if (compactSql.includes("FROM pdf_generation_batches WHERE school_id = ?")) {
+        return [];
+      }
+
+      if (compactSql.includes("FROM pdf_audit_logs WHERE entity_type = 'pdf_generation_merged'")) {
+        return [];
+      }
+
+      if (compactSql.includes("FROM pdf_audit_logs") && compactSql.includes("metadata_json LIKE")) {
+        return [
+          {
+            entityId: "preview-1",
+            id: "audit-preview-school",
+            metadataJson: JSON.stringify({ schoolId: "school-1" }),
+          },
+          {
+            entityId: "",
+            id: "audit-generation-metadata",
+            metadataJson: JSON.stringify({ generationIds: ["generation-1"] }),
+          },
+          {
+            entityId: "preview-2",
+            id: "audit-other-school",
+            metadataJson: JSON.stringify({ schoolId: "school-2" }),
+          },
+        ];
+      }
+
+      if (compactSql.includes("COUNT(*) AS total FROM pdf_audit_logs")) {
+        return [{ total: 1 }];
+      }
+
+      return { affectedRows: 1 };
+    },
+  });
+
+  const result = await service.deleteProjectData("pdf-generations", { schoolId: "school-1" });
+  const metadataAuditDeleteQuery = queries.find((query) =>
+    query.sql.replace(/\s+/g, " ").includes("DELETE FROM pdf_audit_logs WHERE id IN"),
+  );
+
+  assert.equal(result.deletedPdfGenerationHistories, 1);
+  assert.equal(result.deletedPdfAuditLogs, 3);
+  assert.deepEqual(metadataAuditDeleteQuery.params, ["audit-preview-school", "audit-generation-metadata"]);
+});
+
 test("deleteProjectData deletes only selected templates for template scope", async () => {
   const queries = [];
   const service = createDataDeletionService({

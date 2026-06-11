@@ -48,6 +48,7 @@ import {
   disposeEditorRuntimeControls,
   ensureEditorRuntimeControls,
 } from "./editor-runtime-control-bindings.js";
+import { applyTemplateEditorCanvasZoomFromState } from "./canvas-zoom.js";
 
 let mountedEditor = null;
 let mountedKey = "";
@@ -438,6 +439,7 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
     });
     syncCoverPageDisabledState({ pagePropertiesHost, selectedPage, surfaceElement });
     normalizeCandidateBlockTables(surfaceElement);
+    applyTemplateEditorCanvasZoomFromState({ appState, recomputeFit: true, rootElement });
     return mountedEditor;
   }
 
@@ -510,6 +512,7 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
   });
   window.ExamListTemplateEditorRuntime = editor;
   applyMountedDataTagViewOptions(surfaceElement);
+  applyTemplateEditorCanvasZoomFromState({ appState, recomputeFit: true, rootElement });
 
   if (!canEdit) {
     surfaceElement.setAttribute("contenteditable", "false");

@@ -13,9 +13,9 @@ test("replaceTemplateTokens supports format, default, phone, number, mask, and c
       '{{candidate.phone | phone | mask: "phone"}}',
       '{{candidate.birthDate | mask: "birthDate"}}',
       '{{candidate.email | mask: "email"}}',
-      '{{document.totalCandidates | number}}명',
-      '{{room.supervisorName | default: "미지정"}}',
-      "{{#if room.name}}고사실: {{room.name}}{{else}}고사실 없음{{/if}}",
+      "{{document.totalCandidates | number}}명",
+      '{{room.supervisorName | default: "미정"}}',
+      "{{#if room.name}}고사실 {{room.name}}{{else}}고사실 없음{{/if}}",
       "{{#if candidate.photo}}사진 있음{{else}}사진 없음{{/if}}",
     ].join("\n"),
     {
@@ -45,8 +45,8 @@ test("replaceTemplateTokens supports format, default, phone, number, mask, and c
   assert.match(renderedText, /2007\.\*\*\.\*\*/);
   assert.match(renderedText, /s\*+e@e\*+g/);
   assert.match(renderedText, /12,345명/);
-  assert.match(renderedText, /미지정/);
-  assert.match(renderedText, /고사실: 101호/);
+  assert.match(renderedText, /미정/);
+  assert.match(renderedText, /고사실 101호/);
   assert.match(renderedText, /사진 없음/);
 });
 
@@ -83,4 +83,22 @@ test("replaceTemplateTokens preserves unfiltered uploaded date-like candidate va
   );
 
   assert.equal(renderedText, "2026-11-28\n2006/01/02\n2026.11.28");
+});
+
+test("replaceTemplateTokens supports two digit year and time filters", () => {
+  const renderedText = replaceTemplateTokens(
+    [
+      "{{candidate.examDate | date: \"YY.MM.DD\"}}",
+      "{{candidate.examDate | date: \"YYYY.MM.DD (dddd)\"}}",
+      "{{candidate.examStartTime | time: \"A h:mm\"}}",
+    ].join("\n"),
+    {
+      candidate: buildCandidateTokenMap({
+        examDate: "2026-03-28",
+        examStartTime: "08:40",
+      }),
+    },
+  );
+
+  assert.equal(renderedText, "26.03.28\n2026.03.28 (토요일)\n오전 8:40");
 });

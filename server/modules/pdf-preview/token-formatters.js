@@ -80,15 +80,81 @@ function formatDatePattern(value, pattern = "YYYY.MM.DD") {
     return normalizeDisplayValue(value);
   }
 
+  const weekdaysShort = ["일", "월", "화", "수", "목", "금", "토"];
+  const weekdaysLong = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+  const month = dateValue.getMonth() + 1;
+  const day = dateValue.getDate();
   const replacements = {
-    DD: String(dateValue.getDate()).padStart(2, "0"),
+    D: String(day),
+    DD: String(day).padStart(2, "0"),
+    H: String(dateValue.getHours()),
     HH: String(dateValue.getHours()).padStart(2, "0"),
-    MM: String(dateValue.getMonth() + 1).padStart(2, "0"),
+    M: String(month),
+    MM: String(month).padStart(2, "0"),
+    YY: String(dateValue.getFullYear()).slice(-2),
     YYYY: String(dateValue.getFullYear()),
+    ddd: weekdaysShort[dateValue.getDay()],
+    dddd: weekdaysLong[dateValue.getDay()],
     mm: String(dateValue.getMinutes()).padStart(2, "0"),
   };
 
-  return String(pattern || "YYYY.MM.DD").replace(/YYYY|MM|DD|HH|mm/g, (token) => replacements[token] || token);
+  return String(pattern || "YYYY.MM.DD").replace(/dddd|ddd|YYYY|YY|MM|M|DD|D|HH|H|mm/g, (token) => replacements[token] || token);
+}
+
+function parseTimeLikeValue(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime())
+      ? null
+      : {
+          hours: value.getHours(),
+          minutes: value.getMinutes(),
+        };
+  }
+
+  const sourceValue = String(value).trim();
+  const matchedTime = sourceValue.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+
+  if (matchedTime) {
+    const hours = Number(matchedTime[1]);
+    const minutes = Number(matchedTime[2]);
+
+    return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59
+      ? { hours, minutes }
+      : null;
+  }
+
+  const dateValue = parseDateLikeValue(sourceValue);
+
+  return dateValue
+    ? {
+        hours: dateValue.getHours(),
+        minutes: dateValue.getMinutes(),
+      }
+    : null;
+}
+
+function formatTimePattern(value, pattern = "HH:mm") {
+  const timeValue = parseTimeLikeValue(value);
+
+  if (!timeValue) {
+    return normalizeDisplayValue(value);
+  }
+
+  const twelveHour = timeValue.hours % 12 || 12;
+  const replacements = {
+    A: timeValue.hours < 12 ? "오전" : "오후",
+    H: String(timeValue.hours),
+    HH: String(timeValue.hours).padStart(2, "0"),
+    h: String(twelveHour),
+    hh: String(twelveHour).padStart(2, "0"),
+    mm: String(timeValue.minutes).padStart(2, "0"),
+  };
+
+  return String(pattern || "HH:mm").replace(/HH|H|hh|h|mm|A/g, (token) => replacements[token] || token);
 }
 
 function formatPhoneValue(value) {
@@ -229,7 +295,9 @@ module.exports = {
   formatDateValue,
   formatNumberValue,
   formatPhoneValue,
+  formatTimePattern,
   maskTemplateValue,
   normalizeDisplayValue,
   parseDateLikeValue,
+  parseTimeLikeValue,
 };

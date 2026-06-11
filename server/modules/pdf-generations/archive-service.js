@@ -9,6 +9,10 @@ const {
 const { sortGenerationFilesForMergedDownload } = require("./archive-ordering");
 const { formatTimestamp, sanitizeFileName } = require("./file-name");
 
+const ACADEMIC_YEAR_SUFFIX = "\uD559\uB144\uB3C4";
+const ARCHIVE_ARTIFACT_LABEL = "\uAC1C\uBCC4";
+const MERGED_ARTIFACT_LABEL = "\uBCD1\uD569";
+
 function normalizeMergedPdfFileName(fileName, fallbackName = "pdf-generations") {
   const normalizedFileName = sanitizeFileName(String(fileName || fallbackName || "pdf-generations").trim())
     .replace(/\.pdf$/i, "")
@@ -17,8 +21,33 @@ function normalizeMergedPdfFileName(fileName, fallbackName = "pdf-generations") 
   return `${normalizedFileName || "pdf-generations"}.pdf`;
 }
 
+function normalizeArtifactFileNamePart(value = "") {
+  return String(value || "").trim();
+}
+
+function formatArtifactAcademicYear(value = "") {
+  const academicYear = String(value || "")
+    .trim()
+    .replace(new RegExp(`\\s*${ACADEMIC_YEAR_SUFFIX}\\s*$`, "u"), "")
+    .trim();
+
+  return academicYear ? `${academicYear}${ACADEMIC_YEAR_SUFFIX}` : "";
+}
+
+function buildArtifactDefaultFileName(generationFiles = [], artifactLabel = "", generatedAt = new Date()) {
+  const representativeFile = Array.isArray(generationFiles) && generationFiles.length ? generationFiles[0] : {};
+  const parts = [
+    representativeFile.schoolSettingsName || representativeFile.schoolName || representativeFile.schoolCode || representativeFile.schoolId,
+    formatArtifactAcademicYear(representativeFile.academicYear),
+    artifactLabel,
+    formatTimestamp(generatedAt),
+  ].map(normalizeArtifactFileNamePart).filter(Boolean);
+
+  return sanitizeFileName(parts.join("_")) || `pdf-generations_${formatTimestamp(generatedAt)}`;
+}
+
 function createUniqueStringList(values = []) {
-  return [...new Set((Array.isArray(values) ? values : [])
+  return [...new Set((Array.isArray(values) ? values : [values])
     .map((value) => String(value || "").trim())
     .filter(Boolean))];
 }
@@ -31,6 +60,77 @@ function parseJsonObject(value = "") {
   } catch (_error) {
     return {};
   }
+}
+
+function normalizeArtifactListLimit(value, fallback = 200, minimum = 1, maximum = 2000) {
+  const parsedValue = Math.round(Number(value));
+
+  if (!Number.isFinite(parsedValue)) {
+    return fallback;
+  }
+
+  return Math.min(Math.max(parsedValue, minimum), maximum);
+}
+
+function buildArtifactSchoolWhereClause(rawSchoolId = "") {
+  const schoolId = String(rawSchoolId || "").trim();
+
+  if (!schoolId) {
+    return {
+      params: [],
+      sql: "",
+    };
+  }
+
+  const encodedSchoolId = JSON.stringify(schoolId);
+
+  return {
+    params: [
+      `%"schoolId":${encodedSchoolId}%`,
+      `%"schoolIds":[%${encodedSchoolId}%]%`,
+    ],
+    sql: " AND (metadata_json LIKE ? OR metadata_json LIKE ?)",
+  };
+}
+
+function getArtifactKind(entityType = "") {
+  if (entityType === "pdf_generation_merged") {
+    return "merged";
+  }
+
+  if (entityType === "pdf_generation_archive") {
+    return "archive";
+  }
+
+  return "";
+}
+
+function getArtifactExtension(kind = "") {
+  return kind === "merged" ? ".pdf" : ".zip";
+}
+
+function getArtifactDownloadPath(kind = "", artifactId = "") {
+  const encodedArtifactId = encodeURIComponent(artifactId);
+
+  if (kind === "merged") {
+    return `/api/pdf-generations/merged/${encodedArtifactId}/download`;
+  }
+
+  if (kind === "archive") {
+    return `/api/pdf-generations/archives/${encodedArtifactId}/download`;
+  }
+
+  return "";
+}
+
+async function getFileStatOrNull(fs, filePath = "") {
+  const normalizedFilePath = String(filePath || "").trim();
+
+  if (!normalizedFilePath) {
+    return null;
+  }
+
+  return fs.promises.stat(normalizedFilePath).catch(() => null);
 }
 
 function createPdfGenerationArchiveService({
@@ -49,8 +149,11 @@ function createPdfGenerationArchiveService({
       `
         SELECT
           pdf_generation_histories.id,
-          school_id AS schoolId,
+          pdf_generation_histories.school_id AS schoolId,
+          ss.academic_year AS academicYear,
+          ss.school_name AS schoolSettingsName,
           s.code AS schoolCode,
+          s.name AS schoolName,
           file_name AS fileName,
           file_path AS filePath,
           generation_unit AS generationUnit,
@@ -61,6 +164,8 @@ function createPdfGenerationArchiveService({
         FROM pdf_generation_histories
         LEFT JOIN schools s
           ON s.id = pdf_generation_histories.school_id
+        LEFT JOIN school_settings ss
+          ON ss.school_id = pdf_generation_histories.school_id
         WHERE pdf_generation_histories.id IN (${placeholders})
       `,
       generationIds,
@@ -86,6 +191,7 @@ function createPdfGenerationArchiveService({
       }
 
       files.push({
+        academicYear: generationRow.academicYear,
         fileName: generationRow.fileName,
         filePath,
         generationUnit: generationRow.generationUnit,
@@ -93,6 +199,8 @@ function createPdfGenerationArchiveService({
         requestJson: generationRow.requestJson,
         schoolCode: generationRow.schoolCode,
         schoolId: generationRow.schoolId,
+        schoolName: generationRow.schoolName,
+        schoolSettingsName: generationRow.schoolSettingsName,
         targetName: generationRow.targetName,
       });
     }
@@ -130,9 +238,10 @@ function createPdfGenerationArchiveService({
     }
 
     const archiveId = `pdf-archive-${randomUUID()}`;
+    const createdAt = new Date();
     const archiveFileName = normalizeArchiveFileName(
       request.archiveName,
-      `pdf-generations_${formatTimestamp(new Date())}`,
+      buildArtifactDefaultFileName(generationFiles, ARCHIVE_ARTIFACT_LABEL, createdAt),
     );
     const archivePath = path.join(storageRoot, "archives", `${archiveId}.zip`);
 
@@ -141,14 +250,19 @@ function createPdfGenerationArchiveService({
       filePath: archivePath,
       fs,
     });
+
+    const archiveStat = await getFileStatOrNull(fs, archivePath);
+
     await writeAuditLog({
       action: "pdf_generation_archive_created",
       entityId: archiveId,
       entityType: "pdf_generation_archive",
       metadata: {
+        archiveFileName,
         generationCount: archiveEntries.length,
         generationIds: createUniqueStringList(generationFiles.map((generationFile) => generationFile.generationId)),
         archiveFilePath: archivePath,
+        fileSizeBytes: archiveStat?.size || 0,
         schoolCodes: createUniqueStringList(generationFiles.map((generationFile) => generationFile.schoolCode)),
         schoolIds: createUniqueStringList(generationFiles.map((generationFile) => generationFile.schoolId)),
       },
@@ -187,6 +301,7 @@ function createPdfGenerationArchiveService({
     await ensureStorageDirectories(storageRoot);
 
     const mergedDocument = await PDFDocument.create();
+    let mergedPageCount = 0;
 
     for (const generationFile of generationFiles) {
       const sourceBytes = await fs.promises.readFile(generationFile.filePath);
@@ -194,25 +309,33 @@ function createPdfGenerationArchiveService({
       const copiedPages = await mergedDocument.copyPages(sourceDocument, sourceDocument.getPageIndices());
 
       copiedPages.forEach((page) => mergedDocument.addPage(page));
+      mergedPageCount += copiedPages.length;
     }
 
     const mergedId = `pdf-merged-${randomUUID()}`;
+    const createdAt = new Date();
     const mergedFileName = normalizeMergedPdfFileName(
       request.fileName || request.archiveName,
-      `pdf-generations_${formatTimestamp(new Date())}`,
+      buildArtifactDefaultFileName(generationFiles, MERGED_ARTIFACT_LABEL, createdAt),
     );
     const mergedPath = path.join(storageRoot, "merged", `${mergedId}.pdf`);
     const mergedBytes = await mergedDocument.save();
 
     await fs.promises.writeFile(mergedPath, mergedBytes);
+
+    const mergedStat = await getFileStatOrNull(fs, mergedPath);
+
     await writeAuditLog({
       action: "pdf_generation_merged_created",
       entityId: mergedId,
       entityType: "pdf_generation_merged",
       metadata: {
+        fileSizeBytes: mergedStat?.size || 0,
         generationCount: generationFiles.length,
         generationIds: createUniqueStringList(generationFiles.map((generationFile) => generationFile.generationId)),
+        mergedFileName,
         mergedFilePath: mergedPath,
+        pageCount: mergedPageCount,
         schoolCodes: createUniqueStringList(generationFiles.map((generationFile) => generationFile.schoolCode)),
         schoolIds: createUniqueStringList(generationFiles.map((generationFile) => generationFile.schoolId)),
       },
@@ -225,6 +348,80 @@ function createPdfGenerationArchiveService({
       mergedFileName,
       mergedId,
       mergedPath,
+      pageCount: mergedPageCount,
+    };
+  }
+
+  async function listPdfGenerationArtifacts(rawFilter = {}) {
+    const limit = normalizeArtifactListLimit(rawFilter.limit);
+    const schoolWhere = buildArtifactSchoolWhereClause(rawFilter.schoolId);
+    const rows = await query(
+      `
+        SELECT
+          id,
+          action,
+          entity_type AS entityType,
+          entity_id AS entityId,
+          status,
+          metadata_json AS metadataJson,
+          created_at AS createdAt
+        FROM pdf_audit_logs
+        WHERE (
+          (entity_type = 'pdf_generation_merged' AND action = 'pdf_generation_merged_created')
+          OR (entity_type = 'pdf_generation_archive' AND action = 'pdf_generation_archive_created')
+        )
+        ${schoolWhere.sql}
+        ORDER BY created_at DESC
+        LIMIT ?
+      `,
+      [...schoolWhere.params, limit],
+    );
+    const items = [];
+
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const metadata = parseJsonObject(row.metadataJson);
+      const kind = getArtifactKind(String(row.entityType || ""));
+      const artifactId = String(row.entityId || "").trim();
+      const filePath = String(
+        kind === "merged"
+          ? metadata.mergedFilePath || metadata.filePath || ""
+          : metadata.archiveFilePath || metadata.filePath || "",
+      ).trim();
+      const fallbackName = artifactId ? `${artifactId}${getArtifactExtension(kind)}` : "";
+      const fileName = String(
+        kind === "merged"
+          ? metadata.mergedFileName || metadata.fileName || ""
+          : metadata.archiveFileName || metadata.fileName || "",
+      ).trim() || (filePath ? path.basename(filePath) : fallbackName);
+      const fileStat = await getFileStatOrNull(fs, filePath);
+      const downloadPath = getArtifactDownloadPath(kind, artifactId);
+      const downloadUrl = downloadPath && fileName
+        ? `${downloadPath}?name=${encodeURIComponent(fileName)}`
+        : downloadPath;
+
+      items.push({
+        action: String(row.action || ""),
+        createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt || ""),
+        downloadUrl,
+        fileExists: Boolean(fileStat),
+        fileName,
+        filePath,
+        fileSizeBytes: fileStat?.size || Number(metadata.fileSizeBytes) || 0,
+        generationCount: Number(metadata.generationCount) || (Array.isArray(metadata.generationIds) ? metadata.generationIds.length : 0),
+        generationIds: createUniqueStringList(metadata.generationIds),
+        id: artifactId,
+        kind,
+        logId: String(row.id || ""),
+        pageCount: Number(metadata.pageCount) || 0,
+        schoolIds: createUniqueStringList(metadata.schoolIds || metadata.schoolId),
+        status: String(row.status || ""),
+      });
+    }
+
+    return {
+      items,
+      limit,
+      total: items.length,
     };
   }
 
@@ -328,6 +525,7 @@ function createPdfGenerationArchiveService({
     createPdfGenerationMergedFile,
     getPdfGenerationArchiveFile,
     getPdfGenerationMergedFile,
+    listPdfGenerationArtifacts,
   });
 }
 

@@ -5,14 +5,42 @@
 
   .app-shell.workspace-mode {
     grid-template-columns: 1fr;
+    padding-left: 24px;
   }
 
   .workspace-sidebar {
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(203, 213, 225, 0.72);
+    border-radius: 18px;
+    box-shadow: none;
+    overflow: visible;
+    padding: 12px;
     position: static;
+    width: 100%;
+  }
+
+  .app-shell.workspace-mode .workspace-sidebar:hover {
+    box-shadow: none;
+    width: 100%;
   }
 
   .workspace-nav {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .app-shell.workspace-mode .workspace-sidebar:not(:hover) .workspace-nav-item {
+    gap: 8px;
+    grid-template-columns: 34px minmax(0, 1fr);
+    justify-content: initial;
+    padding: 5px 8px 5px 5px;
+  }
+
+  .app-shell.workspace-mode .workspace-sidebar:not(:hover) .workspace-nav-label {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    width: auto;
   }
 
   .filter-bar,
@@ -109,11 +137,11 @@
   }
 
   .app-shell {
-    padding: 150px 14px 14px;
+    padding: 142px 8px 8px 14px;
   }
 
   html[data-shell-mode="template-list"] .app-shell {
-    padding-top: 150px;
+    padding-top: 142px;
   }
 
   .modal-actions {

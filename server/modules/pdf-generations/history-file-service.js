@@ -16,6 +16,73 @@ function collectUniqueValues(values = []) {
   );
 }
 
+function buildAuditSchoolFilter(rawSchoolId = "") {
+  const schoolId = String(rawSchoolId || "").trim();
+
+  if (!schoolId) {
+    return {
+      params: [],
+      whereClause: "",
+    };
+  }
+
+  const encodedSchoolId = JSON.stringify(schoolId);
+  const metadataSchoolIdPattern = `%"schoolId":${encodedSchoolId}%`;
+  const metadataSchoolIdsPattern = `%"schoolIds":[%${encodedSchoolId}%]%`;
+  const metadataSchoolConditions = [
+    "audit_log.metadata_json LIKE ?",
+    "audit_log.metadata_json LIKE ?",
+  ];
+  const scopedMetadataSchoolConditions = [
+    "audit_scope.metadata_json LIKE ?",
+    "audit_scope.metadata_json LIKE ?",
+  ];
+
+  return {
+    params: [
+      metadataSchoolIdPattern,
+      metadataSchoolIdsPattern,
+      schoolId,
+      schoolId,
+      schoolId,
+      metadataSchoolIdPattern,
+      metadataSchoolIdsPattern,
+    ],
+    whereClause: `
+        WHERE (
+          ${metadataSchoolConditions.join("\n          OR ")}
+          OR EXISTS (
+            SELECT 1
+            FROM pdf_generation_histories audit_history
+            WHERE audit_history.id = audit_log.entity_id
+              AND audit_history.school_id = ?
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM pdf_generation_batches audit_batch
+            WHERE audit_batch.id = audit_log.entity_id
+              AND audit_batch.school_id = ?
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM pdf_generation_batches audit_archive_batch
+            WHERE audit_archive_batch.archive_id = audit_log.entity_id
+              AND audit_archive_batch.school_id = ?
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM pdf_audit_logs audit_scope
+            WHERE audit_scope.entity_id = audit_log.entity_id
+              AND audit_scope.id <> audit_log.id
+              AND (
+                ${scopedMetadataSchoolConditions.join("\n                OR ")}
+              )
+          )
+        )
+      `,
+  };
+}
+
 async function queryRowsOrEmpty(query, sql, params = []) {
   try {
     const rows = await query(sql, params);
@@ -256,6 +323,7 @@ function createPdfGenerationFileActions({
           file_name AS fileName,
           file_path AS filePath,
           file_size_bytes AS fileSizeBytes,
+          school_id AS schoolId,
           status
         FROM pdf_generation_histories
         WHERE id IN (${placeholders})
@@ -309,7 +377,9 @@ function createPdfGenerationFileActions({
         deletedCount: rows.length,
         fileDeletedCount,
         fileMissingCount,
+        generationIds: collectUniqueValues(rows.map((row) => row.id)),
         requestedCount: generationIds.length,
+        schoolIds: collectUniqueValues(rows.map((row) => row.schoolId)),
         totalFileSizeBytes,
       },
       status: "completed",
@@ -326,6 +396,7 @@ function createPdfGenerationFileActions({
 
   async function listPdfAuditLogs(rawFilter = {}) {
     const limit = normalizeListLimit(rawFilter.limit, 50, 1, 2000);
+    const schoolFilter = buildAuditSchoolFilter(rawFilter.schoolId);
     const rows = await query(
       `
         SELECT
@@ -336,11 +407,12 @@ function createPdfGenerationFileActions({
           status,
           metadata_json AS metadataJson,
           created_at AS createdAt
-        FROM pdf_audit_logs
+        FROM pdf_audit_logs audit_log
+        ${schoolFilter.whereClause}
         ORDER BY created_at DESC
         LIMIT ?
       `,
-      [limit],
+      [...schoolFilter.params, limit],
     );
 
     const items = rows.map((row) => ({

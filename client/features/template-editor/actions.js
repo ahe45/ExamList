@@ -17,6 +17,7 @@ import { createDocumentHistoryRuntime } from "./document-history-runtime.js";
 import { createDocumentInsertionActions } from "./document-insertion-actions.js";
 import { createDocumentToolbarActions } from "./document-toolbar-actions.js";
 import { createDataTagSampleActions } from "./data-tag-sample-actions.js";
+import { createDataTagFormatActions } from "./data-tag-format-actions.js";
 import { createGenerationUnitSettingsActions } from "./generation-unit-settings-actions.js";
 import { createTemplateEditorPersistenceActions } from "./template-editor-persistence-actions.js";
 import { createTemplateEditorStateActions } from "./template-editor-state-actions.js";
@@ -227,6 +228,17 @@ export function setupTemplateEditorActions({
     onStateChange,
   });
   const {
+    closeDataTagFormatModal,
+    openDataTagFormatModal,
+    saveDataTagFormatModal,
+    updateDataTagFormatDraftValue,
+  } = createDataTagFormatActions({
+    appState,
+    canManageTemplates,
+    onStateChange,
+    syncSelectedPageDocumentHtml,
+  });
+  const {
     closeGenerationUnitSettingsModal,
     openGenerationUnitSettingsModal,
     saveGenerationUnitSettingsModal,
@@ -296,6 +308,7 @@ export function setupTemplateEditorActions({
     clearPendingDocumentCompositionSync,
     clearDocumentImageSelection,
     closeDocumentToolbarPanels,
+    closeDataTagFormatModal,
     closeDataTagSampleModal,
     closeGenerationUnitSettingsModal,
     closeTemplatePreview,
@@ -315,6 +328,7 @@ export function setupTemplateEditorActions({
     isDocumentSurfaceComposing,
     onStateChange,
     openDataTagSampleModal,
+    openDataTagFormatModal,
     openGenerationUnitSettingsModal,
     openTemplatePreview,
     redoDocumentHistory,
@@ -327,6 +341,7 @@ export function setupTemplateEditorActions({
     resetDataTagSampleModal,
     requestUnsavedTemplateEditorAction,
     saveDataTagSampleModal,
+    saveDataTagFormatModal,
     scheduleDocumentCompositionSync,
     selectDocumentImage,
     setDocumentColorPanelVisibility,
@@ -345,6 +360,7 @@ export function setupTemplateEditorActions({
     triggerDocumentImageSelection,
     undoDocumentHistory,
     updateDataTagSampleDraftValue,
+    updateDataTagFormatDraftValue,
     updateDocumentImageSelectionOverlay,
     updateSelectedPageField,
     updateSelectedPageMarginField,
@@ -354,8 +370,10 @@ export function setupTemplateEditorActions({
   return createTemplateEditorReturnedActions({
     appConfig,
     appState,
+    closeDataTagFormatModal,
     closeTemplatePreview,
     closeDataTagSampleModal,
+    closeGenerationUnitSettingsModal,
     getCurrentSchoolRouteKey,
     discardTemplateEditorChanges,
     isDataTagSampleModalDirty,

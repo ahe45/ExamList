@@ -3,6 +3,7 @@ const {
   formatDatePattern,
   formatNumberValue,
   formatPhoneValue,
+  formatTimePattern,
   maskTemplateValue,
   normalizeDisplayValue,
 } = require("./token-formatters");
@@ -156,6 +157,8 @@ function applyTokenFilter(value, filter) {
       return formatNumberValue(value);
     case "phone":
       return formatPhoneValue(value);
+    case "time":
+      return formatTimePattern(value, filter.argument || "HH:mm");
     default:
       return value;
   }

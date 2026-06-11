@@ -1,3 +1,5 @@
+import { normalizeDataTagSampleValue } from "./data-tag-value-formatting.js";
+
 export const dataTagSampleValuesEventName = "examlist:data-tag-sample-values-change";
 export const dataTagSettingsEventName = "examlist:data-tag-settings-change";
 
@@ -100,7 +102,17 @@ function normalizeDataTagValues(tagDefinitions = [], rawValues = {}, buildDefaul
 }
 
 export function normalizeDataTagSampleValues(tagDefinitions = [], sampleValues = {}) {
-  return normalizeDataTagValues(tagDefinitions, sampleValues);
+  const normalizedValues = normalizeDataTagValues(tagDefinitions, sampleValues);
+  const definitionMap = new Map(
+    (Array.isArray(tagDefinitions) ? tagDefinitions : [])
+      .map((definition) => [getDefinitionKey(definition), definition])
+      .filter(([key]) => Boolean(key)),
+  );
+
+  return Object.keys(normalizedValues).reduce((values, key) => {
+    values[key] = normalizeDataTagSampleValue(definitionMap.get(key) || key, normalizedValues[key]);
+    return values;
+  }, {});
 }
 
 export function normalizeDataTagEmptyValueData(tagDefinitions = [], emptyValueData = {}) {

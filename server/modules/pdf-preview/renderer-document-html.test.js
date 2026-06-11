@@ -114,6 +114,48 @@ test("renderPreviewDocument renders freeform document html and strips unsafe mar
   assert.doesNotMatch(result.html, /onclick=/i);
 });
 
+test("renderPreviewDocument applies data tag span date format attributes", () => {
+  const layout = normalizeTemplateLayout(
+    {
+      pages: [
+        {
+          settings: {
+            documentHtml: [
+              '<p><span class="template-token" data-template-tag-value="candidate.examDate" data-template-tag-format-type="date" data-template-tag-format="YYYY.MM.DD (dddd)">#examDate</span></p>',
+              '<p><span class="template-token" data-template-tag-value="candidate.examStartTime" data-template-tag-format-type="time" data-template-tag-format="A h:mm">#examStartTime</span></p>',
+            ].join(""),
+          },
+          type: "content",
+        },
+      ],
+    },
+    {
+      description: "Date format test",
+      generationUnit: "room",
+      name: "Date format template",
+      orientation: "portrait",
+      paperPreset: "A4",
+    },
+    "template-preview-data-tag-format",
+  );
+  const result = renderPreviewDocument({
+    candidates: [
+      {
+        examDate: "2026-03-28",
+        examStartTime: "08:40",
+        roomName: "101",
+      },
+    ],
+    generatedAt: new Date("2026-04-20T09:00:00+09:00"),
+    template: createTemplate(layout),
+  });
+
+  assert.match(result.html, /data-template-data-fit="true">2026\.03\.28 \(토요일\)<\/span>/);
+  assert.match(result.html, /data-template-data-fit="true">오전 8:40<\/span>/);
+  assert.doesNotMatch(result.html, /data-template-tag-format/);
+  assert.doesNotMatch(result.html, /data-template-tag-format-type/);
+});
+
 test("renderPreviewDocument fits data tag text inside fixed table cell heights", () => {
   const layout = normalizeTemplateLayout(
     {

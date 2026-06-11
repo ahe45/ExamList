@@ -13,8 +13,10 @@ export function syncViewShell({ currentView, dom, summary = null, activeSchoolId
 
   document.documentElement.dataset.shellMode = isSchoolListView ? "template-list" : "workspace";
   document.documentElement.dataset.currentView = currentView || "";
+  document.documentElement.dataset.shellFocusMode = "default";
   dom.appShell?.classList.toggle("template-list-mode", isSchoolListView);
   dom.appShell?.classList.toggle("workspace-mode", !isSchoolListView);
+  dom.appShell?.classList.toggle("editor-focus-mode", false);
   dom.workspaceSidebar?.classList.toggle("hidden", isSchoolListView);
   dom.workspaceSidebar?.setAttribute("aria-hidden", isSchoolListView ? "true" : "false");
 

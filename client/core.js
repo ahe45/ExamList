@@ -307,6 +307,7 @@ modalCloseGuard = createModalCloseGuard({
 requestTemplateEditorNavigation = requestTemplateEditorNavigationWithPrompt;
 requestUnsavedTemplateEditorAction = requestUnsavedTemplateEditorActionWithPrompt;
 registerAppModalGuards({
+  accountActions,
   appState,
   candidateActions,
   clearPendingTemplateEditorAction,
@@ -320,6 +321,7 @@ registerAppModalGuards({
   modalCloseGuard,
   saveTemplateEditorChangesAndRunPendingAction,
   schoolActions,
+  templateActions,
 });
 modalCloseGuard.attach();
 attachGridCellTooltips();

@@ -30,11 +30,11 @@ function createCandidateRow(overrides = {}) {
   };
 }
 
-function createService({ existingRows = [], workbookRows = [] } = {}) {
+function createService({ existingRows = [], normalizeCandidateWorkbookInput = (row) => row, workbookRows = [] } = {}) {
   return createCandidateImportService({
     createHttpError,
     insertCandidateWorkbookRow: async () => {},
-    normalizeCandidateWorkbookInput: (row) => row,
+    normalizeCandidateWorkbookInput,
     parseCandidateWorkbook: async () => workbookRows,
     query: async () => existingRows,
     resolveSchoolId: async (schoolId = "") => schoolId || "school-1",
@@ -58,6 +58,25 @@ test("candidate import allows the same examinee number in different periods", as
 
   assert.equal(preview.insertCount, 2);
   assert.equal(preview.updateCount, 0);
+});
+
+test("candidate import enables upload date and time format validation", async () => {
+  const capturedOptions = [];
+  const service = createService({
+    normalizeCandidateWorkbookInput: (row, index, options) => {
+      capturedOptions.push(options);
+      return row;
+    },
+    workbookRows: [createCandidateRow()],
+  });
+
+  await service.previewCandidateImport({
+    fileContentBase64: "xlsx",
+    schoolId: "school-1",
+  });
+
+  assert.equal(capturedOptions.length, 1);
+  assert.equal(capturedOptions[0].validateUploadDateTimeFormat, true);
 });
 
 test("candidate import rejects duplicate examinee and period code combinations", async () => {

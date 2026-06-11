@@ -3,6 +3,7 @@ const {
   formatDatePattern,
   formatDateTimeValue,
   formatDateValue,
+  formatTimePattern,
   normalizeDisplayValue,
 } = require("./token-formatters");
 const {
@@ -28,6 +29,7 @@ module.exports = {
   formatDatePattern,
   formatDateTimeValue,
   formatDateValue,
+  formatTimePattern,
   normalizeDisplayValue,
   replaceTemplateTokens,
   replaceTemplateTokensInHtml,

@@ -705,12 +705,12 @@
   box-sizing: border-box;
   color: #102445;
   display: flex;
-  font-size: 12px;
+  font-size: calc(12px * var(--template-editor-canvas-zoom, 1));
   font-weight: 800;
   justify-content: center;
   left: 0;
   line-height: 1;
-  padding-bottom: 14px;
+  padding-bottom: calc(14px * var(--template-editor-canvas-zoom, 1));
   pointer-events: none;
   position: absolute;
   text-align: center;

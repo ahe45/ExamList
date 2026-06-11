@@ -111,6 +111,24 @@ test("document sanitizer preserves candidate block column row metadata", async (
   assert.equal(columnName.getAttribute("data-candidate-block-column-name"), "true");
 });
 
+test("document sanitizer preserves data tag format attributes", async () => {
+  global.Node = { ELEMENT_NODE: 1, TEXT_NODE: 3 };
+  const { sanitizeNodeTree } = await importClientModule("document-editor-sanitizer.js");
+  const root = new FakeElement("div");
+  const token = new FakeElement("span", {
+    "data-template-tag-format": "YY.MM.DD",
+    "data-template-tag-format-type": "date",
+    "data-template-tag-value": "candidate.examDate",
+  });
+
+  root.append(token);
+  sanitizeNodeTree(root);
+
+  assert.equal(token.getAttribute("data-template-tag-value"), "candidate.examDate");
+  assert.equal(token.getAttribute("data-template-tag-format-type"), "date");
+  assert.equal(token.getAttribute("data-template-tag-format"), "YY.MM.DD");
+});
+
 test("document sanitizer strips transient table object overlays before sanitizing live editor DOM", async () => {
   global.Node = { ELEMENT_NODE: 1, TEXT_NODE: 3 };
   const { stripTransientDocumentState } = await importClientModule("document-editor-sanitizer.js");

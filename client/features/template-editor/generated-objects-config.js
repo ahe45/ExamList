@@ -31,7 +31,7 @@ export const generatedObjectPreviewValues = Object.freeze({
   "candidate.campusName": "서울캠퍼스",
   "candidate.departmentCode": "NUR",
   "candidate.departmentName": "간호학부",
-  "candidate.examDate": "2026.10.21",
+  "candidate.examDate": "2026-10-21",
   "candidate.examName": "수시",
   "candidate.examEndTime": "10:00",
   "candidate.examNo": "123100001",

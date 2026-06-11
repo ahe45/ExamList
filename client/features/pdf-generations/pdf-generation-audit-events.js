@@ -192,6 +192,7 @@ export async function handlePdfAuditLogAction(_actionTarget, action, context) {
     cleanupExpiredGenerations,
     closePdfAuditLogFilterMenu,
     closePdfAuditLogPageSizeMenu,
+    downloadPdfGenerationArtifact,
     getPdfAuditLogTableState,
     loadAuditLogs,
     onStateChange,
@@ -215,6 +216,14 @@ export async function handlePdfAuditLogAction(_actionTarget, action, context) {
     closePdfAuditLogFilterMenu();
     closePdfAuditLogPageSizeMenu();
     await loadAuditLogs();
+    return true;
+  }
+
+  if (action === "download-pdf-generation-artifact") {
+    await downloadPdfGenerationArtifact({
+      downloadUrl: _actionTarget.dataset.downloadUrl || "",
+      fileName: _actionTarget.dataset.fileName || "",
+    });
     return true;
   }
 

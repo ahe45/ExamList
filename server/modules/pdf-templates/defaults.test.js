@@ -19,4 +19,5 @@ test("buildBlankTemplateSnapshot creates empty cover and content pages", () => {
   assert.equal(snapshot.pages[1].name, "본문");
   assert.deepEqual(snapshot.pages[0].elements, []);
   assert.deepEqual(snapshot.pages[1].elements, []);
+  assert.equal(Object.prototype.hasOwnProperty.call(snapshot.generation, "fileNamePattern"), false);
 });

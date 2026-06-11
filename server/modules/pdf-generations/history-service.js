@@ -5,7 +5,6 @@ const { createPdfGenerationRerunActions } = require("./history-rerun-service");
 function createPdfGenerationHistoryService({
   createHttpError,
   createPdfGeneration,
-  createPdfGenerationArchive,
   fs,
   getBatchGenerationRows,
   getBatchRow,
@@ -27,7 +26,6 @@ function createPdfGenerationHistoryService({
   const rerunActions = createPdfGenerationRerunActions({
     createHttpError,
     createPdfGeneration,
-    createPdfGenerationArchive,
     query,
   });
 

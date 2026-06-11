@@ -10,6 +10,11 @@ import {
   saveDataTagSampleValues,
 } from "./data-tag-samples.js";
 import { flattenTemplateTags } from "./data-tags-definitions.js";
+import {
+  buildDataTagSampleValueErrors,
+  getDataTagSampleValueError,
+  hasDataTagSampleValueErrors,
+} from "./data-tag-value-formatting.js";
 
 const DATA_TAG_SAMPLE_MODAL_FOCUS_SELECTOR = [
   ".data-tag-sample-modal-overlay [data-data-tag-sample-key]",
@@ -23,6 +28,7 @@ function ensureDataTagSampleModalState(appState) {
     draftEmptyValueData: {},
     draftValues: {},
     isOpen: false,
+    sampleErrors: {},
     ...(appState.templateEditor.dataTagSampleModal || {}),
   };
 
@@ -144,12 +150,14 @@ function syncDataTagSettingsToTemplate(appState, { markDirty = true } = {}) {
 export function createDataTagSampleActions({ appState, onSaveDataTagSettings = null, onStateChange }) {
   async function openDataTagSampleModal() {
     const modalState = ensureDataTagSampleModalState(appState);
+    const definitions = getBaseTagDefinitions(appState);
     const currentValues = normalizeCurrentSampleValues(appState);
     const currentEmptyValueData = normalizeCurrentEmptyValueData(appState);
 
     modalState.draftValues = { ...currentValues };
     modalState.draftEmptyValueData = { ...currentEmptyValueData };
     modalState.isOpen = true;
+    modalState.sampleErrors = buildDataTagSampleValueErrors(definitions, modalState.draftValues);
     releaseTemplateEditorDocumentFocus();
     await onStateChange();
     focusDataTagSampleModal();
@@ -161,6 +169,7 @@ export function createDataTagSampleActions({ appState, onSaveDataTagSettings = n
     modalState.draftEmptyValueData = {};
     modalState.draftValues = {};
     modalState.isOpen = false;
+    modalState.sampleErrors = {};
     await onStateChange();
   }
 
@@ -185,14 +194,28 @@ export function createDataTagSampleActions({ appState, onSaveDataTagSettings = n
       ...(modalState.draftValues || {}),
       [normalizedKey]: String(value ?? ""),
     };
+    const definitions = getBaseTagDefinitions(appState);
+    const definition = definitions.find((item) => String(item?.key || "").trim() === normalizedKey) || normalizedKey;
+    const errorMessage = getDataTagSampleValueError(definition, value);
+
+    modalState.sampleErrors = {
+      ...(modalState.sampleErrors || {}),
+      [normalizedKey]: errorMessage,
+    };
+
+    if (!errorMessage) {
+      delete modalState.sampleErrors[normalizedKey];
+    }
   }
 
   async function resetDataTagSampleModal() {
     const modalState = ensureDataTagSampleModalState(appState);
+    const definitions = getBaseTagDefinitions(appState);
 
-    modalState.draftValues = buildDefaultDataTagSampleValues(getBaseTagDefinitions(appState));
-    modalState.draftEmptyValueData = buildDefaultDataTagEmptyValueData(getBaseTagDefinitions(appState));
+    modalState.draftValues = buildDefaultDataTagSampleValues(definitions);
+    modalState.draftEmptyValueData = buildDefaultDataTagEmptyValueData(definitions);
     modalState.isOpen = true;
+    modalState.sampleErrors = buildDataTagSampleValueErrors(definitions, modalState.draftValues);
     releaseTemplateEditorDocumentFocus();
     await onStateChange();
     focusDataTagSampleModal();
@@ -201,6 +224,13 @@ export function createDataTagSampleActions({ appState, onSaveDataTagSettings = n
   async function saveDataTagSampleModal() {
     const definitions = getBaseTagDefinitions(appState);
     const modalState = ensureDataTagSampleModalState(appState);
+    modalState.sampleErrors = buildDataTagSampleValueErrors(definitions, modalState.draftValues || {});
+
+    if (hasDataTagSampleValueErrors(modalState.sampleErrors)) {
+      await onStateChange();
+      return;
+    }
+
     const nextValues = saveDataTagSampleValues(definitions, modalState.draftValues || {});
     const nextEmptyValueData = saveDataTagEmptyValueData(definitions, modalState.draftEmptyValueData || {});
 
@@ -223,6 +253,7 @@ export function createDataTagSampleActions({ appState, onSaveDataTagSettings = n
     modalState.draftEmptyValueData = {};
     modalState.draftValues = {};
     modalState.isOpen = false;
+    modalState.sampleErrors = {};
     await onStateChange();
   }
 

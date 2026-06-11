@@ -47,6 +47,76 @@ function renderTemplateTokenSpanValue(tokenExpression, context) {
     : value;
 }
 
+const templateTokenFormatTokens = Object.freeze({
+  date: Object.freeze(["dddd", "ddd", "YYYY", "YY", "MM", "M", "DD", "D"]),
+  time: Object.freeze(["HH", "H", "hh", "h", "mm", "A"]),
+});
+const maxTemplateTokenFormatLength = 60;
+const unsafeTemplateTokenFormatPattern = /[<>{}|"'`\\\r\n]/;
+const asciiLetterPattern = /[A-Za-z]/;
+
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getTemplateTokenFormatPattern(formatType) {
+  const tokens = templateTokenFormatTokens[formatType] || [];
+
+  return tokens.length ? new RegExp(tokens.map(escapeRegExp).join("|"), "g") : null;
+}
+
+function isSafeTemplateTokenFormat(formatType, formatValue) {
+  const normalizedFormatType = String(formatType || "").trim().toLowerCase();
+  const normalizedFormatValue = String(formatValue || "").trim();
+  const tokenPattern = getTemplateTokenFormatPattern(normalizedFormatType);
+
+  if (!normalizedFormatValue || !tokenPattern || normalizedFormatValue.length > maxTemplateTokenFormatLength) {
+    return false;
+  }
+
+  if (unsafeTemplateTokenFormatPattern.test(normalizedFormatValue) || !tokenPattern.test(normalizedFormatValue)) {
+    return false;
+  }
+
+  tokenPattern.lastIndex = 0;
+  return !asciiLetterPattern.test(normalizedFormatValue.replace(tokenPattern, ""));
+}
+
+function decodeHtmlAttributeValue(value) {
+  return String(value || "")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&amp;/gi, "&");
+}
+
+function getHtmlAttributeValue(openingTag, attributeName) {
+  const escapedAttributeName = String(attributeName || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  if (!escapedAttributeName) {
+    return "";
+  }
+
+  const matchedAttribute = String(openingTag || "").match(
+    new RegExp(`\\s${escapedAttributeName}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"),
+  );
+
+  return decodeHtmlAttributeValue(matchedAttribute?.[1] || matchedAttribute?.[2] || matchedAttribute?.[3] || "");
+}
+
+function buildFormattedTemplateTokenExpression(tokenExpression, openingTag) {
+  const normalizedExpression = String(tokenExpression || "").trim();
+  const formatType = getHtmlAttributeValue(openingTag, "data-template-tag-format-type").trim().toLowerCase();
+  const formatValue = getHtmlAttributeValue(openingTag, "data-template-tag-format").trim();
+
+  if (!normalizedExpression || !isSafeTemplateTokenFormat(formatType, formatValue)) {
+    return normalizedExpression;
+  }
+
+  return `${normalizedExpression}|${formatType}:${formatValue}`;
+}
+
 function stripHtmlAttribute(openingTag, attributeName) {
   const escapedAttributeName = String(attributeName || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -71,7 +141,15 @@ function stripTemplateTokenClasses(openingTag) {
 }
 
 function buildPreviewTokenOpeningTag(openingTag) {
-  return ["data-template-tag-value", "data-template-token", "contenteditable", "spellcheck"].reduce(
+  return [
+    "data-template-tag-value",
+    "data-template-tag-format",
+    "data-template-tag-format-type",
+    "data-template-tag-format-supported",
+    "data-template-token",
+    "contenteditable",
+    "spellcheck",
+  ].reduce(
     (nextOpeningTag, attributeName) => stripHtmlAttribute(nextOpeningTag, attributeName),
     stripTemplateTokenClasses(openingTag),
   ).replace(/\s+>/, ">");
@@ -159,8 +237,11 @@ function findTemplateTokenSpanEnd(html, innerStartIndex) {
 function renderTemplateTokenSpan(openingTag, tokenExpression, context, innerHtml = "") {
   const normalizedExpression = String(tokenExpression || "").trim();
   const isPhotoToken = ["candidate.photo", "candidate.photoUrl", "candidate.photoFileId"].includes(normalizedExpression);
+  const formattedExpression = isPhotoToken
+    ? normalizedExpression
+    : buildFormattedTemplateTokenExpression(normalizedExpression, openingTag);
 
-  const replacementText = renderTemplateTokenSpanValue(normalizedExpression, context);
+  const replacementText = renderTemplateTokenSpanValue(formattedExpression, context);
 
   if (!replacementText) {
     return "";

@@ -3,6 +3,7 @@ import { getJson } from "../../app/api-client.js";
 import { getActiveSchoolId, getActiveSchoolRouteKey } from "../../app/school-context.js";
 import { showToast } from "../../app/toast.js";
 import { createPdfGenerationActiveRunner } from "./pdf-generation-active-runner.js";
+import { createPdfGenerationArtifactActions } from "./pdf-generation-artifact-actions.js";
 import { createPdfGenerationAuditActions } from "./pdf-generation-audit-actions.js";
 import { bindPdfGenerationEventHandlers } from "./pdf-generation-event-bindings.js";
 import { createPdfGenerationBatchActions } from "./pdf-generation-batch-actions.js";
@@ -18,6 +19,7 @@ import {
   getDetailModalState as ensureDetailModalState,
   getDownloadModalState as ensureDownloadModalState,
   getGeneratedResultModalState as ensureGeneratedResultModalState,
+  getPdfGenerationArtifactTableState as ensurePdfGenerationArtifactTableState,
   getPdfGenerationTableState as ensurePdfGenerationTableState,
   resetPdfGenerationTemplatePreview as resetTemplatePreviewState,
 } from "./pdf-generation-state.js";
@@ -30,6 +32,7 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
   const getDetailModalState = () => ensureDetailModalState(appState);
   const getDownloadModalState = () => ensureDownloadModalState(appState);
   const getGeneratedResultModalState = () => ensureGeneratedResultModalState(appState);
+  const getPdfGenerationArtifactTableState = () => ensurePdfGenerationArtifactTableState(appState);
   const getPdfGenerationTableState = () => ensurePdfGenerationTableState(appState);
   const resetPdfGenerationTemplatePreview = () => resetTemplatePreviewState(appState);
 
@@ -73,8 +76,26 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
     togglePdfAuditLogSort,
   } = createPdfGenerationAuditActions({
     appState,
+    getCurrentSchoolId,
     hasPermission,
     loadGenerations,
+    onStateChange,
+  });
+  const {
+    clampPdfGenerationArtifactPage,
+    closePdfGenerationArtifactFilterMenu,
+    closePdfGenerationArtifactPageSizeMenu,
+    downloadPdfGenerationArtifact,
+    getVisiblePdfGenerationArtifactFilterOptions,
+    loadArtifacts,
+    resetPdfGenerationActiveTab,
+    setPdfGenerationArtifactFilterValues,
+    setPdfGenerationActiveTab,
+    togglePdfGenerationArtifactSort,
+  } = createPdfGenerationArtifactActions({
+    appState,
+    getCurrentSchoolId,
+    hasPermission,
     onStateChange,
   });
 
@@ -210,6 +231,7 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
     appState,
     getCurrentSchoolId,
     hasPermission,
+    loadArtifacts,
     loadGenerations,
     onStateChange,
     setRerunningGenerationIds,
@@ -251,10 +273,13 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
     appState,
     cancelActivePdfGeneration,
     clampPdfAuditLogPage,
+    clampPdfGenerationArtifactPage,
     clampPdfGenerationPage,
     cleanupExpiredGenerations,
     closePdfAuditLogPageSizeMenu,
     closePdfAuditLogFilterMenu,
+    closePdfGenerationArtifactFilterMenu,
+    closePdfGenerationArtifactPageSizeMenu,
     clearVisibleGenerationSelection,
     closePdfGenerationFilterMenu,
     closePdfGenerationPageSizeMenu,
@@ -266,13 +291,17 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
     closePdfGenerationGeneratedResultModal,
     closePdfGenerationTemplatePreview,
     confirmPdfGenerationDelete,
+    downloadPdfGenerationArtifact,
     downloadSelectedGenerationArchive,
     getPdfAuditLogTableState,
     getVisiblePdfAuditLogFilterOptions,
+    getPdfGenerationArtifactTableState,
+    getVisiblePdfGenerationArtifactFilterOptions,
     getPdfGenerationTableState,
     getVisiblePdfGenerationFilterOptions,
     getCurrentSchoolRouteKey,
     loadAuditLogs,
+    loadArtifacts,
     loadCreateModalOptions,
     loadGenerationDetail,
     loadGenerations,
@@ -290,15 +319,18 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
     retryGeneration,
     selectAllVisibleGenerations,
     setPdfAuditLogFilterValues,
+    setPdfGenerationArtifactFilterValues,
     setPdfGenerationFilterValues,
     movePdfGenerationCreateStep,
     setPdfGenerationCreateStep,
     setPdfGenerationDownloadMode,
+    setPdfGenerationActiveTab,
     setPdfGenerationGeneratedResultMode,
     submitPdfGenerationCreate,
     submitPdfGenerationDownload,
     submitPdfGenerationGeneratedResultDownload,
     toggleGenerationSelection,
+    togglePdfGenerationArtifactSort,
     togglePdfAuditLogSort,
     togglePdfGenerationSort,
     updatePdfGenerationCreateFilter,
@@ -307,6 +339,7 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
   return {
     cancelActivePdfGeneration,
     clampPdfAuditLogPage,
+    clampPdfGenerationArtifactPage,
     clearVisibleGenerationSelection,
     closePdfGenerationCreateModal,
     closePdfGenerationDeleteConfirm,
@@ -316,9 +349,11 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
     closePdfGenerationTemplatePreview,
     confirmPdfGenerationDelete,
     downloadGeneratedBatchResult,
+    downloadPdfGenerationArtifact,
     downloadSelectedGenerationArchive,
     cleanupExpiredGenerations,
     loadAuditLogs,
+    loadArtifacts,
     loadGenerationDetail,
     loadGenerations,
     openPdfGenerationCreateModal,
@@ -327,6 +362,7 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
     openPdfGenerationFirstResultPreview,
     openPdfGenerationTemplatePreview,
     openGenerationDetail,
+    resetPdfGenerationActiveTab,
     rerunSelectedGenerations,
     rerunGeneration,
     retryGeneration,

@@ -182,6 +182,34 @@ test("normalizeTemplateLayout preserves generation unit priority fields", () => 
   assert.deepEqual(layout.generation.unitFields, ["date", "periodCode", "roomCode", "opt1"]);
 });
 
+test("normalizeTemplateLayout removes file name patterns from generation settings", () => {
+  const layout = normalizeTemplateLayout(
+    {
+      generation: {
+        fileNamePattern: "{{room.name}}.pdf",
+        unitFields: ["date", "periodCode", "roomCode"],
+      },
+      pages: [
+        {
+          elements: [],
+          type: "content",
+        },
+      ],
+    },
+    {
+      description: "설명",
+      generationUnit: "custom",
+      name: "생성 단위 템플릿",
+      orientation: "portrait",
+      paperPreset: "A4",
+    },
+    "template-generation-file-name-pattern",
+  );
+
+  assert.equal(Object.prototype.hasOwnProperty.call(layout.generation, "fileNamePattern"), false);
+  assert.deepEqual(layout.generation.unitFields, ["date", "periodCode", "roomCode"]);
+});
+
 test("normalizeTemplateLayout rejects empty pages", () => {
   assert.throws(
     () =>

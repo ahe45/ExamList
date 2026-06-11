@@ -4,7 +4,15 @@ import { getPageDocumentHtml } from "./document-editor.js";
 import { renderDocumentToolbar } from "./document-toolbar-renderer.js";
 import { renderPagePropertyPanel } from "./page-property-renderers.js";
 import { dataTagSampleSettingsIcon, renderDataTagSampleModal } from "./data-tag-samples-renderer.js";
+import { renderDataTagFormatModal } from "./data-tag-format-renderer.js";
 import { renderGenerationUnitSettingsModal } from "./generation-unit-settings-renderer.js";
+import {
+  getTemplateEditorCanvasZoom,
+  getTemplateEditorCanvasZoomMode,
+  getTemplateEditorCanvasZoomPercentLabel,
+  templateEditorCanvasZoomMax,
+  templateEditorCanvasZoomMin,
+} from "./canvas-zoom.js";
 import { getSelectedPage } from "./state.js";
 
 function renderDataTagCatalog(editor, access) {
@@ -128,6 +136,40 @@ function renderPreviewModal(editor) {
   `;
 }
 
+function renderTemplateEditorCanvasZoomControls(editor) {
+  const zoom = getTemplateEditorCanvasZoom(editor);
+  const zoomLabel = getTemplateEditorCanvasZoomPercentLabel(zoom);
+
+  return `
+    <div class="template-editor-canvas-zoom-controls" aria-label="캔버스 확대/축소">
+      <div class="template-editor-canvas-zoom-toolbar" role="toolbar" aria-label="캔버스 확대/축소">
+        <button
+          class="template-editor-canvas-zoom-button"
+          data-action="step-template-editor-canvas-zoom"
+          data-template-editor-canvas-zoom-direction="-1"
+          type="button"
+          aria-label="캔버스 축소"
+          ${zoom <= templateEditorCanvasZoomMin ? "disabled" : ""}
+        >-</button>
+        <button
+          class="template-editor-canvas-zoom-value"
+          data-action="reset-template-editor-canvas-zoom"
+          type="button"
+          aria-label="캔버스 확대율 초기화"
+        ><span data-template-editor-canvas-zoom-label>${escapeHtml(zoomLabel)}</span></button>
+        <button
+          class="template-editor-canvas-zoom-button"
+          data-action="step-template-editor-canvas-zoom"
+          data-template-editor-canvas-zoom-direction="1"
+          type="button"
+          aria-label="캔버스 확대"
+          ${zoom >= templateEditorCanvasZoomMax ? "disabled" : ""}
+        >+</button>
+      </div>
+    </div>
+  `;
+}
+
 export function renderTemplateEditorView({ access, editor }) {
   if (editor.loading) {
     return `
@@ -150,11 +192,14 @@ export function renderTemplateEditorView({ access, editor }) {
   const isBlockingModalOpen = Boolean(
     editor.isPreviewOpen ||
       editor.dataTagSampleModal?.isOpen ||
+      editor.dataTagFormatModal?.isOpen ||
       editor.generationUnitSettingsModal?.isOpen ||
       editor.generationUnitModal?.isOpen,
   );
   const runtimeModalAttributes = isBlockingModalOpen ? 'inert aria-hidden="true"' : "";
   const runtimeModalClass = isBlockingModalOpen ? " is-template-editor-modal-open" : "";
+  const canvasZoom = getTemplateEditorCanvasZoom(editor);
+  const canvasZoomMode = getTemplateEditorCanvasZoomMode(editor);
 
   return `
     <section class="template-editor-shell">
@@ -186,15 +231,25 @@ export function renderTemplateEditorView({ access, editor }) {
             </div>
           </aside>
 
-          <section class="template-editor-page editor-canvas-column" aria-label="${escapeHtml(selectedPage?.name || "페이지")} 캔버스">
-            <div
-              id="templateEditorSurface"
-              class="template-editor-surface editor-paper editor-document-surface ${canManageTemplates ? "editable" : "readonly"}"
-              data-editor-document-surface="true"
-              data-page-id="${escapeHtml(selectedPage?.id || "")}"
-              data-placeholder="용지 위에 제목, 본문, 표, 이미지, 데이터 태그를 자유롭게 배치하세요."
-              ${canManageTemplates ? 'contenteditable="true" spellcheck="false"' : ""}
-            ></div>
+          <section
+            class="template-editor-page editor-canvas-column"
+            aria-label="${escapeHtml(selectedPage?.name || "페이지")} 캔버스"
+            data-template-editor-canvas="true"
+            data-template-editor-canvas-zoom="${escapeHtml(String(canvasZoom))}"
+            data-template-editor-canvas-zoom-mode="${escapeHtml(canvasZoomMode)}"
+            style="--template-editor-canvas-zoom: ${escapeHtml(String(canvasZoom))};"
+          >
+            ${renderTemplateEditorCanvasZoomControls(editor)}
+            <div class="editor-paper-scale-box" data-template-editor-canvas-scale-box>
+              <div
+                id="templateEditorSurface"
+                class="template-editor-surface editor-paper editor-document-surface ${canManageTemplates ? "editable" : "readonly"}"
+                data-editor-document-surface="true"
+                data-page-id="${escapeHtml(selectedPage?.id || "")}"
+                data-placeholder="용지 위에 제목, 본문, 표, 이미지, 데이터 태그를 자유롭게 배치하세요."
+                ${canManageTemplates ? 'contenteditable="true" spellcheck="false"' : ""}
+              ></div>
+            </div>
             <p class="editor-overflow-warning editor-canvas-overflow-warning hidden" id="templateEditorOverflowStatus"></p>
           </section>
 
@@ -209,6 +264,7 @@ export function renderTemplateEditorView({ access, editor }) {
     </section>
     ${renderPreviewModal(editor)}
     ${renderDataTagSampleModal(editor)}
+    ${renderDataTagFormatModal(editor)}
     ${renderGenerationUnitSettingsModal(editor)}
   `;
 }

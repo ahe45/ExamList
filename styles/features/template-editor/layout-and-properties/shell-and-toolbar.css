@@ -150,12 +150,16 @@
   --editor-page-properties-column-width: 230px;
   --editor-tag-column-width: 210px;
   --template-editor-canvas-width: 794px;
+  --template-editor-canvas-panel-gutter-width: 24px;
+  --template-editor-canvas-panel-width: calc(
+    var(--template-editor-canvas-width) + var(--template-editor-canvas-panel-gutter-width)
+  );
   display: grid;
   gap: 6px;
   grid-template-columns:
     var(--editor-toolbar-column-width)
     var(--editor-tag-column-width)
-    var(--template-editor-canvas-width)
+    var(--template-editor-canvas-panel-width)
     var(--editor-page-properties-column-width);
   grid-template-rows: minmax(0, 1fr);
   justify-content: start;
@@ -166,7 +170,7 @@
   grid-template-columns:
     var(--editor-toolbar-column-width)
     var(--editor-tag-column-width)
-    var(--template-editor-canvas-width)
+    var(--template-editor-canvas-panel-width)
     var(--editor-page-properties-column-width);
   grid-template-rows: minmax(0, 1fr);
   height: 100%;

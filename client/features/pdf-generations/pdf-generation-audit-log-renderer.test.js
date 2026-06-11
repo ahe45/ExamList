@@ -68,7 +68,8 @@ test("PDF 작업 로그 renders audit logs as a readable grid", () => {
   assert.doesNotMatch(html, /pdf_generation_/);
   assert.doesNotMatch(html, /선택한 PDF를 하나의 파일로 병합했습니다/);
   assert.doesNotMatch(html, /참조:/);
-  assert.doesNotMatch(html, /pdf-merged-1/);
+  assert.match(html, /data-action="download-pdf-generation-artifact"/);
+  assert.match(html, /\/api\/pdf-generations\/merged\/pdf-merged-1\/download/);
   assert.doesNotMatch(html, /template-merged/);
   assert.match(html, /data-pdf-audit-grid-page-picker/);
   assert.match(html, /data-pdf-audit-page-size-option="30"/);

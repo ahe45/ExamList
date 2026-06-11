@@ -6,6 +6,12 @@ import {
   normalizeDataTagEmptyValueData,
   normalizeDataTagSampleValues,
 } from "./data-tag-samples.js";
+import {
+  buildDataTagSampleValueErrors,
+  getDataTagSampleValueConstraint,
+  getDataTagSampleValueError,
+  hasDataTagSampleValueErrors,
+} from "./data-tag-value-formatting.js";
 
 export const dataTagSampleSettingsIcon = `
   <svg class="button-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -42,7 +48,11 @@ function getGroupedSampleTagDefinitions(tagDefinitions = []) {
   return groups.filter((group) => group.tags.length);
 }
 
-function renderSampleRows(group, sampleValues, emptyValueData) {
+function createSampleErrorId(key = "") {
+  return `dataTagSampleError-${String(key || "").replace(/[^A-Za-z0-9_-]/g, "-")}`;
+}
+
+function renderSampleRows(group, sampleValues, emptyValueData, sampleErrors = {}) {
   return group.tags
     .map((tag) => {
       const key = String(tag.key || "").trim();
@@ -50,6 +60,9 @@ function renderSampleRows(group, sampleValues, emptyValueData) {
       const sampleValue = Object.prototype.hasOwnProperty.call(sampleValues, key) ? sampleValues[key] : String(tag.example || "");
       const emptyValue = Object.prototype.hasOwnProperty.call(emptyValueData, key) ? emptyValueData[key] : label || key;
       const titleText = [label, key].map((value) => String(value || "").trim()).filter(Boolean).join(" · ");
+      const sampleConstraint = getDataTagSampleValueConstraint(tag);
+      const sampleError = String(sampleErrors[key] || getDataTagSampleValueError(tag, sampleValue) || "");
+      const sampleErrorId = createSampleErrorId(key);
 
       return `
         <div class="data-tag-sample-row">
@@ -66,8 +79,13 @@ function renderSampleRows(group, sampleValues, emptyValueData) {
               class="data-tag-sample-input"
               data-data-tag-sample-key="${escapeHtml(key)}"
               data-data-tag-setting-kind="sample"
+              ${sampleConstraint?.formatLabel ? `data-data-tag-sample-format="${escapeHtml(sampleConstraint.formatLabel)}"` : ""}
               type="text"
               value="${escapeHtml(sampleValue)}"
+              ${sampleConstraint?.placeholder ? `placeholder="${escapeHtml(sampleConstraint.placeholder)}"` : ""}
+              ${sampleConstraint?.inputMode ? `inputmode="${escapeHtml(sampleConstraint.inputMode)}"` : ""}
+              ${sampleConstraint?.maxLength ? `maxlength="${escapeHtml(sampleConstraint.maxLength)}"` : ""}
+              ${sampleError ? `aria-invalid="true" aria-describedby="${escapeHtml(sampleErrorId)}"` : ""}
               autocomplete="off"
             />
           </label>
@@ -82,13 +100,18 @@ function renderSampleRows(group, sampleValues, emptyValueData) {
               autocomplete="off"
             />
           </label>
+          <p
+            class="data-tag-sample-error${sampleError ? "" : " hidden"}"
+            data-data-tag-sample-error
+            id="${escapeHtml(sampleErrorId)}"
+          >${escapeHtml(sampleError)}</p>
         </div>
       `;
     })
     .join("");
 }
 
-function renderSampleGroup(group, sampleValues, emptyValueData) {
+function renderSampleGroup(group, sampleValues, emptyValueData, sampleErrors) {
   return `
     <details class="template-tag-accordion-group">
       <summary class="template-tag-accordion-summary">
@@ -100,7 +123,7 @@ function renderSampleGroup(group, sampleValues, emptyValueData) {
         <span class="template-tag-group-chevron" aria-hidden="true"></span>
       </summary>
       <div class="template-tag-accordion-list data-tag-sample-list">
-        ${renderSampleRows(group, sampleValues, emptyValueData)}
+        ${renderSampleRows(group, sampleValues, emptyValueData, sampleErrors)}
       </div>
     </details>
   `;
@@ -120,6 +143,11 @@ export function renderDataTagSampleModal(editor = {}) {
     baseDefinitions,
     modalState.draftEmptyValueData || editor.dataTagEmptyValueData || {},
   );
+  const sampleErrors = {
+    ...buildDataTagSampleValueErrors(baseDefinitions, sampleValues),
+    ...(modalState.sampleErrors || {}),
+  };
+  const hasSampleErrors = hasDataTagSampleValueErrors(sampleErrors);
   const groups = getGroupedSampleTagDefinitions(baseDefinitions);
 
   return `
@@ -134,7 +162,7 @@ export function renderDataTagSampleModal(editor = {}) {
 
         <div class="data-tag-sample-modal-body">
           <div class="template-tag-accordion data-tag-sample-accordion">
-            ${groups.map((group) => renderSampleGroup(group, sampleValues, emptyValueData)).join("")}
+            ${groups.map((group) => renderSampleGroup(group, sampleValues, emptyValueData, sampleErrors)).join("")}
           </div>
         </div>
 
@@ -142,7 +170,7 @@ export function renderDataTagSampleModal(editor = {}) {
           <button class="ghost-button" data-action="reset-data-tag-sample-modal" type="button" ${isSaving ? "disabled" : ""}>기본값 복원</button>
           <span class="data-tag-sample-action-spacer"></span>
           <button class="ghost-button" data-action="close-data-tag-sample-modal" type="button" ${isSaving ? "disabled" : ""}>취소</button>
-          <button class="primary-button" data-action="save-data-tag-sample-modal" type="button" ${isSaving ? "disabled" : ""}>${isSaving ? "저장 중..." : "저장"}</button>
+          <button class="primary-button" data-action="save-data-tag-sample-modal" type="button" ${isSaving || hasSampleErrors ? "disabled" : ""}>${isSaving ? "저장 중..." : "저장"}</button>
         </div>
       </div>
     </div>

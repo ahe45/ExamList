@@ -109,6 +109,17 @@ function createPdfGenerationRoutes(deps) {
         200,
         await deps.listPdfAuditLogs({
           limit: searchParams.get("limit") || "",
+          schoolId: searchParams.get("schoolId") || "",
+        }),
+      );
+    })),
+    exactRoute("GET", "/api/pdf-generations/artifacts", withPermission("downloadPdfs", async ({ response, searchParams }) => {
+      deps.sendJson(
+        response,
+        200,
+        await deps.listPdfGenerationArtifacts({
+          limit: searchParams.get("limit") || "",
+          schoolId: searchParams.get("schoolId") || "",
         }),
       );
     })),

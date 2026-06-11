@@ -10,6 +10,7 @@ import {
 
 export function createPdfGenerationAuditActions({
   appState,
+  getCurrentSchoolId = () => "",
   hasPermission,
   loadGenerations,
   onStateChange,
@@ -89,7 +90,14 @@ export function createPdfGenerationAuditActions({
     appState.pdfGenerations.auditLoading = true;
 
     try {
-      const payload = await getJson("/api/pdf-generations/audit-logs?limit=2000");
+      const query = new URLSearchParams({ limit: "2000" });
+      const schoolId = String(getCurrentSchoolId() || "").trim();
+
+      if (schoolId) {
+        query.set("schoolId", schoolId);
+      }
+
+      const payload = await getJson(`/api/pdf-generations/audit-logs?${query.toString()}`);
 
       appState.pdfGenerations.auditErrorMessage = "";
       appState.pdfGenerations.auditLogs = Array.isArray(payload?.items) ? payload.items : [];

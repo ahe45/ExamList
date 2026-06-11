@@ -122,9 +122,124 @@ test("normalizeTokenLabels preserves styled token text markup inside candidate b
     );
 
     assert.equal(tokenElement.dataset.templateTagValue, "candidate.name");
+    assert.equal(tokenElement.dataset.templateTagFormatSupported, undefined);
     assert.equal(tokenElement.children[0], styledTextElement);
     assert.equal(styledTextElement.getAttribute("style"), "font-size:18pt;color:#dc2626;font-weight:700;");
     assert.equal(styledTextNode.textContent, "성명");
+  } finally {
+    global.document = previousDocument;
+    global.NodeFilter = previousNodeFilter;
+  }
+});
+
+test("normalizeTokenLabels marks only format-supported date and time tokens", async () => {
+  const previousDocument = global.document;
+  const previousNodeFilter = global.NodeFilter;
+  const dateToken = new FakeElement("span");
+  const nameToken = new FakeElement("span");
+
+  dateToken.dataset.templateTagValue = "candidate.examDate";
+  nameToken.dataset.templateTagValue = "candidate.name";
+
+  global.NodeFilter = { SHOW_TEXT: 4 };
+  global.document = {
+    createTextNode(textContent) {
+      return new FakeTextNode(textContent);
+    },
+    createTreeWalker(element) {
+      const textNodes = [...(element.textNodes || [])];
+      let index = -1;
+
+      return {
+        currentNode: null,
+        nextNode() {
+          index += 1;
+          this.currentNode = textNodes[index] || null;
+          return Boolean(this.currentNode);
+        },
+      };
+    },
+  };
+
+  try {
+    const { normalizeTokenLabels } = await importClientModule("data-tags-definitions.js");
+
+    normalizeTokenLabels(
+      new FakeRoot([dateToken, nameToken]),
+      [
+        {
+          example: "2026-03-28",
+          key: "candidate.examDate",
+          label: "시험날짜",
+          token: "candidate.examDate",
+          type: "date",
+        },
+        {
+          example: "홍길동",
+          key: "candidate.name",
+          label: "이름",
+          token: "candidate.name",
+          type: "string",
+        },
+      ],
+      { showIcons: false, showSampleData: false },
+    );
+
+    assert.equal(dateToken.dataset.templateTagFormatSupported, "true");
+    assert.equal(nameToken.dataset.templateTagFormatSupported, undefined);
+  } finally {
+    global.document = previousDocument;
+    global.NodeFilter = previousNodeFilter;
+  }
+});
+
+test("normalizeTokenLabels formats sample display with token data format settings", async () => {
+  const previousDocument = global.document;
+  const previousNodeFilter = global.NodeFilter;
+  const dateToken = new FakeElement("span");
+  const dateTextNode = new FakeTextNode("시험날짜", dateToken);
+
+  dateToken.dataset.templateTagValue = "candidate.examDate";
+  dateToken.dataset.templateTagFormatType = "date";
+  dateToken.dataset.templateTagFormat = "YYYY.MM.DD (ddd)";
+  dateToken.textNodes = [dateTextNode];
+
+  global.NodeFilter = { SHOW_TEXT: 4 };
+  global.document = {
+    createTreeWalker(element) {
+      const textNodes = [...(element.textNodes || [])];
+      let index = -1;
+
+      return {
+        currentNode: null,
+        nextNode() {
+          index += 1;
+          this.currentNode = textNodes[index] || null;
+          return Boolean(this.currentNode);
+        },
+      };
+    },
+  };
+
+  try {
+    const { normalizeTokenLabels } = await importClientModule("data-tags-definitions.js");
+
+    normalizeTokenLabels(
+      new FakeRoot([dateToken]),
+      [
+        {
+          example: "2026-11-28",
+          key: "candidate.examDate",
+          label: "시험날짜",
+          token: "candidate.examDate",
+          type: "date",
+        },
+      ],
+      { showIcons: false, showSampleData: true },
+    );
+
+    assert.equal(dateTextNode.textContent, "2026.11.28 (토)");
+    assert.equal(dateToken.dataset.templateTagExample, "2026-11-28");
   } finally {
     global.document = previousDocument;
     global.NodeFilter = previousNodeFilter;

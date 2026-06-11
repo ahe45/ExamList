@@ -37,8 +37,8 @@ export function prepareGeneratedBatchResultModalState({
 
   appState.pdfGenerations.generatedResultModal = {
     ...(appState.pdfGenerations.generatedResultModal || {}),
-    archiveDownloadUrl: String(batch?.archiveDownloadUrl || ""),
-    archiveFileName: String(batch?.archiveFileName || ""),
+    archiveDownloadUrl: "",
+    archiveFileName: "",
     batchId: String(batchId || "").trim(),
     errorMessage: "",
     failedCount: Number(batch?.failedCount) || 0,

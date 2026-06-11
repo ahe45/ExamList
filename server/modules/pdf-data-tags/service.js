@@ -60,7 +60,7 @@ const candidateTagMetadata = Object.freeze({
   "candidate.campusName": Object.freeze({ label: "캠퍼스명", type: "string", example: "서울캠퍼스" }),
   "candidate.departmentCode": Object.freeze({ label: "모집단위코드", type: "string", example: "NUR" }),
   "candidate.departmentName": Object.freeze({ label: "모집단위명", type: "string", example: "간호학부" }),
-  "candidate.examDate": Object.freeze({ label: "시험날짜", type: "date", example: "2026.10.21" }),
+  "candidate.examDate": Object.freeze({ label: "시험날짜", type: "date", example: "2026-10-21" }),
   "candidate.examNo": Object.freeze({ label: "수험번호", type: "string", example: "26010001" }),
   "candidate.examStartTime": Object.freeze({ label: "시작시간", type: "string", example: "09:00" }),
   "candidate.examEndTime": Object.freeze({ label: "종료시간", type: "string", example: "10:00" }),

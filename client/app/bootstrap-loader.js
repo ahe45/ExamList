@@ -28,7 +28,9 @@ export async function loadViewData({ accountActions, candidatesActions, editorAc
   }
 
   if (view === "pdfGenerationHistory") {
+    generationActions.resetPdfGenerationActiveTab?.();
     await generationActions.loadGenerations();
+    await generationActions.loadArtifacts?.();
     return;
   }
 

@@ -93,6 +93,7 @@ function createPdfGenerationService({
     createPdfGenerationMergedFile,
     getPdfGenerationArchiveFile,
     getPdfGenerationMergedFile,
+    listPdfGenerationArtifacts,
   } = pdfGenerationArchiveService;
   let pdfGenerationQueueLifecycle = null;
   const pdfGenerationQueueService = createPdfGenerationQueueService({
@@ -108,7 +109,6 @@ function createPdfGenerationService({
   const pdfGenerationHistoryService = createPdfGenerationHistoryService({
     createHttpError,
     createPdfGeneration,
-    createPdfGenerationArchive,
     fs,
     getBatchGenerationRows,
     getBatchRow,
@@ -390,7 +390,6 @@ function createPdfGenerationService({
   }
 
   const { refreshPdfGenerationBatch } = createPdfGenerationBatchStatusService({
-    createPdfGenerationArchive,
     getBatchGenerationRows,
     getBatchRow,
     getPdfGenerationBatch,
@@ -445,7 +444,6 @@ function createPdfGenerationService({
     candidateService,
     createHttpError,
     createPdfGeneration,
-    createPdfGenerationArchive,
     enqueuePdfGeneration,
     insertBatchRow,
     pdfPreviewService,
@@ -471,6 +469,7 @@ function createPdfGenerationService({
     getPdfGenerationMergedFile,
     getPdfGenerationFile,
     getPdfGenerationPreviewFile,
+    listPdfGenerationArtifacts,
     listPdfGenerationTargets,
     listPdfAuditLogs,
     listPdfGenerations,

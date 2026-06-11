@@ -8,6 +8,9 @@ const CANDIDATE_IMPORT_EXISTING_DATA_POLICIES = Object.freeze({
   INSERT_ONLY: "insert-only",
   INSERT_UPDATE: "insert-update",
 });
+const CANDIDATE_UPLOAD_NORMALIZATION_OPTIONS = Object.freeze({
+  validateUploadDateTimeFormat: true,
+});
 const candidateImportCountFormatter = new Intl.NumberFormat("ko-KR");
 
 function formatCandidateImportCount(value) {
@@ -57,7 +60,9 @@ function createCandidateImportService({
       throw createHttpError(400, "업로드할 수험생 데이터가 없습니다.", "CANDIDATE_IMPORT_EMPTY");
     }
 
-    const normalizedRows = rows.map((row, index) => normalizeCandidateWorkbookInput(row, index));
+    const normalizedRows = rows.map((row, index) =>
+      normalizeCandidateWorkbookInput(row, index, CANDIDATE_UPLOAD_NORMALIZATION_OPTIONS),
+    );
     const duplicateRowMap = new Map();
 
     normalizedRows.forEach((row, index) => {

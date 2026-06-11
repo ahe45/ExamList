@@ -228,8 +228,16 @@
             <p class="template-tag-caption">데이터 태그</p>
             <div class="template-tag-strip" data-template-editor-runtime-tags></div>
           </aside>
-          <div class="template-editor-page">
-            <div class="template-editor-surface" data-template-editor-runtime-surface contenteditable="true"></div>
+          <div
+            class="template-editor-page"
+            data-template-editor-canvas="true"
+            data-template-editor-canvas-zoom="1"
+            data-template-editor-canvas-zoom-mode="manual"
+            style="--template-editor-canvas-zoom: 1;"
+          >
+            <div class="editor-paper-scale-box" data-template-editor-canvas-scale-box>
+              <div class="template-editor-surface" data-template-editor-runtime-surface contenteditable="true"></div>
+            </div>
           </div>
           <aside class="template-page-properties-panel" data-template-editor-runtime-page-properties aria-label="페이지 속성"></aside>
         </div>

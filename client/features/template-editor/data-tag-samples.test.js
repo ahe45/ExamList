@@ -79,6 +79,37 @@ test("data tag settings modal renders collapsed accordion groups with sample and
   );
 });
 
+test("data tag settings modal validates exam date and time sample formats", async () => {
+  const { renderDataTagSampleModal } = await importClientModule("data-tag-samples-renderer.js");
+  const html = renderDataTagSampleModal({
+    dataTags: {
+      groups: [
+        {
+          tags: [
+            { example: "2026-11-28", key: "candidate.examDate", label: "시험날짜", type: "date" },
+            { example: "09:00", key: "candidate.examStartTime", label: "시작시간", type: "string" },
+          ],
+        },
+      ],
+    },
+    dataTagSampleModal: {
+      draftEmptyValueData: {},
+      draftValues: {
+        "candidate.examDate": "2026.11.28",
+        "candidate.examStartTime": "9:00",
+      },
+      isOpen: true,
+    },
+    dataTagEmptyValueData: {},
+    dataTagSampleValues: {},
+  });
+
+  assert.match(html, /data-data-tag-sample-key="candidate\.examDate"[\s\S]*aria-invalid="true"/);
+  assert.match(html, /yyyy-mm-dd/);
+  assert.match(html, /hh:mm/);
+  assert.match(html, /data-action="save-data-tag-sample-modal"[^>]*disabled/);
+});
+
 test("saving data tag settings can persist immediately without marking editor dirty", async () => {
   const { createDataTagSampleActions } = await importClientModule("data-tag-sample-actions.js");
   const appState = {
@@ -136,4 +167,55 @@ test("saving data tag settings can persist immediately without marking editor di
   assert.equal(appState.templateEditor.isDirty, false);
   assert.equal(appState.templateEditor.dataTagSampleModal.isOpen, false);
   assert.ok(renderCount >= 1);
+});
+
+test("saving data tag settings blocks invalid exam date and time samples", async () => {
+  const { createDataTagSampleActions } = await importClientModule("data-tag-sample-actions.js");
+  const appState = {
+    templateEditor: {
+      dataTags: {
+        groups: [
+          {
+            tags: [
+              { example: "2026-11-28", key: "candidate.examDate", label: "시험날짜", type: "date" },
+              { example: "09:00", key: "candidate.examStartTime", label: "시작시간", type: "string" },
+            ],
+          },
+        ],
+      },
+      dataTagEmptyValueData: {},
+      dataTagSampleModal: {
+        draftEmptyValueData: {},
+        draftValues: {
+          "candidate.examDate": "2026.11.28",
+          "candidate.examStartTime": "9:00",
+        },
+        isOpen: true,
+      },
+      dataTagSampleValues: {},
+      isDirty: false,
+      template: {
+        layout: {
+          dataTagSettings: {},
+          pages: [{ id: "page-1" }],
+        },
+      },
+    },
+  };
+  let didPersist = false;
+  const actions = createDataTagSampleActions({
+    appState,
+    onSaveDataTagSettings: async () => {
+      didPersist = true;
+      return true;
+    },
+    onStateChange: async () => {},
+  });
+
+  await actions.saveDataTagSampleModal();
+
+  assert.equal(didPersist, false);
+  assert.equal(appState.templateEditor.dataTagSampleModal.isOpen, true);
+  assert.match(appState.templateEditor.dataTagSampleModal.sampleErrors["candidate.examDate"], /yyyy-mm-dd/);
+  assert.match(appState.templateEditor.dataTagSampleModal.sampleErrors["candidate.examStartTime"], /hh:mm/);
 });

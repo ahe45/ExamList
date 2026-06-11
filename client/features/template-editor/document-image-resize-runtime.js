@@ -3,6 +3,7 @@ import {
   documentObjectMinimumSize,
   editorCanvasDisplayScale,
   getDocumentBoundedCoordinate,
+  getDocumentElementDisplayScale,
   getObjectResizeDirections,
   normalizeObjectResizeCorner,
   parseDocumentPixelValue,
@@ -165,8 +166,9 @@ export function createDocumentImageResizeRuntime({
     }
 
     const imageRect = selectedImage.getBoundingClientRect();
-    const scaleX = Math.max(Number(cellStartingPosition?.scaleX || editorCanvasDisplayScale) || editorCanvasDisplayScale, 0.01);
-    const scaleY = Math.max(Number(cellStartingPosition?.scaleY || editorCanvasDisplayScale) || editorCanvasDisplayScale, 0.01);
+    const documentScale = getDocumentElementDisplayScale(documentRoot, editorCanvasDisplayScale);
+    const scaleX = Math.max(Number(cellStartingPosition?.scaleX || documentScale.x) || documentScale.x, 0.01);
+    const scaleY = Math.max(Number(cellStartingPosition?.scaleY || documentScale.y) || documentScale.y, 0.01);
     const boundsWidth = Number(cellStartingPosition?.boundsWidth) || documentRoot.clientWidth || 0;
     const boundsHeight = Number(cellStartingPosition?.boundsHeight) || documentRoot.clientHeight || 0;
     const startWidth = Math.min(boundsWidth, Math.max(imageRect.width / scaleX, documentObjectMinimumSize));

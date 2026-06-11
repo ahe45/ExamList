@@ -15,14 +15,25 @@ const candidateTemplateRequiredHeaderFill = Object.freeze({
   pattern: "solid",
   type: "pattern",
 });
+const candidateTemplateHeaderNotes = Object.freeze({
+  birth: "yyyy-mm-dd 형식으로 입력하세요. 예: 2006-01-02",
+  date: "yyyy-mm-dd 형식으로 입력하세요. 예: 2026-03-28",
+  endTime: "선택 입력입니다. 입력 시 hh:mm 형식으로 입력하세요. 예: 10:00",
+  time: "hh:mm 형식으로 입력하세요. 예: 08:40",
+});
+const candidateUploadDatePattern = /^\d{4}-\d{2}-\d{2}$/;
+const candidateUploadTimePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 
 function createCandidateWorkbookService({ createHttpError }) {
+  function createRowSuffix(rowNumber) {
+    return Number.isFinite(rowNumber) && rowNumber >= 0 ? ` (${rowNumber}행)` : "";
+  }
+
   function normalizeText(value, fieldName, rowNumber) {
     const sourceValue = String(value ?? "");
 
     if (!sourceValue.trim()) {
-      const suffix = Number.isFinite(rowNumber) && rowNumber >= 0 ? ` (${rowNumber}행)` : "";
-      throw createHttpError(400, `${fieldName} 값을 입력하세요.${suffix}`, "CANDIDATE_FIELD_REQUIRED");
+      throw createHttpError(400, `${fieldName} 값을 입력하세요.${createRowSuffix(rowNumber)}`, "CANDIDATE_FIELD_REQUIRED");
     }
 
     return sourceValue;
@@ -32,15 +43,70 @@ function createCandidateWorkbookService({ createHttpError }) {
     return String(value ?? "");
   }
 
+  function isValidUploadDate(value) {
+    if (!candidateUploadDatePattern.test(value)) {
+      return false;
+    }
+
+    const [yearText, monthText, dayText] = value.split("-");
+    const year = Number(yearText);
+    const month = Number(monthText);
+    const day = Number(dayText);
+
+    if (year < 1000 || month < 1 || month > 12 || day < 1) {
+      return false;
+    }
+
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    return (
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month - 1 &&
+      date.getUTCDate() === day
+    );
+  }
+
+  function normalizeUploadDate(value, fieldName, rowNumber) {
+    const normalizedValue = normalizeText(value, fieldName, rowNumber).trim();
+
+    if (!isValidUploadDate(normalizedValue)) {
+      throw createHttpError(
+        400,
+        `${fieldName} 형식은 yyyy-mm-dd여야 합니다.${createRowSuffix(rowNumber)}`,
+        "CANDIDATE_DATE_FORMAT_INVALID",
+      );
+    }
+
+    return normalizedValue;
+  }
+
   function normalizeTime(value, fieldName, rowNumber) {
-    return normalizeText(value, fieldName, rowNumber);
+    const normalizedValue = normalizeText(value, fieldName, rowNumber).trim();
+
+    if (!candidateUploadTimePattern.test(normalizedValue)) {
+      throw createHttpError(
+        400,
+        `${fieldName} 형식은 hh:mm이어야 합니다.${createRowSuffix(rowNumber)}`,
+        "CANDIDATE_TIME_FORMAT_INVALID",
+      );
+    }
+
+    return normalizedValue;
   }
 
   function normalizeOptionalTime(value, fieldName, rowNumber) {
-    const normalizedValue = normalizeOptionalText(value);
+    const normalizedValue = normalizeOptionalText(value).trim();
 
     if (!normalizedValue) {
       return "";
+    }
+
+    if (!candidateUploadTimePattern.test(normalizedValue)) {
+      throw createHttpError(
+        400,
+        `${fieldName} 형식은 hh:mm이어야 합니다.${createRowSuffix(rowNumber)}`,
+        "CANDIDATE_TIME_FORMAT_INVALID",
+      );
     }
 
     return normalizedValue;
@@ -50,26 +116,30 @@ function createCandidateWorkbookService({ createHttpError }) {
     const normalizedValue = normalizeText(value, fieldName, rowNumber);
 
     if (!/^\d{4}$/.test(normalizedValue)) {
-      const suffix = Number.isFinite(rowNumber) && rowNumber >= 0 ? ` (${rowNumber}행)` : "";
-      throw createHttpError(400, `${fieldName} 형식은 YYYY여야 합니다.${suffix}`, "CANDIDATE_YEAR_INVALID");
+      throw createHttpError(400, `${fieldName} 형식은 YYYY여야 합니다.${createRowSuffix(rowNumber)}`, "CANDIDATE_YEAR_INVALID");
     }
 
     return normalizedValue;
   }
 
-  function normalizeCandidateWorkbookInput(candidateInput = {}, index = -1) {
+  function normalizeCandidateWorkbookInput(candidateInput = {}, index = -1, options = {}) {
     const rowNumber = Number(index) >= 0 ? Number(index) + 2 : -1;
+    const shouldValidateUploadDateTimeFormat = Boolean(options.validateUploadDateTimeFormat);
 
     return {
       admission: normalizeText(candidateInput.admission ?? candidateInput.exam, "전형명", rowNumber),
       admissionYear: normalizeOptionalText(candidateInput.admissionYear),
       admissionCode: normalizeText(candidateInput.admissionCode, "전형코드", rowNumber),
-      birth: normalizeText(candidateInput.birth ?? candidateInput.birthDate, "생년월일", rowNumber),
+      birth: shouldValidateUploadDateTimeFormat
+        ? normalizeUploadDate(candidateInput.birth ?? candidateInput.birthDate, "생년월일", rowNumber)
+        : normalizeText(candidateInput.birth ?? candidateInput.birthDate, "생년월일", rowNumber),
       building: normalizeText(candidateInput.building, "고사건물명", rowNumber),
       buildingCode: normalizeText(candidateInput.buildingCode, "고사건물코드", rowNumber),
       campus: normalizeOptionalText(candidateInput.campus ?? candidateInput.campusName),
       campusCode: normalizeOptionalText(candidateInput.campusCode),
-      date: normalizeText(candidateInput.date ?? candidateInput.examDate, "시험날짜", rowNumber),
+      date: shouldValidateUploadDateTimeFormat
+        ? normalizeUploadDate(candidateInput.date ?? candidateInput.examDate, "시험날짜", rowNumber)
+        : normalizeText(candidateInput.date ?? candidateInput.examDate, "시험날짜", rowNumber),
       designatedSort: normalizeOptionalText(candidateInput.designatedSort),
       examineeNo: normalizeText(candidateInput.examineeNo ?? candidateInput.examNo, "수험번호", rowNumber),
       group: normalizeOptionalText(candidateInput.group ?? candidateInput.groupName),
@@ -88,8 +158,12 @@ function createCandidateWorkbookService({ createHttpError }) {
       series: normalizeText(candidateInput.series, "계열명", rowNumber),
       seriesCode: normalizeOptionalText(candidateInput.seriesCode),
       temporaryNo: normalizeOptionalText(candidateInput.temporaryNo),
-      time: normalizeTime(candidateInput.time ?? candidateInput.session ?? candidateInput.examStartTime, "시작시간", rowNumber),
-      endTime: normalizeOptionalTime(candidateInput.endTime ?? candidateInput.examEndTime, "종료시간", rowNumber),
+      time: shouldValidateUploadDateTimeFormat
+        ? normalizeTime(candidateInput.time ?? candidateInput.session ?? candidateInput.examStartTime, "시작시간", rowNumber)
+        : normalizeText(candidateInput.time ?? candidateInput.session ?? candidateInput.examStartTime, "시작시간", rowNumber),
+      endTime: shouldValidateUploadDateTimeFormat
+        ? normalizeOptionalTime(candidateInput.endTime ?? candidateInput.examEndTime, "종료시간", rowNumber)
+        : normalizeOptionalText(candidateInput.endTime ?? candidateInput.examEndTime),
       track: normalizeText(candidateInput.track, "모집시기", rowNumber),
       unit: normalizeText(candidateInput.unit, "모집단위명", rowNumber),
       unitCode: normalizeText(candidateInput.unitCode, "모집단위코드", rowNumber),
@@ -184,6 +258,16 @@ function createCandidateWorkbookService({ createHttpError }) {
     });
   }
 
+  function applyCandidateTemplateHeaderNotes(worksheet) {
+    candidateTemplateColumns.forEach((column, columnIndex) => {
+      const note = candidateTemplateHeaderNotes[column.key];
+
+      if (note) {
+        worksheet.getRow(1).getCell(columnIndex + 1).note = note;
+      }
+    });
+  }
+
   function buildWorkbookSheet(workbook, sheetName, columns, rows) {
     const worksheet = workbook.addWorksheet(sheetName, {
       views: [{ state: "frozen", ySplit: 1 }],
@@ -262,6 +346,7 @@ function createCandidateWorkbookService({ createHttpError }) {
 
     applyWorkbookHeaderStyle(worksheet);
     applyCandidateTemplateRequiredHeaderStyle(worksheet);
+    applyCandidateTemplateHeaderNotes(worksheet);
     worksheet.addRow(
       candidateTemplateColumns.reduce((row, column) => {
         row[column.key] = column.sample;

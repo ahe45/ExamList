@@ -59,7 +59,8 @@ test("generated result modal opens with generated PDFs only when at least two ar
   assert.equal(appState.pdfGenerations.generatedResultModal.isSubmitting, false);
   assert.equal(appState.pdfGenerations.generatedResultModal.mode, "merge");
   assert.deepEqual(appState.pdfGenerations.generatedResultModal.generationIds, ["completed-1", "completed-2"]);
-  assert.equal(appState.pdfGenerations.generatedResultModal.archiveFileName, "generated.zip");
+  assert.equal(appState.pdfGenerations.generatedResultModal.archiveDownloadUrl, "");
+  assert.equal(appState.pdfGenerations.generatedResultModal.archiveFileName, "");
   assert.equal(appState.pdfGenerations.generatedResultModal.failedCount, 1);
 });
 

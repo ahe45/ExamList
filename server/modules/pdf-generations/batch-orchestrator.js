@@ -19,7 +19,6 @@ function createPdfGenerationBatchOrchestrator({
   candidateService,
   createHttpError,
   createPdfGeneration,
-  createPdfGenerationArchive,
   enqueuePdfGeneration,
   insertBatchRow,
   pdfPreviewService,
@@ -307,22 +306,11 @@ function createPdfGenerationBatchOrchestrator({
         targetPayload,
         templateRequest,
       });
-      const succeededGenerationIds = items
-        .filter((item) => item.status === "completed" && item.id)
-        .map((item) => item.id);
-      const archivePayload =
-        succeededGenerationIds.length > 0
-          ? await createPdfGenerationArchive({
-              archiveName: `${resolvedTemplate.name || generationUnit || "pdf-generations"}_${generationUnit || "batch"}`,
-              generationIds: succeededGenerationIds,
-            })
-          : null;
-
       return {
-        archiveDownloadUrl: archivePayload?.downloadUrl || "",
-        archiveFileName: archivePayload?.archiveFileName || "",
-        archiveGenerationCount: archivePayload?.generationCount || 0,
-        archiveId: archivePayload?.archiveId || "",
+        archiveDownloadUrl: "",
+        archiveFileName: "",
+        archiveGenerationCount: 0,
+        archiveId: "",
         failedCount: items.filter((item) => item.status === "failed").length,
         generationUnit: generationUnit || "all",
         items,
@@ -350,22 +338,11 @@ function createPdfGenerationBatchOrchestrator({
       targetPayload,
       templateRequest,
     });
-    const succeededGenerationIds = items
-      .filter((item) => item.status === "completed" && item.id)
-      .map((item) => item.id);
-    const archivePayload =
-      succeededGenerationIds.length > 0
-        ? await createPdfGenerationArchive({
-            archiveName: `${resolvedTemplate.name || generationUnit || "pdf-generations"}_${generationUnit || "batch"}`,
-            generationIds: succeededGenerationIds,
-          })
-        : null;
-
     return {
-      archiveDownloadUrl: archivePayload?.downloadUrl || "",
-      archiveFileName: archivePayload?.archiveFileName || "",
-      archiveGenerationCount: archivePayload?.generationCount || 0,
-      archiveId: archivePayload?.archiveId || "",
+      archiveDownloadUrl: "",
+      archiveFileName: "",
+      archiveGenerationCount: 0,
+      archiveId: "",
       failedCount: items.filter((item) => item.status === "failed").length,
       generationUnit,
       items,

@@ -39,11 +39,72 @@ function renderStatusBadge(status = "") {
   return `<span class="status-badge ${badgeClass}">${escapeHtml(formatPdfAuditStatusLabel(normalizedStatus))}</span>`;
 }
 
+function getAuditArtifactDownload(log = {}) {
+  const action = String(log.action || "");
+  const entityId = String(log.entityId || "").trim();
+  const entityType = String(log.entityType || "").trim();
+  const metadata = log.metadata && typeof log.metadata === "object" && !Array.isArray(log.metadata)
+    ? log.metadata
+    : {};
+
+  if (!entityId) {
+    return null;
+  }
+
+  if (entityType === "pdf_generation_merged" && action === "pdf_generation_merged_created") {
+    const fileName = String(metadata.mergedFileName || metadata.fileName || `${entityId}.pdf`).trim();
+
+    return {
+      downloadUrl: `/api/pdf-generations/merged/${encodeURIComponent(entityId)}/download?name=${encodeURIComponent(fileName)}`,
+      fileName,
+    };
+  }
+
+  if (entityType === "pdf_generation_archive" && action === "pdf_generation_archive_created") {
+    const fileName = String(metadata.archiveFileName || metadata.fileName || `${entityId}.zip`).trim();
+
+    return {
+      downloadUrl: `/api/pdf-generations/archives/${encodeURIComponent(entityId)}/download?name=${encodeURIComponent(fileName)}`,
+      fileName,
+    };
+  }
+
+  return null;
+}
+
+function renderAuditArtifactDownloadCell(log = {}) {
+  const artifact = getAuditArtifactDownload(log);
+
+  if (!artifact) {
+    return '<td class="pdf-audit-download-cell">-</td>';
+  }
+
+  return `
+    <td class="pdf-audit-download-cell">
+      <button
+        class="icon-button pdf-generation-artifact-download-button"
+        data-action="download-pdf-generation-artifact"
+        data-download-url="${escapeHtml(artifact.downloadUrl)}"
+        data-file-name="${escapeHtml(artifact.fileName)}"
+        type="button"
+        aria-label="다운로드"
+        title="다운로드"
+      >
+        <svg class="button-icon" viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true">
+          <path d="M12 3v12"></path>
+          <path d="m7 10 5 5 5-5"></path>
+          <path d="M5 21h14"></path>
+        </svg>
+      </button>
+    </td>
+  `;
+}
+
 function renderAuditLogRows(rows = [], startRowNumber = 1) {
   if (!rows.length) {
     return `
       <tr class="table-empty-row">
-        <td class="table-empty-cell pdf-audit-empty-cell" colspan="${pdfAuditLogGridColumns.length + 1}">표시할 PDF 작업 로그가 없습니다.</td>
+        <td class="table-empty-cell pdf-audit-empty-cell" colspan="${pdfAuditLogGridColumns.length + 2}">표시할 PDF 작업 로그가 없습니다.</td>
       </tr>
     `;
   }
@@ -66,6 +127,7 @@ function renderAuditLogRows(rows = [], startRowNumber = 1) {
           <td class="table-column-createdAt">
             <span class="table-cell-text" data-grid-cell-tooltip>${escapeHtml(formatDateTime(log.createdAt))}</span>
           </td>
+          ${renderAuditArtifactDownloadCell(log)}
         </tr>
       `,
     )
@@ -357,6 +419,7 @@ export function renderPdfHistoryManagementView({ pdfGenerations }) {
                     <tr>
                       <th class="row-number-col">순번</th>
                       ${pdfAuditLogGridColumns.map((column) => renderPdfAuditHeaderCell(column, pdfGenerations)).join("")}
+                      <th class="pdf-audit-download-column"><span class="table-header-label">다운로드</span></th>
                     </tr>
                   </thead>
                   <tbody class="${visibleRows.length ? "" : "table-body is-empty"}">

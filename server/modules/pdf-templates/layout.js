@@ -12,13 +12,14 @@ function normalizeTemplateLayout(layout, metadata, templateId = "") {
   const sourceGeneration = sourceLayout.generation && typeof sourceLayout.generation === "object"
     ? sourceLayout.generation
     : {};
+  const { fileNamePattern: _fileNamePattern, ...normalizedSourceGeneration } = sourceGeneration;
   const unitFields = normalizeGenerationUnitFields(sourceGeneration.unitFields, null);
   const nextLayout = {
     dataTagSettings: normalizeDataTagSettings(sourceLayout.dataTagSettings),
     description: metadata.description,
     generation: {
       ...createGenerationConfig(metadata.generationUnit),
-      ...sourceGeneration,
+      ...normalizedSourceGeneration,
       ...(unitFields.length ? { unitFields } : {}),
       unit: metadata.generationUnit,
     },

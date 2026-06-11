@@ -1,5 +1,8 @@
 .data-deletion-view {
-  align-self: start;
+  align-self: stretch;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding-bottom: 10px;
 }
 

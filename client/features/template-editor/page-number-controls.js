@@ -80,6 +80,17 @@ function getPageNumberOverlayHorizontalInsets(surfaceElement) {
   };
 }
 
+function getPageNumberSurfaceScale(surfaceElement) {
+  const rect = surfaceElement?.getBoundingClientRect?.();
+  const width = surfaceElement?.clientWidth || 0;
+  const height = surfaceElement?.clientHeight || 0;
+
+  return {
+    x: Math.max(width > 0 && rect?.width > 0 ? rect.width / width : 1, 0.01),
+    y: Math.max(height > 0 && rect?.height > 0 ? rect.height / height : 1, 0.01),
+  };
+}
+
 function isCoverTemplatePage(page) {
   return String(page?.type || "").trim() === "cover";
 }
@@ -183,6 +194,7 @@ function updatePageNumberOverlay(surfaceElement, selectedPage, editorState) {
   const surfaceRect = surfaceElement.getBoundingClientRect();
   const canvasRect = canvasElement.getBoundingClientRect();
   const horizontalInsets = getPageNumberOverlayHorizontalInsets(surfaceElement);
+  const surfaceScale = getPageNumberSurfaceScale(surfaceElement);
 
   overlayElement.textContent = renderPageNumberText(config, getEditorPageNumberContext(editorState, selectedPage));
   overlayElement.dataset.pageNumberPosition = config.position;
@@ -190,8 +202,8 @@ function updatePageNumberOverlay(surfaceElement, selectedPage, editorState) {
     pageNumberPositionDefinitions[config.position]?.cssJustifyContent || pageNumberPositionDefinitions.center.cssJustifyContent;
   overlayElement.style.textAlign =
     pageNumberPositionDefinitions[config.position]?.cssTextAlign || pageNumberPositionDefinitions.center.cssTextAlign;
-  overlayElement.style.paddingLeft = `${Math.round(horizontalInsets.left * 100) / 100}px`;
-  overlayElement.style.paddingRight = `${Math.round(horizontalInsets.right * 100) / 100}px`;
+  overlayElement.style.paddingLeft = `${Math.round(horizontalInsets.left * surfaceScale.x * 100) / 100}px`;
+  overlayElement.style.paddingRight = `${Math.round(horizontalInsets.right * surfaceScale.x * 100) / 100}px`;
   overlayElement.style.left = `${Math.round((surfaceRect.left - canvasRect.left + canvasElement.scrollLeft) * 100) / 100}px`;
   overlayElement.style.top = `${Math.round((surfaceRect.top - canvasRect.top + canvasElement.scrollTop) * 100) / 100}px`;
   overlayElement.style.width = `${Math.round(surfaceRect.width * 100) / 100}px`;
@@ -393,11 +405,14 @@ export function bindPageNumberControls({
         updatePageNumberOverlay(surfaceElement, resolveSelectedPage(appState, selectedPage), appState?.templateEditor),
       )
     : null;
+  const handleCanvasZoomChange = () =>
+    updatePageNumberOverlay(surfaceElement, resolveSelectedPage(appState, selectedPage), appState?.templateEditor);
 
   sectionElement.addEventListener("input", handleControlChange);
   sectionElement.addEventListener("change", handleControlChange);
   pagePropertiesHost.addEventListener("input", handlePageSettingChange);
   pagePropertiesHost.addEventListener("change", handlePageSettingChange);
+  surfaceElement.addEventListener("template-editor-canvas-zoom-change", handleCanvasZoomChange);
   resizeObserver?.observe(surfaceElement);
 
   return () => {
@@ -405,6 +420,7 @@ export function bindPageNumberControls({
     sectionElement.removeEventListener("change", handleControlChange);
     pagePropertiesHost.removeEventListener("input", handlePageSettingChange);
     pagePropertiesHost.removeEventListener("change", handlePageSettingChange);
+    surfaceElement.removeEventListener("template-editor-canvas-zoom-change", handleCanvasZoomChange);
     resizeObserver?.disconnect();
     sectionElement.remove();
     removePageNumberOverlay(surfaceElement);

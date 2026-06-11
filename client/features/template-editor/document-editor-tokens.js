@@ -1,4 +1,5 @@
 import { escapeHtml } from "../../app/html-utils.js";
+import { isDataTagFormatSupported } from "./data-tag-format-types.js";
 
 export function normalizeDocumentTokenTag(rawTag) {
   return String(rawTag || "")
@@ -27,6 +28,18 @@ function buildDocumentTokenContentHtml(displayText, iconMarkup = "") {
   return `${normalizedIconMarkup}${escapeHtml(normalizedDisplayText)}`;
 }
 
+function syncDocumentTokenFormatSupportAttribute(tokenElement, definitionOrKey = "") {
+  if (!tokenElement?.dataset) {
+    return;
+  }
+
+  if (isDataTagFormatSupported(definitionOrKey)) {
+    tokenElement.dataset.templateTagFormatSupported = "true";
+  } else {
+    delete tokenElement.dataset.templateTagFormatSupported;
+  }
+}
+
 export function createDocumentTokenElement(rawTag, displayLabel = "", options = {}) {
   const normalizedTag = normalizeDocumentTokenTag(rawTag);
   const normalizedDisplayLabel = normalizeDocumentTokenTag(displayLabel);
@@ -34,6 +47,7 @@ export function createDocumentTokenElement(rawTag, displayLabel = "", options = 
 
   tokenElement.className = "template-token";
   tokenElement.dataset.templateTagValue = normalizedTag;
+  syncDocumentTokenFormatSupportAttribute(tokenElement, normalizedTag);
 
   if (normalizedDisplayLabel && normalizedDisplayLabel !== normalizedTag) {
     tokenElement.dataset.templateTagLabel = normalizedDisplayLabel;
@@ -61,6 +75,7 @@ export function buildDocumentTokenHtml(rawTag, displayLabel = "", options = {}) 
     ? ` data-template-tag-label="${escapeHtml(normalizedDisplayLabel)}"`
     : "";
   const iconMarkup = String(options?.iconMarkup || "").trim();
+  const formatSupportAttribute = isDataTagFormatSupported(normalizedTag) ? ' data-template-tag-format-supported="true"' : "";
   const contentHtml = buildDocumentTokenContentHtml(
     getDocumentTokenDisplayText(normalizedDisplayLabel || normalizedTag),
     iconMarkup,
@@ -68,7 +83,7 @@ export function buildDocumentTokenHtml(rawTag, displayLabel = "", options = {}) 
 
   return `<span class="template-token" data-template-token="true" spellcheck="false" data-template-tag-value="${escapeHtml(
     normalizedTag,
-  )}"${labelAttribute} contenteditable="false">${contentHtml}</span>`;
+  )}"${labelAttribute}${formatSupportAttribute} contenteditable="false">${contentHtml}</span>`;
 }
 
 function getDocumentTokenPattern() {
@@ -92,6 +107,7 @@ export function normalizeDocumentTokenNodes(rootElement, options = {}) {
 
     tokenElement.classList.add("template-token");
     tokenElement.dataset.templateTagValue = normalizedTag;
+    syncDocumentTokenFormatSupportAttribute(tokenElement, normalizedTag);
 
     if (normalizedDisplayLabel && normalizedDisplayLabel !== normalizedTag) {
       tokenElement.dataset.templateTagLabel = normalizedDisplayLabel;

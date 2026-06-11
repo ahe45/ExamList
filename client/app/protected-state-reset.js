@@ -72,6 +72,7 @@ export function resetAccountState(appState) {
 export function resetPdfGenerationState(appState) {
   appState.pdfGenerationDetail.item = null;
   appState.pdfGenerationDetail.errorMessage = "";
+  appState.pdfGenerations.activeTab = "generations";
   appState.pdfGenerations.activeGeneration = {
     batchId: "",
     canCancel: false,
@@ -90,6 +91,20 @@ export function resetPdfGenerationState(appState) {
     startedAtMs: 0,
     succeededCount: 0,
     totalRequested: 0,
+  };
+  appState.pdfGenerations.artifactErrorMessage = "";
+  appState.pdfGenerations.artifactItems = [];
+  appState.pdfGenerations.artifactLoading = false;
+  appState.pdfGenerations.totalArtifacts = 0;
+  appState.pdfGenerations.artifactTable = {
+    filterMenuKey: "",
+    filterMenuPosition: null,
+    filterMenuSearch: "",
+    filters: {},
+    page: 1,
+    pageSize: 30,
+    pageSizeMenuOpen: false,
+    sortRules: [{ key: "createdAt", direction: "desc" }],
   };
   appState.pdfGenerations.auditLogs = [];
   appState.pdfGenerations.totalAuditLogs = 0;
@@ -240,12 +255,23 @@ export function resetSchoolState(appState) {
 }
 
 export function resetTemplateState(appState) {
+  appState.templateEditor.canvasZoom = 1;
+  appState.templateEditor.canvasZoomMode = "manual";
   appState.templateEditor.previewHtml = "";
   appState.templateEditor.previewPdfUrl = "";
   appState.templateEditor.dataTagSampleModal = {
     draftEmptyValueData: {},
     draftValues: {},
     isOpen: false,
+  };
+  appState.templateEditor.dataTagFormatModal = {
+    draftFormat: "",
+    errorMessage: "",
+    formatType: "",
+    isOpen: false,
+    isSupported: false,
+    tagKey: "",
+    tagLabel: "",
   };
   appState.templateEditor.dataTagEmptyValueData = {};
   appState.templateEditor.dataTagSampleValues = {};

@@ -1,4 +1,9 @@
 import { splitCurrentDocumentCell } from "./document-table-actions.js";
+import {
+  handleTemplateEditorCanvasZoomWheel,
+  resetTemplateEditorCanvasZoom,
+  stepTemplateEditorCanvasZoom,
+} from "./canvas-zoom.js";
 
 const DOCUMENT_TOOLBAR_ACTION_SELECTOR = [
   "[data-action='apply-document-command']",
@@ -70,6 +75,7 @@ function isTemplateEditorSelectionPreservingChromeTarget(target) {
         ".template-editor-image-selection",
         ".template-editor-table-selection",
         ".examlist-object-selection",
+        ".template-editor-canvas-zoom-controls",
       ].join(", "),
     ),
   );
@@ -328,6 +334,11 @@ export function bindTemplateEditorPointerKeyEvents({
       closeDocumentToolbarPanels({});
     }
 
+    if (event.target.closest(".template-editor-canvas-zoom-controls")) {
+      event.preventDefault();
+      return;
+    }
+
     const imageResizeHandle = event.target.closest(".template-editor-image-resize-handle");
 
     if (imageResizeHandle && isCandidateBlockModalEditorOpen()) {
@@ -435,8 +446,39 @@ export function bindTemplateEditorPointerKeyEvents({
       }
     }
 
+    const isFormEditingField =
+      activeElement?.matches?.("input, textarea, select") ||
+      activeElement?.closest?.("input, textarea, select");
+
+    if (isFormEditingField) {
+      return;
+    }
+
+    if (isHistoryModifierPressed) {
+      if (normalizedKey === "+" || normalizedKey === "=") {
+        if (stepTemplateEditorCanvasZoom(appState, 1, { onAfterApply: () => updateDocumentImageSelectionOverlay() })) {
+          event.preventDefault();
+        }
+        return;
+      }
+
+      if (normalizedKey === "-") {
+        if (stepTemplateEditorCanvasZoom(appState, -1, { onAfterApply: () => updateDocumentImageSelectionOverlay() })) {
+          event.preventDefault();
+        }
+        return;
+      }
+
+      if (normalizedKey === "0") {
+        if (resetTemplateEditorCanvasZoom(appState, { onAfterApply: () => updateDocumentImageSelectionOverlay() })) {
+          event.preventDefault();
+        }
+        return;
+      }
+    }
+
     const isEditingField =
-      activeElement?.matches?.("input, textarea, select, [contenteditable='true']") ||
+      activeElement?.matches?.("[contenteditable='true']") ||
       activeElement?.closest?.("[contenteditable='true']");
 
     if (isEditingField) {
@@ -484,6 +526,10 @@ export function bindTemplateEditorPointerKeyEvents({
   document.addEventListener(
     "wheel",
     (event) => {
+      if (handleTemplateEditorCanvasZoomWheel(event, appState, { onAfterApply: () => updateDocumentImageSelectionOverlay() })) {
+        return;
+      }
+
       handleTemplateEditorCanvasWheel(event, updateDocumentImageSelectionOverlay);
     },
     { passive: false },

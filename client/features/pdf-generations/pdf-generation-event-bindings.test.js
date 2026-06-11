@@ -118,6 +118,74 @@ function createPdfAuditLogContext(auditTable) {
   };
 }
 
+function createPdfGenerationArtifactContext(artifactTable) {
+  const pdfGenerations = {
+    artifactItems: Array.from({ length: 95 }, (_, index) => ({
+      createdAt: `2026-05-20T00:${String(index).padStart(2, "0")}:00.000Z`,
+      fileName: `artifact-${index + 1}.pdf`,
+      id: `artifact-${index + 1}`,
+      kind: index % 2 ? "archive" : "merged",
+    })),
+    artifactTable,
+  };
+  let renderCount = 0;
+  const context = {
+    appConfig: {},
+    appState: { currentView: "pdfGenerationHistory", pdfGenerations, route: {} },
+    clampPdfGenerationArtifactPage: () => {
+      const totalPages = Math.max(1, Math.ceil(pdfGenerations.artifactItems.length / Math.max(1, Number(artifactTable.pageSize) || 1)));
+
+      artifactTable.page = Math.min(Math.max(1, Number(artifactTable.page) || 1), totalPages);
+      return totalPages;
+    },
+    closePdfAuditLogFilterMenu: () => {},
+    closePdfGenerationArtifactFilterMenu: () => {
+      artifactTable.filterMenuKey = "";
+    },
+    closePdfGenerationArtifactPageSizeMenu: () => {
+      artifactTable.pageSizeMenuOpen = false;
+    },
+    closePdfGenerationFilterMenu: () => {},
+    closePdfGenerationPageSizeMenu: () => {},
+    getPdfGenerationArtifactTableState: () => artifactTable,
+    getVisiblePdfGenerationArtifactFilterOptions: () => ["ZIP", "병합 PDF"],
+    onStateChange: async () => {
+      renderCount += 1;
+    },
+    setPdfGenerationArtifactFilterValues: (columnKey, values) => {
+      artifactTable.filters = { ...(artifactTable.filters || {}) };
+
+      if (values.length) {
+        artifactTable.filters[columnKey] = values;
+      } else {
+        delete artifactTable.filters[columnKey];
+      }
+
+      artifactTable.page = 1;
+    },
+    togglePdfGenerationArtifactSort: (columnKey) => {
+      const [currentSortRule] = Array.isArray(artifactTable.sortRules) ? artifactTable.sortRules : [];
+
+      if (currentSortRule?.key !== columnKey) {
+        artifactTable.sortRules = [{ direction: "asc", key: columnKey }];
+      } else if (currentSortRule.direction === "asc") {
+        artifactTable.sortRules = [{ direction: "desc", key: columnKey }];
+      } else {
+        artifactTable.sortRules = [];
+      }
+    },
+  };
+
+  return {
+    context: new Proxy(context, {
+      get(target, property) {
+        return property in target ? target[property] : async () => {};
+      },
+    }),
+    getRenderCount: () => renderCount,
+  };
+}
+
 test("PDF generation pagination previous and next buttons update the current page", async () => {
   const listeners = {};
   const originalDocument = globalThis.document;
@@ -157,6 +225,73 @@ test("PDF generation pagination previous and next buttons update the current pag
     }));
     assert.equal(table.page, 4);
     assert.equal(getRenderCount(), 3);
+  } finally {
+    if (originalDocument === undefined) {
+      delete globalThis.document;
+    } else {
+      globalThis.document = originalDocument;
+    }
+  }
+});
+
+test("PDF generation artifact grid supports pagination, sorting, and filters", async () => {
+  const listeners = {};
+  const originalDocument = globalThis.document;
+
+  globalThis.document = {
+    addEventListener(type, listener) {
+      listeners[type] = listener;
+    },
+  };
+
+  try {
+    const artifactTable = {
+      filterMenuKey: "",
+      filterMenuPosition: null,
+      filterMenuSearch: "",
+      filters: {},
+      page: 2,
+      pageSize: 30,
+      pageSizeMenuOpen: false,
+      sortRules: [],
+    };
+    const { context, getRenderCount } = createPdfGenerationArtifactContext(artifactTable);
+
+    bindPdfGenerationEventHandlers(context);
+
+    const nextEvent = createPdfGenerationClickEvent("[data-pdf-generation-artifact-grid-nav]", {
+      dataset: { pdfGenerationArtifactGridNav: "next" },
+      disabled: false,
+    });
+    const previousEvent = createPdfGenerationClickEvent("[data-pdf-generation-artifact-grid-nav]", {
+      dataset: { pdfGenerationArtifactGridNav: "prev" },
+      disabled: false,
+    });
+
+    await listeners.click(nextEvent);
+    assert.equal(artifactTable.page, 3);
+    assert.equal(nextEvent.defaultPrevented, true);
+
+    await listeners.click(previousEvent);
+    assert.equal(artifactTable.page, 2);
+
+    await listeners.click(createPdfGenerationClickEvent("[data-pdf-generation-artifact-grid-sort]", {
+      dataset: { pdfGenerationArtifactGridSort: "fileName" },
+    }));
+    assert.deepEqual(artifactTable.sortRules, [{ direction: "asc", key: "fileName" }]);
+
+    await listeners.change(createPdfGenerationClickEvent("[data-pdf-generation-artifact-filter-option]", {
+      checked: true,
+      dataset: { filterKey: "kind", filterValue: "ZIP" },
+    }));
+    assert.deepEqual(artifactTable.filters.kind, ["ZIP"]);
+    assert.equal(artifactTable.page, 1);
+
+    await listeners.change(createPdfGenerationClickEvent("[data-pdf-generation-artifact-grid-page-picker]", {
+      value: "4",
+    }));
+    assert.equal(artifactTable.page, 4);
+    assert.equal(getRenderCount(), 5);
   } finally {
     if (originalDocument === undefined) {
       delete globalThis.document;

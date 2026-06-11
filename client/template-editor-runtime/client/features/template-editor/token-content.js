@@ -16,6 +16,8 @@
     normalizeTemplateEditorTables,
     templateTagDefinitions,
   }) {
+    const formatSupportedDateTagKeys = new Set(["candidate.examDate", "candidate.birthDate"]);
+    const formatSupportedTimeTagKeys = new Set(["candidate.examStartTime", "candidate.examEndTime"]);
     const resolveTemplateEditorTagDisplay =
       typeof getTemplateEditorTagDisplay === "function" ? getTemplateEditorTagDisplay : null;
 
@@ -49,6 +51,27 @@
         (Array.isArray(definition.aliases) ? definition.aliases : [definition.label]).includes(label),
       );
       return matchedDefinition?.token || `@{${label}}`;
+    }
+
+    function isTemplateTagFormatSupported(definitionOrKey = {}) {
+      const key = typeof definitionOrKey === "string"
+        ? String(definitionOrKey || "").trim()
+        : String(definitionOrKey?.key || definitionOrKey?.dataKey || definitionOrKey?.token || "").trim();
+      const type = typeof definitionOrKey === "string" ? "" : String(definitionOrKey?.type || "").trim().toLowerCase();
+
+      return formatSupportedDateTagKeys.has(key) || formatSupportedTimeTagKeys.has(key) || type === "date" || type === "time";
+    }
+
+    function syncTemplateTokenFormatSupportAttribute(tokenElement, definitionOrKey = "") {
+      if (!(tokenElement instanceof HTMLElement)) {
+        return;
+      }
+
+      if (isTemplateTagFormatSupported(definitionOrKey)) {
+        tokenElement.dataset.templateTagFormatSupported = "true";
+      } else {
+        delete tokenElement.dataset.templateTagFormatSupported;
+      }
     }
 
     function findTemplateTagDefinition(rawTag) {
@@ -228,6 +251,7 @@
         tokenElement.removeAttribute("title");
       }
 
+      syncTemplateTokenFormatSupportAttribute(tokenElement, matchedDefinition || normalizedTag);
       tokenElement.classList.toggle("template-token-icons-hidden", presentation.hideIcons);
       tokenElement.classList.toggle("template-token-sample-display", presentation.sampleDisplay);
       setTemplateTokenIconMarkupPreservingText(tokenElement, presentation.iconMarkup);
@@ -246,6 +270,9 @@
       const label = String(matchedDefinition?.label || presentation.text || "").trim();
       const example = String(matchedDefinition?.example || "").trim();
       const title = presentation.title || [label, example].filter(Boolean).join(" / ");
+      const formatSupportAttribute = isTemplateTagFormatSupported(matchedDefinition || normalizedTag)
+        ? ' data-template-tag-format-supported="true"'
+        : "";
       const classNames = [
         "template-token",
         presentation.hideIcons ? "template-token-icons-hidden" : "",
@@ -254,7 +281,7 @@
 
       return `<span class="${escapeAttribute(classNames)}" contenteditable="false" data-template-token="true" spellcheck="false" data-template-tag-value="${escapeAttribute(normalizedTag)}"${
         label ? ` data-template-tag-label="${escapeAttribute(label)}"` : ""
-      }${example ? ` data-template-tag-example="${escapeAttribute(example)}"` : ""}${title ? ` title="${escapeAttribute(title)}"` : ""}>${
+      }${example ? ` data-template-tag-example="${escapeAttribute(example)}"` : ""}${formatSupportAttribute}${title ? ` title="${escapeAttribute(title)}"` : ""}>${
         presentation.iconMarkup
       }${escapeHtml(presentation.text)}</span>`;
     }

@@ -1,7 +1,9 @@
 export function createTemplateEditorReturnedActions({
   appConfig,
   appState,
+  closeDataTagFormatModal,
   closeDataTagSampleModal,
+  closeGenerationUnitSettingsModal,
   closeTemplatePreview,
   discardTemplateEditorChanges,
   getCurrentSchoolRouteKey,
@@ -19,7 +21,9 @@ export function createTemplateEditorReturnedActions({
 }) {
   return {
     loadTemplateEditor,
+    closeDataTagFormatModal,
     closeDataTagSampleModal,
+    closeGenerationUnitSettingsModal,
     closeTemplatePreview,
     discardTemplateEditorChanges,
     isDataTagSampleModalDirty,

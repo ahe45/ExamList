@@ -36,6 +36,7 @@ export function createCandidateUploadActions({
     waitForProgressPaint,
   });
   const {
+    closeCandidateUploadErrorModal,
     closeCandidateUploadModal,
     isCandidateUploadDirty,
     saveCandidateUploadAndClose,
@@ -53,6 +54,7 @@ export function createCandidateUploadActions({
   });
 
   return Object.freeze({
+    closeCandidateUploadErrorModal,
     closeCandidateUploadModal,
     isCandidateUploadDirty,
     previewPhotoArchiveFile,

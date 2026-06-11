@@ -157,6 +157,7 @@ function createRouteDeps(appContext) {
     importCandidates: (...args) => services.candidateRecordService.importCandidates(...args),
     importAccounts: (...args) => services.authService.importAccounts(...args),
     listAccounts: (...args) => services.authService.listAccounts(...args),
+    listPdfGenerationArtifacts: (...args) => services.pdfGenerationService.listPdfGenerationArtifacts(...args),
     listPdfAuditLogs: (...args) => services.pdfGenerationService.listPdfAuditLogs(...args),
     listPdfGenerationTargets: (...args) => services.pdfGenerationService.listPdfGenerationTargets(...args),
     listPdfGenerations: (...args) => services.pdfGenerationService.listPdfGenerations(...args),

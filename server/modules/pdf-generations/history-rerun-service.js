@@ -1,11 +1,9 @@
 const { normalizeArchiveGenerationIds } = require("./archives");
-const { formatTimestamp } = require("./file-name");
 const { restoreGenerationRequestFromHistory } = require("./snapshots");
 
 function createPdfGenerationRerunActions({
   createHttpError,
   createPdfGeneration,
-  createPdfGenerationArchive,
   query,
 }) {
   async function rerunPdfGenerationBatch(request = {}) {
@@ -69,22 +67,11 @@ function createPdfGenerationRerunActions({
       }
     }
 
-    const succeededGenerationIds = items
-      .filter((item) => item.status === "completed" && item.id)
-      .map((item) => item.id);
-    const archivePayload =
-      succeededGenerationIds.length > 0
-        ? await createPdfGenerationArchive({
-            archiveName: request.archiveName || `pdf-reruns_${formatTimestamp(new Date())}`,
-            generationIds: succeededGenerationIds,
-          })
-        : null;
-
     return {
-      archiveDownloadUrl: archivePayload?.downloadUrl || "",
-      archiveFileName: archivePayload?.archiveFileName || "",
-      archiveGenerationCount: archivePayload?.generationCount || 0,
-      archiveId: archivePayload?.archiveId || "",
+      archiveDownloadUrl: "",
+      archiveFileName: "",
+      archiveGenerationCount: 0,
+      archiveId: "",
       failedCount: items.filter((item) => item.status === "failed").length,
       items,
       succeededCount: items.filter((item) => item.status === "completed").length,

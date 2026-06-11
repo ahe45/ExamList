@@ -5,20 +5,40 @@
 }
 
 .template-editor-runtime-shell {
+  --template-editor-canvas-panel-gutter-width: 24px;
+  --template-editor-canvas-panel-width: calc(
+    var(--template-editor-canvas-width, 794px) + var(--template-editor-canvas-panel-gutter-width)
+  );
   display: grid;
-  grid-template-columns: var(--editor-toolbar-column-width, 320px) minmax(180px, 252px) var(--template-editor-canvas-width, 794px);
+  grid-template-columns: var(--editor-toolbar-column-width, 320px) minmax(180px, 252px) var(--template-editor-canvas-panel-width);
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 6px;
   min-height: 720px;
 }
 
 .template-editor-runtime .template-editor-page {
+  --template-editor-canvas-zoom: 1;
   grid-column: 3;
   grid-row: 1 / 3;
-  min-width: var(--template-editor-canvas-width, 794px);
+  min-width: var(--template-editor-canvas-panel-width, var(--template-editor-canvas-width, 794px));
   min-height: 720px;
-  overflow-x: hidden;
+  overflow-x: auto;
   overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.template-editor-runtime .editor-paper-scale-box {
+  height: var(--template-editor-canvas-scaled-height, calc(var(--template-editor-canvas-height, 1123px) * var(--template-editor-canvas-zoom, 1)));
+  margin: 0 auto;
+  min-height: var(--template-editor-canvas-scaled-height, calc(var(--template-editor-canvas-height, 1123px) * var(--template-editor-canvas-zoom, 1)));
+  min-width: var(--template-editor-canvas-scaled-width, calc(var(--template-editor-canvas-width, 794px) * var(--template-editor-canvas-zoom, 1)));
+  position: relative;
+  width: var(--template-editor-canvas-scaled-width, calc(var(--template-editor-canvas-width, 794px) * var(--template-editor-canvas-zoom, 1)));
+}
+
+.template-editor-runtime .template-editor-surface {
+  transform: scale(var(--template-editor-canvas-zoom, 1));
+  transform-origin: top left;
 }
 
 .template-editor-runtime .template-tag-panel {

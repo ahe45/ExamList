@@ -11,7 +11,7 @@ test("formatTimestamp returns compact file-safe timestamp", () => {
   assert.equal(formatTimestamp(new Date("2026-04-20T11:22:33+09:00")), "20260420_112233");
 });
 
-test("buildPdfGenerationFileName uses template pattern and appends pdf extension", () => {
+test("buildPdfGenerationFileName ignores template file name patterns and uses the system pattern", () => {
   const fileName = buildPdfGenerationFileName({
     candidates: [
       {
@@ -35,13 +35,22 @@ test("buildPdfGenerationFileName uses template pattern and appends pdf extension
     },
   });
 
-  assert.equal(fileName, "2026학년도_한국대학교_면접고사_101호_수험생확인대장.pdf");
+  assert.equal(fileName, "기본 템플릿_2026학년도_면접고사_학생부종합전형_101호_20260420_112233.pdf");
 });
 
-test("buildPdfGenerationFileName falls back to template name and timestamp", () => {
+test("buildPdfGenerationFileName falls back to the default download file name pattern", () => {
   const fileName = buildPdfGenerationFileName({
-    candidates: [],
+    candidates: [
+      {
+        admissionRoundName: "수시",
+        admissionTypeName: "학생부종합전형",
+        roomName: "101호",
+      },
+    ],
     generatedAt: new Date("2026-04-20T11:22:33+09:00"),
+    schoolSettings: {
+      academicYear: "2026",
+    },
     template: {
       layout: {
         generation: {},
@@ -50,5 +59,32 @@ test("buildPdfGenerationFileName falls back to template name and timestamp", () 
     },
   });
 
-  assert.equal(fileName, "기본 수험생확인대장_20260420_112233.pdf");
+  assert.equal(fileName, "기본 수험생확인대장_2026학년도_수시_학생부종합전형_101호_20260420_112233.pdf");
+});
+
+test("buildPdfGenerationFileName ignores legacy default template patterns", () => {
+  const fileName = buildPdfGenerationFileName({
+    candidates: [
+      {
+        admissionRoundName: "수시모집",
+        admissionTypeName: "논술",
+        examName: "수시모집",
+        roomName: "502호",
+      },
+    ],
+    generatedAt: new Date("2026-06-11T19:29:57+09:00"),
+    schoolSettings: {
+      academicYear: "2026",
+    },
+    template: {
+      layout: {
+        generation: {
+          fileNamePattern: "{{exam.name}}_{{room.name}}_수험생확인대장.pdf",
+        },
+      },
+      name: "숭실사이버대학",
+    },
+  });
+
+  assert.equal(fileName, "숭실사이버대학_2026학년도_수시모집_논술_502호_20260611_192957.pdf");
 });

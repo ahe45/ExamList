@@ -1,4 +1,4 @@
-const { createBaseContext, replaceTemplateTokens } = require("../pdf-preview/renderer");
+const { createBaseContext } = require("../pdf-preview/renderer");
 
 function sanitizeFileName(fileName) {
   return String(fileName || "")
@@ -30,6 +30,29 @@ function ensurePdfExtension(fileName) {
   return String(fileName || "").toLowerCase().endsWith(".pdf") ? fileName : `${fileName}.pdf`;
 }
 
+function normalizeFileNamePart(value) {
+  return String(value || "").trim();
+}
+
+function buildDefaultPdfGenerationFileName({ context = {}, generatedAt, templateName = "" }) {
+  const admission = context.admission || {};
+  const candidate = context.candidate || {};
+  const document = context.document || {};
+  const exam = context.exam || {};
+  const room = context.room || {};
+  const school = context.school || {};
+  const parts = [
+    document.templateName || templateName || "수험생확인대장",
+    school.academicYear || school.year || candidate.admissionYear,
+    candidate.admissionRoundName || candidate.examName || exam.name,
+    candidate.admissionTypeName || admission.typeName,
+    room.name || room.roomName || candidate.roomName,
+    formatTimestamp(generatedAt),
+  ].map(normalizeFileNamePart).filter(Boolean);
+
+  return parts.join("_");
+}
+
 function buildPdfGenerationFileName({ candidates, generatedAt, schoolSettings = {}, template }) {
   const representativeCandidate = Array.isArray(candidates) && candidates.length ? candidates[0] : {};
   const context = createBaseContext({
@@ -41,10 +64,12 @@ function buildPdfGenerationFileName({ candidates, generatedAt, schoolSettings = 
     templateName: template?.name || "",
     totalPages: 1,
   });
-  const rawPattern = String(template?.layout?.generation?.fileNamePattern || "").trim();
-  const renderedName = rawPattern ? replaceTemplateTokens(rawPattern, context) : "";
-  const fallbackName = `${String(template?.name || "수험생확인대장").trim() || "수험생확인대장"}_${formatTimestamp(generatedAt)}`;
-  const sanitizedName = sanitizeFileName(renderedName || fallbackName) || `pdf_${formatTimestamp(generatedAt)}`;
+  const fallbackName = buildDefaultPdfGenerationFileName({
+    context,
+    generatedAt,
+    templateName: template?.name,
+  });
+  const sanitizedName = sanitizeFileName(fallbackName) || `pdf_${formatTimestamp(generatedAt)}`;
 
   return ensurePdfExtension(sanitizedName);
 }

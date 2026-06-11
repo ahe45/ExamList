@@ -136,6 +136,11 @@ export function setupAccountActions({ appState, onStateChange }) {
     return true;
   }
 
+  async function closeAccountUploadModal() {
+    resetAccountUploadModal();
+    await onStateChange();
+  }
+
   async function downloadAccountTemplate() {
     if (!canManageAccounts()) {
       return false;
@@ -220,6 +225,11 @@ export function setupAccountActions({ appState, onStateChange }) {
       mode: "create",
     });
     return true;
+  }
+
+  async function closeAccountModal() {
+    resetAccountModal();
+    await onStateChange();
   }
 
   function focusAccountCreateModalUserIdField() {
@@ -419,8 +429,7 @@ export function setupAccountActions({ appState, onStateChange }) {
     }
 
     if (actionTarget.dataset.action === "close-account-upload-modal") {
-      resetAccountUploadModal();
-      await onStateChange();
+      await closeAccountUploadModal();
       return;
     }
 
@@ -436,8 +445,7 @@ export function setupAccountActions({ appState, onStateChange }) {
     }
 
     if (actionTarget.dataset.action === "close-account-modal") {
-      resetAccountModal();
-      await onStateChange();
+      await closeAccountModal();
       return;
     }
 
@@ -447,6 +455,8 @@ export function setupAccountActions({ appState, onStateChange }) {
   });
 
   return Object.freeze({
+    closeAccountModal,
+    closeAccountUploadModal,
     loadAccounts,
     resetAccountModal,
     resetAccountUploadModal,

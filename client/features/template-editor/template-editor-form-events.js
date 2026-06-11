@@ -1,4 +1,9 @@
 import { getFormFieldValue } from "./layout-settings.js";
+import {
+  getDataTagFormatInputError,
+  renderDataTagFormatPreview,
+} from "./data-tag-format-options.js";
+import { getDataTagSampleValueError } from "./data-tag-value-formatting.js";
 
 function getElementFromEventTarget(target) {
   if (!target) {
@@ -38,9 +43,104 @@ function isTemplateEditorControlTarget(target) {
         ".editor-sidebar-footer",
         ".template-page-properties-column",
         ".template-tag-panel",
+        ".template-editor-canvas-zoom-controls",
       ].join(", "),
     ),
   );
+}
+
+function syncDataTagFormatInputFeedback(formatInput) {
+  const modalElement = formatInput?.closest?.(".data-tag-format-modal-overlay");
+
+  if (!modalElement) {
+    return;
+  }
+
+  const formatType = String(formatInput.dataset.dataTagFormatType || "").trim();
+  const formatValue = String(formatInput.value || "");
+  const errorMessage = getDataTagFormatInputError(formatType, formatValue);
+  const previewText = errorMessage
+    ? "형식을 수정하면 예시가 표시됩니다."
+    : renderDataTagFormatPreview(formatType, formatValue) || "형식을 입력하면 예시가 표시됩니다.";
+  const previewElement = modalElement.querySelector("[data-data-tag-format-preview-value]");
+  const errorElement = modalElement.querySelector("[data-data-tag-format-error]");
+  const presetSelect = modalElement.querySelector("[data-data-tag-format-field='preset']");
+  const saveButton = modalElement.querySelector("[data-action='save-data-tag-format-modal']");
+
+  if (previewElement) {
+    previewElement.textContent = previewText;
+  }
+
+  if (errorElement) {
+    errorElement.textContent = errorMessage;
+    errorElement.classList.toggle("hidden", !errorMessage);
+  }
+
+  if (presetSelect) {
+    const matchingOption = Array.from(presetSelect.options || []).find((option) => option.value === formatValue);
+
+    presetSelect.value = matchingOption ? formatValue : "__custom__";
+  }
+
+  if (saveButton) {
+    saveButton.disabled = Boolean(errorMessage);
+  }
+}
+
+function applyDataTagFormatPreset(presetSelect, updateDataTagFormatDraftValue) {
+  const presetValue = String(presetSelect?.value || "");
+
+  if (presetValue === "__custom__") {
+    return;
+  }
+
+  const modalElement = presetSelect.closest?.(".data-tag-format-modal-overlay");
+  const formatInput = modalElement?.querySelector?.("[data-data-tag-format-field='format']");
+
+  if (!formatInput) {
+    return;
+  }
+
+  formatInput.value = presetValue;
+  updateDataTagFormatDraftValue?.(presetValue);
+  syncDataTagFormatInputFeedback(formatInput);
+}
+
+function syncDataTagSampleInputFeedback(sampleInput) {
+  const modalElement = sampleInput?.closest?.(".data-tag-sample-modal-overlay");
+
+  if (!modalElement) {
+    return;
+  }
+
+  const key = String(sampleInput.dataset.dataTagSampleKey || "").trim();
+  const errorMessage = getDataTagSampleValueError(key, sampleInput.value || "");
+  const rowElement = sampleInput.closest?.(".data-tag-sample-row");
+  const errorElement = rowElement?.querySelector?.("[data-data-tag-sample-error]");
+  const saveButton = modalElement.querySelector("[data-action='save-data-tag-sample-modal']");
+
+  if (errorElement) {
+    errorElement.textContent = errorMessage;
+    errorElement.classList.toggle("hidden", !errorMessage);
+  }
+
+  if (errorMessage) {
+    sampleInput.setAttribute("aria-invalid", "true");
+    if (errorElement?.id) {
+      sampleInput.setAttribute("aria-describedby", errorElement.id);
+    }
+  } else {
+    sampleInput.removeAttribute("aria-invalid");
+    sampleInput.removeAttribute("aria-describedby");
+  }
+
+  if (saveButton) {
+    const hasErrors = Array.from(modalElement.querySelectorAll("[data-data-tag-sample-key]")).some((inputElement) =>
+      Boolean(getDataTagSampleValueError(inputElement.dataset.dataTagSampleKey || "", inputElement.value || ""))
+    );
+
+    saveButton.disabled = hasErrors;
+  }
 }
 
 function createTemplateEditorObjectSelectionSnapshot(documentSurface) {
@@ -142,6 +242,7 @@ export function bindTemplateEditorFormEvents({
   syncGenerationUnitPriorityRows,
   syncDocumentFontSizeMenuSelection,
   syncSelectedPageDocumentHtml,
+  updateDataTagFormatDraftValue,
   updateDataTagSampleDraftValue,
   updateSelectedPageField,
   updateSelectedPageMarginField,
@@ -234,6 +335,7 @@ export function bindTemplateEditorFormEvents({
 
     if (dataTagSampleInput) {
       updateDataTagSampleDraftValue(dataTagSampleInput.dataset.dataTagSampleKey || "", dataTagSampleInput.value || "", "sample");
+      syncDataTagSampleInputFeedback(dataTagSampleInput);
       return;
     }
 
@@ -245,6 +347,14 @@ export function bindTemplateEditorFormEvents({
         dataTagEmptyValueInput.value || "",
         "empty",
       );
+      return;
+    }
+
+    const dataTagFormatInput = event.target.closest("[data-data-tag-format-field='format']");
+
+    if (dataTagFormatInput) {
+      updateDataTagFormatDraftValue?.(dataTagFormatInput.value || "");
+      syncDataTagFormatInputFeedback(dataTagFormatInput);
       return;
     }
 
@@ -338,6 +448,21 @@ export function bindTemplateEditorFormEvents({
         command: event.target.dataset.colorCommand || "",
         tableAction: event.target.dataset.colorTableAction || "",
       });
+      return;
+    }
+
+    const dataTagFormatPresetControl = event.target.closest("[data-data-tag-format-field='preset']");
+
+    if (dataTagFormatPresetControl) {
+      applyDataTagFormatPreset(dataTagFormatPresetControl, updateDataTagFormatDraftValue);
+      return;
+    }
+
+    const dataTagFormatControl = event.target.closest("[data-data-tag-format-field='format']");
+
+    if (dataTagFormatControl) {
+      updateDataTagFormatDraftValue?.(dataTagFormatControl.value || "");
+      syncDataTagFormatInputFeedback(dataTagFormatControl);
       return;
     }
 

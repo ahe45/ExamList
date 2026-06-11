@@ -163,6 +163,7 @@
       clone.classList.remove("template-token");
       clone.classList.remove("template-data-fit");
       clone.removeAttribute("data-template-tag-value");
+      clone.removeAttribute("data-template-tag-format-supported");
       clone.removeAttribute("data-template-token");
       clone.removeAttribute("contenteditable");
       clone.removeAttribute("spellcheck");

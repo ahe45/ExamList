@@ -32,6 +32,7 @@ export function setupCandidateActions({ appState, onStateChange }) {
   });
 
   const {
+    closeCandidateUploadErrorModal,
     closeCandidateUploadModal,
     isCandidateUploadDirty,
     previewPhotoArchiveFile,
@@ -63,6 +64,15 @@ export function setupCandidateActions({ appState, onStateChange }) {
       statusType: "",
     };
     return true;
+  }
+
+  async function closeCandidateDownloadConfirm() {
+    appState.candidates.downloadConfirm = {
+      count: 0,
+      isDownloading: false,
+      isOpen: false,
+    };
+    await onStateChange();
   }
 
   const eventContext = {
@@ -102,6 +112,8 @@ export function setupCandidateActions({ appState, onStateChange }) {
   bindCandidateEventHandlers(eventContext);
   return {
     closeCandidateDetailModal: () => closeCandidateDetailModal(eventContext),
+    closeCandidateDownloadConfirm,
+    closeCandidateUploadErrorModal,
     closeCandidateUploadModal,
     isCandidateDetailDirty,
     isCandidateUploadDirty,

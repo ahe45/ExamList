@@ -1,7 +1,5 @@
 const { randomUUID } = require("crypto");
 
-const { isRoomGenerationUnit } = require("./generation-units");
-
 const paperPresetDimensionsPt = Object.freeze({
   A4: Object.freeze({ widthPt: 595.28, heightPt: 841.89 }),
   A3: Object.freeze({ widthPt: 841.89, heightPt: 1190.55 }),
@@ -41,7 +39,6 @@ function createGenerationConfig(generationUnit = "roomCode") {
       { field: "room.name", direction: "asc" },
       { field: "candidate.examNo", direction: "asc" },
     ],
-    fileNamePattern: isRoomGenerationUnit(generationUnit) ? "{{exam.name}}_{{room.name}}_수험생확인대장.pdf" : "{{exam.name}}_수험생확인대장.pdf",
   };
 }
 

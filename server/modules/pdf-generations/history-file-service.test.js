@@ -20,12 +20,14 @@ test("deletePdfGenerations removes completed history rows and their files", asyn
       filePath: "C:\\storage\\first.pdf",
       fileSizeBytes: 1024,
       id: "first",
+      schoolId: "school-1",
       status: "completed",
     },
     {
       filePath: "C:\\storage\\second.pdf",
       fileSizeBytes: 2048,
       id: "second",
+      schoolId: "school-1",
       status: "completed",
     },
   ];
@@ -75,6 +77,60 @@ test("deletePdfGenerations removes completed history rows and their files", asyn
   assert.equal(ensureCalls, 0);
   assert.equal(auditLogs[0].action, "pdf_generation_deleted");
   assert.equal(auditLogs[0].metadata.deletedCount, 2);
+  assert.deepEqual(auditLogs[0].metadata.generationIds, ["first", "second"]);
+  assert.deepEqual(auditLogs[0].metadata.schoolIds, ["school-1"]);
+});
+
+test("listPdfAuditLogs scopes audit rows by school id", async () => {
+  const queryCalls = [];
+  const actions = createPdfGenerationFileActions({
+    createHttpError,
+    ensureStorageDirectories: async () => {},
+    fs: {
+      existsSync: () => false,
+      promises: {
+        rm: async () => {},
+      },
+    },
+    query: async (sql, params) => {
+      queryCalls.push({ params, sql });
+
+      if (sql.includes("FROM pdf_audit_logs")) {
+        return [
+          {
+            action: "pdf_generation_completed",
+            createdAt: new Date("2026-05-20T01:02:03.000Z"),
+            entityId: "generation-1",
+            entityType: "pdf_generation",
+            id: "audit-1",
+            metadataJson: JSON.stringify({ schoolId: "school-1", templateId: "template-1" }),
+            status: "completed",
+          },
+        ];
+      }
+
+      return [];
+    },
+    writeAuditLog: async () => {},
+  });
+
+  const result = await actions.listPdfAuditLogs({ limit: 5, schoolId: "school-1" });
+  const [auditQuery] = queryCalls;
+
+  assert.equal(result.items.length, 1);
+  assert.match(auditQuery.sql, /WHERE \(/);
+  assert.match(auditQuery.sql, /FROM pdf_generation_histories audit_history/);
+  assert.match(auditQuery.sql, /FROM pdf_generation_batches audit_batch/);
+  assert.deepEqual(auditQuery.params, [
+    '%"schoolId":"school-1"%',
+    '%"schoolIds":[%"school-1"%]%',
+    "school-1",
+    "school-1",
+    "school-1",
+    '%"schoolId":"school-1"%',
+    '%"schoolIds":[%"school-1"%]%',
+    5,
+  ]);
 });
 
 test("cleanupExpiredPdfGenerations purges files without creating storage directories", async () => {

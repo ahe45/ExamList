@@ -2,6 +2,7 @@ import {
   documentObjectMinimumSize,
   editorCanvasDisplayScale,
   getDocumentBoundedCoordinate,
+  getDocumentElementDisplayScale,
   parseDocumentPixelValue,
 } from "./document-image-utils.js";
 
@@ -28,8 +29,9 @@ export function createDocumentImagePositioningRuntime({
     const borderRight = getFiniteDocumentPixelValue(computedStyle.borderRightWidth);
     const borderTop = getFiniteDocumentPixelValue(computedStyle.borderTopWidth);
     const borderBottom = getFiniteDocumentPixelValue(computedStyle.borderBottomWidth);
-    const scaleX = Math.max(editorCanvasDisplayScale || 1, 0.01);
-    const scaleY = Math.max(editorCanvasDisplayScale || 1, 0.01);
+    const cellScale = getDocumentElementDisplayScale(cellElement, editorCanvasDisplayScale);
+    const scaleX = cellScale.x;
+    const scaleY = cellScale.y;
     const paddingBoxWidth = Math.max(
       cellElement.clientWidth || 0,
       cellRect.width / scaleX - borderLeft - borderRight,
@@ -167,28 +169,33 @@ export function createDocumentImagePositioningRuntime({
     }
 
     if (imageElement.parentElement === documentRoot && imageElement.style.position === "absolute") {
+      const documentScale = getDocumentElementDisplayScale(documentRoot, editorCanvasDisplayScale);
+
       imageElement.classList.add("is-floating-object");
       return {
         boundsElement: documentRoot,
         boundsHeight: documentRoot.clientHeight,
         boundsWidth: documentRoot.clientWidth,
         left: parseDocumentPixelValue(imageElement.style.left, imageElement.offsetLeft),
-        scaleX: editorCanvasDisplayScale,
-        scaleY: editorCanvasDisplayScale,
+        scaleX: documentScale.x,
+        scaleY: documentScale.y,
         top: parseDocumentPixelValue(imageElement.style.top, imageElement.offsetTop),
       };
     }
 
     const imageRect = imageElement.getBoundingClientRect();
     const documentRect = documentRoot.getBoundingClientRect();
-    const logicalWidth = Math.max(Math.round(imageRect.width / editorCanvasDisplayScale), documentObjectMinimumSize);
-    const logicalHeight = Math.max(Math.round(imageRect.height / editorCanvasDisplayScale), documentObjectMinimumSize);
+    const documentScale = getDocumentElementDisplayScale(documentRoot, editorCanvasDisplayScale);
+    const scaleX = documentScale.x;
+    const scaleY = documentScale.y;
+    const logicalWidth = Math.max(Math.round(imageRect.width / scaleX), documentObjectMinimumSize);
+    const logicalHeight = Math.max(Math.round(imageRect.height / scaleY), documentObjectMinimumSize);
     const boundedLeft = getDocumentBoundedCoordinate(
-      (imageRect.left - documentRect.left) / editorCanvasDisplayScale,
+      (imageRect.left - documentRect.left) / scaleX,
       documentRoot.clientWidth - logicalWidth,
     );
     const boundedTop = getDocumentBoundedCoordinate(
-      (imageRect.top - documentRect.top) / editorCanvasDisplayScale,
+      (imageRect.top - documentRect.top) / scaleY,
       documentRoot.clientHeight - logicalHeight,
     );
 
@@ -207,8 +214,8 @@ export function createDocumentImagePositioningRuntime({
       boundsHeight: documentRoot.clientHeight,
       boundsWidth: documentRoot.clientWidth,
       left: boundedLeft,
-      scaleX: editorCanvasDisplayScale,
-      scaleY: editorCanvasDisplayScale,
+      scaleX,
+      scaleY,
       top: boundedTop,
     };
   }
