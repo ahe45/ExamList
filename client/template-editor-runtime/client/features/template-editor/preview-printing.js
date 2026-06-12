@@ -17,7 +17,7 @@
           padding: 24px;
           background: #eef2f8;
           font-family: "Noto Sans KR", sans-serif;
-          color: #152033;
+          color: #000000;
         }
         .template-render-sheet {
           width: 794px;

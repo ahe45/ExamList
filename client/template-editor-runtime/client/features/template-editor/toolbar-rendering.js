@@ -60,7 +60,7 @@
         fontSizeId: toolbarIds.fontSize,
         fontSizeValue: TEMPLATE_EDITOR_DEFAULT_FONT_SIZE,
         textColorId: toolbarIds.textColor,
-        textColorValue: toolbar.EDITOR_TOOLBAR_DEFAULT_TEXT_COLOR || "#152033",
+        textColorValue: toolbar.EDITOR_TOOLBAR_DEFAULT_TEXT_COLOR || "#000000",
         textShadingId: toolbarIds.textShading,
         cellShadingId: toolbarIds.cellShading,
         tableInsertPanelId: toolbarIds.tableInsertPanel,

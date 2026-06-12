@@ -29,7 +29,7 @@
   border-radius: 0;
   box-sizing: border-box;
   box-shadow: 0 24px 60px rgba(31, 41, 55, 0.12);
-  color: var(--text);
+  color: #000000;
   line-height: 1;
   outline: none;
   overflow: hidden;

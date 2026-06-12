@@ -127,6 +127,49 @@ test("calculateCanvasBackdropRect clips measured canvas to the viewport", async 
   );
 });
 
+test("candidate block focus host helpers translate viewport coordinates into a transformed host", async () => {
+  const {
+    calculateCandidateBlockFocusHostMetrics,
+    translateCandidateBlockFocusViewportRectToHostRect,
+  } = await importClientModule("candidate-block-grid-focus-layout.js");
+  const hostMetrics = calculateCandidateBlockFocusHostMetrics(
+    {
+      height: 600,
+      left: 640,
+      top: 180,
+      width: 400,
+    },
+    {
+      height: 1200,
+      width: 800,
+    },
+  );
+
+  assert.deepEqual(hostMetrics, {
+    left: 640,
+    scaleX: 0.5,
+    scaleY: 0.5,
+    top: 180,
+  });
+  assert.deepEqual(
+    translateCandidateBlockFocusViewportRectToHostRect(
+      {
+        height: 200,
+        left: 840,
+        top: 280,
+        width: 300,
+      },
+      hostMetrics,
+    ),
+    {
+      height: 400,
+      left: 400,
+      top: 200,
+      width: 600,
+    },
+  );
+});
+
 test("calculateCandidateBlockFocusLayout fits the logical block inside the visible canvas", async () => {
   const { calculateCandidateBlockFocusLayout } = await importClientModule("candidate-block-grid-focus-layout.js");
 

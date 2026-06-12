@@ -85,23 +85,26 @@
 
   function normalizeTemplateEditorColorValue(rawValue, fallbackValue = "#ffffff") {
     const normalizedValue = String(rawValue || "").trim();
+    const normalizedFallbackValue = String(fallbackValue || "").trim().toLowerCase();
+    const normalizeResolvedColorValue = (resolvedValue) =>
+      normalizedFallbackValue === "#000000" && resolvedValue === "#152033" ? "#000000" : resolvedValue;
 
     if (/^#[0-9a-f]{6}$/i.test(normalizedValue)) {
-      return normalizedValue.toLowerCase();
+      return normalizeResolvedColorValue(normalizedValue.toLowerCase());
     }
 
     if (/^#[0-9a-f]{3}$/i.test(normalizedValue)) {
       const [, shortHex = ""] = normalizedValue.match(/^#([0-9a-f]{3})$/i) || [];
-      return `#${shortHex.split("").map((value) => value.repeat(2)).join("").toLowerCase()}`;
+      return normalizeResolvedColorValue(`#${shortHex.split("").map((value) => value.repeat(2)).join("").toLowerCase()}`);
     }
 
     const rgbMatch = normalizedValue.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i);
 
     if (rgbMatch) {
       const [, red = "255", green = "255", blue = "255"] = rgbMatch;
-      return `#${[red, green, blue]
+      return normalizeResolvedColorValue(`#${[red, green, blue]
         .map((value) => Math.max(0, Math.min(255, Number(value) || 0)).toString(16).padStart(2, "0"))
-        .join("")}`;
+        .join("")}`);
     }
 
     return fallbackValue;

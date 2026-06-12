@@ -88,10 +88,10 @@ export function renderDocumentToolbar(access) {
         ${renderDocumentToolbarColorPickerSection({
           sectionLabel: "글자색",
           inputId: "templateEditorTextColor",
-          inputValue: "#152033",
+          inputValue: "#000000",
           presetColors: documentToolbarTextColorPresets,
           colorCommand: "foreColor",
-          fallbackValue: "#152033",
+          fallbackValue: "#000000",
           sectionClassName: "template-toolbar-section-compact",
           pickerClassName: "template-toolbar-color-picker-compact",
         })}

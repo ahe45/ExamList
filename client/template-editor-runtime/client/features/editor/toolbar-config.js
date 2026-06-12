@@ -26,9 +26,9 @@
     72,
   ]);
 
-  const EDITOR_TOOLBAR_DEFAULT_TEXT_COLOR = "#152033";
+  const EDITOR_TOOLBAR_DEFAULT_TEXT_COLOR = "#000000";
   const EDITOR_TOOLBAR_TEXT_COLOR_PRESETS = Object.freeze([
-    Object.freeze({ label: "기본 검정", value: "#152033" }),
+    Object.freeze({ label: "기본 검정", value: "#000000" }),
     Object.freeze({ label: "차콜", value: "#334155" }),
     Object.freeze({ label: "파랑", value: "#1d4ed8" }),
     Object.freeze({ label: "청록", value: "#0f766e" }),

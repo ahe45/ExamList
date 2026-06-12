@@ -19,7 +19,7 @@ export const documentToolbarFontFamilyOptions = Object.freeze([
 ]);
 
 export const documentToolbarTextColorPresets = Object.freeze([
-  Object.freeze({ label: "기본 검정", value: "#152033" }),
+  Object.freeze({ label: "기본 검정", value: "#000000" }),
   Object.freeze({ label: "차콜", value: "#334155" }),
   Object.freeze({ label: "파랑", value: "#1d4ed8" }),
   Object.freeze({ label: "청록", value: "#0f766e" }),

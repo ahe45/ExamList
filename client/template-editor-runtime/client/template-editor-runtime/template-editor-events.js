@@ -6,6 +6,8 @@
 
   globalScope.ExamListTemplateEditorEvents = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
+  const TEMPLATE_EDITOR_COLOR_INPUT_APPLY_DELAY_MS = 160;
+
   function createTemplateEditorEventController({
     applyTemplateEditorFontFamily,
     applyTemplateEditorFontSize,
@@ -50,6 +52,8 @@
     updateTemplateTableControls,
   }) {
     const isElement = (target) => Boolean(target && target instanceof ownerWindow.Element);
+    let pendingToolbarColorInputTimer = 0;
+    let pendingToolbarColorInputElement = null;
 
     function isCompositionInputEvent(event) {
       const inputType = String(event?.inputType || "");
@@ -184,6 +188,43 @@
           refreshTemplateEditorSelectionVisualState();
         }
       }, 0);
+    }
+
+    function cancelPendingToolbarColorInputApply() {
+      if (pendingToolbarColorInputTimer && typeof ownerWindow.clearTimeout === "function") {
+        ownerWindow.clearTimeout(pendingToolbarColorInputTimer);
+      }
+
+      pendingToolbarColorInputTimer = 0;
+      pendingToolbarColorInputElement = null;
+    }
+
+    function applyToolbarColorInput(colorInputElement) {
+      if (!colorInputElement) {
+        return;
+      }
+
+      applyToolbarColorTrigger(colorInputElement);
+      scheduleTemplateEditorSelectionVisualStateRefresh();
+    }
+
+    function scheduleToolbarColorInputApply(colorInputElement) {
+      cancelPendingToolbarColorInputApply();
+      pendingToolbarColorInputElement = colorInputElement;
+      pendingToolbarColorInputTimer = ownerWindow.setTimeout(() => {
+        const targetInputElement = pendingToolbarColorInputElement;
+
+        pendingToolbarColorInputTimer = 0;
+        pendingToolbarColorInputElement = null;
+        applyToolbarColorInput(targetInputElement);
+      }, TEMPLATE_EDITOR_COLOR_INPUT_APPLY_DELAY_MS);
+    }
+
+    function flushToolbarColorInputApply(colorInputElement) {
+      const targetInputElement = pendingToolbarColorInputElement || colorInputElement;
+
+      cancelPendingToolbarColorInputApply();
+      applyToolbarColorInput(targetInputElement);
     }
 
     function saveTemplateEditorSelectionFromToolbarPointer() {
@@ -328,9 +369,8 @@
       }
 
       if (event.target?.matches?.(".template-toolbar-color")) {
-        applyToolbarColorTrigger(event.target);
+        flushToolbarColorInputApply(event.target);
         toolbar.closeAllEditorToolbarColorPanels();
-        scheduleTemplateEditorSelectionVisualStateRefresh();
         return;
       }
 
@@ -368,8 +408,7 @@
       }
 
       if (event.target?.matches?.(".template-toolbar-color")) {
-        applyToolbarColorTrigger(event.target);
-        scheduleTemplateEditorSelectionVisualStateRefresh();
+        scheduleToolbarColorInputApply(event.target);
         return;
       }
 
@@ -550,6 +589,7 @@
     }
 
     function unbindEvents() {
+      cancelPendingToolbarColorInputApply();
       disposers.splice(0).forEach((dispose) => dispose());
     }
 

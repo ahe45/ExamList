@@ -299,7 +299,7 @@
       });
 
       const runtimeController = deps.runtime.createTemplateEditorRuntimeController({
-        EDITOR_TOOLBAR_DEFAULT_TEXT_COLOR: toolbar.EDITOR_TOOLBAR_DEFAULT_TEXT_COLOR || "#152033",
+        EDITOR_TOOLBAR_DEFAULT_TEXT_COLOR: toolbar.EDITOR_TOOLBAR_DEFAULT_TEXT_COLOR || "#000000",
         TEMPLATE_EDITOR_DEFAULT_FONT_FAMILY,
         TEMPLATE_EDITOR_DEFAULT_FONT_SIZE,
         applySharedEditorCommand: toolbar.applySharedEditorCommand,

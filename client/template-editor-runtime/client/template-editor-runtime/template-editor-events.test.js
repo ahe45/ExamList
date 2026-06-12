@@ -29,6 +29,7 @@ function createFakeEventTarget({ contains = () => false } = {}) {
 }
 
 function createRuntimeEventHarness({
+  deferTimeouts = false,
   modalContains = () => false,
   surfaceContains = () => false,
   toolbarContains = () => false,
@@ -46,8 +47,11 @@ function createRuntimeEventHarness({
   const syncCalls = [];
   const selectionSaveCalls = [];
   const historyCalls = [];
+  const colorApplyCalls = [];
+  const timeoutCalls = [];
   const state = { templateEditor: {} };
   const noop = () => {};
+  let timeoutId = 0;
 
   ownerWindow.Element = class FakeElement {};
   ownerWindow.getSelection = () => ({
@@ -55,15 +59,41 @@ function createRuntimeEventHarness({
     getRangeAt: () => ({ commonAncestorContainer: ownerWindow.selectionAnchorNode || null }),
     rangeCount: ownerWindow.selectionAnchorNode ? 1 : 0,
   });
-  ownerWindow.setTimeout = (callback) => {
+  ownerWindow.setTimeout = (callback, delay = 0) => {
+    if (deferTimeouts) {
+      const id = ++timeoutId;
+
+      timeoutCalls.push({ callback, cleared: false, delay, id });
+      return id;
+    }
+
     callback();
     return 0;
   };
+  ownerWindow.clearTimeout = (id) => {
+    const timeout = timeoutCalls.find((entry) => entry.id === id);
+
+    if (timeout) {
+      timeout.cleared = true;
+    }
+  };
+
+  function runPendingTimers() {
+    const pendingTimeouts = timeoutCalls.splice(0);
+
+    pendingTimeouts
+      .filter((timeout) => !timeout.cleared)
+      .forEach((timeout) => {
+        timeout.callback();
+      });
+  }
 
   const controller = createTemplateEditorEventController({
     applyTemplateEditorFontFamily: noop,
     applyTemplateEditorFontSize: noop,
-    applyToolbarColorTrigger: noop,
+    applyToolbarColorTrigger: (colorInputElement) => {
+      colorApplyCalls.push(colorInputElement);
+    },
     applyToolbarHexColorInput: noop,
     clearTemplateEditorImageSelection: noop,
     clearTemplateEditorTableHoverState: noop,
@@ -143,7 +173,9 @@ function createRuntimeEventHarness({
   controller.bindEvents();
 
   return {
+    colorApplyCalls,
     handleBeforeInput: modal.getListener("beforeinput"),
+    handleChange: modal.getListener("change"),
     handleCompositionEnd: modal.getListener("compositionend"),
     handleInput: modal.getListener("input"),
     handlePointerDown: modal.getListener("pointerdown"),
@@ -153,10 +185,12 @@ function createRuntimeEventHarness({
     historyCalls,
     ownerDocument,
     ownerWindow,
+    runPendingTimers,
     selectionSaveCalls,
     state,
     surface,
     syncCalls,
+    timeoutCalls,
   };
 }
 
@@ -184,6 +218,46 @@ test("template editor runtime syncs after IME composition is committed", () => {
   handleCompositionEnd({ target: surface });
 
   assert.equal(syncCalls.length, 1);
+});
+
+test("template editor runtime debounces native color input while dragging", () => {
+  const { colorApplyCalls, handleInput, runPendingTimers, timeoutCalls } = createRuntimeEventHarness({
+    deferTimeouts: true,
+  });
+  const colorInputElement = {
+    matches: (selector) => selector === ".template-toolbar-color",
+  };
+
+  handleInput({ target: colorInputElement });
+  handleInput({ target: colorInputElement });
+
+  assert.equal(colorApplyCalls.length, 0);
+
+  const activeColorTimers = timeoutCalls.filter((timeout) => !timeout.cleared && timeout.delay === 160);
+
+  assert.equal(activeColorTimers.length, 1);
+
+  runPendingTimers();
+
+  assert.deepEqual(colorApplyCalls, [colorInputElement]);
+});
+
+test("template editor runtime flushes pending color input on change", () => {
+  const { colorApplyCalls, handleChange, handleInput, runPendingTimers } = createRuntimeEventHarness({
+    deferTimeouts: true,
+  });
+  const colorInputElement = {
+    matches: (selector) => selector === ".template-toolbar-color",
+  };
+
+  handleInput({ target: colorInputElement });
+  handleChange({ target: colorInputElement });
+
+  assert.deepEqual(colorApplyCalls, [colorInputElement]);
+
+  runPendingTimers();
+
+  assert.deepEqual(colorApplyCalls, [colorInputElement]);
 });
 
 test("template editor runtime blocks native undo beforeinput and uses custom history", () => {

@@ -32,6 +32,40 @@ export function parseCssPixelValue(value) {
   return Number.isFinite(numericValue) ? numericValue : 0;
 }
 
+function toFiniteNumber(value, fallback = 0) {
+  const numericValue = Number(value);
+
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+}
+
+export function calculateCandidateBlockFocusHostMetrics(hostRect, hostSize = {}) {
+  const left = toFiniteNumber(hostRect?.left, 0);
+  const top = toFiniteNumber(hostRect?.top, 0);
+  const rectWidth = toFinitePixelValue(hostRect?.width, 1);
+  const rectHeight = toFinitePixelValue(hostRect?.height, 1);
+  const layoutWidth = toFinitePixelValue(hostSize.width, rectWidth);
+  const layoutHeight = toFinitePixelValue(hostSize.height, rectHeight);
+
+  return {
+    left,
+    scaleX: Math.max(0.01, rectWidth / layoutWidth),
+    scaleY: Math.max(0.01, rectHeight / layoutHeight),
+    top,
+  };
+}
+
+export function translateCandidateBlockFocusViewportRectToHostRect(viewportRect, hostMetrics = {}) {
+  const scaleX = Math.max(0.01, toFinitePixelValue(hostMetrics.scaleX, 1));
+  const scaleY = Math.max(0.01, toFinitePixelValue(hostMetrics.scaleY, 1));
+
+  return {
+    height: Math.round(toFiniteNumber(viewportRect?.height, 0) / scaleY),
+    left: Math.round((toFiniteNumber(viewportRect?.left, 0) - toFiniteNumber(hostMetrics.left, 0)) / scaleX),
+    top: Math.round((toFiniteNumber(viewportRect?.top, 0) - toFiniteNumber(hostMetrics.top, 0)) / scaleY),
+    width: Math.round(toFiniteNumber(viewportRect?.width, 0) / scaleX),
+  };
+}
+
 export function calculateVisibleCanvasRect(canvasRect, viewportSize = {}) {
   const fallbackWidth = getViewportWidth(viewportSize);
   const fallbackHeight = getViewportHeight(viewportSize);

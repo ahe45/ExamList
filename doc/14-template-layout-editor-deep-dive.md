@@ -567,7 +567,7 @@ Toolbar는 `renderDocumentToolbar(access)`로 생성된다.
 
 | label | value |
 |---|---|
-| 기본 검정 | `#152033` |
+| 기본 검정 | `#000000` |
 | 차콜 | `#334155` |
 | 파랑 | `#1d4ed8` |
 | 청록 | `#0f766e` |
@@ -580,7 +580,7 @@ Toolbar는 `renderDocumentToolbar(access)`로 생성된다.
 
 색상 입력:
 
-- 글자색 input id: `templateEditorTextColor`, command `foreColor`, fallback `#152033`
+- 글자색 input id: `templateEditorTextColor`, command `foreColor`, fallback `#000000`
 - 음영 input id: `templateEditorTextShading`, command `hiliteColor`, fallback `#fff59d`
 - 셀 음영 input id: `templateEditorCellShading`, table action `apply-cell-shading`, fallback `#ffffff`
 

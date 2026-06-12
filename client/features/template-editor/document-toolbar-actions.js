@@ -324,23 +324,26 @@ export function createDocumentToolbarActions({
     applyDocumentCommand(options.command || "foreColor", normalizedColorValue);
   }
 
-  function normalizeDocumentToolbarColorValue(value, fallback = "#152033") {
+  function normalizeDocumentToolbarColorValue(value, fallback = "#000000") {
     const normalizedValue = String(value || "").trim().toLowerCase();
+    const normalizedFallbackValue = String(fallback || "").trim().toLowerCase();
+    const normalizeResolvedColorValue = (resolvedValue) =>
+      normalizedFallbackValue === "#000000" && resolvedValue === "#152033" ? "#000000" : resolvedValue;
 
     if (!normalizedValue || normalizedValue === "transparent" || normalizedValue === "rgba(0, 0, 0, 0)") {
       return fallback;
     }
 
     if (/^#[0-9a-f]{6}$/i.test(normalizedValue)) {
-      return normalizedValue;
+      return normalizeResolvedColorValue(normalizedValue);
     }
 
     if (/^#[0-9a-f]{3}$/i.test(normalizedValue)) {
-      return `#${normalizedValue
+      return normalizeResolvedColorValue(`#${normalizedValue
         .slice(1)
         .split("")
         .map((character) => `${character}${character}`)
-        .join("")}`;
+        .join("")}`);
     }
 
     const rgbMatch = normalizedValue.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -349,10 +352,10 @@ export function createDocumentToolbarActions({
       return fallback;
     }
 
-    return `#${rgbMatch
+    return normalizeResolvedColorValue(`#${rgbMatch
       .slice(1, 4)
       .map((channel) => Number(channel).toString(16).padStart(2, "0"))
-      .join("")}`;
+      .join("")}`);
   }
 
   function getDocumentSelectionContextElement(pageId = appState.templateEditor.selectedPageId) {
@@ -465,7 +468,7 @@ export function createDocumentToolbarActions({
       );
     }
 
-    setDocumentColorValue("templateEditorTextColor", normalizeDocumentToolbarColorValue(computedStyle.color, "#152033"));
+    setDocumentColorValue("templateEditorTextColor", normalizeDocumentToolbarColorValue(computedStyle.color, "#000000"));
     setDocumentColorValue(
       "templateEditorTextShading",
       getDocumentToolbarBackgroundControlValue(contextElement, "#fff59d"),

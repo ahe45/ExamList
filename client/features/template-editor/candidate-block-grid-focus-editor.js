@@ -1,9 +1,11 @@
 import { showToast } from "../../app/toast.js";
 import {
   calculateCandidateBlockFocusLayout,
+  calculateCandidateBlockFocusHostMetrics,
   calculateCanvasBackdropRect,
   calculateVisibleCanvasRect,
   parseCssPixelValue,
+  translateCandidateBlockFocusViewportRectToHostRect,
   toFinitePixelValue,
 } from "./candidate-block-grid-focus-layout.js";
 import {
@@ -106,6 +108,19 @@ function getCanvasBackdropRect(surfaceElement) {
     height: ownerWindow.innerHeight,
     width: ownerWindow.innerWidth,
   });
+}
+
+function getCandidateBlockFocusHostMetrics(hostElement) {
+  const hostRect = hostElement?.getBoundingClientRect?.();
+
+  return calculateCandidateBlockFocusHostMetrics(hostRect, {
+    height: hostElement?.offsetHeight || hostElement?.clientHeight || hostRect?.height || 0,
+    width: hostElement?.offsetWidth || hostElement?.clientWidth || hostRect?.width || 0,
+  });
+}
+
+function getCandidateBlockFocusHostRect(hostMetrics, viewportRect) {
+  return translateCandidateBlockFocusViewportRectToHostRect(viewportRect, hostMetrics);
 }
 
 function getBlockLogicalBorderBoxSize(element, chromeSize = { horizontal: 0, vertical: 0 }) {
@@ -1544,26 +1559,50 @@ function applyCandidateBlockFocusLayout(state = candidateBlockFocusState) {
   const columnNameRowHeight = getColumnNameRowLogicalHeight(state);
   const layout = getCandidateBlockFocusLayout(surfaceElement, blockElement, activeLogicalSize);
   const backdropRect = getCanvasBackdropRect(surfaceElement);
+  const hostMetrics = getCandidateBlockFocusHostMetrics(state.layerHostElement || surfaceElement);
+  const panelRect = getCandidateBlockFocusHostRect(hostMetrics, {
+    height: layout.panelHeight,
+    left: layout.panelLeft,
+    top: layout.panelTop,
+    width: layout.panelWidth,
+  });
+  const editorVisualRect = getCandidateBlockFocusHostRect(
+    { left: 0, scaleX: hostMetrics.scaleX, scaleY: hostMetrics.scaleY, top: 0 },
+    {
+      height: layout.visualHeight,
+      left: 0,
+      top: 0,
+      width: layout.visualWidth,
+    },
+  );
+  const backdropHostRect = getCandidateBlockFocusHostRect(hostMetrics, {
+    height: backdropRect.height,
+    left: backdropRect.left,
+    top: backdropRect.top,
+    width: backdropRect.width,
+  });
+  const hostScale = Math.max(0.01, hostMetrics.scaleX || 1);
+  const editorScale = Math.round((layout.scale / hostScale) * 10000) / 10000;
 
   modalSurfaceElement.dataset.candidateBlockLogicalWidth = String(layout.editorWidth);
   modalSurfaceElement.dataset.candidateBlockLogicalHeight = String(activeEditorHeight);
   modalSurfaceElement.dataset.candidateBlockLogicalContentWidth = String(layout.editorWidth);
   modalSurfaceElement.dataset.candidateBlockLogicalContentHeight = String(activeEditorHeight);
-  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-panel-left", `${layout.panelLeft}px`);
-  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-panel-top", `${layout.panelTop}px`);
-  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-panel-width", `${layout.panelWidth}px`);
-  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-panel-height", `${layout.panelHeight}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-panel-left", `${panelRect.left}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-panel-top", `${panelRect.top}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-panel-width", `${panelRect.width}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-panel-height", `${panelRect.height}px`);
   setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-width", `${layout.editorWidth}px`);
   setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-height", `${activeEditorHeight}px`);
   setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-data-preview-height", `${dataPreviewHeight}px`);
   setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-column-row-height", `${columnNameRowHeight}px`);
-  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-scale", String(layout.scale));
-  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-visual-width", `${layout.visualWidth}px`);
-  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-visual-height", `${layout.visualHeight}px`);
-  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-backdrop-left", `${backdropRect.left}px`);
-  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-backdrop-top", `${backdropRect.top}px`);
-  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-backdrop-width", `${Math.round(backdropRect.width)}px`);
-  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-backdrop-height", `${Math.round(backdropRect.height)}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-scale", String(editorScale));
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-visual-width", `${editorVisualRect.width}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-editor-visual-height", `${editorVisualRect.height}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-backdrop-left", `${backdropHostRect.left}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-backdrop-top", `${backdropHostRect.top}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-backdrop-width", `${backdropHostRect.width}px`);
+  setDocumentFocusVariable(ownerDocument, "--examlist-candidate-block-focus-backdrop-height", `${backdropHostRect.height}px`);
   return true;
 }
 
@@ -1669,6 +1708,7 @@ export function openCandidateBlockFocusEditor({
     canvasElement: surfaceElement.closest(".template-editor-page") || surfaceElement,
     editor,
     layerElement,
+    layerHostElement,
     logicalSize: getCandidateBlockFocusBlockLogicalSize(blockElement),
     modalSurfaceElement,
     modalSurfaceElements: {
