@@ -8,6 +8,7 @@
     "setup:db": "node scripts/setup-db.js",
     "start": "node server.js",
     "dev": "node server.js",
+    "migrate:template-default-black": "node scripts/migrate-template-default-black.js",
     "worker:pdf": "node scripts/pdf-worker.js",
     "smoke:browser": "node scripts/smoke-browser.js",
     "smoke:bullmq": "node scripts/smoke-bullmq.js",
