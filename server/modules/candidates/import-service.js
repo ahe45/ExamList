@@ -1,6 +1,8 @@
 const candidateFields = require("../../../shared/domain/candidate-fields");
+const { withDatabaseTransaction } = require("../database/connection");
 
 const CANDIDATE_DETAIL_BATCH_QUERY_SIZE = 200;
+const CANDIDATE_IMPORT_WRITE_BATCH_SIZE = 500;
 const CANDIDATE_IMPORT_PREVIEW_ROW_LIMIT = 8;
 const CANDIDATE_IMPORT_COMPARISON_FIELDS = candidateFields.candidateWorkbookFieldKeys;
 const CANDIDATE_IMPORT_EXISTING_DATA_POLICIES = Object.freeze({
@@ -25,13 +27,13 @@ function createCandidateImportCompositeKey(row = {}) {
 
 function createCandidateImportService({
   createHttpError,
-  insertCandidateWorkbookRow,
+  getPool,
   normalizeCandidateWorkbookInput,
   parseCandidateWorkbook,
   query,
   resolveSchoolId,
   toCandidateWorkbookRow,
-  updateCandidateRowById,
+  upsertCandidateWorkbookRows,
 }) {
   function buildCandidateImportDuplicateError(duplicateEntries = []) {
     const normalizedEntries = (Array.isArray(duplicateEntries) ? duplicateEntries : [])
@@ -209,19 +211,23 @@ function createCandidateImportService({
 
   async function saveCandidateRows(classifiedRows = [], options = {}) {
     const schoolId = await resolveSchoolId(options.schoolId);
-    let processed = 0;
+    const candidateRows = (Array.isArray(classifiedRows) ? classifiedRows : []).map((entry) => entry.row);
 
-    for (const entry of Array.isArray(classifiedRows) ? classifiedRows : []) {
-      if (entry.existingId) {
-        await updateCandidateRowById(entry.existingId, entry.row, { schoolId });
-      } else {
-        await insertCandidateWorkbookRow(entry.row, "xlsx", { schoolId });
+    return withDatabaseTransaction(getPool, async (connection) => {
+      let processed = 0;
+
+      for (let startIndex = 0; startIndex < candidateRows.length; startIndex += CANDIDATE_IMPORT_WRITE_BATCH_SIZE) {
+        const batchRows = candidateRows.slice(startIndex, startIndex + CANDIDATE_IMPORT_WRITE_BATCH_SIZE);
+
+        await upsertCandidateWorkbookRows(batchRows, "xlsx", {
+          connection,
+          schoolId,
+        });
+        processed += batchRows.length;
       }
 
-      processed += 1;
-    }
-
-    return { processed };
+      return { processed };
+    });
   }
 
   async function previewCandidateImport(payload = {}) {

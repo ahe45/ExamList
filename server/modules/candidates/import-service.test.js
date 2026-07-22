@@ -30,16 +30,31 @@ function createCandidateRow(overrides = {}) {
   };
 }
 
-function createService({ existingRows = [], normalizeCandidateWorkbookInput = (row) => row, workbookRows = [] } = {}) {
+function createService({
+  existingRows = [],
+  getPool = () => ({
+    async getConnection() {
+      return {
+        async beginTransaction() {},
+        async commit() {},
+        release() {},
+        async rollback() {},
+      };
+    },
+  }),
+  normalizeCandidateWorkbookInput = (row) => row,
+  upsertCandidateWorkbookRows = async () => {},
+  workbookRows = [],
+} = {}) {
   return createCandidateImportService({
     createHttpError,
-    insertCandidateWorkbookRow: async () => {},
+    getPool,
     normalizeCandidateWorkbookInput,
     parseCandidateWorkbook: async () => workbookRows,
     query: async () => existingRows,
     resolveSchoolId: async (schoolId = "") => schoolId || "school-1",
     toCandidateWorkbookRow: (row) => ({ ...row }),
-    updateCandidateRowById: async () => {},
+    upsertCandidateWorkbookRows,
   });
 }
 
@@ -117,4 +132,90 @@ test("candidate import matches existing rows by examinee number and period code"
   assert.equal(preview.updateCount, 1);
   assert.equal(preview.previewRows[0].operation, "update");
   assert.equal(preview.previewRows[1].operation, "insert");
+});
+
+test("candidate import writes 500-row batches in one transaction", async () => {
+  const calls = [];
+  const connection = {
+    async beginTransaction() {
+      calls.push("begin");
+    },
+    async commit() {
+      calls.push("commit");
+    },
+    release() {
+      calls.push("release");
+    },
+    async rollback() {
+      calls.push("rollback");
+    },
+  };
+  const workbookRows = Array.from({ length: 1001 }, (_value, index) =>
+    createCandidateRow({ examineeNo: String(26010001 + index) }),
+  );
+  const service = createService({
+    getPool: () => ({
+      async getConnection() {
+        return connection;
+      },
+    }),
+    upsertCandidateWorkbookRows: async (rows, sourceType, options) => {
+      assert.equal(sourceType, "xlsx");
+      assert.equal(options.connection, connection);
+      assert.equal(options.schoolId, "school-1");
+      calls.push(`write:${rows.length}`);
+    },
+    workbookRows,
+  });
+
+  const result = await service.importCandidates({
+    fileContentBase64: "xlsx",
+    schoolId: "school-1",
+  });
+
+  assert.deepEqual(result, { processed: 1001 });
+  assert.deepEqual(calls, ["begin", "write:500", "write:500", "write:1", "commit", "release"]);
+});
+
+test("candidate import rolls back every batch when a bulk write fails", async () => {
+  const calls = [];
+  const expectedError = new Error("bulk write failed");
+  const connection = {
+    async beginTransaction() {
+      calls.push("begin");
+    },
+    async commit() {
+      calls.push("commit");
+    },
+    release() {
+      calls.push("release");
+    },
+    async rollback() {
+      calls.push("rollback");
+    },
+  };
+  const workbookRows = Array.from({ length: 501 }, (_value, index) =>
+    createCandidateRow({ examineeNo: String(26010001 + index) }),
+  );
+  const service = createService({
+    getPool: () => ({
+      async getConnection() {
+        return connection;
+      },
+    }),
+    upsertCandidateWorkbookRows: async (rows) => {
+      calls.push(`write:${rows.length}`);
+
+      if (rows.length === 1) {
+        throw expectedError;
+      }
+    },
+    workbookRows,
+  });
+
+  await assert.rejects(
+    () => service.importCandidates({ fileContentBase64: "xlsx", schoolId: "school-1" }),
+    expectedError,
+  );
+  assert.deepEqual(calls, ["begin", "write:500", "write:1", "rollback", "release"]);
 });

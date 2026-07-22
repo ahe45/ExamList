@@ -40,13 +40,13 @@ function createCandidateRecordService({ createHttpError, getDefaultSchoolId = nu
   });
   const candidateImportService = createCandidateImportService({
     createHttpError,
-    insertCandidateWorkbookRow: candidateRepository.insertCandidateWorkbookRow,
+    getPool,
     normalizeCandidateWorkbookInput,
     parseCandidateWorkbook,
     query,
     resolveSchoolId,
     toCandidateWorkbookRow,
-    updateCandidateRowById: candidateRepository.updateCandidateRowById,
+    upsertCandidateWorkbookRows: candidateRepository.upsertCandidateWorkbookRows,
   });
   const { importCandidates, previewCandidateImport } = candidateImportService;
   const {
