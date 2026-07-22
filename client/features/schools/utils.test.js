@@ -45,3 +45,12 @@ test("school modal helpers format campus names without duplicating suffix", asyn
   assert.equal(formatCampusNameForSave("서울캠퍼스"), "서울캠퍼스");
   assert.equal(formatCampusNameForSave(""), "");
 });
+
+test("school modal helpers remove the campus suffix from a stored school code", async () => {
+  const { getBaseSchoolCode } = await importClientModule("utils.js");
+
+  assert.equal(getBaseSchoolCode("SEOUL-01", "01"), "SEOUL");
+  assert.equal(getBaseSchoolCode("seoul-a", "A"), "seoul");
+  assert.equal(getBaseSchoolCode("SEOUL-01", "02"), "SEOUL-01");
+  assert.equal(getBaseSchoolCode("SEOUL", ""), "SEOUL");
+});

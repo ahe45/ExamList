@@ -10,6 +10,21 @@ export function toSchoolQueryString(filters = {}) {
   return searchParams.toString();
 }
 
+export function getBaseSchoolCode(schoolCode = "", campusCode = "") {
+  const normalizedSchoolCode = String(schoolCode || "").trim();
+  const normalizedCampusCode = String(campusCode || "").trim();
+
+  if (!normalizedSchoolCode || !normalizedCampusCode) {
+    return normalizedSchoolCode;
+  }
+
+  const campusSuffix = `-${normalizedCampusCode}`;
+
+  return normalizedSchoolCode.toUpperCase().endsWith(campusSuffix.toUpperCase())
+    ? normalizedSchoolCode.slice(0, -campusSuffix.length)
+    : normalizedSchoolCode;
+}
+
 export function readSchoolLogoFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

@@ -17,6 +17,7 @@ const {
   normalizeSchoolDeletionPassword,
   normalizeSchoolId,
   normalizeSchoolListFilter,
+  normalizeCombinedSchoolCode,
   normalizeSchoolPayload,
 } = require("./validators");
 
@@ -285,7 +286,11 @@ function createSchoolService({
   async function createSchool(payload = {}, options = {}) {
     const school = normalizeSchoolPayload(payload, createHttpError);
     const schoolId = `school-${randomUUID()}`;
-    const code = school.code || `SCHOOL-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const code = school.code || normalizeCombinedSchoolCode(
+      `SCHOOL-${randomUUID().slice(0, 8).toUpperCase()}`,
+      school.campusCode,
+      createHttpError,
+    );
     const createdAccount = String(options.createdAccount || "system").trim() || "system";
     const deletionPassword = normalizeSchoolDeletionPassword(payload.deletionPassword);
     const deletionPasswordConfirm = normalizeSchoolDeletionPassword(payload.deletionPasswordConfirm);
@@ -340,6 +345,11 @@ function createSchoolService({
     const normalizedSchoolId = existingSchool.id;
 
     const school = normalizeSchoolPayload(payload, createHttpError);
+    const code = school.code || normalizeCombinedSchoolCode(
+      `SCHOOL-${normalizedSchoolId.slice(-8).toUpperCase()}`,
+      school.campusCode,
+      createHttpError,
+    );
 
     await query(
       `
@@ -351,7 +361,7 @@ function createSchoolService({
         WHERE id = ?
           AND deleted_at IS NULL
       `,
-      [school.code || `SCHOOL-${normalizedSchoolId.slice(-8).toUpperCase()}`, school.name, normalizedSchoolId],
+      [code, school.name, normalizedSchoolId],
     );
 
     await query(

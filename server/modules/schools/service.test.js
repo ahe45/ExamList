@@ -293,6 +293,7 @@ test("createSchool stores the creating account id", async () => {
 
   const school = await service.createSchool(
     {
+      campusCode: "01",
       code: "SEOUL01",
       name: "서울대학교",
     },
@@ -304,8 +305,51 @@ test("createSchool stores the creating account id", async () => {
 
   assert.ok(insertSchoolQuery);
   assert.match(insertSchoolQuery.sql, /created_account/);
+  assert.equal(insertSchoolQuery.params[1], "SEOUL01-01");
   assert.equal(insertSchoolQuery.params[4], "owner-admin");
   assert.equal(school.createdAccount, "owner-admin");
+});
+
+test("updateSchool replaces the campus suffix in the stored school code", async () => {
+  const queries = [];
+  let storedCode = "SEOUL01-01";
+  const service = createSchoolService({
+    createHttpError,
+    query: async (sql, params = []) => {
+      queries.push({ params, sql });
+
+      if (sql.includes("FROM schools s")) {
+        return [
+          {
+            campusCode: "01",
+            candidateCount: 0,
+            code: storedCode,
+            createdAccount: "owner-admin",
+            id: "school-1",
+            name: "서울대학교",
+            templateCount: 0,
+            updatedAt: "2026-05-13T00:00:00.000Z",
+          },
+        ];
+      }
+
+      if (sql.includes("UPDATE schools")) {
+        storedCode = params[0];
+      }
+
+      return { affectedRows: 1 };
+    },
+  });
+
+  await service.updateSchool("school-1", {
+    campusCode: "02",
+    code: "SEOUL01",
+    name: "서울대학교",
+  });
+  const updateSchoolQuery = queries.find((query) => query.sql.includes("UPDATE schools"));
+
+  assert.ok(updateSchoolQuery);
+  assert.equal(updateSchoolQuery.params[0], "SEOUL01-02");
 });
 
 test("deleteSchool validates the configured deletion password for managers", async () => {

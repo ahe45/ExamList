@@ -245,7 +245,8 @@ Body:
 | field | required | 설명 |
 |---|---|---|
 | `name` | yes | 학교명. 클라이언트는 `대학교` suffix 입력 UI를 정규화한다. |
-| `code` | no | 학교 코드. 비어 있으면 서버가 `SCHOOL-...` 형식으로 생성한다. |
+| `code` | no | 기본 학교 코드. 비어 있으면 서버가 `SCHOOL-...` 형식으로 생성한다. |
+| `campusCode` | no | 캠퍼스 코드. 입력하면 `schools.code`는 `<학교코드>-<캠퍼스코드>`로 저장한다. |
 | `deletionPassword` | 조건부 | `deleteSchoolsWithoutPassword` 권한이 없으면 필요. |
 | `deletionPasswordConfirm` | no | 삭제 비밀번호 확인. 입력된 경우 `deletionPassword`와 일치해야 한다. |
 
@@ -281,7 +282,8 @@ Body:
 | field | 설명 |
 |---|---|
 | `name` | 학교명. |
-| `code` | 학교 코드. |
+| `code` | 기본 학교 코드. |
+| `campusCode` | 캠퍼스 코드. 입력하면 `schools.code`는 `<학교코드>-<캠퍼스코드>`로 갱신한다. |
 
 응답:
 

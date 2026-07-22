@@ -4,6 +4,7 @@ import {
   formatAcademicYearForSave,
   formatCampusNameForSave,
   formatSchoolNameForSave,
+  getBaseSchoolCode,
   normalizeAcademicYearInputValue,
   normalizeCampusNameInputValue,
   normalizeSchoolNameInputValue,
@@ -124,6 +125,7 @@ export function createSchoolModalActions({
     try {
       const schoolName = formatSchoolNameForSave(appState.schools.modal.name);
       const school = await postJson("/api/schools", {
+        campusCode: String(appState.schools.modal.campusCode || "").trim(),
         code: appState.schools.modal.code,
         deletionPassword,
         deletionPasswordConfirm,
@@ -170,6 +172,7 @@ export function createSchoolModalActions({
     try {
       const schoolName = formatSchoolNameForSave(appState.schools.modal.name);
       const school = await patchJson(`/api/schools/${encodeURIComponent(schoolId)}`, {
+        campusCode: String(appState.schools.modal.campusCode || "").trim(),
         code: appState.schools.modal.code,
         description: "",
         name: schoolName,
@@ -220,7 +223,7 @@ export function createSchoolModalActions({
     resetSchoolModal({
       campusCode: String(school.campusCode || ""),
       campusName: normalizeCampusNameInputValue(school.campusName || ""),
-      code: String(school.code || ""),
+      code: getBaseSchoolCode(school.code, school.campusCode),
       description: String(school.description || ""),
       isOpen: true,
       mode: "edit",
