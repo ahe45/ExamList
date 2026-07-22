@@ -8,6 +8,26 @@ export function calculateEstimatedGenerationSeconds({ completedCount, elapsedSec
   return Math.max(elapsedSeconds, Math.round((elapsedSeconds * totalRequested) / completedCount));
 }
 
+export function calculateServerSyncedElapsedSeconds({
+  elapsedSeconds,
+  elapsedSyncedAtMs,
+  serverElapsedSeconds,
+}, currentClockMs) {
+  const serverElapsed = Math.max(0, Math.floor(Number(serverElapsedSeconds) || 0));
+  const displayedElapsed = Math.max(serverElapsed, Math.floor(Number(elapsedSeconds) || 0));
+  const parsedSyncedAtMs = Number(elapsedSyncedAtMs);
+  const syncedAtMs = Number.isFinite(parsedSyncedAtMs) ? parsedSyncedAtMs : -1;
+  const nowMs = Number(currentClockMs);
+
+  if (syncedAtMs < 0 || !Number.isFinite(nowMs)) {
+    return displayedElapsed;
+  }
+
+  const secondsSinceSync = Math.max(0, Math.floor((nowMs - syncedAtMs) / 1000));
+
+  return Math.max(displayedElapsed, serverElapsed + secondsSinceSync);
+}
+
 export function formatActiveGenerationDuration(totalSeconds) {
   const safeSeconds = Math.max(0, Math.round(Number(totalSeconds) || 0));
   const hours = Math.floor(safeSeconds / 3600);

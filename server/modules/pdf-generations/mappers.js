@@ -141,6 +141,7 @@ function mapBatchRow(row = {}) {
     batchId,
     completedAt: row.completedAt instanceof Date ? row.completedAt.toISOString() : String(row.completedAt || ""),
     createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt || ""),
+    elapsedSeconds: Math.max(0, Math.floor(Number(row.elapsedSeconds) || 0)),
     errorMessage: String(row.errorMessage || ""),
     failedCount: Number(row.failedCount) || 0,
     generationUnit: String(row.generationUnit || "roomCode"),

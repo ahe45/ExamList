@@ -12,6 +12,7 @@ export function createEmptyActivePdfGeneration() {
     errorMessage: "",
     estimatedSeconds: 0,
     elapsedSeconds: 0,
+    elapsedSyncedAtMs: -1,
     failedCount: 0,
     isOpen: false,
     isCancelling: false,
@@ -20,7 +21,7 @@ export function createEmptyActivePdfGeneration() {
     queuedCount: 0,
     runningCount: 0,
     statusText: "",
-    startedAtMs: 0,
+    serverElapsedSeconds: 0,
     succeededCount: 0,
     totalRequested: 0,
   };

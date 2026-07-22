@@ -557,6 +557,8 @@ Page size option:
 | `completedCount` | 완료 수. |
 | `progressPercent` | 진행률. |
 | `elapsedSeconds` | 경과 시간. |
+| `serverElapsedSeconds` | 서버가 계산해 반환한 경과 시간 기준값. |
+| `elapsedSyncedAtMs` | 서버 경과시간을 받은 클라이언트 단조 시계 시각. |
 | `estimatedSeconds` | 예상 잔여/총 시간. |
 | `canCancel` | 취소 가능 여부. |
 | `isCancelling` | 취소 요청 중. |

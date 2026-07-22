@@ -981,6 +981,7 @@ Permission: `viewGenerations`.
 
 - batch 상태
 - queued/running/succeeded/failed/progress 집계
+- DB의 `created_at`과 현재 DB 시각으로 계산한 `elapsedSeconds`
 - archive 정보
 
 ### `POST /api/pdf-generations/batches/:batchId/cancel`

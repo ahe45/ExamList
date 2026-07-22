@@ -266,6 +266,10 @@ function createPdfGenerationRepository({ query }) {
           request_json AS requestJson,
           error_message AS errorMessage,
           completed_at AS completedAt,
+          GREATEST(
+            0,
+            TIMESTAMPDIFF(SECOND, created_at, COALESCE(completed_at, CURRENT_TIMESTAMP))
+          ) AS elapsedSeconds,
           created_at AS createdAt,
           updated_at AS updatedAt
         FROM pdf_generation_batches

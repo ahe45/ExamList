@@ -3,22 +3,15 @@ import { formatCount } from "../../app/number-format.js";
 import { showToast } from "../../app/toast.js";
 import {
   calculateEstimatedGenerationSeconds,
+  calculateServerSyncedElapsedSeconds,
   getActiveGenerationProgressViewModel,
 } from "./pdf-generation-active-progress.js";
 import { createEmptyActivePdfGeneration } from "./pdf-generation-state.js";
 
-function resolveBatchStartedAtMs(batchPayload = {}, previousState = {}) {
-  const previousStartedAtMs = Number(previousState.startedAtMs) || 0;
-  const previousBatchId = String(previousState.batchId || "");
-  const nextBatchId = String(batchPayload.batchId || batchPayload.id || "");
+function getActiveGenerationClockMs() {
+  const monotonicClockMs = window.performance?.now?.();
 
-  if (previousStartedAtMs > 0 && (!nextBatchId || previousBatchId === nextBatchId)) {
-    return previousStartedAtMs;
-  }
-
-  const createdAtMs = Date.parse(String(batchPayload.createdAt || ""));
-
-  return Number.isFinite(createdAtMs) ? createdAtMs : Date.now();
+  return Number.isFinite(monotonicClockMs) ? monotonicClockMs : Date.now();
 }
 
 export function createPdfGenerationActiveRunner({
@@ -77,7 +70,9 @@ export function createPdfGenerationActiveRunner({
   }
 
   function shouldRunActiveGenerationClock(activeGeneration = appState.pdfGenerations.activeGeneration || {}) {
-    if (!activeGeneration.isOpen || !(Number(activeGeneration.startedAtMs) > 0)) {
+    const elapsedSyncedAtMs = Number(activeGeneration.elapsedSyncedAtMs);
+
+    if (!activeGeneration.isOpen || !Number.isFinite(elapsedSyncedAtMs) || elapsedSyncedAtMs < 0) {
       return false;
     }
 
@@ -91,7 +86,10 @@ export function createPdfGenerationActiveRunner({
       return false;
     }
 
-    const elapsedSeconds = Math.max(0, Math.round((Date.now() - Number(activeGeneration.startedAtMs)) / 1000));
+    const elapsedSeconds = calculateServerSyncedElapsedSeconds(
+      activeGeneration,
+      getActiveGenerationClockMs(),
+    );
     const estimatedSeconds = calculateEstimatedGenerationSeconds({
       completedCount: Number(activeGeneration.completedCount) || 0,
       elapsedSeconds,
@@ -153,8 +151,9 @@ export function createPdfGenerationActiveRunner({
     const queuedCount = Number(batchPayload.queuedCount) || 0;
     const completedCount = succeededCount + failedCount;
     const progressPercent = Number(batchPayload.progressPercent) || 0;
-    const startedAtMs = resolveBatchStartedAtMs(batchPayload, previousState);
-    const elapsedSeconds = Math.max(0, Math.round((Date.now() - startedAtMs) / 1000));
+    const serverElapsedSeconds = Math.max(0, Math.floor(Number(batchPayload.elapsedSeconds) || 0));
+    const elapsedSeconds = serverElapsedSeconds;
+    const elapsedSyncedAtMs = getActiveGenerationClockMs();
     const estimatedSeconds = calculateEstimatedGenerationSeconds({
       completedCount,
       elapsedSeconds,
@@ -170,6 +169,7 @@ export function createPdfGenerationActiveRunner({
       errorMessage: String(batchPayload.errorMessage || ""),
       estimatedSeconds,
       elapsedSeconds,
+      elapsedSyncedAtMs,
       failedCount,
       isOpen: true,
       isCancelling: previousState.batchId === batchId ? Boolean(previousState.isCancelling) : false,
@@ -177,7 +177,7 @@ export function createPdfGenerationActiveRunner({
       progressPercent,
       queuedCount,
       runningCount,
-      startedAtMs,
+      serverElapsedSeconds,
       succeededCount,
       statusText: `완료 ${formatCount(succeededCount)}건 / 실패 ${formatCount(failedCount)}건 / 진행 ${formatCount(runningCount)}건 / 대기 ${formatCount(queuedCount)}건${totalRequested ? ` / 총 ${formatCount(totalRequested)}건` : ""}`,
       totalRequested,

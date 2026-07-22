@@ -1,7 +1,16 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { mapGenerationRow } = require("./mappers");
+const { mapBatchRow, mapGenerationRow } = require("./mappers");
+
+test("mapBatchRow exposes the elapsed time calculated by the server", () => {
+  const row = mapBatchRow({
+    elapsedSeconds: 12.9,
+    id: "batch-1",
+  });
+
+  assert.equal(row.elapsedSeconds, 12);
+});
 
 test("mapGenerationRow prefers stored display result scope over request filters", () => {
   const row = mapGenerationRow({
