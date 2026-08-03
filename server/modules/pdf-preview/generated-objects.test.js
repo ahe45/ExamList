@@ -46,3 +46,22 @@ test("replaceTemplateGeneratedObjectImagesInHtml suppresses empty alias values w
 
   assert.equal(result, "");
 });
+
+test("replaceTemplateGeneratedObjectImagesInHtml resolves the OPT10 alias", () => {
+  const html =
+    '<img class="template-generated-object template-generated-object-qrcode" data-template-object-type="qrcode" data-template-object-source="opt10" src="" alt="QR코드" />';
+  const result = replaceTemplateGeneratedObjectImagesInHtml(
+    html,
+    {
+      candidate: {
+        opt10: "추가옵션",
+      },
+    },
+    {
+      suppressEmptyGeneratedObjects: true,
+    },
+  );
+
+  assert.match(result, /title="OPT10 QR코드"/);
+  assert.match(result, /src="data:image\/svg\+xml;charset=UTF-8,/);
+});

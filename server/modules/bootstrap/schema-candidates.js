@@ -95,6 +95,31 @@ async function ensureCandidateRecordColumns(
     tableName: "candidate_records",
   });
   await ensureColumn(connection, {
+    columnName: "opt6",
+    definition: "opt6 VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 6' AFTER opt5",
+    tableName: "candidate_records",
+  });
+  await ensureColumn(connection, {
+    columnName: "opt7",
+    definition: "opt7 VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 7' AFTER opt6",
+    tableName: "candidate_records",
+  });
+  await ensureColumn(connection, {
+    columnName: "opt8",
+    definition: "opt8 VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 8' AFTER opt7",
+    tableName: "candidate_records",
+  });
+  await ensureColumn(connection, {
+    columnName: "opt9",
+    definition: "opt9 VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 9' AFTER opt8",
+    tableName: "candidate_records",
+  });
+  await ensureColumn(connection, {
+    columnName: "opt10",
+    definition: "opt10 VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 10' AFTER opt9",
+    tableName: "candidate_records",
+  });
+  await ensureColumn(connection, {
     columnName: "photo_mime",
     definition: "photo_mime VARCHAR(120) NOT NULL DEFAULT '' COMMENT '수험생 사진 MIME 타입' AFTER photo_name",
     tableName: "candidate_records",
@@ -126,6 +151,11 @@ async function ensureCandidateRecordColumns(
       MODIFY COLUMN \`opt3\` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 3',
       MODIFY COLUMN \`opt4\` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 4',
       MODIFY COLUMN \`opt5\` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 5',
+      MODIFY COLUMN \`opt6\` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 6',
+      MODIFY COLUMN \`opt7\` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 7',
+      MODIFY COLUMN \`opt8\` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 8',
+      MODIFY COLUMN \`opt9\` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 9',
+      MODIFY COLUMN \`opt10\` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '사용자 옵션 10',
       MODIFY COLUMN \`photo_mime\` VARCHAR(120) NOT NULL DEFAULT '' COMMENT '수험생 사진 MIME 타입'
     `,
   );

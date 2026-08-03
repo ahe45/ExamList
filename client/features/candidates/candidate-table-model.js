@@ -28,6 +28,11 @@ export const candidateGridColumns = Object.freeze([
   Object.freeze({ key: "opt3", label: "OPT3", filterable: true, sortable: true }),
   Object.freeze({ key: "opt4", label: "OPT4", filterable: true, sortable: true }),
   Object.freeze({ key: "opt5", label: "OPT5", filterable: true, sortable: true }),
+  Object.freeze({ key: "opt6", label: "OPT6", filterable: true, sortable: true }),
+  Object.freeze({ key: "opt7", label: "OPT7", filterable: true, sortable: true }),
+  Object.freeze({ key: "opt8", label: "OPT8", filterable: true, sortable: true }),
+  Object.freeze({ key: "opt9", label: "OPT9", filterable: true, sortable: true }),
+  Object.freeze({ key: "opt10", label: "OPT10", filterable: true, sortable: true }),
 ]);
 
 export const candidateDetailFields = Object.freeze([
@@ -60,6 +65,11 @@ export const candidateDetailFields = Object.freeze([
   Object.freeze({ key: "opt3", label: "OPT3", type: "text" }),
   Object.freeze({ key: "opt4", label: "OPT4", type: "text" }),
   Object.freeze({ key: "opt5", label: "OPT5", type: "text" }),
+  Object.freeze({ key: "opt6", label: "OPT6", type: "text" }),
+  Object.freeze({ key: "opt7", label: "OPT7", type: "text" }),
+  Object.freeze({ key: "opt8", label: "OPT8", type: "text" }),
+  Object.freeze({ key: "opt9", label: "OPT9", type: "text" }),
+  Object.freeze({ key: "opt10", label: "OPT10", type: "text" }),
 ]);
 
 export const pageSizeOptions = Object.freeze([10, 30, 50, 100, 500, 1000, 2000, 0]);

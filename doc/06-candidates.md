@@ -73,6 +73,11 @@ Header:
 | `opt3` | OPT3 |
 | `opt4` | OPT4 |
 | `opt5` | OPT5 |
+| `opt6` | OPT6 |
+| `opt7` | OPT7 |
+| `opt8` | OPT8 |
+| `opt9` | OPT9 |
+| `opt10` | OPT10 |
 
 ### 정렬
 
@@ -183,7 +188,7 @@ Tabs:
 - 종료시간.
 - 가번호.
 - 조.
-- OPT1에서 OPT5.
+- OPT1에서 OPT10.
 
 ### 형식 검증
 
@@ -280,4 +285,4 @@ API:
 | `name` | `name` | 이름 |
 | `birth` | `birth_date` | 생년월일 |
 | `group` | `group_name` | 조 |
-| `opt1`에서 `opt5` | `opt1`에서 `opt5` | 사용자 옵션 |
+| `opt1`에서 `opt10` | `opt1`에서 `opt10` | 사용자 옵션 |

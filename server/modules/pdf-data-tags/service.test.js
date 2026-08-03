@@ -18,6 +18,7 @@ test("getCatalog builds tags from school settings and candidate columns", async 
       "candidate.groupName": "group_name",
       "candidate.departmentName": "unit",
       "candidate.opt1": "opt1",
+      "candidate.opt10": "opt10",
       "candidate.photo": "photo_name",
     }),
     async getSchoolSettings() {
@@ -60,6 +61,7 @@ test("getCatalog builds tags from school settings and candidate columns", async 
       "candidate.name",
       "candidate.groupName",
       "candidate.opt1",
+      "candidate.opt10",
       "candidate.photo",
     ],
   );
@@ -72,6 +74,7 @@ test("getCatalog builds tags from school settings and candidate columns", async 
   assert.equal(candidateTags.find((tag) => tag.key === "candidate.photo").label, "수험생 사진");
   assert.equal(candidateTags.find((tag) => tag.key === "candidate.departmentName").sourceColumn, "unit");
   assert.equal(candidateTags.find((tag) => tag.key === "candidate.opt1").label, "OPT1");
+  assert.equal(candidateTags.find((tag) => tag.key === "candidate.opt10").label, "OPT10");
   assert.deepEqual(
     roomTags.map((tag) => [tag.key, tag.label, tag.type, tag.example]),
     [

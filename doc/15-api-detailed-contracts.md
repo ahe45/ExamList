@@ -789,7 +789,7 @@ Query:
 - `name`
 - `birth` 또는 `birthDate`
 - `group` 또는 `groupName`
-- `opt1`-`opt5`
+- `opt1`-`opt10`
 - `hasPhoto`, `photoName`, `photoMime`
 
 ### `GET /api/candidates/:candidateId/photo`

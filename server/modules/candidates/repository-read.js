@@ -22,6 +22,11 @@ const candidateSortColumnMap = Object.freeze({
   opt3: "opt3",
   opt4: "opt4",
   opt5: "opt5",
+  opt6: "opt6",
+  opt7: "opt7",
+  opt8: "opt8",
+  opt9: "opt9",
+  opt10: "opt10",
   period: "period",
   periodCode: "period_code",
   room: "room",
@@ -52,6 +57,11 @@ const candidateGroupByColumns = Object.freeze({
   opt3: "opt3",
   opt4: "opt4",
   opt5: "opt5",
+  opt6: "opt6",
+  opt7: "opt7",
+  opt8: "opt8",
+  opt9: "opt9",
+  opt10: "opt10",
   period: "period",
   periodCode: "period_code",
   room: "room",
@@ -151,7 +161,7 @@ function buildCandidateWhereClause(filter) {
     params.majorCode = filter.majorCode;
   }
 
-  ["opt1", "opt2", "opt3", "opt4", "opt5"].forEach((key) => {
+  ["opt1", "opt2", "opt3", "opt4", "opt5", "opt6", "opt7", "opt8", "opt9", "opt10"].forEach((key) => {
     if (filter[key]) {
       conditions.push(`${key} = :${key}`);
       params[key] = filter[key];
@@ -270,6 +280,11 @@ function createCandidateReadRepository({ createHttpError, query }) {
     opt3: "opt3",
     opt4: "opt4",
     opt5: "opt5",
+    opt6: "opt6",
+    opt7: "opt7",
+    opt8: "opt8",
+    opt9: "opt9",
+    opt10: "opt10",
     period: "period",
     periodCode: "period_code",
     room: "room",
@@ -365,6 +380,11 @@ function createCandidateReadRepository({ createHttpError, query }) {
           opt3,
           opt4,
           opt5,
+          opt6,
+          opt7,
+          opt8,
+          opt9,
+          opt10,
           photo_name AS photoName,
           photo_mime AS photoMime,
           UNIX_TIMESTAMP(updated_at) AS photoVersion,
@@ -526,7 +546,12 @@ function createCandidateReadRepository({ createHttpError, query }) {
           opt2,
           opt3,
           opt4,
-          opt5
+          opt5,
+          opt6,
+          opt7,
+          opt8,
+          opt9,
+          opt10
         FROM candidate_records
         WHERE id = ?
         ${schoolId ? "AND school_id = ?" : ""}
@@ -574,6 +599,11 @@ function createCandidateReadRepository({ createHttpError, query }) {
           opt3,
           opt4,
           opt5,
+          opt6,
+          opt7,
+          opt8,
+          opt9,
+          opt10,
           photo_name AS photoName,
           photo_mime AS photoMime,
           UNIX_TIMESTAMP(updated_at) AS photoVersion,

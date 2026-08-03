@@ -143,7 +143,12 @@ function createCandidateImportService({
             opt2,
             opt3,
             opt4,
-            opt5
+            opt5,
+            opt6,
+            opt7,
+            opt8,
+            opt9,
+            opt10
           FROM candidate_records
           WHERE ${scopedConditions} examinee_no IN (${placeholders})
           ORDER BY updated_at DESC

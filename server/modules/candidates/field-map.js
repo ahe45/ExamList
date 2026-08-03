@@ -31,6 +31,11 @@ const candidateFieldMap = Object.freeze({
   "candidate.opt3": "opt3",
   "candidate.opt4": "opt4",
   "candidate.opt5": "opt5",
+  "candidate.opt6": "opt6",
+  "candidate.opt7": "opt7",
+  "candidate.opt8": "opt8",
+  "candidate.opt9": "opt9",
+  "candidate.opt10": "opt10",
   "candidate.photo": "photo_name",
 });
 

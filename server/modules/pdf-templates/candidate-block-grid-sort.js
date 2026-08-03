@@ -28,6 +28,11 @@ const candidateBlockGridSortOptions = Object.freeze([
   Object.freeze({ key: "opt3", label: "OPT3" }),
   Object.freeze({ key: "opt4", label: "OPT4" }),
   Object.freeze({ key: "opt5", label: "OPT5" }),
+  Object.freeze({ key: "opt6", label: "OPT6" }),
+  Object.freeze({ key: "opt7", label: "OPT7" }),
+  Object.freeze({ key: "opt8", label: "OPT8" }),
+  Object.freeze({ key: "opt9", label: "OPT9" }),
+  Object.freeze({ key: "opt10", label: "OPT10" }),
 ]);
 const candidateBlockGridSortKeys = new Set(candidateBlockGridSortOptions.map((option) => option.key));
 const defaultCandidateBlockGridSortKey = "examineeNo";
@@ -57,6 +62,11 @@ const candidateBlockGridSortKeyAliases = Object.freeze({
   "candidate.opt3": "opt3",
   "candidate.opt4": "opt4",
   "candidate.opt5": "opt5",
+  "candidate.opt6": "opt6",
+  "candidate.opt7": "opt7",
+  "candidate.opt8": "opt8",
+  "candidate.opt9": "opt9",
+  "candidate.opt10": "opt10",
   "candidate.periodCode": "periodCode",
   "candidate.periodName": "period",
   "candidate.roomCode": "roomCode",

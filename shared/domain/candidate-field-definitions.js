@@ -248,6 +248,41 @@ const candidateFieldDefinitions = Object.freeze([
     exportWidth: 14,
     sample: "옵션5",
   }),
+  createFieldDefinition({
+    key: "opt6",
+    label: "OPT6",
+    templateWidth: 14,
+    exportWidth: 14,
+    sample: "옵션6",
+  }),
+  createFieldDefinition({
+    key: "opt7",
+    label: "OPT7",
+    templateWidth: 14,
+    exportWidth: 14,
+    sample: "옵션7",
+  }),
+  createFieldDefinition({
+    key: "opt8",
+    label: "OPT8",
+    templateWidth: 14,
+    exportWidth: 14,
+    sample: "옵션8",
+  }),
+  createFieldDefinition({
+    key: "opt9",
+    label: "OPT9",
+    templateWidth: 14,
+    exportWidth: 14,
+    sample: "옵션9",
+  }),
+  createFieldDefinition({
+    key: "opt10",
+    label: "OPT10",
+    templateWidth: 14,
+    exportWidth: 14,
+    sample: "옵션10",
+  }),
 ]);
 
 const candidateFieldDefinitionMap = Object.freeze(
@@ -287,6 +322,11 @@ const candidateGridFieldKeys = Object.freeze([
   "opt3",
   "opt4",
   "opt5",
+  "opt6",
+  "opt7",
+  "opt8",
+  "opt9",
+  "opt10",
 ]);
 const candidateDetailFieldKeys = Object.freeze([...candidateGridFieldKeys]);
 const candidateWorkbookFieldKeys = Object.freeze([...candidateGridFieldKeys]);
@@ -303,6 +343,11 @@ const optionalTemplateFieldKeys = Object.freeze([
   "opt3",
   "opt4",
   "opt5",
+  "opt6",
+  "opt7",
+  "opt8",
+  "opt9",
+  "opt10",
 ]);
 const legacyTemplateHeaders = Object.freeze({
   admissionYear: "학년도",

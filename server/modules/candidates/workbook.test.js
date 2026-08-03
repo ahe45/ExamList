@@ -82,6 +82,7 @@ test("normalizeCandidateWorkbookInput maps required XLSX fields", () => {
       campus: "서울캠퍼스",
       designatedSort: "1",
       endTime: "10:00",
+      OPT10: "옵션 10 값",
       temporaryNo: "A001",
     }),
     0,
@@ -99,6 +100,7 @@ test("normalizeCandidateWorkbookInput maps required XLSX fields", () => {
   assert.equal(row.buildingCode, "BLD01");
   assert.equal(row.roomCode, "R101");
   assert.equal(row.opt1, "");
+  assert.equal(row.opt10, "옵션 10 값");
 });
 
 test("normalizeCandidateWorkbookInput requires configured code fields", () => {
@@ -285,7 +287,7 @@ test("normalizeCandidateWorkbookInput does not require campus fields", () => {
   assert.equal(row.campusCode, "");
 });
 
-test("buildCandidateTemplateBuffer omits campus columns", async () => {
+test("buildCandidateTemplateBuffer includes OPT1 through OPT10 and omits campus columns", async () => {
   const service = createCandidateWorkbookService({ createHttpError });
   const buffer = await service.buildCandidateTemplateBuffer();
   const workbook = new ExcelJS.Workbook();
@@ -297,6 +299,7 @@ test("buildCandidateTemplateBuffer omits campus columns", async () => {
 
   assert.ok(!headers.includes("캠퍼스명"));
   assert.ok(!headers.includes("캠퍼스코드"));
+  assert.deepEqual(headers.slice(-10), ["OPT1", "OPT2", "OPT3", "OPT4", "OPT5", "OPT6", "OPT7", "OPT8", "OPT9", "OPT10"]);
 });
 
 test("buildCandidateTemplateBuffer highlights required column headers", async () => {
@@ -383,6 +386,7 @@ test("parseCandidateWorkbook preserves text-formatted cell values", async () => 
       date: "2026-11-28",
       name: " 홍길동 ",
       opt1: " 값 앞뒤 공백 ",
+      opt10: " 열 번째 값 ",
       time: "08:40",
     }),
   );
@@ -391,6 +395,7 @@ test("parseCandidateWorkbook preserves text-formatted cell values", async () => 
   assert.equal(rows[0].birth, "2006/01/02");
   assert.equal(rows[0].name, " 홍길동 ");
   assert.equal(rows[0].opt1, " 값 앞뒤 공백 ");
+  assert.equal(rows[0].opt10, " 열 번째 값 ");
   assert.equal(rows[0].time, "08:40");
 });
 

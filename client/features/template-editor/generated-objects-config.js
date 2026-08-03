@@ -45,6 +45,11 @@ export const generatedObjectPreviewValues = Object.freeze({
   "candidate.opt3": "옵션3",
   "candidate.opt4": "옵션4",
   "candidate.opt5": "옵션5",
+  "candidate.opt6": "옵션6",
+  "candidate.opt7": "옵션7",
+  "candidate.opt8": "옵션8",
+  "candidate.opt9": "옵션9",
+  "candidate.opt10": "옵션10",
   "candidate.periodCode": "P1",
   "candidate.periodName": "1교시",
   "candidate.photo": "사진",
@@ -119,6 +124,11 @@ export const generatedObjectSourceAliases = Object.freeze({
   "candidate.opt3": Object.freeze(["candidate.opt3", "opt3"]),
   "candidate.opt4": Object.freeze(["candidate.opt4", "opt4"]),
   "candidate.opt5": Object.freeze(["candidate.opt5", "opt5"]),
+  "candidate.opt6": Object.freeze(["candidate.opt6", "opt6"]),
+  "candidate.opt7": Object.freeze(["candidate.opt7", "opt7"]),
+  "candidate.opt8": Object.freeze(["candidate.opt8", "opt8"]),
+  "candidate.opt9": Object.freeze(["candidate.opt9", "opt9"]),
+  "candidate.opt10": Object.freeze(["candidate.opt10", "opt10"]),
   "candidate.groupName": Object.freeze(["candidate.groupName", "group"]),
 });
 

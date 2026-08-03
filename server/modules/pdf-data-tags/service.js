@@ -44,6 +44,11 @@ const candidateTagOrder = Object.freeze([
   "candidate.opt3",
   "candidate.opt4",
   "candidate.opt5",
+  "candidate.opt6",
+  "candidate.opt7",
+  "candidate.opt8",
+  "candidate.opt9",
+  "candidate.opt10",
   "candidate.photo",
 ]);
 const hiddenCandidateTagKeys = new Set(["candidate.designatedSort"]);
@@ -73,6 +78,11 @@ const candidateTagMetadata = Object.freeze({
   "candidate.opt3": Object.freeze({ label: "OPT3", type: "string", example: "옵션3" }),
   "candidate.opt4": Object.freeze({ label: "OPT4", type: "string", example: "옵션4" }),
   "candidate.opt5": Object.freeze({ label: "OPT5", type: "string", example: "옵션5" }),
+  "candidate.opt6": Object.freeze({ label: "OPT6", type: "string", example: "옵션6" }),
+  "candidate.opt7": Object.freeze({ label: "OPT7", type: "string", example: "옵션7" }),
+  "candidate.opt8": Object.freeze({ label: "OPT8", type: "string", example: "옵션8" }),
+  "candidate.opt9": Object.freeze({ label: "OPT9", type: "string", example: "옵션9" }),
+  "candidate.opt10": Object.freeze({ label: "OPT10", type: "string", example: "옵션10" }),
   "candidate.periodCode": Object.freeze({ label: "교시코드", type: "string", example: "P1" }),
   "candidate.periodName": Object.freeze({ label: "교시명", type: "string", example: "1교시" }),
   "candidate.photo": Object.freeze({ label: "수험생 사진", type: "image", example: "사진 파일" }),

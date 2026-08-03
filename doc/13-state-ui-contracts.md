@@ -416,6 +416,11 @@ Page size option:
 | `opt3` | OPT3 |
 | `opt4` | OPT4 |
 | `opt5` | OPT5 |
+| `opt6` | OPT6 |
+| `opt7` | OPT7 |
+| `opt8` | OPT8 |
+| `opt9` | OPT9 |
+| `opt10` | OPT10 |
 
 ### 업로드 상태
 

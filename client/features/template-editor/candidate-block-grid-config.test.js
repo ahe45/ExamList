@@ -45,3 +45,12 @@ test("candidate block column name row height converts pixel input to the persist
   );
 });
 
+test("candidate block grid supports OPT10 sorting and its data tag alias", async () => {
+  const {
+    candidateBlockGridSortOptions,
+    normalizeCandidateBlockGridSortKey,
+  } = await importClientModule("candidate-block-grid-config.js");
+
+  assert.equal(candidateBlockGridSortOptions.some((option) => option.key === "opt10" && option.label === "OPT10"), true);
+  assert.equal(normalizeCandidateBlockGridSortKey("candidate.opt10"), "opt10");
+});

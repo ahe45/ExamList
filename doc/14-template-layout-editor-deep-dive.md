@@ -294,7 +294,7 @@ UI hook:
 - `name`
 - `birth`
 - `group`
-- `opt1`, `opt2`, `opt3`, `opt4`, `opt5`
+- `opt1`, `opt2`, `opt3`, `opt4`, `opt5`, `opt6`, `opt7`, `opt8`, `opt9`, `opt10`
 
 지원 alias 예:
 
@@ -649,7 +649,7 @@ Group:
 | `schedule` | 시험 일정 | `candidate.examDate`, `candidate.examStartTime`, `candidate.examEndTime`, `candidate.periodName`, `candidate.periodCode` |
 | `site` | 고사장 정보 | `candidate.buildingName`, `candidate.buildingCode`, `candidate.roomName`, `candidate.roomCode`, `room.assignedCount`, `room.otherRoom` |
 | `candidate` | 수험생 정보 | `candidate.examNo`, `candidate.name`, `candidate.birthDate`, `candidate.temporaryNo`, `candidate.groupName`, `candidate.photo` |
-| `etc` | 기타 | `candidate.opt1`, `candidate.opt2`, `candidate.opt3`, `candidate.opt4`, `candidate.opt5` |
+| `etc` | 기타 | `candidate.opt1`, `candidate.opt2`, `candidate.opt3`, `candidate.opt4`, `candidate.opt5`, `candidate.opt6`, `candidate.opt7`, `candidate.opt8`, `candidate.opt9`, `candidate.opt10` |
 
 Tag button:
 

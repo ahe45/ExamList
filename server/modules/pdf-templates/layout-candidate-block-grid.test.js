@@ -2,6 +2,11 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const { normalizeTemplateLayout } = require("./layout");
+const { normalizeCandidateBlockGridSortKey } = require("./candidate-block-grid-sort");
+
+test("candidate block grid supports the OPT10 data tag sort alias", () => {
+  assert.equal(normalizeCandidateBlockGridSortKey("candidate.opt10"), "opt10");
+});
 
 test("normalizeTemplateLayout normalizes candidate block grid settings", () => {
   const layout = normalizeTemplateLayout(

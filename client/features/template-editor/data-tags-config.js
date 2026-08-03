@@ -67,7 +67,19 @@ export const dataTagAccordionGroups = Object.freeze([
   Object.freeze({
     icon: "more",
     id: "etc",
-    keys: Object.freeze(["row.indexInPage", "candidate.opt1", "candidate.opt2", "candidate.opt3", "candidate.opt4", "candidate.opt5"]),
+    keys: Object.freeze([
+      "row.indexInPage",
+      "candidate.opt1",
+      "candidate.opt2",
+      "candidate.opt3",
+      "candidate.opt4",
+      "candidate.opt5",
+      "candidate.opt6",
+      "candidate.opt7",
+      "candidate.opt8",
+      "candidate.opt9",
+      "candidate.opt10",
+    ]),
     label: "기타",
   }),
 ]);
@@ -150,6 +162,11 @@ export const dataTagFallbackDefinitions = Object.freeze({
   "candidate.opt3": Object.freeze({ example: generatedObjectPreviewValues["candidate.opt3"], label: "OPT3", type: "string" }),
   "candidate.opt4": Object.freeze({ example: generatedObjectPreviewValues["candidate.opt4"], label: "OPT4", type: "string" }),
   "candidate.opt5": Object.freeze({ example: generatedObjectPreviewValues["candidate.opt5"], label: "OPT5", type: "string" }),
+  "candidate.opt6": Object.freeze({ example: generatedObjectPreviewValues["candidate.opt6"], label: "OPT6", type: "string" }),
+  "candidate.opt7": Object.freeze({ example: generatedObjectPreviewValues["candidate.opt7"], label: "OPT7", type: "string" }),
+  "candidate.opt8": Object.freeze({ example: generatedObjectPreviewValues["candidate.opt8"], label: "OPT8", type: "string" }),
+  "candidate.opt9": Object.freeze({ example: generatedObjectPreviewValues["candidate.opt9"], label: "OPT9", type: "string" }),
+  "candidate.opt10": Object.freeze({ example: generatedObjectPreviewValues["candidate.opt10"], label: "OPT10", type: "string" }),
 });
 
 export function renderDataTagIcon(iconKey = "more") {

@@ -14,3 +14,12 @@ test("template tag visibility keeps candidate academic year while hiding school 
   assert.equal(isVisibleTemplateTag({ key: "school.academicYear", label: "학년도" }), false);
   assert.equal(isVisibleTemplateTag({ key: "candidate.designatedSort", label: "지정정렬" }), false);
 });
+
+test("template data tag configuration exposes OPT10 in the other group", async () => {
+  const { dataTagAccordionGroups, dataTagFallbackDefinitions } = await importClientModule("data-tags-config.js");
+  const otherGroup = dataTagAccordionGroups.find((group) => group.id === "etc");
+
+  assert.equal(otherGroup.keys.includes("candidate.opt10"), true);
+  assert.equal(dataTagFallbackDefinitions["candidate.opt10"].label, "OPT10");
+  assert.equal(dataTagFallbackDefinitions["candidate.opt10"].example, "옵션10");
+});

@@ -35,6 +35,11 @@ const CANDIDATE_WORKBOOK_INSERT_COLUMNS = Object.freeze([
   "opt3",
   "opt4",
   "opt5",
+  "opt6",
+  "opt7",
+  "opt8",
+  "opt9",
+  "opt10",
   "photo_name",
   "photo_mime",
 ]);
@@ -71,6 +76,11 @@ const CANDIDATE_WORKBOOK_UPDATE_COLUMNS = Object.freeze([
   "opt3",
   "opt4",
   "opt5",
+  "opt6",
+  "opt7",
+  "opt8",
+  "opt9",
+  "opt10",
 ]);
 
 function createCandidateRecordSourceId(row = {}) {
@@ -128,6 +138,11 @@ function createCandidateWorkbookInsertValues(row = {}, sourceType, schoolId) {
     row.opt3,
     row.opt4,
     row.opt5,
+    row.opt6,
+    row.opt7,
+    row.opt8,
+    row.opt9,
+    row.opt10,
     "",
     "",
   ];
@@ -173,6 +188,11 @@ function createCandidateWriteRepository({ query, resolveSchoolId }) {
           opt3 = ?,
           opt4 = ?,
           opt5 = ?,
+          opt6 = ?,
+          opt7 = ?,
+          opt8 = ?,
+          opt9 = ?,
+          opt10 = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         ${schoolId ? "AND school_id = ?" : ""}
@@ -209,6 +229,11 @@ function createCandidateWriteRepository({ query, resolveSchoolId }) {
         row.opt3,
         row.opt4,
         row.opt5,
+        row.opt6,
+        row.opt7,
+        row.opt8,
+        row.opt9,
+        row.opt10,
         candidateId,
         ...(schoolId ? [schoolId] : []),
       ],

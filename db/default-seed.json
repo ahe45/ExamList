@@ -62,6 +62,11 @@
           "candidate.opt3": "OPT3",
           "candidate.opt4": "OPT4",
           "candidate.opt5": "OPT5",
+          "candidate.opt6": "OPT6",
+          "candidate.opt7": "OPT7",
+          "candidate.opt8": "OPT8",
+          "candidate.opt9": "OPT9",
+          "candidate.opt10": "OPT10",
           "candidate.photo": "사진",
           "room.assignedCount": "배정인원",
           "room.otherRoom": "타고사실"
@@ -100,6 +105,11 @@
           "candidate.opt3": "옵션3",
           "candidate.opt4": "옵션4",
           "candidate.opt5": "옵션5",
+          "candidate.opt6": "옵션6",
+          "candidate.opt7": "옵션7",
+          "candidate.opt8": "옵션8",
+          "candidate.opt9": "옵션9",
+          "candidate.opt10": "옵션10",
           "candidate.photo": "사진",
           "room.assignedCount": "25",
           "room.otherRoom": "타고사실"

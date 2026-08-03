@@ -145,7 +145,7 @@
 - `name`.
 - `birth_date`.
 - `group_name`.
-- `opt1`에서 `opt5`.
+- `opt1`에서 `opt10`.
 - `photo_name`.
 - `photo_mime`.
 - `created_at`, `updated_at`.

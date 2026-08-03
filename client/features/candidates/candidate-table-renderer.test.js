@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { normalizeCandidateDraftRecord } from "./candidate-action-utils.js";
 import { renderCandidateTable } from "./candidate-table-renderer.js";
 
 test("candidate grid does not render filter strip when filters are active", () => {
@@ -23,6 +24,29 @@ test("candidate grid does not render filter strip when filters are active", () =
 
   assert.doesNotMatch(html, /class="filter-strip"/);
   assert.doesNotMatch(html, /적용된 필터/);
+});
+
+test("candidate grid renders OPT1 through OPT10 columns", () => {
+  const html = renderCandidateTable({
+    access: {
+      permissions: {
+        manageCandidates: true,
+      },
+    },
+    candidates: {
+      items: [{ id: "candidate-1", opt10: "열 번째 값" }],
+      loading: false,
+    },
+  });
+
+  assert.match(html, /table-column-opt1/);
+  assert.match(html, /table-column-opt10/);
+  assert.match(html, />OPT10</);
+  assert.match(html, />열 번째 값</);
+});
+
+test("candidate detail draft preserves OPT10", () => {
+  assert.equal(normalizeCandidateDraftRecord({ opt10: " 추가옵션 " }).opt10, "추가옵션");
 });
 
 test("candidate grid page-size picker uses the admitcard option set", () => {

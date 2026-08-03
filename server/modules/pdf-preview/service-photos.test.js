@@ -157,12 +157,14 @@ test("previewTemplate renders the configured candidate photo sample data", async
 test("preview sample candidates keep the bundled candidate photo sample", () => {
   const [candidate] = buildPreviewSampleCandidates({
     "candidate.name": "샘플 성명",
+    "candidate.opt10": "추가옵션",
     "candidate.photo": "(사진)",
   });
 
   assert.equal(candidate.photoFileId, sampleCandidatePhotoFileId);
   assert.match(candidate.photoUrl, /^data:image\/png;base64,/);
   assert.equal(candidate.photo, "(사진)");
+  assert.equal(candidate.opt10, "추가옵션");
 });
 
 test("preview sample candidates use photo text as the default photo token value", () => {

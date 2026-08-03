@@ -117,6 +117,11 @@ const generatedObjectSourceLabelMap = Object.freeze({
   "candidate.opt3": "OPT3",
   "candidate.opt4": "OPT4",
   "candidate.opt5": "OPT5",
+  "candidate.opt6": "OPT6",
+  "candidate.opt7": "OPT7",
+  "candidate.opt8": "OPT8",
+  "candidate.opt9": "OPT9",
+  "candidate.opt10": "OPT10",
   "candidate.periodCode": "교시코드",
   "candidate.periodName": "교시명",
   "candidate.photo": "수험생 사진",
@@ -174,6 +179,11 @@ const generatedObjectSourceAliasMap = Object.freeze({
   opt3: "candidate.opt3",
   opt4: "candidate.opt4",
   opt5: "candidate.opt5",
+  opt6: "candidate.opt6",
+  opt7: "candidate.opt7",
+  opt8: "candidate.opt8",
+  opt9: "candidate.opt9",
+  opt10: "candidate.opt10",
   group: "candidate.groupName",
 });
 

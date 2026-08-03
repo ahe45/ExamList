@@ -431,7 +431,17 @@
 .candidate-records-table th.table-column-opt4,
 .candidate-records-table td.table-column-opt4,
 .candidate-records-table th.table-column-opt5,
-.candidate-records-table td.table-column-opt5 {
+.candidate-records-table td.table-column-opt5,
+.candidate-records-table th.table-column-opt6,
+.candidate-records-table td.table-column-opt6,
+.candidate-records-table th.table-column-opt7,
+.candidate-records-table td.table-column-opt7,
+.candidate-records-table th.table-column-opt8,
+.candidate-records-table td.table-column-opt8,
+.candidate-records-table th.table-column-opt9,
+.candidate-records-table td.table-column-opt9,
+.candidate-records-table th.table-column-opt10,
+.candidate-records-table td.table-column-opt10 {
   min-width: var(--candidate-col-opt);
   width: var(--candidate-col-opt);
 }

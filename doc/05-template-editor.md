@@ -240,7 +240,7 @@
 - 이름.
 - 생년월일.
 - 조.
-- OPT1에서 OPT5.
+- OPT1에서 OPT10.
 
 ### 동작
 
@@ -319,6 +319,11 @@ API:
 - `candidate.opt3`
 - `candidate.opt4`
 - `candidate.opt5`
+- `candidate.opt6`
+- `candidate.opt7`
+- `candidate.opt8`
+- `candidate.opt9`
+- `candidate.opt10`
 
 클라이언트에서 숨기는 태그:
 

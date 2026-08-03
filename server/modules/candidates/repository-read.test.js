@@ -84,3 +84,26 @@ test("findCandidateFilterOptions can exclude the requested field from its own fi
     schoolId: "school-1",
   });
 });
+
+test("findCandidates reads, filters, and sorts by OPT10", async () => {
+  const calls = [];
+  const repository = createCandidateReadRepository({
+    createHttpError: (statusCode, message, errorCode) => Object.assign(new Error(message), { errorCode, statusCode }),
+    async query(sql, params) {
+      calls.push({ params, sql });
+      return calls.length === 1 ? [{ total: 0 }] : [];
+    },
+  });
+
+  await repository.findCandidates({
+    opt10: "추가옵션",
+    sortDirection: "desc",
+    sortKey: "opt10",
+  });
+
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].params.opt10, "추가옵션");
+  assert.match(calls[0].sql, /WHERE opt10 = :opt10/);
+  assert.match(calls[1].sql, /\bopt10,/);
+  assert.match(calls[1].sql, /opt10 DESC/);
+});
