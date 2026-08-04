@@ -710,7 +710,7 @@
   justify-content: center;
   left: 0;
   line-height: 1;
-  padding-bottom: calc(14px * var(--template-editor-canvas-zoom, 1));
+  padding-bottom: calc(19px * var(--template-editor-canvas-zoom, 1));
   pointer-events: none;
   position: absolute;
   text-align: center;
