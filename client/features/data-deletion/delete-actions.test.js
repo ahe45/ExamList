@@ -40,6 +40,7 @@ test("data deletion renders progress state before sending the delete request", a
     };
 
     appendChild() {}
+    addEventListener() {}
     replaceChildren() {}
     setAttribute() {}
   }

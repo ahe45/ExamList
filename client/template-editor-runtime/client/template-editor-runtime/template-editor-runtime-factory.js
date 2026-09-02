@@ -228,7 +228,12 @@
       });
 
       function getCandidateBlockModalEditorController() {
-        return globalScope.ExamListCandidateBlockModalEditor || ownerWindow.ExamListCandidateBlockModalEditor || null;
+        return (
+          state.templateEditor.candidateBlockModalEditorController ||
+          globalScope.ExamListCandidateBlockModalEditor ||
+          ownerWindow.ExamListCandidateBlockModalEditor ||
+          null
+        );
       }
 
       function serializeTemplateEditorDocumentSurface() {

@@ -485,12 +485,20 @@ function applyObjectSizeToSelection(editor, surfaceElement, selectedPage, { heig
     ...changedModalSurfaceElements,
     ...changedModalTableSurfaceElements,
   ]);
-  syncObjectAlignmentMutation(editor, surfaceElement, [
+  const objectAlignmentMutationElements = [
     ...cellElements,
     ...candidateBlockModalElements,
     ...modalTableElements,
     ...items.map((item) => item.element),
-  ]);
+  ];
+
+  // Candidate-block grids are persisted by the dedicated dirty callback,
+  // which also restores their selection after the editor re-renders. Running
+  // the generic image/table sync with an empty selection first would clear the
+  // grid selection and disable the size fields after the first change.
+  if (objectAlignmentMutationElements.length) {
+    syncObjectAlignmentMutation(editor, surfaceElement, objectAlignmentMutationElements);
+  }
 
   if (didApplyCandidateBlockGridSize && typeof onDirty === "function") {
     onDirty();

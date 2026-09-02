@@ -1,6 +1,7 @@
 import {
   isCandidateBlockGridContentPage,
   isPhotoCandidateBlockGridPage,
+  objectResizeCorners,
 } from "./candidate-block-grid-config.js";
 import {
   createCandidateBlockGridControls,
@@ -31,6 +32,7 @@ import {
 } from "./candidate-block-grid-sessions.js";
 import { objectFlowLayoutChangeEventName } from "./object-flow-reflow.js";
 import {
+  cancelCandidateBlockFocusEditor,
   closeCandidateBlockFocusEditor,
   isCandidateBlockFocusEditorOpen,
   openCandidateBlockFocusEditor,
@@ -205,6 +207,12 @@ export { resetCandidateBlockGridState } from "./candidate-block-grid-selection.j
 export { syncCandidateBlockTemplateFromSurface } from "./candidate-block-grid-surface.js";
 
 function resolveCandidateBlockGridSelectedPage(appState, fallbackPage) {
+  const selectedPageId = appState?.templateEditor?.selectedPageId;
+
+  if (fallbackPage && (!selectedPageId || fallbackPage.id === selectedPageId)) {
+    return fallbackPage;
+  }
+
   return getSelectedPage(appState?.templateEditor) || fallbackPage || null;
 }
 
@@ -311,6 +319,24 @@ export function bindCandidateBlockGridControls({
     renderCandidateBlockGridOnSurface(surfaceElement, initialSelectedPage);
   }
 
+  const restoreMissingObjectControls = () => {
+    const hasIncompleteControls = Array.from(surfaceElement.querySelectorAll("[data-candidate-block-grid]")).some(
+      (gridElement) =>
+        gridElement.querySelectorAll("[data-candidate-block-grid-move-handle]").length !== 1 ||
+        gridElement.querySelectorAll("[data-candidate-block-grid-resize-handle]").length !== objectResizeCorners.length,
+    );
+
+    if (hasIncompleteControls) {
+      hydrateCandidateBlockGridObjects(surfaceElement);
+    }
+  };
+  const ObjectControlsMutationObserver = surfaceElement.ownerDocument?.defaultView?.MutationObserver;
+  const objectControlsObserver = ObjectControlsMutationObserver
+    ? new ObjectControlsMutationObserver(restoreMissingObjectControls)
+    : null;
+
+  objectControlsObserver?.observe(surfaceElement, { childList: true, subtree: true });
+
   if (readOnly) {
     sectionElement.querySelectorAll("button, input, select, textarea").forEach((controlElement) => {
       if ("disabled" in controlElement) {
@@ -321,6 +347,7 @@ export function bindCandidateBlockGridControls({
     });
 
     return () => {
+      objectControlsObserver?.disconnect();
       closeCandidateBlockFocusEditor();
       clearCandidateBlockGridSelection();
       clearCandidateBlockGridBorderHover(surfaceElement);
@@ -460,27 +487,37 @@ export function bindCandidateBlockGridControls({
       surfaceElement.classList.contains("is-table-column-hover") ||
       surfaceElement.classList.contains("is-table-row-hover");
 
-    if (borderGridElement && (!isTableObjectBorder || isCandidateBlockGridVerticalBorderEvent(event, borderGridElement))) {
-      closeCandidateBlockFocusEditor();
-      selectCandidateBlockGridElement(borderGridElement);
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
-
     if (
       gridElement &&
+      blockElement instanceof HTMLElement &&
       sourceBlockElement instanceof HTMLElement &&
       surfaceElement.contains(sourceBlockElement) &&
-      !isCandidateBlockFocusEditorOpen(sourceBlockElement) &&
-      !borderGridElement
+      !isCandidateBlockFocusEditorOpen(sourceBlockElement)
     ) {
       if (!activePage) {
         return;
       }
 
-      openCandidateBlockFocusEditor({ blockElement: sourceBlockElement, editor, onDirty: markDirty, selectedPage: activePage, surfaceElement });
+      const opened = openCandidateBlockFocusEditor({
+        blockElement: sourceBlockElement,
+        editor,
+        onDirty: markDirty,
+        selectedPage: activePage,
+        surfaceElement,
+      });
+      if (!opened) {
+        return;
+      }
       clearCandidateBlockGridSelection();
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
+
+    if (borderGridElement && (!isTableObjectBorder || isCandidateBlockGridVerticalBorderEvent(event, borderGridElement))) {
+      closeCandidateBlockFocusEditor();
+      selectCandidateBlockGridElement(borderGridElement);
       event.preventDefault();
       event.stopPropagation();
       return;
@@ -497,10 +534,20 @@ export function bindCandidateBlockGridControls({
         return;
       }
 
-      openCandidateBlockFocusEditor({ blockElement, editor, onDirty: markDirty, selectedPage: activePage, surfaceElement });
+      const opened = openCandidateBlockFocusEditor({
+        blockElement,
+        editor,
+        onDirty: markDirty,
+        selectedPage: activePage,
+        surfaceElement,
+      });
+      if (!opened) {
+        return;
+      }
       clearCandidateBlockGridSelection();
       event.preventDefault();
       event.stopPropagation();
+      event.stopImmediatePropagation();
       return;
     }
 
@@ -521,6 +568,15 @@ export function bindCandidateBlockGridControls({
     }
 
     clearCandidateBlockGridSelection();
+  };
+  const handleWindowPointerDown = (event) => {
+    const target = event.target instanceof Node ? event.target : null;
+
+    if (!target || !surfaceElement.contains(target)) {
+      return;
+    }
+
+    handleSurfacePointerDown(event);
   };
   const handleSurfacePointerMove = (event) => {
     if (isCandidateBlockFocusEditorOpen()) {
@@ -572,7 +628,7 @@ export function bindCandidateBlockGridControls({
   };
   const handleSurfaceKeyDown = (event) => {
     if (event.key === "Escape" && isCandidateBlockFocusEditorOpen()) {
-      closeCandidateBlockFocusEditor();
+      cancelCandidateBlockFocusEditor();
       event.preventDefault();
       event.stopPropagation();
       return;
@@ -769,7 +825,10 @@ export function bindCandidateBlockGridControls({
   candidateBlockPreviewInteractionEvents.forEach((eventName) => {
     surfaceElement.addEventListener(eventName, handlePreviewInteraction, true);
   });
-  surfaceElement.addEventListener("pointerdown", handleSurfacePointerDown);
+  // Candidate-block focus/move/resize owns its pointer gesture. Capture from
+  // the window so this handler runs before document/surface capture listeners
+  // can normalize the editor DOM and detach the original event target.
+  surfaceElement.ownerDocument?.defaultView?.addEventListener?.("pointerdown", handleWindowPointerDown, true);
   surfaceElement.addEventListener("pointermove", handleSurfacePointerMove);
   surfaceElement.addEventListener("pointerleave", handleSurfacePointerLeave);
   surfaceElement.addEventListener("keydown", handleSurfaceKeyDown);
@@ -784,6 +843,7 @@ export function bindCandidateBlockGridControls({
   window.addEventListener("pointercancel", handleCandidateBlockGridResizeEnd);
 
   return () => {
+    objectControlsObserver?.disconnect();
     closeCandidateBlockFocusEditor();
     clearCandidateBlockGridSelection();
     clearCandidateBlockGridBorderHover(surfaceElement);
@@ -795,7 +855,7 @@ export function bindCandidateBlockGridControls({
     candidateBlockPreviewInteractionEvents.forEach((eventName) => {
       surfaceElement.removeEventListener(eventName, handlePreviewInteraction, true);
     });
-    surfaceElement.removeEventListener("pointerdown", handleSurfacePointerDown);
+    surfaceElement.ownerDocument?.defaultView?.removeEventListener?.("pointerdown", handleWindowPointerDown, true);
     surfaceElement.removeEventListener("pointermove", handleSurfacePointerMove);
     surfaceElement.removeEventListener("pointerleave", handleSurfacePointerLeave);
     surfaceElement.removeEventListener("keydown", handleSurfaceKeyDown);

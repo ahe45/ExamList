@@ -10,8 +10,8 @@ const pageNumberPresetDefinitions = Object.freeze({
     template: "페이지 {{page.current}}/{{page.total}}",
   }),
   pageCurrentTotalEnglish: Object.freeze({
-    label: "Page1/1",
-    template: "Page{{page.current}}/{{page.total}}",
+    label: "Page 1/1",
+    template: "Page {{page.current}}/{{page.total}}",
   }),
   currentPageKorean: Object.freeze({
     label: "1페이지",

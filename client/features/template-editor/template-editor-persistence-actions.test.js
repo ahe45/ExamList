@@ -19,6 +19,7 @@ function installDomStubs() {
     },
     createElement() {
       return {
+        addEventListener() {},
         classList: {
           add() {},
           remove() {},

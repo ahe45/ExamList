@@ -131,4 +131,3 @@ export function buildLegacyPageDocumentHtml(page) {
 
   return elements.map((element) => renderLegacyElementBlock(element)).join("");
 }
-

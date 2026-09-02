@@ -11,7 +11,10 @@ export function roundObjectAlignmentValue(value) {
 }
 
 export function clampObjectAlignmentValue(value, maximum) {
-  const safeMaximum = Math.max(0, Number(maximum) || 0);
+  const rawMaximum = Math.max(0, Number(maximum) || 0);
+  // Fractional table borders and browser sub-pixel layout can leave a false
+  // movement range even when an object fills the document width or height.
+  const safeMaximum = rawMaximum <= 1 ? 0 : rawMaximum;
 
   return Math.min(safeMaximum, Math.max(0, roundObjectAlignmentValue(value)));
 }
@@ -107,8 +110,15 @@ export function getObjectAlignmentCanvasMetrics(documentElement) {
   const rect = documentElement.getBoundingClientRect();
   const width = documentElement.clientWidth || rect.width || 0;
   const height = documentElement.clientHeight || rect.height || 0;
-  const scaleX = width > 0 && rect.width > 0 ? rect.width / width : 1;
-  const scaleY = height > 0 && rect.height > 0 ? rect.height / height : 1;
+  // getBoundingClientRect includes the rendered border box while clientWidth /
+  // clientHeight describe the inner editing area. Dividing those values makes
+  // the document border look like a canvas transform and creates a 1-2px false
+  // movement range for full-width objects. offsetWidth/offsetHeight represent
+  // the matching logical border box, so their ratio isolates the real zoom.
+  const borderBoxWidth = documentElement.offsetWidth || width;
+  const borderBoxHeight = documentElement.offsetHeight || height;
+  const scaleX = borderBoxWidth > 0 && rect.width > 0 ? rect.width / borderBoxWidth : 1;
+  const scaleY = borderBoxHeight > 0 && rect.height > 0 ? rect.height / borderBoxHeight : 1;
 
   return {
     height,

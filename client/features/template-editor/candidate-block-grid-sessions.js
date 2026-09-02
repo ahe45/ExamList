@@ -13,6 +13,12 @@ import {
   getCandidateBlockGridTableMinimumSize,
   normalizeCandidateBlockTables,
 } from "./candidate-block-grid-table-normalizer.js";
+import {
+  calculateObjectMovePosition,
+  calculateObjectResizeRect,
+  clampObjectCoordinate,
+  getObjectResizeDirections,
+} from "./object-interaction-geometry.js";
 
 let candidateBlockGridResizeSession = null;
 let candidateBlockGridMoveSession = null;
@@ -40,17 +46,21 @@ export function writeCandidateBlockGridSizeToConfig(selectedPage, gridElement) {
 
   const config = ensurePageCandidateBlockGridConfig(selectedPage);
   const rect = gridElement.getBoundingClientRect();
+  // CSS transforms are used for canvas zoom, so the rendered rectangle is not
+  // the logical object size that must be persisted in the template.
+  const logicalWidth = gridElement.offsetWidth || rect.width;
+  const logicalHeight = gridElement.offsetHeight || rect.height;
 
-  if (rect.width > 0) {
-    config.widthPt = cssPixelToPointValue(rect.width);
+  if (logicalWidth > 0) {
+    config.widthPt = cssPixelToPointValue(logicalWidth);
   }
 
-  if (rect.height > 0) {
+  if (logicalHeight > 0) {
     const columnNameRowHeightPt = gridElement.dataset?.candidateBlockColumnNameRowEnabled === "true"
       ? Number(gridElement.dataset?.candidateBlockColumnNameRowHeightPt) || 0
       : 0;
 
-    config.heightPt = Math.max(0, cssPixelToPointValue(rect.height) - columnNameRowHeightPt);
+    config.heightPt = Math.max(0, cssPixelToPointValue(logicalHeight) - columnNameRowHeightPt);
   }
 
   if (gridElement.style.position === "absolute") {
@@ -63,9 +73,10 @@ export function writeCandidateBlockGridSizeToConfig(selectedPage, gridElement) {
 }
 
 function clampCandidateBlockGridCoordinate(value, maximum) {
-  const safeMaximum = Math.max(Math.round(maximum) || 0, 0);
+  const roundedMaximum = Math.max(Math.round(maximum) || 0, 0);
+  const safeMaximum = roundedMaximum <= 1 ? 0 : roundedMaximum;
 
-  return Math.min(safeMaximum, Math.max(0, Math.round(value) || 0));
+  return clampObjectCoordinate(value, safeMaximum);
 }
 
 function normalizeCandidateBlockGridEdgeCoordinate(value) {
@@ -176,23 +187,6 @@ function getCandidateBlockGridMinimumSize(gridElement) {
   };
 }
 
-function getObjectResizeDirections(corner) {
-  const normalizedCorner = normalizeObjectResizeCorner(corner);
-
-  return {
-    x: normalizedCorner === "left" || normalizedCorner.endsWith("left")
-      ? -1
-      : normalizedCorner === "right" || normalizedCorner.endsWith("right")
-        ? 1
-        : 0,
-    y: normalizedCorner === "top" || normalizedCorner.startsWith("top")
-      ? -1
-      : normalizedCorner === "bottom" || normalizedCorner.startsWith("bottom")
-        ? 1
-        : 0,
-  };
-}
-
 export function startCandidateBlockGridResizeSession(gridElement, event, selectedPage, markDirty, corner = "bottom-right", selectGridElement = null) {
   if (!(gridElement instanceof HTMLElement)) {
     return false;
@@ -268,44 +262,22 @@ export function handleCandidateBlockGridResizeMove(event) {
   const deltaY = (event.clientY - session.startY) / session.scaleY;
   const directionX = Number.isFinite(session.directionX) ? session.directionX : 1;
   const directionY = Number.isFinite(session.directionY) ? session.directionY : 1;
-  const inwardWidthAdjustment = directionX !== 0 && deltaX * directionX < 0 ? 2 : 0;
-  const inwardHeightAdjustment = directionY !== 0 && deltaY * directionY < 0 ? 3 : 0;
-  const getResizeDelta = (logicalDelta, rawClientDelta, direction, inwardAdjustment) => {
-    if (direction === 0) {
-      return 0;
-    }
-
-    const directedLogicalDelta = logicalDelta * direction;
-
-    if (directedLogicalDelta >= 0) {
-      return Math.round(directedLogicalDelta);
-    }
-
-    const directedClientDelta = rawClientDelta * direction;
-    const visibleMinimumDelta = Math.ceil(Math.abs(directedClientDelta) * 0.65);
-
-    return -Math.max(Math.round(Math.abs(directedLogicalDelta)) + inwardAdjustment, visibleMinimumDelta);
-  };
-  const resizeDeltaX = getResizeDelta(deltaX, event.clientX - session.startX, directionX, inwardWidthAdjustment);
-  const resizeDeltaY = getResizeDelta(deltaY, event.clientY - session.startY, directionY, inwardHeightAdjustment);
-  const proposedWidth = directionX === 0
-    ? Math.max(session.minWidth, Math.round(session.startWidth))
-    : Math.max(session.minWidth, Math.round(session.startWidth + resizeDeltaX));
-  const proposedHeight = directionY === 0
-    ? Math.max(session.minHeight, Math.round(session.startHeight))
-    : Math.max(session.minHeight, Math.round(session.startHeight + resizeDeltaY));
-  const nextWidth = Number.isFinite(session.maxWidth)
-    ? Math.min(proposedWidth, session.maxWidth)
-    : proposedWidth;
-  const nextHeight = Number.isFinite(session.maxHeight)
-    ? Math.min(proposedHeight, session.maxHeight)
-    : proposedHeight;
-  const nextLeft = directionX < 0
-    ? Math.max(0, Math.round(session.startLeft + session.startWidth - nextWidth))
-    : Math.round(session.startLeft);
-  const nextTop = directionY < 0
-    ? Math.max(0, Math.round(session.startTop + session.startHeight - nextHeight))
-    : Math.round(session.startTop);
+  const nextRect = calculateObjectResizeRect({
+    deltaX,
+    deltaY,
+    directionX,
+    directionY,
+    maximumHeight: session.maxHeight,
+    maximumWidth: session.maxWidth,
+    minimumHeight: session.minHeight,
+    minimumWidth: session.minWidth,
+    preserveAspectRatio: event.shiftKey,
+    startHeight: session.startHeight,
+    startLeft: session.startLeft,
+    startTop: session.startTop,
+    startWidth: session.startWidth,
+  });
+  const { height: nextHeight, left: nextLeft, top: nextTop, width: nextWidth } = nextRect;
 
   if (session.minWidth < candidateBlockGridMinimumWidth) {
     session.gridElement.style.minWidth = `${session.minWidth}px`;
@@ -373,6 +345,11 @@ export function startCandidateBlockGridMoveSession(gridElement, event, selectedP
     return false;
   }
 
+  // Selecting a previously unselected grid clears any active move session.
+  // Complete selection before creating the new session so the first drag is
+  // not cancelled by the selection helper itself.
+  selectGridElement?.(gridElement);
+
   candidateBlockGridMoveSession = {
     gridElement,
     height: metrics.height,
@@ -392,7 +369,6 @@ export function startCandidateBlockGridMoveSession(gridElement, event, selectedP
     width: metrics.width,
   };
 
-  selectGridElement?.(gridElement);
   gridElement.classList.add("is-moving-candidate-block-grid");
   writeCandidateBlockGridSizeToConfig(selectedPage, gridElement);
 
@@ -447,14 +423,16 @@ export function handleCandidateBlockGridMove(event) {
     return;
   }
 
-  const nextLeft = clampCandidateBlockGridCoordinate(
-    session.startLeft + (event.clientX - session.startX) / session.scaleX,
-    session.maxWidth - session.width,
-  );
-  const nextTop = clampCandidateBlockGridCoordinate(
-    session.startTop + (event.clientY - session.startY) / session.scaleY,
-    session.maxHeight - session.height,
-  );
+  const nextPosition = calculateObjectMovePosition({
+    deltaX: (event.clientX - session.startX) / session.scaleX,
+    deltaY: (event.clientY - session.startY) / session.scaleY,
+    maximumLeft: session.maxWidth - session.width <= 1 ? 0 : session.maxWidth - session.width,
+    maximumTop: session.maxHeight - session.height <= 1 ? 0 : session.maxHeight - session.height,
+    startLeft: session.startLeft,
+    startTop: session.startTop,
+  });
+  const nextLeft = nextPosition.left;
+  const nextTop = nextPosition.top;
 
   if (nextLeft !== session.lastLeft || nextTop !== session.lastTop) {
     session.gridElement.style.left = `${nextLeft}px`;

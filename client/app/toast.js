@@ -1,5 +1,9 @@
 let toastTimer = 0;
-const toastDurationMs = 5000;
+let toastFadeTimer = 0;
+let toastDeadline = 0;
+let toastRemainingMs = 3000;
+const toastDurationMs = 3000;
+const toastFadeDurationMs = 320;
 
 function getToastRoot() {
   const toastRoot = document.getElementById("examlist-toast-root");
@@ -27,6 +31,10 @@ export function hideToast() {
     window.clearTimeout(toastTimer);
     toastTimer = 0;
   }
+  if (toastFadeTimer) {
+    window.clearTimeout(toastFadeTimer);
+    toastFadeTimer = 0;
+  }
 
   const toastRoot = getToastRoot();
 
@@ -36,6 +44,22 @@ export function hideToast() {
 
   toastRoot.classList.remove("has-toast");
   toastRoot.replaceChildren();
+}
+
+function scheduleToastDismiss(toastMessage, delayMs = toastRemainingMs) {
+  if (toastTimer) window.clearTimeout(toastTimer);
+  const normalizedDelay = Math.max(0, Number(delayMs) || 0);
+  toastRemainingMs = normalizedDelay;
+  toastDeadline = Date.now() + normalizedDelay;
+  toastTimer = window.setTimeout(() => {
+    toastTimer = 0;
+    toastRemainingMs = 0;
+    toastMessage.classList.add("is-fading");
+    toastFadeTimer = window.setTimeout(() => {
+      toastFadeTimer = 0;
+      hideToast();
+    }, toastFadeDurationMs);
+  }, normalizedDelay);
 }
 
 export function showToast(message = "", options = {}) {
@@ -58,9 +82,23 @@ export function showToast(message = "", options = {}) {
   toastMessage.textContent = normalizedMessage;
   toastRoot.replaceChildren(toastMessage);
   toastRoot.classList.add("has-toast");
-
-  toastTimer = window.setTimeout(() => {
-    toastTimer = 0;
-    hideToast();
-  }, toastDurationMs);
+  toastRemainingMs = toastDurationMs;
+  toastMessage.addEventListener("mouseenter", () => {
+    if (toastMessage.classList.contains("is-fading")) {
+      if (toastFadeTimer) window.clearTimeout(toastFadeTimer);
+      toastFadeTimer = 0;
+      toastMessage.classList.remove("is-fading");
+      toastRemainingMs = toastDurationMs;
+      return;
+    }
+    if (toastTimer) {
+      toastRemainingMs = Math.max(0, toastDeadline - Date.now());
+      window.clearTimeout(toastTimer);
+      toastTimer = 0;
+    }
+  });
+  toastMessage.addEventListener("mouseleave", () => {
+    scheduleToastDismiss(toastMessage, toastRemainingMs > 0 ? toastRemainingMs : toastDurationMs);
+  });
+  scheduleToastDismiss(toastMessage, toastDurationMs);
 }

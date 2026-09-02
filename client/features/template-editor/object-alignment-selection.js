@@ -80,6 +80,35 @@ export function applyObjectAlignmentSelection(editor, surfaceElement, selectedEl
 }
 
 export function syncObjectAlignmentMutation(editor, surfaceElement, selectedElements) {
+  const selectionSnapshots = selectedElements.map((element) => {
+    const type = element instanceof HTMLTableElement ? "table" : "image";
+    const modalSurfaceId =
+      element.closest?.("[data-candidate-block-modal-editor-surface]")?.dataset?.candidateBlockEditorSurfaceId || "";
+    const peers = getObjectAlignmentElements(surfaceElement).filter(
+      (candidate) =>
+        (candidate instanceof HTMLTableElement ? "table" : "image") === type &&
+        (candidate.closest?.("[data-candidate-block-modal-editor-surface]")?.dataset?.candidateBlockEditorSurfaceId || "") ===
+          modalSurfaceId,
+    );
+
+    return { index: peers.indexOf(element), modalSurfaceId, type };
+  });
+  const resolveSelectedElements = () => {
+    const currentElements = getObjectAlignmentElements(surfaceElement);
+
+    return selectionSnapshots
+      .map((snapshot) => {
+        const peers = currentElements.filter(
+          (candidate) =>
+            (candidate instanceof HTMLTableElement ? "table" : "image") === snapshot.type &&
+            (candidate.closest?.("[data-candidate-block-modal-editor-surface]")?.dataset?.candidateBlockEditorSurfaceId || "") ===
+              snapshot.modalSurfaceId,
+        );
+        return peers[snapshot.index] || null;
+      })
+      .filter(Boolean);
+  };
+
   [...selectedElements]
     .sort((leftElement, rightElement) => {
       const leftRect = leftElement?.getBoundingClientRect?.();
@@ -100,6 +129,6 @@ export function syncObjectAlignmentMutation(editor, surfaceElement, selectedElem
   }
 
   window.requestAnimationFrame(() => {
-    applyObjectAlignmentSelection(editor, surfaceElement, selectedElements);
+    applyObjectAlignmentSelection(editor, surfaceElement, resolveSelectedElements());
   });
 }

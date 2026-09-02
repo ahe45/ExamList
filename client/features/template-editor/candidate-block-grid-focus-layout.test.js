@@ -189,9 +189,9 @@ test("calculateCandidateBlockFocusLayout fits the logical block inside the visib
     {
       editorHeight: 50,
       editorWidth: 100,
-      panelHeight: 281,
+      panelHeight: 317,
       panelLeft: 10,
-      panelTop: 80,
+      panelTop: 62,
       panelWidth: 500,
       scale: 4.42,
       visualHeight: 221,
@@ -219,7 +219,7 @@ test("calculateCandidateBlockFocusLayout keeps the previous minimum shrink scale
     {
       editorHeight: 1000,
       editorWidth: 1000,
-      panelHeight: 560,
+      panelHeight: 596,
       panelLeft: 0,
       panelTop: 0,
       panelWidth: 558,
