@@ -1,5 +1,6 @@
 const { ensureAdminAccountColumns } = require("./schema-accounts");
 const { ensureCandidateRecordColumns } = require("./schema-candidates");
+const { ensurePdfTemplateVersionColumns } = require("./schema-pdf-templates");
 const {
   ensurePdfGenerationBatchColumns,
   ensurePdfGenerationHistoryColumns,
@@ -37,6 +38,7 @@ function createSchemaBootstrapService({ fs, path, root, getPool }) {
       await ensureSchoolColumns(connection, schemaDependencies);
       await ensureSchoolSettingsColumns(connection, schemaDependencies);
       await ensurePdfTemplateSchoolColumns(connection, schemaDependencies);
+      await ensurePdfTemplateVersionColumns(connection, schemaDependencies);
       await ensurePdfGenerationHistoryColumns(connection, schemaDependencies);
       await ensurePdfGenerationBatchColumns(connection, schemaDependencies);
       await ensureCandidateRecordColumns(connection, schemaDependencies);

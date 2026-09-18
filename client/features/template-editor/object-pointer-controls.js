@@ -118,13 +118,15 @@ export function bindObjectPointerControls({ editor, onDirty, selectedPage, surfa
 
   let session = null;
   let overlayFrame = 0;
+  let pointerFrame = 0;
+  let pendingPointerMove = null;
+  const requestFrame = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 0));
+  const cancelFrame = window.cancelAnimationFrame || window.clearTimeout;
 
   const scheduleOverlaySync = () => {
     if (overlayFrame) {
       return;
     }
-
-    const requestFrame = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 0));
 
     overlayFrame = requestFrame(() => {
       overlayFrame = 0;
@@ -137,43 +139,33 @@ export function bindObjectPointerControls({ editor, onDirty, selectedPage, surfa
     editor.updateTableObjectOverlay?.();
     syncTableObjectOverlayGeometry(rootElement);
   };
-  const finishSession = (event) => {
-    if (!session || session.pointerId !== event.pointerId) {
+  const restoreTableResizePreview = (targetSession, { applySize = false } = {}) => {
+    if (targetSession?.type !== "table" || targetSession.kind !== "resize" || !targetSession.pendingTableRect) {
       return;
     }
 
-    const completedSession = session;
-    session = null;
-    window.removeEventListener("pointermove", handlePointerMove, true);
-    window.removeEventListener("pointerup", finishSession, true);
-    window.removeEventListener("pointercancel", finishSession, true);
-    completedSession.element.classList.remove(
-      "is-moving-object",
-      "is-resizing-object",
-      "is-resizing-candidate-block-grid",
-      "is-moving-candidate-block-grid",
-    );
+    targetSession.element.style.transform = targetSession.startTransform;
+    targetSession.element.style.transformOrigin = targetSession.startTransformOrigin;
 
-    if (completedSession.didChange) {
-      if (completedSession.type === "grid") {
-        normalizeCandidateBlockTables(completedSession.element);
-        writeCandidateBlockGridSizeToConfig(selectedPage, completedSession.element);
-      }
-      onDirty?.();
-    } else {
-      updateOverlays();
+    if (applySize) {
+      const { height, top, width } = targetSession.pendingTableRect;
+
+      applyObjectTableSize(targetSession.element, {
+        height: targetSession.directionY === 0 ? null : height,
+        width: targetSession.directionX === 0 ? null : width,
+      });
+      targetSession.item.width = width;
+      targetSession.item.height = height;
+      syncObjectAlignmentTableFlow(targetSession.element, targetSession.documentElement, { height, top });
     }
-
-    event.preventDefault();
-    event.stopImmediatePropagation?.();
   };
-  const handlePointerMove = (event) => {
-    if (!session || session.pointerId !== event.pointerId) {
+  const applyPointerMove = ({ clientX, clientY, pointerId, shiftKey }) => {
+    if (!session || session.pointerId !== pointerId) {
       return;
     }
 
-    const deltaX = (event.clientX - session.startX) / session.canvasMetrics.scaleX;
-    const deltaY = (event.clientY - session.startY) / session.canvasMetrics.scaleY;
+    const deltaX = (clientX - session.startX) / session.canvasMetrics.scaleX;
+    const deltaY = (clientY - session.startY) / session.canvasMetrics.scaleY;
 
     if (session.kind === "move") {
       const nextPosition = calculateObjectMovePosition({
@@ -203,7 +195,7 @@ export function bindObjectPointerControls({ editor, onDirty, selectedPage, surfa
           : session.canvasMetrics.width - session.startLeft,
         minimumHeight: session.minimumHeight,
         minimumWidth: session.minimumWidth,
-        preserveAspectRatio: event.shiftKey && session.type !== "table",
+        preserveAspectRatio: shiftKey && session.type !== "table",
         startHeight: session.startHeight,
         startLeft: session.startLeft,
         startTop: session.startTop,
@@ -212,22 +204,26 @@ export function bindObjectPointerControls({ editor, onDirty, selectedPage, surfa
       const { height: nextHeight, left: nextLeft, top: nextTop, width: nextWidth } = nextRect;
 
       if (session.type === "table") {
-        applyObjectTableSize(session.element, {
-          height: session.directionY === 0 ? null : nextHeight,
-          width: session.directionX === 0 ? null : nextWidth,
-        });
+        const previewScaleX = session.directionX === 0 ? 1 : nextWidth / Math.max(session.startWidth, 1);
+        const previewScaleY = session.directionY === 0 ? 1 : nextHeight / Math.max(session.startHeight, 1);
+
+        session.element.style.transformOrigin = "top left";
+        session.element.style.transform = `${session.startTransform ? `${session.startTransform} ` : ""}scale(${previewScaleX}, ${previewScaleY})`;
+        session.pendingTableRect = {
+          height: nextHeight,
+          left: nextLeft,
+          top: nextTop,
+          width: nextWidth,
+        };
         session.item.width = nextWidth;
         session.item.height = nextHeight;
         setObjectAlignmentItemPosition(session.item, nextLeft, nextTop, session.canvasMetrics, { syncFlow: false });
-        syncObjectAlignmentTableFlow(session.element, session.documentElement, {
-          height: nextHeight,
-          top: nextTop,
-        });
       } else {
         session.element.style.left = `${Math.round(nextLeft)}px`;
         session.element.style.top = `${Math.round(nextTop)}px`;
         session.element.style.width = `${Math.round(nextWidth)}px`;
         session.element.style.height = `${Math.round(nextHeight)}px`;
+        syncObjectAlignmentTableFlow(session.element, session.documentElement, { height: nextHeight, top: nextTop });
         normalizeCandidateBlockTables(session.element);
         writeCandidateBlockGridSizeToConfig(selectedPage, session.element);
       }
@@ -237,6 +233,72 @@ export function bindObjectPointerControls({ editor, onDirty, selectedPage, surfa
     }
 
     updateOverlays();
+  };
+  const flushPendingPointerMove = () => {
+    if (pointerFrame) {
+      cancelFrame(pointerFrame);
+      pointerFrame = 0;
+    }
+
+    const pointerMove = pendingPointerMove;
+    pendingPointerMove = null;
+
+    if (pointerMove) {
+      applyPointerMove(pointerMove);
+    }
+  };
+  const finishSession = (event) => {
+    if (!session || session.pointerId !== event.pointerId) {
+      return;
+    }
+
+    flushPendingPointerMove();
+    const completedSession = session;
+    restoreTableResizePreview(completedSession, { applySize: completedSession.didChange });
+    session = null;
+    window.removeEventListener("pointermove", handlePointerMove, true);
+    window.removeEventListener("pointerup", finishSession, true);
+    window.removeEventListener("pointercancel", finishSession, true);
+    completedSession.element.classList.remove(
+      "is-moving-object",
+      "is-resizing-object",
+      "is-resizing-candidate-block-grid",
+      "is-moving-candidate-block-grid",
+    );
+    updateOverlays();
+
+    if (completedSession.didChange) {
+      if (completedSession.type === "grid") {
+        normalizeCandidateBlockTables(completedSession.element);
+        writeCandidateBlockGridSizeToConfig(selectedPage, completedSession.element);
+      }
+      onDirty?.();
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation?.();
+  };
+  const handlePointerMove = (event) => {
+    if (!session || session.pointerId !== event.pointerId) {
+      return;
+    }
+
+    pendingPointerMove = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      pointerId: event.pointerId,
+      shiftKey: event.shiftKey,
+    };
+    if (!pointerFrame) {
+      pointerFrame = requestFrame(() => {
+        pointerFrame = 0;
+        const pointerMove = pendingPointerMove;
+        pendingPointerMove = null;
+        if (pointerMove) {
+          applyPointerMove(pointerMove);
+        }
+      });
+    }
     event.preventDefault();
     event.stopImmediatePropagation?.();
   };
@@ -281,6 +343,8 @@ export function bindObjectPointerControls({ editor, onDirty, selectedPage, surfa
       startWidth: item.width,
       startX: event.clientX,
       startY: event.clientY,
+      startTransform: target.element.style.transform,
+      startTransformOrigin: target.element.style.transformOrigin,
     };
 
     target.element.classList.add(
@@ -324,10 +388,15 @@ export function bindObjectPointerControls({ editor, onDirty, selectedPage, surfa
     window.removeEventListener("pointercancel", finishSession, true);
     overlayObserver.disconnect();
     if (overlayFrame) {
-      const cancelFrame = window.cancelAnimationFrame || window.clearTimeout;
       cancelFrame(overlayFrame);
       overlayFrame = 0;
     }
+    if (pointerFrame) {
+      cancelFrame(pointerFrame);
+      pointerFrame = 0;
+    }
+    pendingPointerMove = null;
+    restoreTableResizePreview(session);
     session = null;
   };
 }

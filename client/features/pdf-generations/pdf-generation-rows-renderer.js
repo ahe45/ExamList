@@ -1,4 +1,5 @@
 import { hasAccess } from "../../app/access.js";
+import { renderGridStatusRow } from "../../app/data-grid-table.js";
 import { escapeHtml } from "../../app/html-utils.js";
 import { formatCount } from "../../app/number-format.js";
 import { normalizePdfGenerationGridValue, pdfGenerationGridColumns } from "./pdf-generation-table-model.js";
@@ -41,13 +42,7 @@ export function renderGenerationRows(items = [], selectedGenerationIds = [], rer
   const selectedSet = new Set(Array.isArray(selectedGenerationIds) ? selectedGenerationIds : []);
 
   if (!items.length) {
-    return `
-      <tr class="table-empty-row">
-        <td colspan="${pdfGenerationGridColumns.length + 3}" class="table-empty-cell">
-          생성 결과가 없습니다.
-        </td>
-      </tr>
-    `;
+    return renderGridStatusRow(pdfGenerationGridColumns.length + 3, "생성 결과가 없습니다.");
   }
 
   return items

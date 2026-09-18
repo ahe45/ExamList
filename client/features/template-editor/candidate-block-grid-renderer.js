@@ -342,7 +342,8 @@ function renderCandidateBlockGridDocument(container, page) {
     }
   });
 
-  if (existingGridElement?.isConnected) {
+  // HTML is rebuilt in a detached container; retain the saved insertion point.
+  if (existingGridElement?.parentNode) {
     existingGridElement.replaceWith(nextGridElement);
   } else {
     documentElement.append(nextGridElement);

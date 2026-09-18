@@ -292,6 +292,13 @@
   padding: 0 8px;
 }
 
+.template-toolbar-table-group .template-toolbar-color-trigger {
+  font-size: 0.72rem;
+  gap: 6px;
+  padding-left: 7px;
+  padding-right: 7px;
+}
+
 .template-toolbar-color-trigger:hover,
 .template-toolbar-color-trigger:focus-visible,
 .template-toolbar-color-picker.open .template-toolbar-color-trigger {

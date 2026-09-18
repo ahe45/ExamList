@@ -3,6 +3,26 @@ const assert = require("node:assert/strict");
 
 const { createTemplate, normalizeTemplateLayout, renderPreviewDocument } = require("./renderer-test-helpers");
 
+test("ported editor line alignment and copied table geometry survive normalization and PDF rendering", () => {
+  const documentHtml = '<div class="template-doc"><div style="text-align:left"><div>첫 줄</div>' +
+    '<div style="text-align:justify;text-align-last:justify;text-justify:inter-character">선택한 제목</div></div>' +
+    '<table style="width:300px;height:80px;table-layout:fixed"><colgroup><col style="width:90px"><col style="width:210px"></colgroup>' +
+    '<tbody><tr style="height:80px"><td style="padding:4px;color:#123456;font-family:serif">수험번호</td><td>{{candidate.examNo}}</td></tr></tbody></table></div>';
+  const layout = normalizeTemplateLayout({ pages: [{ type: "content", settings: { documentHtml } }] }, {
+    name: "편집기 호환성", paperPreset: "A4", orientation: "portrait", generationUnit: "room",
+  }, "editor-port-preview");
+  assert.equal(layout.pages[0].settings.documentHtml, documentHtml);
+  const { html } = renderPreviewDocument({
+    template: createTemplate(layout), candidates: [{ examNo: "26010001", name: "홍길동" }],
+    generatedAt: new Date("2026-09-18T00:00:00Z"),
+  });
+  assert.match(html, /text-align-last:justify;text-justify:inter-character/);
+  assert.match(html, /width:300px;height:80px;table-layout:fixed/);
+  assert.match(html, /<col style="width:90px"><col style="width:210px">/);
+  assert.match(html, /padding:4px;color:#123456;font-family:serif/);
+  assert.match(html, /26010001/);
+});
+
 test("renderPreviewDocument renders freeform document html and strips unsafe markup", () => {
   const layout = normalizeTemplateLayout(
     {

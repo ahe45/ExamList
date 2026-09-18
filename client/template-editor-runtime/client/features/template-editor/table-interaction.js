@@ -41,8 +41,12 @@
     updateTemplateTableControls,
   }) {
     let clearTemplateEditorTableSelection = () => {};
+    let getTemplateEditorActiveTableSelection = () => null;
     let getTemplateEditorSelectedCell = () => null;
+    let getTemplateEditorSelectedTable = () => null;
     let getTemplateEditorTableCellTarget = () => null;
+    let releaseTemplateEditorTableSelectionSession = () => {};
+    let startTemplateEditorTableSelectionSession = () => false;
 
     const tableResizeController = createTemplateEditorTableResizeController({
       TEMPLATE_EDITOR_TABLE_EDGE_THRESHOLD,

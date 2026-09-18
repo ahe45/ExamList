@@ -384,6 +384,13 @@
     table.style.borderCollapse = "collapse";
     table.style.boxSizing = "border-box";
 
+    // HTML preparation also runs on detached clones, which have no layout.
+    // Preserve authored dimensions until the host can be measured on the canvas.
+    const hostSize = getCandidateBlockTableHostSize(blockElement);
+    if (!(hostSize.width > 0) || !(hostSize.height > 0)) {
+      return true;
+    }
+
     const maxSize = getTemplateEditorCandidateBlockTableMaxSize(table, blockElement);
     const renderedSize = getTemplateEditorTableRenderedSize(table);
     const configuredWidth = parseTemplateEditorPixelStyle(table.style.width, 0);

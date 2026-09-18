@@ -75,7 +75,11 @@ function applyObjectAlignmentItemMetrics(metrics) {
     element.style.top = `${top}px`;
     element.style.margin = "0";
     element.style.zIndex = "2";
-    documentElement.append(element);
+    if (element.parentElement !== documentElement) {
+      let host = element.parentElement;
+      while (host?.parentElement && host.parentElement !== documentElement) host = host.parentElement;
+      documentElement.insertBefore(element, host?.parentElement === documentElement ? host.nextSibling : null);
+    }
   }
 
   element.classList.add("is-floating-object");
@@ -116,7 +120,7 @@ export function setObjectAlignmentItemPosition(item, left, top, canvasMetrics, o
     syncObjectAlignmentTableFlow(item.element, item.documentElement, {
       height: item.height,
       movementY: Number.isFinite(Number(options.movementY)) ? Number(options.movementY) : nextTop - previousTop,
-      reorderByPosition: options.reorderByPosition === true,
+      reorderByPosition: options.reorderByPosition,
       top: nextTop,
     });
   }

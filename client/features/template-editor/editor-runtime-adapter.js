@@ -4,7 +4,8 @@ import {
   resetCandidateBlockGridState,
   syncCandidateBlockTemplateFromSurface,
 } from "./candidate-block-grid-adapter.js";
-import { normalizeCandidateBlockTables } from "./candidate-block-grid-dom.js";
+import { getCandidateBlockGridElements, normalizeCandidateBlockTables } from "./candidate-block-grid-dom.js";
+import { writeCandidateBlockGridSizeToConfig } from "./candidate-block-grid-sessions.js";
 import { canUseAccess } from "../../app/access.js";
 import {
   flattenTemplateTags,
@@ -13,6 +14,8 @@ import {
   resetDataTagPanelState,
 } from "./data-tags-adapter.js";
 import { normalizeDataTagSampleValues } from "./data-tag-samples.js";
+import { sanitizeHtml } from "./document-editor-sanitizer.js";
+import { getTemplateGenerationUnitFields } from "./generation-unit-settings.js";
 import { dataTagViewOptionsEventName, getDataTagViewOptions, normalizeDataTagViewOptions } from "./data-tags-view-options.js";
 import { bindEditorStatusToast } from "./editor-status-toast.js";
 import { resetEditorTextControlState } from "./editor-text-controls.js";
@@ -37,7 +40,7 @@ import {
   syncCoverPageDisabledState,
 } from "./editor-runtime-page-controls.js";
 import { templateEditorObjectMinimumSize } from "./object-toolbar-controls.js";
-import { commitOtherRoomPageControlsToPage } from "./other-room-page-controls.js";
+import { commitOtherRoomPageControlsToPage, getOtherRoomPageConfig } from "./other-room-page-controls.js";
 import { commitPageNumberControlsToPage, getPageNumberConfig } from "./page-number-controls.js";
 import { commitRecognitionMarksControlsToPage, getPageRecognitionMarksConfig } from "./recognition-marks-controls.js";
 import { templateSampleCandidatePhotoPath } from "./sample-candidate-photo.js";
@@ -56,6 +59,7 @@ let mountedRoot = null;
 let mountedTagDefinitions = [];
 let mountedInitialPaperPreset = "";
 let mountedDirty = false;
+let mountedCanEdit = false;
 let mountedHasBaseline = false;
 let mountedBaselineHtml = "";
 let mountedBaselineBlockHtml = "";
@@ -85,10 +89,14 @@ function normalizeComparableTemplateValue(value) {
 }
 
 function getCandidateBlockGridRuntimeComparableValue(config = {}) {
+  // Compare stored content, not transient token presentation or CSS that the
+  // editor sanitizer drops during synchronization (for example border-image).
+  const comparableHtml = (html) => sanitizeHtml(normalizeSavedRuntimeHtml(html || "", mountedTagDefinitions)).trim();
+  const comparableLayer = (layer) => layer ? { ...layer, templateHtml: comparableHtml(layer.templateHtml) } : null;
   return JSON.stringify(normalizeComparableTemplateValue({
-    blockTemplateHtml: config?.blockTemplateHtml || "",
-    columnNameRow: config?.columnNameRow || null,
-    emptyBlockLayer: config?.emptyBlockLayer || null,
+    blockTemplateHtml: comparableHtml(config?.blockTemplateHtml),
+    columnNameRow: comparableLayer(config?.columnNameRow),
+    emptyBlockLayer: comparableLayer(config?.emptyBlockLayer),
   }));
 }
 
@@ -98,6 +106,13 @@ function stripRuntimeOwnedPageFields(template) {
   }
 
   const clone = structuredClone(template);
+  clone.generationUnit = String(clone.generationUnit || "roomCode").trim() || "roomCode";
+  if (clone.layout?.generation) {
+    clone.layout.generation.unit = clone.generationUnit;
+    if (clone.generationUnit === "custom") {
+      clone.layout.generation.unitFields = getTemplateGenerationUnitFields(clone);
+    }
+  }
   const pages = Array.isArray(clone?.layout?.pages) ? clone.layout.pages : [];
 
   pages.forEach((page) => {
@@ -107,12 +122,15 @@ function stripRuntimeOwnedPageFields(template) {
 
     delete page.settings.documentHtml;
     delete page.settings.editorMode;
+    page.settings.pageNumber = getPageNumberConfig(page);
+    page.settings.recognitionMarks = getPageRecognitionMarksConfig(page);
+    page.settings.otherRoomPage = getOtherRoomPageConfig(page);
 
-    if (page.settings.candidateBlockGrid && typeof page.settings.candidateBlockGrid === "object") {
-      delete page.settings.candidateBlockGrid.blockTemplateHtml;
-      delete page.settings.candidateBlockGrid.columnNameRow;
-      delete page.settings.candidateBlockGrid.emptyBlockLayer;
-    }
+    // Opening older templates fills missing defaults; that is not a user edit.
+    page.settings.candidateBlockGrid = getCandidateBlockGridConfig(page);
+    delete page.settings.candidateBlockGrid.blockTemplateHtml;
+    delete page.settings.candidateBlockGrid.columnNameRow;
+    delete page.settings.candidateBlockGrid.emptyBlockLayer;
   });
 
   return clone;
@@ -145,6 +163,10 @@ function syncRuntimeOwnedSelectedPageFieldsToSavedSnapshot(appState, selectedPag
       blockTemplateHtml: selectedPage.settings.candidateBlockGrid.blockTemplateHtml,
       columnNameRow: structuredClone(selectedPage.settings.candidateBlockGrid.columnNameRow || {}),
       emptyBlockLayer: structuredClone(selectedPage.settings.candidateBlockGrid.emptyBlockLayer || {}),
+      widthPt: selectedPage.settings.candidateBlockGrid.widthPt,
+      heightPt: selectedPage.settings.candidateBlockGrid.heightPt,
+      xPt: selectedPage.settings.candidateBlockGrid.xPt,
+      yPt: selectedPage.settings.candidateBlockGrid.yPt,
     };
   } else if (savedPage.settings.candidateBlockGrid && typeof savedPage.settings.candidateBlockGrid === "object") {
     delete savedPage.settings.candidateBlockGrid.blockTemplateHtml;
@@ -227,22 +249,22 @@ function updateMountedRuntimeBaseline(selectedPage, html = "") {
   );
 }
 
-function updateSaveButtonState() {
+function updateSaveButtonState(appState) {
   const saveButton = document.querySelector("[data-action='save-template-layout']");
 
   if (!saveButton) {
     return;
   }
 
-  saveButton.textContent = mountedDirty ? "저장" : "저장";
+  const editorState = appState?.templateEditor;
+  saveButton.disabled = !mountedCanEdit || !editorState?.isDirty || Boolean(editorState?.isSaving);
+  saveButton.textContent = editorState?.isSaving ? "저장 중..." : "저장";
 }
 
 function markTemplateEditorDirty(appState) {
-  mountedDirty = true;
-  if (appState?.templateEditor) {
-    appState.templateEditor.isDirty = true;
-  }
-  updateSaveButtonState();
+  const selectedPage = getSelectedPage(appState?.templateEditor);
+  const html = normalizeSavedRuntimeHtml(mountedEditor?.getHtml?.() || "", mountedTagDefinitions);
+  updateMountedRuntimeDirtyState(appState, selectedPage, html);
 }
 
 function updateMountedRuntimeDirtyState(appState, selectedPage, html) {
@@ -254,7 +276,7 @@ function updateMountedRuntimeDirtyState(appState, selectedPage, html) {
     appState.templateEditor.isDirty = hasRuntimeChanges || hasTemplateSnapshotChanges(appState);
   }
 
-  updateSaveButtonState();
+  updateSaveButtonState(appState);
   return mountedDirty;
 }
 
@@ -279,6 +301,7 @@ export function unmountTemplateEditorRuntime() {
   }
 
   mountedEditor = null;
+  mountedCanEdit = false;
   mountedKey = "";
   mountedRoot = null;
   mountedTagDefinitions = [];
@@ -420,6 +443,7 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
   const canEdit = canUseAccess(access, "manageTemplates");
 
   if (mountedEditor && mountedRoot === rootElement && mountedKey === nextMountedKey) {
+    mountedCanEdit = canEdit;
     mountedTagDefinitions = getMountedTagDefinitions(appState);
     patchGeneratedObjectController({ getTagDefinitions: () => mountedTagDefinitions });
     applyMountedDataTagViewOptions(surfaceElement);
@@ -475,6 +499,12 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
       const selectedMountedPage = getCurrentMountedSelectedPage(appState, selectedPage);
       const normalizedHtml = normalizeSavedRuntimeHtml(html, mountedTagDefinitions);
 
+      // History restores the grid DOM without emitting a flow-layout event.
+      // Keep its saved geometry in step with the restored document as well.
+      const gridElement = getCandidateBlockGridElements(surfaceElement)[0];
+      if (gridElement) {
+        writeCandidateBlockGridSizeToConfig(selectedMountedPage, gridElement);
+      }
       syncMountedRuntimeHtmlToState(appState, selectedPage, html);
       updateMountedRuntimeDirtyState(appState, selectedMountedPage, normalizedHtml);
       window.requestAnimationFrame(() => {
@@ -492,6 +522,7 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
   prependPageSwitcher(pagePropertiesHost, appState.templateEditor);
 
   mountedEditor = editor;
+  mountedCanEdit = canEdit;
   mountedKey = nextMountedKey;
   mountedRoot = rootElement;
   mountedTagDefinitions = tagDefinitions;
@@ -526,11 +557,13 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
 
   syncCoverPageDisabledState({ pagePropertiesHost, selectedPage, surfaceElement });
   syncCandidateBlockTemplateFromSurface(surfaceElement, selectedPage, null, { allowFallback: true });
-  syncRuntimeOwnedSelectedPageFieldsToSavedSnapshot(appState, selectedPage, template);
+  // Serialization settles object flow before recording the initial geometry.
   updateMountedRuntimeBaseline(selectedPage);
+  writeCandidateBlockGridSizeToConfig(selectedPage, getCandidateBlockGridElements(surfaceElement)[0]);
+  syncRuntimeOwnedSelectedPageFieldsToSavedSnapshot(appState, selectedPage, template);
   mountedDirty = false;
   appState.templateEditor.isDirty = false;
-  updateSaveButtonState();
+  updateSaveButtonState(appState);
 
   return editor;
 }
@@ -551,7 +584,7 @@ export function resetTemplateEditorRuntimeDirtyBaseline({ appState } = {}) {
     appState.templateEditor.isDirty = false;
   }
 
-  updateSaveButtonState();
+  updateSaveButtonState(appState);
   return true;
 }
 
@@ -562,7 +595,7 @@ export function clearTemplateEditorRuntimeDirtyState({ appState } = {}) {
     appState.templateEditor.isDirty = false;
   }
 
-  updateSaveButtonState();
+  updateSaveButtonState(appState);
 }
 
 export function clearTemplateEditorRuntimeDirtyStateIfAtBaseline({ appState } = {}) {
@@ -578,8 +611,8 @@ export function clearTemplateEditorRuntimeDirtyStateIfAtBaseline({ appState } = 
     return false;
   }
 
-  clearTemplateEditorRuntimeDirtyState({ appState });
-  return true;
+  updateMountedRuntimeDirtyState(appState, selectedPage, html);
+  return !appState?.templateEditor?.isDirty;
 }
 
 export function syncTemplateEditorRuntimeToState({ appState } = {}) {
@@ -634,6 +667,6 @@ export function syncTemplateEditorRuntimeToState({ appState } = {}) {
 
   mountedDirty = hasRuntimeChanges;
   appState.templateEditor.isDirty = hasRuntimeChanges || hasTemplateSnapshotChanges(appState);
-  updateSaveButtonState();
+  updateSaveButtonState(appState);
   return true;
 }

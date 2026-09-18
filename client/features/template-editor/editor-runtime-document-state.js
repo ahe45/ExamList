@@ -22,12 +22,14 @@ import {
   writeRuntimePageSettings,
 } from "./template-document-normalizer.js";
 
-export function normalizeSavedRuntimeHtml(html, tagDefinitions = []) {
+export function normalizeSavedRuntimeHtml(html, tagDefinitions = [], { preserveCandidateBlockGrid = false } = {}) {
   const template = document.createElement("template");
 
   template.innerHTML = String(html || "");
   removeCandidateBlockGridRuntimeControls(template.content);
-  collapseCandidateBlockGridForStorage(template.content);
+  if (!preserveCandidateBlockGrid) {
+    collapseCandidateBlockGridForStorage(template.content);
+  }
   normalizeTemplateDocumentWrappers(template.content);
   normalizeTokenLabels(template.content, tagDefinitions, { showIcons: true, showSampleData: false });
   return template.innerHTML;
@@ -40,7 +42,10 @@ export function buildInitialHtml(page, template, tagDefinitions = []) {
     ? buildCandidateBlockGridHtml(page)
     : getPageDocumentHtml(page) || "<div class=\"template-doc\"><p><br></p></div>";
   writeRuntimePageSettings(ensureDocumentElement(container), getRuntimePageSettings(page, template));
-  return normalizeSavedRuntimeHtml(container.innerHTML, tagDefinitions);
+  // Flow geometry and the first undo snapshot must see the actual grid. An
+  // empty storage placeholder makes following objects reserve its missing
+  // height as a gap, then move down again when the grid is rendered.
+  return normalizeSavedRuntimeHtml(container.innerHTML, tagDefinitions, { preserveCandidateBlockGrid: true });
 }
 
 export function readRuntimePageSettingsFromHtml(html) {

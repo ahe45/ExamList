@@ -46,7 +46,6 @@ import {
 import {
   extractCandidateBlockTemplateHtml,
   removeCandidateBlockGridElements,
-  scheduleCandidateBlockGridOutsideCaretPlacement,
 } from "./candidate-block-grid-dom.js";
 import {
   insertCandidateBlockGridAtSelection,
@@ -142,6 +141,27 @@ function getCandidateBlockGridSettingControl(event) {
   return target?.closest?.("[data-examlist-block-grid-setting]") || null;
 }
 
+function preserveCandidateBlockGridControlFocus(controlElement, pagePropertiesHost, update) {
+  const ownerDocument = controlElement?.ownerDocument || null;
+  const wasFocused = ownerDocument?.activeElement === controlElement;
+  const settingName = String(controlElement?.dataset?.examlistBlockGridSetting || "");
+  const result = update();
+
+  if (!wasFocused || !settingName) {
+    return result;
+  }
+
+  const nextControl = controlElement.isConnected
+    ? controlElement
+    : pagePropertiesHost?.querySelector?.(`[data-examlist-block-grid-setting="${settingName}"]`) || null;
+
+  if (nextControl && ownerDocument.activeElement !== nextControl && !nextControl.disabled) {
+    nextControl.focus?.({ preventScroll: true });
+  }
+
+  return result;
+}
+
 export { shouldPreventCandidateBlockGridNativeDeletion };
 
 function getKeyboardSelectedCandidateBlockGridElement(surfaceElement) {
@@ -207,12 +227,8 @@ export { resetCandidateBlockGridState } from "./candidate-block-grid-selection.j
 export { syncCandidateBlockTemplateFromSurface } from "./candidate-block-grid-surface.js";
 
 function resolveCandidateBlockGridSelectedPage(appState, fallbackPage) {
-  const selectedPageId = appState?.templateEditor?.selectedPageId;
-
-  if (fallbackPage && (!selectedPageId || fallbackPage.id === selectedPageId)) {
-    return fallbackPage;
-  }
-
+  // Saving replaces the template payload without remounting these handlers.
+  // Even when the id is unchanged, the captured page is no longer current.
   return getSelectedPage(appState?.templateEditor) || fallbackPage || null;
 }
 
@@ -390,24 +406,28 @@ export function bindCandidateBlockGridControls({
         return;
       }
 
-      commitCandidateBlockGridControlsToPage({
-        pagePropertiesHost,
-        selectedPage: activePage,
-        surfaceElement,
-        syncControls: false,
+      preserveCandidateBlockGridControlFocus(control, pagePropertiesHost, () => {
+        commitCandidateBlockGridControlsToPage({
+          pagePropertiesHost,
+          selectedPage: activePage,
+          surfaceElement,
+          syncControls: false,
+        });
+        markDirty();
       });
-      markDirty();
       return;
     }
 
     applyFromControls();
   };
   const handleControlChange = (event) => {
-    if (!getCandidateBlockGridSettingControl(event)) {
+    const control = getCandidateBlockGridSettingControl(event);
+
+    if (!control) {
       return;
     }
 
-    applyFromControls();
+    preserveCandidateBlockGridControlFocus(control, pagePropertiesHost, applyFromControls);
   };
   const handleControlFocusOut = (event) => {
     const control = getCandidateBlockGridSettingControl(event);
@@ -462,6 +482,7 @@ export function bindCandidateBlockGridControls({
     if (moveHandle && gridElement) {
       closeCandidateBlockFocusEditor();
       if (activePage) {
+        editor?.clearObjectSelection?.();
         startCandidateBlockGridMoveSession(gridElement, event, activePage, markDirty, selectCandidateBlockGridElement);
       }
       return;
@@ -470,6 +491,7 @@ export function bindCandidateBlockGridControls({
     if (resizeHandle && gridElement) {
       closeCandidateBlockFocusEditor();
       if (activePage) {
+        editor?.clearObjectSelection?.();
         startCandidateBlockGridResizeSession(
           gridElement,
           event,
@@ -486,6 +508,17 @@ export function bindCandidateBlockGridControls({
     const isTableResizeHover =
       surfaceElement.classList.contains("is-table-column-hover") ||
       surfaceElement.classList.contains("is-table-row-hover");
+
+    if (borderGridElement && (!isTableObjectBorder || isCandidateBlockGridVerticalBorderEvent(event, borderGridElement))) {
+      closeCandidateBlockFocusEditor();
+      // This handler stops propagation before the runtime's normal pointer
+      // handler can clear the previously selected table, image, or cells.
+      editor?.clearObjectSelection?.();
+      selectCandidateBlockGridElement(borderGridElement);
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
 
     if (
       gridElement &&
@@ -512,14 +545,6 @@ export function bindCandidateBlockGridControls({
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      return;
-    }
-
-    if (borderGridElement && (!isTableObjectBorder || isCandidateBlockGridVerticalBorderEvent(event, borderGridElement))) {
-      closeCandidateBlockFocusEditor();
-      selectCandidateBlockGridElement(borderGridElement);
-      event.preventDefault();
-      event.stopPropagation();
       return;
     }
 
@@ -561,12 +586,8 @@ export function bindCandidateBlockGridControls({
       return;
     }
 
-    const didPlaceOutsideCaret = scheduleCandidateBlockGridOutsideCaretPlacement(event, surfaceElement);
-
-    if (didPlaceOutsideCaret && event.cancelable) {
-      event.preventDefault();
-    }
-
+    // The runtime owns caret placement for every object. A delayed second
+    // placement here would overwrite its text range after pointerdown.
     clearCandidateBlockGridSelection();
   };
   const handleWindowPointerDown = (event) => {

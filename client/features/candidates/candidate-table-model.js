@@ -1,23 +1,24 @@
+import { getGridVisibleRows, gridPageSizeOptions } from "../../app/data-grid-model.js";
 export const candidateGridColumns = Object.freeze([
-  Object.freeze({ key: "designatedSort", label: "지정정렬", filterable: true, sortable: true }),
-  Object.freeze({ key: "track", label: "모집시기", filterable: true, sortable: true }),
+  Object.freeze({ key: "designatedSort", label: "지정정렬", headerLines: ["지정", "정렬"], filterable: true, sortable: true }),
+  Object.freeze({ key: "track", label: "모집시기", headerLines: ["모집", "시기"], filterable: true, sortable: true }),
   Object.freeze({ key: "admission", label: "전형명", filterable: true, sortable: true }),
-  Object.freeze({ key: "admissionCode", label: "전형코드", filterable: true, sortable: true }),
+  Object.freeze({ key: "admissionCode", label: "전형코드", headerLines: ["전형", "코드"], filterable: true, sortable: true }),
   Object.freeze({ key: "series", label: "계열명", filterable: true, sortable: true }),
-  Object.freeze({ key: "seriesCode", label: "계열코드", filterable: true, sortable: true }),
+  Object.freeze({ key: "seriesCode", label: "계열코드", headerLines: ["계열", "코드"], filterable: true, sortable: true }),
   Object.freeze({ key: "unit", label: "모집단위명", filterable: true, sortable: true }),
-  Object.freeze({ key: "unitCode", label: "모집단위코드", filterable: true, sortable: true }),
+  Object.freeze({ key: "unitCode", label: "모집단위코드", headerLines: ["모집단위", "코드"], filterable: true, sortable: true }),
   Object.freeze({ key: "major", label: "전공명", filterable: true, sortable: true }),
-  Object.freeze({ key: "majorCode", label: "전공코드", filterable: true, sortable: true }),
-  Object.freeze({ key: "date", label: "시험날짜", filterable: true, sortable: true }),
-  Object.freeze({ key: "time", label: "시작시간", filterable: true, sortable: true }),
-  Object.freeze({ key: "endTime", label: "종료시간", filterable: true, sortable: true }),
+  Object.freeze({ key: "majorCode", label: "전공코드", headerLines: ["전공", "코드"], filterable: true, sortable: true }),
+  Object.freeze({ key: "date", label: "시험날짜", headerLines: ["시험", "날짜"], filterable: true, sortable: true }),
+  Object.freeze({ key: "time", label: "시작시간", headerLines: ["시작", "시간"], filterable: true, sortable: true }),
+  Object.freeze({ key: "endTime", label: "종료시간", headerLines: ["종료", "시간"], filterable: true, sortable: true }),
   Object.freeze({ key: "period", label: "교시명", filterable: true, sortable: true }),
-  Object.freeze({ key: "periodCode", label: "교시코드", filterable: true, sortable: true }),
+  Object.freeze({ key: "periodCode", label: "교시코드", headerLines: ["교시", "코드"], filterable: true, sortable: true }),
   Object.freeze({ key: "building", label: "고사건물명", filterable: true, sortable: true }),
-  Object.freeze({ key: "buildingCode", label: "고사건물코드", filterable: true, sortable: true }),
+  Object.freeze({ key: "buildingCode", label: "고사건물코드", headerLines: ["고사건물", "코드"], filterable: true, sortable: true }),
   Object.freeze({ key: "room", label: "고사실명", filterable: true, sortable: true }),
-  Object.freeze({ key: "roomCode", label: "고사실코드", filterable: true, sortable: true }),
+  Object.freeze({ key: "roomCode", label: "고사실코드", headerLines: ["고사실", "코드"], filterable: true, sortable: true }),
   Object.freeze({ key: "examineeNo", label: "수험번호", filterable: true, sortable: true }),
   Object.freeze({ key: "temporaryNo", label: "가번호", filterable: true, sortable: true }),
   Object.freeze({ key: "name", label: "이름", filterable: true, sortable: true }),
@@ -72,7 +73,7 @@ export const candidateDetailFields = Object.freeze([
   Object.freeze({ key: "opt10", label: "OPT10", type: "text" }),
 ]);
 
-export const pageSizeOptions = Object.freeze([10, 30, 50, 100, 500, 1000, 2000, 0]);
+export const pageSizeOptions = gridPageSizeOptions;
 export const uploadPolicyOptions = Object.freeze([
   Object.freeze({ description: "기존 데이터 수정건과 동일 데이터는 건너뜁니다.", label: "신규만 반영", value: "insert-only" }),
   Object.freeze({ description: "동일 데이터는 건너뛰고 신규와 수정건만 반영합니다.", label: "신규 + 수정 반영", value: "insert-update" }),
@@ -178,20 +179,5 @@ export function getFilteredCandidateRows(candidates = {}) {
 }
 
 export function getCandidateVisibleRows(candidates = {}) {
-  const tableState = getCandidateTableState(candidates);
-  const rows = getFilteredCandidateRows(candidates);
-  const pageSize = Math.max(0, Number(tableState.pageSize) || 0);
-  const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(rows.length / pageSize)) : 1;
-  const currentPage = pageSize > 0 ? Math.min(Math.max(1, Number(tableState.page) || 1), totalPages) : 1;
-  const startIndex = pageSize > 0 ? (currentPage - 1) * pageSize : 0;
-  const visibleRows = pageSize > 0 ? rows.slice(startIndex, startIndex + pageSize) : rows;
-
-  return {
-    currentPage,
-    endRowNumber: rows.length === 0 ? 0 : startIndex + visibleRows.length,
-    rows,
-    startRowNumber: rows.length === 0 ? 0 : startIndex + 1,
-    totalPages,
-    visibleRows,
-  };
+  return getGridVisibleRows(getFilteredCandidateRows(candidates), getCandidateTableState(candidates));
 }

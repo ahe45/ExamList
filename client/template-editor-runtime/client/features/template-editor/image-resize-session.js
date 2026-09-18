@@ -381,6 +381,15 @@
       if (resizeSession.image.style.position === "absolute") {
         resizeSession.image.style.left = `${geometry.getTemplateEditorBoundedCoordinate(nextRect.left, resizeSession.maxDocumentWidth - nextRect.width)}px`;
         resizeSession.image.style.top = `${geometry.getTemplateEditorBoundedCoordinate(nextRect.top, resizeSession.maxDocumentHeight - nextRect.height)}px`;
+        globalScope.ExamListTemplateEditorObjectFlowReflow?.reflowTemplateEditorObjectRows(resizeSession.image, {
+          documentElement: getTemplateEditorDocumentElement(),
+          activeTop: parseFloat(resizeSession.image.style.top),
+          activeHeight: nextRect.height,
+          reorderByPosition: false,
+          strictGeometry: true,
+        });
+      } else {
+        globalScope.ExamListTemplateEditorObjectFlowReflow?.syncTemplateEditorObjectFlowObjects(getTemplateEditorDocumentElement());
       }
 
       updateTemplateEditorImageSelectionOverlay();

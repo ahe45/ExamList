@@ -222,7 +222,7 @@ async function waitForCondition(client, expression, description, timeoutMs = 120
             : null;
         })(),
         workspaceSidebar: (() => {
-          const sidebar = document.querySelector("#workspaceSidebar");
+          const sidebar = document.querySelector("#workspaceNav");
           const activeItem = document.querySelector(".workspace-nav-item.active");
           const rect = sidebar?.getBoundingClientRect();
           const style = sidebar ? getComputedStyle(sidebar) : null;

@@ -15,5 +15,5 @@ export const dom = {
     templateManagement: document.querySelector('[data-view-panel="templateManagement"]'),
   },
   workspaceNav: document.getElementById("workspaceNav"),
-  workspaceSidebar: document.getElementById("workspaceSidebar"),
+  topbar: document.querySelector(".topbar"),
 };

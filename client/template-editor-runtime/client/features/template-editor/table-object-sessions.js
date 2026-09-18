@@ -578,10 +578,9 @@
         return false;
       }
 
-      const startingPosition = prepareTemplateEditorTableObjectForMove(tableElement, { syncSegments: false });
-      const documentElement = getTemplateEditorDocumentElement();
+      const startingPosition = prepareSelectedTemplateEditorTableObjectForNudge(tableElement);
 
-      if (!startingPosition || !documentElement) {
+      if (!startingPosition) {
         return false;
       }
 
@@ -592,10 +591,13 @@
       state.templateEditor.tableObjectMoveSession = {
         didChange: false,
         height: startingPosition.height,
+        isCandidateBlockTable: startingPosition.isCandidateBlockTable,
+        scaleX: tableElement.getBoundingClientRect().width / Math.max(startingPosition.width, 1),
+        scaleY: tableElement.getBoundingClientRect().height / Math.max(startingPosition.height, 1),
         lastLeft: startingPosition.left,
         lastTop: startingPosition.top,
-        maxDocumentHeight: getTemplateEditorTableObjectContainerHeight(documentElement, startingPosition.height),
-        maxDocumentWidth: getTemplateEditorTableObjectContainerWidth(documentElement, startingPosition.width),
+        maxDocumentHeight: startingPosition.maxDocumentHeight,
+        maxDocumentWidth: startingPosition.maxDocumentWidth,
         pointerId: event.pointerId,
         startLeft: startingPosition.left,
         startTop: startingPosition.top,
@@ -631,11 +633,11 @@
       event.preventDefault();
 
       const nextLeft = getTemplateEditorBoundedTableObjectCoordinate(
-        moveSession.startLeft + event.clientX - moveSession.startX,
+        moveSession.startLeft + (event.clientX - moveSession.startX) / Math.max(moveSession.scaleX, 0.01),
         moveSession.maxDocumentWidth - moveSession.width,
       );
       const nextTop = getTemplateEditorBoundedTableObjectCoordinate(
-        moveSession.startTop + event.clientY - moveSession.startY,
+        moveSession.startTop + (event.clientY - moveSession.startY) / Math.max(moveSession.scaleY, 0.01),
         moveSession.maxDocumentHeight - moveSession.height,
       );
 
@@ -645,18 +647,20 @@
 
       moveSession.table.style.left = `${nextLeft}px`;
       moveSession.table.style.top = `${nextTop}px`;
-      reflowTemplateEditorObjectRows(moveSession.table, {
-        activeHeight: moveSession.height,
-        activeTop: nextTop,
-        documentElement: getTemplateEditorDocumentElement(),
-        minimumHeight: TEMPLATE_EDITOR_TABLE_MIN_SIZE,
-        movementY: nextTop - moveSession.lastTop,
-        reorderByPosition: false,
-      });
-      syncTemplateEditorTableObjectFlowSpacer?.(moveSession.table, {
-        height: moveSession.height,
-        top: nextTop,
-      });
+      if (!moveSession.isCandidateBlockTable) {
+        reflowTemplateEditorObjectRows(moveSession.table, {
+          activeHeight: moveSession.height,
+          activeTop: nextTop,
+          documentElement: getTemplateEditorDocumentElement(),
+          minimumHeight: TEMPLATE_EDITOR_TABLE_MIN_SIZE,
+          movementY: nextTop - moveSession.lastTop,
+          reorderByPosition: Math.abs(nextTop - moveSession.lastTop) > 0.5,
+        });
+        syncTemplateEditorTableObjectFlowSpacer?.(moveSession.table, {
+          height: moveSession.height,
+          top: nextTop,
+        });
+      }
 
       moveSession.lastLeft = nextLeft;
       moveSession.lastTop = nextTop;
@@ -694,7 +698,7 @@
 
         suppressNextTemplateEditorTableObjectClick();
         syncTemplateEditorContent({ preserveSelection: true, focusEditor: true, normalizeTables: false });
-        selectTemplateEditorTableObjectAfterSync(moveSession.table, tableIndex);
+        selectTemplateEditorTableObjectAfterSync(moveSession.table, tableIndex, { delayed: !moveSession.isCandidateBlockTable });
         return;
       }
 
@@ -754,8 +758,8 @@
             0,
         ),
       );
-      const visualScaleX = Math.max(tableRect.width / Math.max(width, 1), focusScale, 0.01);
-      const visualScaleY = Math.max(tableRect.height / Math.max(height, 1), focusScale, 0.01);
+      const visualScaleX = Math.max(tableRect.width / Math.max(width, 1) || focusScale, 0.01);
+      const visualScaleY = Math.max(tableRect.height / Math.max(height, 1) || focusScale, 0.01);
       const maxDocumentWidth = getTemplateEditorCandidateBlockContainerWidth(candidateBlockElement, tableRect.width, visualScaleX);
       const maxDocumentHeight = getTemplateEditorCandidateBlockContainerHeight(candidateBlockElement, tableRect.height, visualScaleY);
       const left = String(tableElement.style.position || "") === "absolute"
@@ -863,7 +867,7 @@
           documentElement: getTemplateEditorDocumentElement(),
           minimumHeight: TEMPLATE_EDITOR_TABLE_MIN_SIZE,
           movementY: nextTop - Number(metrics.top || 0),
-          reorderByPosition: false,
+          reorderByPosition: Math.abs(nextTop - Number(metrics.top || 0)) > 0.5,
         });
         syncTemplateEditorTableObjectFlowSpacer?.(selectedTable, {
           height: metrics.height,

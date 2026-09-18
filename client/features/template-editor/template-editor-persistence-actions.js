@@ -231,9 +231,11 @@ export function createTemplateEditorPersistenceActions({
       appState.templateEditor.documentOverflowMessage =
         appState.templateEditor.documentOverflowMessage ||
         "A4 용지 영역을 초과한 상태에서는 저장할 수 없습니다. 저장 전 내용 길이를 줄이세요.";
+      const overflowMessage = appState.templateEditor.documentOverflowMessage;
       syncDocumentOverflowUi();
       await onStateChange();
       refreshDocumentEditorRuntime();
+      showToast(overflowMessage, { tone: "error" });
       return;
     }
 

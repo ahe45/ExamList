@@ -32,6 +32,20 @@ function getDocumentContentRectBoundary(documentRoot) {
   const candidateBlockGridMeasurementSelector = "[data-candidate-block-grid], .examlist-candidate-block-grid";
   const excludedTextMeasurementSelector = `${transientMeasurementSelector}, ${candidateBlockGridMeasurementSelector}`;
 
+  function isEmptyObjectCaretHost(element) {
+    const host = element?.closest?.("p[data-template-object-caret-host]");
+    if (!host) {
+      return false;
+    }
+
+    // The focused caret has a visible line box and a zero-width text guard,
+    // but neither is authored document content. A stale marker must never
+    // hide text, objects, or intentional extra line breaks.
+    return !String(host.textContent || "").replace(/[\u200B\uFEFF]/g, "").trim() &&
+      host.querySelectorAll("br").length <= 1 &&
+      !host.querySelector("*:not(br):not(span.template-object-caret)");
+  }
+
   function isEmptyTrailingBlockElement(element) {
     if (!(element instanceof Element) || !element.matches("p")) {
       return false;
@@ -49,7 +63,8 @@ function getDocumentContentRectBoundary(documentRoot) {
       return node.matches("br");
     });
 
-    if (!hasOnlyEmptyInlineContent) {
+    if (!hasOnlyEmptyInlineContent || Array.from(element.childNodes || []).filter((node) =>
+      node.nodeType === Node.ELEMENT_NODE && node.matches("br")).length > 1) {
       return false;
     }
 
@@ -102,6 +117,10 @@ function getDocumentContentRectBoundary(documentRoot) {
             return nodeFilter.FILTER_REJECT;
           }
 
+          if (isEmptyObjectCaretHost(textNode.parentElement)) {
+            return nodeFilter.FILTER_REJECT;
+          }
+
           return nodeFilter.FILTER_ACCEPT;
         },
       },
@@ -122,7 +141,7 @@ function getDocumentContentRectBoundary(documentRoot) {
       "blockquote, figure, h1, h2, h3, hr, img, li, ol, p, table, ul, .template-generated-object, .template-token",
     )
     .forEach((element) => {
-      if (element.closest(transientMeasurementSelector)) {
+      if (element.closest(transientMeasurementSelector) || isEmptyObjectCaretHost(element)) {
         return;
       }
 

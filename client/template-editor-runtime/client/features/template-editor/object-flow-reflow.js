@@ -3,12 +3,15 @@
     module.exports = factory();
     return;
   }
-
   globalScope.ExamListTemplateEditorObjectFlowReflow = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
   const objectFlowLayoutChangeEventName = "examlist:object-flow-layoutchange";
+
   const flowObjectSelector = [
+    "[data-candidate-block-grid]",
+    ".examlist-candidate-block-grid",
     "table",
+    "img",
   ].join(",");
   const transientSelector = [
     ".template-editor-image-selection",
@@ -50,11 +53,41 @@
     return Number.isFinite(parsedValue) ? parsedValue : fallback;
   }
 
+  function getDocumentRelativeRect(element, documentElement) {
+    const documentRect = documentElement.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
+    const scale = documentElement.offsetHeight > 0 && documentRect.height > 0
+      ? documentRect.height / documentElement.offsetHeight : 1;
+    const top = (rect.top - documentRect.top) / scale - (documentElement.clientTop || 0);
+    const height = rect.height / scale;
+    return { top, height, bottom: top + height };
+  }
+
+  function moveFlowNodeBefore(documentElement, element, reference) {
+    if (element === reference || (element.parentElement === documentElement && element.nextSibling === reference)) return;
+    if (typeof documentElement.moveBefore === "function" && element.isConnected) {
+      // Preserve focus and pointer capture. Detaching a focused data block fires
+      // blur handlers that serialize the document while the block is missing.
+      documentElement.moveBefore(element, reference);
+      return;
+    }
+    const focusedElement = element.ownerDocument.activeElement;
+    const restoreFocus = element.contains(focusedElement);
+    if (restoreFocus) focusedElement.blur();
+    documentElement.insertBefore(element, reference?.parentElement === documentElement ? reference : null);
+    if (restoreFocus && focusedElement.isConnected) focusedElement.focus({ preventScroll: true });
+  }
+
   function getFlowObjectKind(objectElement) {
     if (!isHtmlElement(objectElement)) {
       return "";
     }
 
+    if (objectElement.matches?.("[data-candidate-block-grid], .examlist-candidate-block-grid")) {
+      return "candidate-block-grid";
+    }
+
+    if (objectElement.tagName === "IMG") return "image";
     return String(objectElement.tagName || "").toUpperCase() === "TABLE" ? "table" : "";
   }
 
@@ -65,11 +98,15 @@
 
     const kind = getFlowObjectKind(objectElement);
 
-    if (!kind || objectElement.closest(transientSelector)) {
+    if (!kind || objectElement.closest(transientSelector) || getTopLevelChild(objectElement, documentElement) !== objectElement) {
       return false;
     }
 
-    return false;
+    if (kind === "table") {
+      return !objectElement.closest("[data-candidate-block-grid], .examlist-candidate-block-grid, [data-candidate-block-instance]");
+    }
+
+    return kind === "candidate-block-grid" || kind === "image";
   }
 
   function getFlowObjectId(objectElement, documentElement) {
@@ -106,12 +143,50 @@
       .find((element) => String(element.dataset?.templateObjectFlowId || "").trim() === normalizedFlowId) || null;
   }
 
-  function removeUnsupportedFlowSpacers(documentElement) {
+  function cleanupUnsupportedFlowState(documentElement) {
+    const flowObjects = Array.from(documentElement?.querySelectorAll?.(flowObjectSelector) || [])
+      .filter((objectElement) => isFlowObjectElement(objectElement, documentElement));
+    const flowObjectSet = new Set(flowObjects);
+    const flowObjectById = new Map();
+
+    flowObjects.forEach((objectElement) => {
+      const flowId = String(objectElement.dataset?.templateObjectFlowId || "").trim();
+
+      if (!flowId) {
+        return;
+      }
+
+      if (flowObjectById.has(flowId)) {
+        objectElement.removeAttribute("data-template-object-flow-id");
+        return;
+      }
+
+      flowObjectById.set(flowId, objectElement);
+    });
+
+    const retainedSpacerIds = new Set();
+
     Array.from(documentElement?.querySelectorAll?.("[data-template-object-flow-spacer]") || [])
-      .forEach((element) => element.remove());
+      .forEach((spacerElement) => {
+        const flowId = String(spacerElement.dataset?.templateObjectFlowId || "").trim();
+
+        if (!flowId || !flowObjectById.has(flowId) || retainedSpacerIds.has(flowId) ||
+          flowObjectById.get(flowId).style.position !== "absolute") {
+          spacerElement.remove();
+          return;
+        }
+
+        retainedSpacerIds.add(flowId);
+      });
 
     Array.from(documentElement?.querySelectorAll?.("[data-template-object-flow-id]") || [])
-      .forEach((element) => element.removeAttribute("data-template-object-flow-id"));
+      .forEach((element) => {
+        if (!element.matches?.("[data-template-object-flow-spacer]") && !flowObjectSet.has(element)) {
+          element.removeAttribute("data-template-object-flow-id");
+        }
+      });
+
+    return flowObjects;
   }
 
   function applyFlowSpacerStyle(spacerElement, kind) {
@@ -119,21 +194,29 @@
       return;
     }
 
-    spacerElement.dataset.templateObjectFlowSpacer = "true";
-    spacerElement.dataset.templateObjectFlowKind = kind || "object";
-    spacerElement.setAttribute("contenteditable", "false");
-    spacerElement.setAttribute("aria-hidden", "true");
-    spacerElement.style.display = "block";
-    spacerElement.style.margin = "0";
-    spacerElement.style.padding = "0";
-    spacerElement.style.border = "0";
-    spacerElement.style.clear = "both";
-    spacerElement.style.fontSize = "0";
-    spacerElement.style.lineHeight = "0";
-    spacerElement.style.minHeight = "0";
-    spacerElement.style.overflow = "hidden";
-    spacerElement.style.pointerEvents = "none";
-    spacerElement.style.userSelect = "none";
+    if (spacerElement.dataset.templateObjectFlowSpacer !== "true") spacerElement.dataset.templateObjectFlowSpacer = "true";
+    if (spacerElement.dataset.templateObjectFlowKind !== (kind || "object")) spacerElement.dataset.templateObjectFlowKind = kind || "object";
+    if (spacerElement.getAttribute("contenteditable") !== "false") spacerElement.setAttribute("contenteditable", "false");
+    if (spacerElement.getAttribute("aria-hidden") !== "true") spacerElement.setAttribute("aria-hidden", "true");
+    const styles = {
+      border: "0px",
+      clear: "both",
+      display: "block",
+      fontSize: "0px",
+      lineHeight: "0px",
+      margin: "0px",
+      minHeight: "0px",
+      overflow: "hidden",
+      padding: "0px",
+      pointerEvents: "none",
+      userSelect: "none",
+    };
+
+    Object.entries(styles).forEach(([propertyName, value]) => {
+      if (spacerElement.style[propertyName] !== value) {
+        spacerElement.style[propertyName] = value;
+      }
+    });
   }
 
   function getTopLevelChild(element, documentElement) {
@@ -144,6 +227,63 @@
     }
 
     return currentElement?.parentElement === documentElement ? currentElement : null;
+  }
+
+  function isFlowObjectCaretHost(element, documentElement) {
+    return Boolean(
+      isHtmlElement(element) &&
+        element.parentElement === documentElement &&
+        /^(P|DIV)$/i.test(String(element.tagName || "")) &&
+        !element.matches(flowObjectSelector) &&
+        !element.matches("[data-template-object-flow-spacer]") &&
+        !element.closest(transientSelector) &&
+        element.getAttribute?.("contenteditable") !== "false",
+    );
+  }
+
+  function syncFlowObjectCaretHostSpace(paragraph) {
+    const isEmpty = !String(paragraph.textContent || "").replace(/[\u200b\ufeff]/g, "").trim() &&
+      paragraph.querySelectorAll("br").length <= 1 &&
+      !paragraph.querySelector("*:not(br):not(.template-object-caret)");
+    paragraph.toggleAttribute("data-template-object-caret-host", isEmpty);
+    return paragraph;
+  }
+
+  function createFlowObjectCaretHost(documentElement) {
+    const paragraph = documentElement.ownerDocument.createElement("p");
+
+    paragraph.append(documentElement.ownerDocument.createElement("br"));
+    return syncFlowObjectCaretHostSpace(paragraph);
+  }
+
+  function ensureFlowObjectCaretHost(objectElement, documentElement) {
+    if (!isFlowObjectElement(objectElement, documentElement)) {
+      return null;
+    }
+
+    const referenceElement = getTopLevelChild(objectElement, documentElement);
+    let nextElement = referenceElement?.nextElementSibling || null;
+    // Runtime spacers must not hide the existing editable paragraph.
+    while (nextElement?.matches?.("[data-template-object-flow-spacer]")) {
+      nextElement = nextElement.nextElementSibling;
+    }
+
+    if (isFlowObjectCaretHost(nextElement, documentElement)) {
+      if (!nextElement.childNodes.length) {
+        nextElement.append(documentElement.ownerDocument.createElement("br"));
+      }
+      return syncFlowObjectCaretHostSpace(nextElement);
+    }
+
+    const paragraph = createFlowObjectCaretHost(documentElement);
+
+    if (referenceElement?.nextSibling) {
+      documentElement.insertBefore(paragraph, referenceElement.nextSibling);
+    } else {
+      documentElement.append(paragraph);
+    }
+
+    return paragraph;
   }
 
   function ensureFlowSpacer(objectElement, documentElement) {
@@ -172,38 +312,34 @@
     return spacerElement;
   }
 
-function getFlowObjectMetrics(objectElement, documentElement, geometry = {}, minimumHeight = 5) {
-  const documentRect = documentElement.getBoundingClientRect();
-  const objectRect = objectElement.getBoundingClientRect();
-  const renderedTop = objectRect.top - documentRect.top;
-  const renderedHeight = Math.max(0, objectRect.height || 0);
-  const hasStrictGeometry = geometry.strictGeometry === true &&
-    Number.isFinite(Number(geometry.top)) &&
-    Number.isFinite(Number(geometry.height));
-  const strictHeight = Math.max(
-    Math.max(1, Math.round(Number(minimumHeight) || 1)),
-    Math.round(Number(geometry.height) || 0),
-  );
+  function getFlowObjectMetrics(objectElement, documentElement, geometry = {}, minimumHeight = 5) {
+    const objectRect = getDocumentRelativeRect(objectElement, documentElement);
+    const renderedTop = objectRect.top;
+    const hasStrictGeometry = geometry.strictGeometry === true &&
+      Number.isFinite(Number(geometry.top)) &&
+      Number.isFinite(Number(geometry.height));
+    const strictHeight = Math.max(
+      Math.max(1, Math.round(Number(minimumHeight) || 1)),
+      Math.round(Number(geometry.height) || 0),
+    );
 
-  if (hasStrictGeometry) {
-    const top = Number(geometry.top);
+    if (hasStrictGeometry) {
+      const top = Number(geometry.top);
 
-    return {
-      bottom: top + strictHeight,
-      height: strictHeight,
-      top,
-    };
-  }
+      return {
+        bottom: top + strictHeight,
+        height: strictHeight,
+        top,
+      };
+    }
 
-  const styleTop = parsePixelValue(objectElement.style.top, renderedTop);
-  const top = Number.isFinite(Number(geometry.top))
-    ? Math.min(Number(geometry.top), renderedTop)
-    : Math.min(styleTop, renderedTop);
+    const styleTop = parsePixelValue(objectElement.style.top, renderedTop);
+    const top = Number.isFinite(Number(geometry.top)) ? Number(geometry.top) : styleTop;
     const height = Math.max(
       Math.max(1, Math.round(Number(minimumHeight) || 1)),
       Math.round(Number(geometry.height) || objectElement.offsetHeight || objectRect.height || parsePixelValue(objectElement.style.height, 0) || 0),
     );
-    const bottom = Math.max(top + height, renderedTop + renderedHeight);
+    const bottom = top + height;
 
     return {
       bottom,
@@ -219,13 +355,15 @@ function getFlowObjectMetrics(objectElement, documentElement, geometry = {}, min
       return null;
     }
 
-    const documentRect = documentElement.getBoundingClientRect();
-    const spacerRect = spacerElement.getBoundingClientRect();
     const metrics = getFlowObjectMetrics(objectElement, documentElement, geometry, minimumHeight);
-    const spacerTop = Math.max(0, spacerRect.top - documentRect.top);
+    const spacerTop = Math.max(0, getDocumentRelativeRect(spacerElement, documentElement).top);
     const reservedHeight = Math.max(metrics.height, metrics.bottom - spacerTop);
 
-    spacerElement.style.height = `${Math.max(0, Math.ceil(reservedHeight))}px`;
+    const nextHeight = `${Math.max(0, Math.ceil(reservedHeight))}px`;
+
+    if (spacerElement.style.height !== nextHeight) {
+      spacerElement.style.height = nextHeight;
+    }
     rememberFlowObjectLayout(objectElement, documentElement, spacerElement, metrics);
     return spacerElement;
   }
@@ -244,10 +382,8 @@ function getFlowObjectMetrics(objectElement, documentElement, geometry = {}, min
       return null;
     }
 
-    const documentRect = documentElement.getBoundingClientRect();
-    const spacerRect = resolvedSpacer.getBoundingClientRect();
     const resolvedMetrics = metrics || getFlowObjectMetrics(objectElement, documentElement);
-    const spacerTop = Math.max(0, spacerRect.top - documentRect.top);
+    const spacerTop = Math.max(0, getDocumentRelativeRect(resolvedSpacer, documentElement).top);
     const objectTop = Math.max(0, resolvedMetrics.top);
 
     const state = {
@@ -423,16 +559,13 @@ function getFlowObjectMetrics(objectElement, documentElement, geometry = {}, min
   }
 
   function splitFlowTextBlockAtTarget(documentElement, activeElement, activeSpacer, targetTop) {
-    const documentRect = documentElement.getBoundingClientRect();
     const blockElement = Array.from(documentElement.children || [])
       .find((childElement) => {
         if (!isSplittableFlowTextBlock(childElement, documentElement, activeElement, activeSpacer)) {
           return false;
         }
 
-        const rect = childElement.getBoundingClientRect();
-        const top = rect.top - documentRect.top;
-        const bottom = rect.bottom - documentRect.top;
+        const { top, bottom } = getDocumentRelativeRect(childElement, documentElement);
 
         return targetTop >= top - 1 && targetTop < bottom - 1;
       });
@@ -440,13 +573,12 @@ function getFlowObjectMetrics(objectElement, documentElement, geometry = {}, min
     return blockElement ? splitFlowTextBlockIntoLines(blockElement) : [];
   }
 
-  function findFlowReferenceChild(documentElement, activeElement, activeSpacer, activeMetrics, { movingDown = false } = {}) {
-    const documentRect = documentElement.getBoundingClientRect();
+  function findFlowReferenceChild(documentElement, activeElement, activeSpacer, activeMetrics) {
     const participants = Array.from(documentElement.children || [])
       .filter((childElement) => isFlowReferenceChild(childElement, documentElement, activeElement, activeSpacer))
       .map((childElement) => {
-        const rect = childElement.getBoundingClientRect();
-        const top = Math.max(0, rect.top - documentRect.top);
+        const rect = getDocumentRelativeRect(childElement, documentElement);
+        const top = Math.max(0, rect.top);
         const height = childElement.matches("[data-template-object-flow-spacer]")
           ? Math.max(rect.height || 0, parsePixelValue(childElement.style.height, 0))
           : rect.height || 0;
@@ -457,32 +589,10 @@ function getFlowObjectMetrics(objectElement, documentElement, geometry = {}, min
           top,
         };
       })
-      .filter((entry) => Number.isFinite(entry.top) && Number.isFinite(entry.bottom));
-
-    if (movingDown) {
-      return participants.find((entry) => activeMetrics.top < entry.bottom - 1)?.element || null;
-    }
+      .filter((entry) => Number.isFinite(entry.top) && entry.bottom > entry.top + 0.5 &&
+        !entry.element.hasAttribute("data-template-object-caret-host"));
 
     return participants.find((entry) => activeMetrics.top < entry.bottom - 1)?.element || null;
-  }
-
-  function getAbsoluteFlowObjects(documentElement, activeElement) {
-    const seen = new Set();
-
-    return Array.from(documentElement.querySelectorAll(flowObjectSelector))
-      .filter((objectElement) => {
-        if (
-          !isFlowObjectElement(objectElement, documentElement) ||
-          objectElement === activeElement ||
-          seen.has(objectElement) ||
-          String(objectElement.style.position || "").trim() !== "absolute"
-        ) {
-          return false;
-        }
-
-        seen.add(objectElement);
-        return true;
-      });
   }
 
   function dispatchObjectFlowLayoutChange(objectElement, detail = {}) {
@@ -513,9 +623,7 @@ function getFlowObjectMetrics(objectElement, documentElement, geometry = {}, min
       return null;
     }
 
-    const documentRect = documentElement.getBoundingClientRect();
-    const spacerRect = spacerElement.getBoundingClientRect();
-    const spacerTop = Math.max(0, spacerRect.top - documentRect.top);
+    const spacerTop = Math.max(0, getDocumentRelativeRect(spacerElement, documentElement).top);
     const metrics = getFlowObjectMetrics(objectElement, documentElement, {}, options.minimumHeight);
     const rememberedState = flowObjectLayoutState.get(objectElement);
     const styleTop = parsePixelValue(objectElement.style.top, metrics.top);
@@ -569,121 +677,93 @@ function getFlowObjectMetrics(objectElement, documentElement, geometry = {}, min
       return [];
     }
 
-    removeUnsupportedFlowSpacers(documentElement);
-    return [];
-  }
+    const flowObjects = cleanupUnsupportedFlowState(documentElement);
 
-  function pushOverlappingFlowObjects(documentElement, activeElement, activeSpacer, activeMetrics, options = {}) {
-    const shiftedObjects = [];
-    let insertionAfter = activeSpacer;
-    let currentBottom = activeMetrics.bottom;
+    const caretHosts = new Set(flowObjects.map((objectElement) => ensureFlowObjectCaretHost(objectElement, documentElement)));
+    documentElement.querySelectorAll("[data-template-object-caret-host]").forEach((paragraph) => {
+      if (!caretHosts.has(paragraph)) paragraph.removeAttribute("data-template-object-caret-host");
+    });
 
-    getAbsoluteFlowObjects(documentElement, activeElement)
-      .map((objectElement) => ({
-        element: objectElement,
-        metrics: getFlowObjectMetrics(objectElement, documentElement, {}, options.minimumHeight),
-      }))
-      .sort((leftEntry, rightEntry) => leftEntry.metrics.top - rightEntry.metrics.top)
-      .forEach((entry) => {
-        const { element, metrics } = entry;
-
-        if (metrics.bottom <= activeMetrics.top + 1) {
-          return;
-        }
-
-        if (metrics.top >= currentBottom - 1) {
-          currentBottom = metrics.bottom;
-          return;
-        }
-
-        const nextTop = Math.max(0, Math.ceil(currentBottom));
-        const spacerElement = ensureFlowSpacer(element, documentElement);
-
-        if (isHtmlElement(spacerElement) && isHtmlElement(insertionAfter)) {
-          documentElement.insertBefore(spacerElement, insertionAfter.nextSibling);
-          insertionAfter = spacerElement;
-        }
-
-        element.style.top = `${nextTop}px`;
-        syncFlowSpacer(element, documentElement, {
-          height: metrics.height,
-          top: nextTop,
-        }, options.minimumHeight);
-        currentBottom = nextTop + metrics.height;
-        shiftedObjects.push(element);
-        dispatchObjectFlowLayoutChange(element, {
-          height: metrics.height,
-          top: nextTop,
-        });
-        options.onObjectShift?.(element, {
-          height: metrics.height,
-          top: nextTop,
-        });
-      });
-
-    return shiftedObjects;
-  }
-
-  function isBeforeElement(leftElement, rightElement) {
-    return Boolean(leftElement?.compareDocumentPosition?.(rightElement) & 4);
-  }
-
-  function pullPrecedingFlowObjectsAboveActive(documentElement, activeElement, activeSpacer, activeMetrics, options = {}) {
-    const shiftedObjects = [];
-    const documentRect = documentElement.getBoundingClientRect();
-
-    getAbsoluteFlowObjects(documentElement, activeElement)
-      .map((objectElement) => ({
-        element: objectElement,
-        metrics: getFlowObjectMetrics(objectElement, documentElement, {}, options.minimumHeight),
-        spacer: ensureFlowSpacer(objectElement, documentElement),
-      }))
-      .filter((entry) => isHtmlElement(entry.spacer) && isBeforeElement(entry.spacer, activeSpacer))
-      .sort((leftEntry, rightEntry) => isBeforeElement(leftEntry.spacer, rightEntry.spacer) ? -1 : 1)
-      .forEach((entry) => {
-        const { element, metrics, spacer } = entry;
-        const spacerRect = spacer.getBoundingClientRect();
-        const nextTop = Math.max(0, Math.round(spacerRect.top - documentRect.top));
-
-        if (Math.abs(metrics.top - nextTop) <= 1 && metrics.bottom <= activeMetrics.top + 1) {
-          return;
-        }
-
-        element.style.top = `${nextTop}px`;
-        syncFlowSpacer(element, documentElement, {
-          height: metrics.height,
-          top: nextTop,
-        }, options.minimumHeight);
-        shiftedObjects.push(element);
-        dispatchObjectFlowLayoutChange(element, {
-          height: metrics.height,
-          top: nextTop,
-        });
-        options.onObjectShift?.(element, {
-          height: metrics.height,
-          top: nextTop,
-        });
-      });
-
-    return shiftedObjects;
+    return flowObjects
+      .filter((objectElement) => String(objectElement.style.position || "").trim() === "absolute")
+      .map((objectElement) => syncAbsoluteFlowObjectToSpacer(objectElement, documentElement, options))
+      .filter(Boolean);
   }
 
   function reflowTemplateEditorObjectRows(activeElement, options = {}) {
     const documentElement = options.documentElement || activeElement?.closest?.(".template-doc") || null;
 
-    if (isHtmlElement(documentElement)) {
-      removeUnsupportedFlowSpacers(documentElement);
+    if (!isFlowObjectElement(activeElement, documentElement)) {
+      return {
+        shiftedObjects: [],
+        spacerElement: null,
+      };
     }
 
+    if (activeElement.style.position !== "absolute") {
+      // In-flow objects already reserve their own height. Only their absolute
+      // neighbours need to follow a native layout change (for example resizing).
+      return {
+        shiftedObjects: syncTemplateEditorObjectFlowObjects(documentElement, options)
+          .filter((entry) => entry.didMove).map((entry) => entry.objectElement),
+        spacerElement: null,
+      };
+    }
+
+    cleanupUnsupportedFlowState(documentElement);
+    const caretHost = ensureFlowObjectCaretHost(activeElement, documentElement);
+
+    const activeSpacer = ensureFlowSpacer(activeElement, documentElement);
+
+    if (!isHtmlElement(activeSpacer)) {
+      return {
+        shiftedObjects: [],
+        spacerElement: null,
+      };
+    }
+
+    const activeMetrics = getFlowObjectMetrics(activeElement, documentElement, {
+      height: options.activeHeight,
+      strictGeometry: options.strictGeometry === true,
+      top: options.activeTop,
+    }, options.minimumHeight);
+    const movementY = Number(options.movementY) || 0;
+    const shouldReorderByPosition =
+      options.reorderByPosition === true ||
+      (options.reorderByPosition !== false && Math.abs(movementY) > 0.5);
+
+    if (shouldReorderByPosition) {
+      // Measure the drop position without counting the dragged object's old row.
+      activeSpacer.style.height = "0px";
+      splitFlowTextBlockAtTarget(documentElement, activeElement, activeSpacer, activeMetrics.top);
+      const referenceElement = findFlowReferenceChild(documentElement, activeElement, activeSpacer, activeMetrics);
+      moveFlowNodeBefore(documentElement, activeSpacer, referenceElement);
+      // Persist the same order that the spacers display. Spacers themselves are
+      // transient and disappear when HTML is saved or copied.
+      moveFlowNodeBefore(documentElement, activeElement, activeSpacer.nextSibling);
+      if (caretHost?.hasAttribute("data-template-object-caret-host")) moveFlowNodeBefore(documentElement, caretHost, activeElement.nextSibling);
+    }
+
+    const spacerTop = Math.max(0, getDocumentRelativeRect(activeSpacer, documentElement).top);
+    const nextTop = Math.max(spacerTop, activeMetrics.top);
+    activeElement.style.top = `${Math.round(nextTop)}px`;
+    syncFlowSpacer(activeElement, documentElement, {
+      height: activeMetrics.height,
+      top: nextTop,
+    }, options.minimumHeight);
+
+    // Normal document flow moves text immediately; move the absolute objects to
+    // their reserved rows in that same order, for both upward and downward moves.
+    const shiftedObjects = syncTemplateEditorObjectFlowObjects(documentElement, options)
+      .filter((entry) => entry.didMove && entry.objectElement !== activeElement)
+      .map((entry) => entry.objectElement);
+
     return {
-      shiftedObjects: [],
-      spacerElement: null,
+      activeTop: nextTop,
+      shiftedObjects,
+      spacerElement: activeSpacer,
     };
   }
 
-  return Object.freeze({
-    objectFlowLayoutChangeEventName,
-    reflowTemplateEditorObjectRows,
-    syncTemplateEditorObjectFlowObjects,
-  });
+  return Object.freeze({ objectFlowLayoutChangeEventName, reflowTemplateEditorObjectRows, syncTemplateEditorObjectFlowObjects });
 });

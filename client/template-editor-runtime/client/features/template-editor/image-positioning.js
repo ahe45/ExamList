@@ -226,6 +226,9 @@
         };
       }
 
+      const containerBounds = containerElement.getBoundingClientRect();
+      const canvasScaleX = containerElement.offsetWidth > 0 ? containerBounds.width / containerElement.offsetWidth : 1;
+      const canvasScaleY = containerElement.offsetHeight > 0 ? containerBounds.height / containerElement.offsetHeight : 1;
       if (imageElement.parentElement === containerElement && imageElement.style.position === "absolute") {
         imageElement.classList.add("is-floating-object");
         return {
@@ -235,16 +238,16 @@
             Math.max(documentElement?.scrollHeight || 0, documentElement?.clientHeight || 0),
           boundsWidth: candidateBlockContainer?.width || documentElement?.clientWidth || 0,
           left: parseTemplateEditorPixelStyle(imageElement.style.left, imageElement.offsetLeft),
-          scaleX: candidateBlockContainer?.scaleX || 1,
-          scaleY: candidateBlockContainer?.scaleY || 1,
+          scaleX: candidateBlockContainer?.scaleX || canvasScaleX || 1,
+          scaleY: candidateBlockContainer?.scaleY || canvasScaleY || 1,
           top: parseTemplateEditorPixelStyle(imageElement.style.top, imageElement.offsetTop),
         };
       }
 
       const imageRect = imageElement.getBoundingClientRect();
       const containerRect = candidateBlockContainer?.rect || containerElement.getBoundingClientRect();
-      const scaleX = candidateBlockContainer?.scaleX || 1;
-      const scaleY = candidateBlockContainer?.scaleY || 1;
+      const scaleX = candidateBlockContainer?.scaleX || canvasScaleX || 1;
+      const scaleY = candidateBlockContainer?.scaleY || canvasScaleY || 1;
       const boundsWidth = candidateBlockContainer?.width || documentElement?.clientWidth || containerElement.clientWidth || 0;
       const boundsHeight =
         candidateBlockContainer?.height ||
@@ -252,11 +255,11 @@
       const imageWidth = Math.max(Math.round(imageRect.width / Math.max(scaleX, 0.01)), TEMPLATE_EDITOR_IMAGE_MIN_SIZE);
       const imageHeight = Math.max(Math.round(imageRect.height / Math.max(scaleY, 0.01)), TEMPLATE_EDITOR_IMAGE_MIN_SIZE);
       const boundedLeft = geometry.getTemplateEditorBoundedCoordinate(
-        (imageRect.left - containerRect.left) / Math.max(scaleX, 0.01),
+        (imageRect.left - containerRect.left) / Math.max(scaleX, 0.01) - containerElement.clientLeft,
         boundsWidth - imageWidth,
       );
       const boundedTop = geometry.getTemplateEditorBoundedCoordinate(
-        (imageRect.top - containerRect.top) / Math.max(scaleY, 0.01),
+        (imageRect.top - containerRect.top) / Math.max(scaleY, 0.01) - containerElement.clientTop,
         boundsHeight - imageHeight,
       );
       const previousParent = imageElement.parentElement;
@@ -269,11 +272,13 @@
       imageElement.style.margin = "0";
       imageElement.style.zIndex = "2";
       imageElement.classList.add("is-floating-object");
-      containerElement.append(imageElement);
-
-      if (candidateBlockContainer) {
-        removeEmptyTemplateEditorImageHost(previousParent, containerElement);
+      if (imageElement.parentElement !== containerElement) {
+        let host = previousParent;
+        while (host?.parentElement && host.parentElement !== containerElement) host = host.parentElement;
+        containerElement.insertBefore(imageElement, host?.parentElement === containerElement ? host.nextSibling : null);
       }
+
+      removeEmptyTemplateEditorImageHost(previousParent, containerElement);
 
       return {
         boundsElement: containerElement,

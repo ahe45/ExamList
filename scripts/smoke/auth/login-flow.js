@@ -53,7 +53,7 @@ async function assertSchoolSelectionShell(context) {
     client,
     `
       (() => {
-        const sidebar = document.querySelector("#workspaceSidebar");
+        const sidebar = document.querySelector("#workspaceNav");
         const nav = document.querySelector("#workspaceNav");
         const items = [...document.querySelectorAll('.workspace-nav-item')];
         const labels = items.map((item) => item.textContent.trim()).join('|');
@@ -68,11 +68,11 @@ async function assertSchoolSelectionShell(context) {
             !document.querySelector('#currentSchoolMeta') &&
             getComputedStyle(sidebar).display === "none" &&
             sidebar.getAttribute('aria-hidden') === 'true' &&
-            labels === "양식 관리|수험생 데이터|PDF 생성|PDF 작업 로그|데이터 삭제"
+            labels === "양식 관리|수험생 데이터|PDF 생성|작업 로그|데이터 삭제"
         );
       })()
     `,
-    "학교 선택 사이드바 내비게이션 숨김",
+    "학교 선택 헤더 내비게이션 숨김",
   );
 }
 

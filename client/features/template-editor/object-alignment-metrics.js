@@ -408,7 +408,7 @@ export function getObjectElementSize(element, surfaceElement) {
 }
 
 export function syncObjectAlignmentTableFlow(element, surfaceElement, geometry = {}) {
-  if (!isObjectAlignmentTableElement(element, surfaceElement) || String(element.style.position || "") !== "absolute") {
+  if (!element?.matches?.("table, img, [data-candidate-block-grid]") || String(element.style.position || "") !== "absolute") {
     return null;
   }
 
@@ -430,7 +430,7 @@ export function syncObjectAlignmentTableFlow(element, surfaceElement, geometry =
     documentElement,
     minimumHeight: templateEditorObjectMinimumSize,
     movementY: Number.isFinite(Number(geometry.movementY)) ? Number(geometry.movementY) : 0,
-    reorderByPosition: geometry.reorderByPosition === true,
+    reorderByPosition: geometry.reorderByPosition ?? Math.abs(Number(geometry.movementY) || 0) > 0.5,
     strictGeometry: Number.isFinite(Number(geometry.height)) && Number.isFinite(Number(geometry.top)),
   });
 }

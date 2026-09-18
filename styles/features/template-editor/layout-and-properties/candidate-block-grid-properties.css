@@ -30,6 +30,20 @@
   font-weight: 800;
 }
 
+.examlist-candidate-block-grid-sort-controls select.template-page-property-control {
+  background-position:
+    calc(100% - 14px) 52%,
+    calc(100% - 10px) 52% !important;
+  background-size:
+    4px 4px,
+    4px 4px !important;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  min-height: 32px;
+  padding-left: 9px !important;
+  padding-right: 26px !important;
+}
+
 .examlist-candidate-block-grid-controls input:disabled,
 .examlist-candidate-block-grid-field select:disabled {
   background: #f1f5f9;

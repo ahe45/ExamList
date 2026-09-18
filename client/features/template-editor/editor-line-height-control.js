@@ -219,6 +219,14 @@ function applyLineHeightToSelection(editor, surfaceElement, rawValue) {
 
   targets.forEach((element) => {
     element.style.lineHeight = lineHeightCssValue;
+    // Enlarged inline text must recompute relative spacing with its own font.
+    const blockSelector = "p,h1,h2,h3,h4,h5,h6,li,blockquote,td,th,div";
+    element.querySelectorAll("[style]").forEach((inlineElement) => {
+      if (inlineElement.style.fontSize && !inlineElement.matches(blockSelector) &&
+          inlineElement.parentElement?.closest(blockSelector) === element) {
+        inlineElement.style.lineHeight = lineHeightCssValue;
+      }
+    });
 
     if (textBlockTags.has(element.tagName)) {
       element.style.marginTop = "0";

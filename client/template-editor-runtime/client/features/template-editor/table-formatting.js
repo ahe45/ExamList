@@ -242,6 +242,8 @@
           command === "justifyCenter" ? "center" : command === "justifyRight" ? "right" : command === "justifyFull" ? "justify" : "left";
         getTemplateEditorTableTextStyleTargets(targetCells).forEach((element) => {
           element.style.textAlign = textAlignValue;
+          element.style.textAlignLast = textAlignValue === "justify" ? "justify" : "auto";
+          element.style.setProperty("text-justify", textAlignValue === "justify" ? "inter-character" : "auto");
         });
       } else if (command === "insertUnorderedList") {
         const shouldApplyList = !targetCells.every((cell) => getTemplateEditorCellUnorderedList(cell));

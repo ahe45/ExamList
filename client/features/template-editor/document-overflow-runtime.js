@@ -12,21 +12,10 @@ export function createDocumentOverflowRuntime({ appState, getDocumentSurfaceByPa
   function syncDocumentOverflowUi(pageId = appState.templateEditor.selectedPageId) {
     const hasOverflow = Array.from(documentOverflowStateByPageId.values()).some(Boolean);
     const surface = getDocumentSurfaceByPageId(pageId);
-    const statusElement = document.getElementById("templateEditorOverflowStatus");
-    const saveButton = document.querySelector("[data-action='save-template-layout']");
-    const message = appState.templateEditor.documentOverflowMessage || "";
 
     appState.templateEditor.hasDocumentOverflow = hasOverflow;
     surface?.classList.toggle("has-overflow", Boolean(documentOverflowStateByPageId.get(pageId)));
 
-    if (statusElement) {
-      statusElement.textContent = message;
-      statusElement.classList.toggle("hidden", !message);
-    }
-
-    if (saveButton) {
-      saveButton.disabled = Boolean(appState.templateEditor.isSaving);
-    }
   }
 
   function setDocumentOverflowState(pageId, overflowInfo, message = "") {

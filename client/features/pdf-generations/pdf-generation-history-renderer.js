@@ -1,3 +1,4 @@
+import { renderGridTable, renderGridStatusRow } from "../../app/data-grid-table.js";
 import { canUseAccess, hasAccess } from "../../app/access.js";
 import { escapeHtml } from "../../app/html-utils.js";
 import { formatCount } from "../../app/number-format.js";
@@ -100,11 +101,7 @@ function renderArtifactDownloadButton(artifact = {}, canDownload = false) {
 
 function renderPdfGenerationArtifactRows(artifacts = [], startRowNumber = 1, canDownload = false) {
   if (!artifacts.length) {
-    return `
-      <tr class="table-empty-row">
-        <td class="table-empty-cell pdf-generation-artifact-empty-cell" colspan="7">표시할 병합/ZIP 파일이 없습니다.</td>
-      </tr>
-    `;
+    return renderGridStatusRow(7, "표시할 병합/ZIP 파일이 없습니다.", "pdf-generation-artifact-empty-cell");
   }
 
   return artifacts
@@ -142,18 +139,14 @@ function renderPdfGenerationArtifactsPanel(pdfGenerations = {}, canDownload = fa
   return `
     ${pdfGenerations.artifactErrorMessage ? `<p class="error-banner">${escapeHtml(pdfGenerations.artifactErrorMessage)}</p>` : ""}
     <div class="table-wrap pdf-generation-artifact-table-wrap">
-      <table class="data-table pdf-generation-artifact-table">
-        <thead>
-          <tr>
-            <th class="row-number-col">번호</th>
+      ${renderGridTable({
+      className: "data-table pdf-generation-artifact-table",
+      headerHtml: `<th class="row-number-col">번호</th>
             ${pdfGenerationArtifactGridColumns.map((column) => renderPdfGenerationArtifactHeaderCell(column, pdfGenerations)).join("")}
-            <th>다운로드</th>
-          </tr>
-        </thead>
-        <tbody class="${visibleRows.length ? "" : "table-body is-empty"}">
-          ${renderPdfGenerationArtifactRows(visibleRows, startRowNumber, canDownload)}
-        </tbody>
-      </table>
+            <th>다운로드</th>`,
+      rowsHtml: `${renderPdfGenerationArtifactRows(visibleRows, startRowNumber, canDownload)}`,
+      bodyClassName: `${visibleRows.length ? "" : "table-body is-empty"}`,
+    })}
     </div>
     ${renderPdfGenerationArtifactPagination(pdfGenerations)}
   `;
@@ -168,27 +161,23 @@ function renderGenerationTable({
 }) {
   return `
     <div class="table-wrap pdf-generation-table-wrap">
-      <table class="data-table pdf-generation-table">
-        <thead>
-          <tr>
-            ${renderStaticHeaderCell(
+      ${renderGridTable({
+      className: "data-table pdf-generation-table",
+      headerHtml: `${renderStaticHeaderCell(
               "pdf-generation-select-column",
               `<input data-pdf-generation-select-all type="checkbox" ${selectedFilteredDownloadableCount && selectedFilteredDownloadableCount === filteredCompletedRows.length ? "checked" : ""} />`,
             )}
             ${pdfGenerationGridColumns.map((column) => renderPdfGenerationHeaderCell(column, pdfGenerations)).join("")}
             ${renderStaticHeaderCell("pdf-generation-print-column", '<span class="table-header-label">인쇄</span>')}
-            ${renderStaticHeaderCell("pdf-generation-detail-column", '<span class="table-header-label">상세</span>')}
-          </tr>
-        </thead>
-        <tbody>
-          ${renderGenerationRows(
+            ${renderStaticHeaderCell("pdf-generation-detail-column", '<span class="table-header-label">상세</span>')}`,
+      rowsHtml: `${renderGenerationRows(
             visibleRows,
             pdfGenerations.selectedGenerationIds,
             pdfGenerations.rerunningGenerationIds,
             access,
-          )}
-        </tbody>
-      </table>
+          )}`,
+      bodyClassName: ``,
+    })}
     </div>
     ${renderPdfGenerationPagination(pdfGenerations)}
   `;

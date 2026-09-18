@@ -118,6 +118,96 @@
       return isTemplateEditorTableObjectElement(tableElement) ? tableElement : null;
     }
 
+    function getTemplateEditorTableObjectCaretHost(target, event = null) {
+      const baseElement = target instanceof Element ? target : target?.parentElement || null;
+      const caretHost = baseElement?.closest?.("p, div") || null;
+      const documentElement = getTemplateEditorDocumentElement();
+
+      // Empty paper can lie after any object, including a grid followed by
+      // another table. Resolve the nearest preceding object row, not only the
+      // document's final child, and keep one owner for the caret range.
+      if (documentElement && (baseElement === documentElement || baseElement === shell.surfaceElement)) {
+        const paperRect = documentElement.getBoundingClientRect();
+        let nearestHost = null;
+        let nearestTop = -Infinity;
+        if (event?.clientX >= paperRect.left && event.clientX <= paperRect.right) {
+          for (const host of Array.from(documentElement.children || [])) {
+            if (!host.hasAttribute?.("data-template-object-caret-host")) continue;
+            let object = host.previousElementSibling;
+            while (object?.matches?.("[data-template-object-flow-spacer]")) object = object.previousElementSibling;
+            const hostTop = host.getBoundingClientRect().top;
+            const rowBottom = Math.max(hostTop, object?.getBoundingClientRect?.().bottom ?? hostTop);
+            let nextContent = host.nextElementSibling;
+            while (nextContent && (nextContent.matches?.("[data-template-object-flow-spacer]") ||
+                nextContent.getBoundingClientRect().height === 0)) nextContent = nextContent.nextElementSibling;
+            const nextTop = nextContent?.getBoundingClientRect?.().top ?? Infinity;
+            if (event.clientY >= rowBottom && event.clientY < nextTop && rowBottom >= nearestTop) {
+              nearestHost = host;
+              nearestTop = rowBottom;
+            }
+          }
+        }
+        if (nearestHost) return nearestHost;
+      }
+
+      if (
+        !(caretHost instanceof HTMLElement) ||
+        caretHost.parentElement !== documentElement ||
+        caretHost.getAttribute("contenteditable") === "false" ||
+        !caretHost.hasAttribute("data-template-object-caret-host")
+      ) {
+        return null;
+      }
+
+      const previousElement = caretHost.previousElementSibling;
+      const followsTableObject = isTemplateEditorTableObjectElement(previousElement);
+      const followsCandidateBlockGrid = Boolean(
+        previousElement instanceof HTMLElement &&
+          previousElement.matches("[data-candidate-block-grid], .examlist-candidate-block-grid") &&
+          shell.surfaceElement.contains(previousElement),
+      );
+
+      return followsTableObject || followsCandidateBlockGrid ? caretHost : null;
+    }
+
+    function placeCaretInTemplateEditorTableObjectHost(caretHost) {
+      const selection = ownerWindow.getSelection?.();
+
+      if (!(caretHost instanceof HTMLElement) || !selection) {
+        return false;
+      }
+
+      if (!caretHost.childNodes.length) {
+        caretHost.append(ownerDocument.createElement("br"));
+      }
+
+      const range = ownerDocument.createRange();
+
+      shell.surfaceElement.focus?.({ preventScroll: true });
+      if (caretHost.hasAttribute("data-template-object-caret-host")) {
+        // An element boundary in a zero-height paragraph is not a paintable
+        // caret position in Chromium. Give the native caret a temporary text node.
+        let guard = caretHost.querySelector(".template-object-caret");
+        if (!guard) {
+          guard = ownerDocument.createElement("span");
+          guard.className = "template-object-caret";
+          guard.textContent = "\u200B";
+          caretHost.replaceChildren(guard);
+        }
+        range.setStart(guard.firstChild, 1);
+        range.collapse(true);
+        caretHost.setAttribute("data-template-object-caret-active", "");
+      } else {
+        range.selectNodeContents(caretHost);
+        range.collapse(false);
+      }
+      selection.removeAllRanges();
+      selection.addRange(range);
+      state.templateEditor.savedRange = range.cloneRange();
+      state.templateEditor.savedSelectionSnapshot = null;
+      return true;
+    }
+
     function getTemplateEditorTableObjectOutsideBorderDistance(tableElement, event) {
       if (!isTemplateEditorTableObjectElement(tableElement) || !event) {
         return null;
@@ -358,13 +448,31 @@
       const target = event.target instanceof Element ? event.target : null;
       const moveHandleElement = target?.closest?.("[data-template-table-object-move-handle]");
       const handleElement = target?.closest?.("[data-template-table-object-handle]");
+      const borderTarget = getTemplateEditorTableObjectBorderTarget(event);
+      const caretHost = borderTarget ? null : getTemplateEditorTableObjectCaretHost(target, event);
+
+      if (caretHost) {
+        event.preventDefault();
+        event.stopPropagation();
+        clearTemplateEditorActiveCell();
+        clearTemplateEditorImageSelection();
+        clearTemplateEditorTableSelection();
+        clearTemplateEditorTableObjectSelection({ updateOverlay: false });
+        shell.surfaceElement
+          .querySelectorAll("[data-candidate-block-grid].is-selected-candidate-block-grid, .examlist-candidate-block-grid.is-selected-candidate-block-grid")
+          .forEach((gridElement) => gridElement.classList.remove("is-selected-candidate-block-grid"));
+        placeCaretInTemplateEditorTableObjectHost(caretHost);
+        updateTemplateEditorFormattingControls();
+        updateTemplateTableControls();
+        updateTemplateEditorTableObjectOverlay();
+        return true;
+      }
+
       const controlElement = moveHandleElement || handleElement;
       const controlOverlayElement = controlElement?.closest?.(".template-editor-table-selection") || null;
       const controlTableElement = isTemplateEditorTableObjectElement(controlOverlayElement?.__templateEditorTableElement)
         ? controlOverlayElement.__templateEditorTableElement
         : null;
-      const borderTarget = getTemplateEditorTableObjectBorderTarget(event);
-
       if (!moveHandleElement && !handleElement && !borderTarget) {
         return false;
       }
@@ -475,6 +583,20 @@
       }
 
       removeTemplateEditorTableObjectFlowSpacer?.(tableElement);
+      const nextElement = tableElement.nextElementSibling;
+      const previousElement = tableElement.previousElementSibling;
+      const existingCaretHost = isTemplateEditorBlankDeletionHost(nextElement)
+        ? nextElement
+        : isTemplateEditorBlankDeletionHost(previousElement)
+          ? previousElement
+          : null;
+
+      if (existingCaretHost) {
+        tableElement.remove();
+        placeCaretAtEnd(existingCaretHost);
+        return existingCaretHost;
+      }
+
       tableElement.replaceWith(paragraph);
       placeCaretAtEnd(paragraph);
       return paragraph;

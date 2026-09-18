@@ -767,7 +767,7 @@
     return false;
   }
 
-  function fitTemplateEditorTablesToCandidateBlock(fragment, blockElement, { insertionRange = null, setStatus } = {}) {
+  function fitTemplateEditorTablesToCandidateBlock(fragment, blockElement, { insertionRange = null, preservePresentation = false, setStatus } = {}) {
     if (!blockElement || !fragment?.querySelectorAll) {
       return true;
     }
@@ -779,6 +779,17 @@
     }
 
     const availableSize = getTemplateEditorCandidateBlockTableAvailableSize(blockElement, { insertionRange });
+    if (preservePresentation) {
+      // Pasting preserves authored proportions, padding and text styles. Do not
+      // silently turn a copied table into an evenly distributed/minimum-size grid.
+      const fits = tableElements.filter(table => !table.parentElement?.closest("table")).every(table => {
+        const width = parseTemplateEditorCssLengthToPoints(table.style.width, 0) * CSS_PIXELS_PER_POINT;
+        const height = parseTemplateEditorCssLengthToPoints(table.style.height, 0) * CSS_PIXELS_PER_POINT;
+        return width <= availableSize.width && height <= availableSize.height;
+      });
+      if (!fits) setStatus?.("표를 붙여넣을 공간이 부족합니다. 데이터 블록 크기를 키워주세요.", "warning");
+      return fits;
+    }
     const didFitAllTables = tableElements.every((tableElement) =>
       fitTemplateEditorTableToCandidateBlock(tableElement, blockElement, { availableSize, setStatus }),
     );

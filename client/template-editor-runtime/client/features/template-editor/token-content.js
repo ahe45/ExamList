@@ -59,7 +59,7 @@
         : String(definitionOrKey?.key || definitionOrKey?.dataKey || definitionOrKey?.token || "").trim();
       const type = typeof definitionOrKey === "string" ? "" : String(definitionOrKey?.type || "").trim().toLowerCase();
 
-      return formatSupportedDateTagKeys.has(key) || formatSupportedTimeTagKeys.has(key) || type === "date" || type === "time";
+      return formatSupportedDateTagKeys.has(key) || formatSupportedTimeTagKeys.has(key) || type === "date" || type === "time" || type === "datetime";
     }
 
     function syncTemplateTokenFormatSupportAttribute(tokenElement, definitionOrKey = "") {
@@ -134,7 +134,7 @@
       };
     }
 
-    function getTemplateEditorTagPresentation(rawTag, { storage = false } = {}) {
+    function getTemplateEditorTagPresentation(rawTag, { storage = false, formatValue = "", formatType = "" } = {}) {
       const normalizedTag = normalizeTemplateTag(rawTag);
       const matchedDefinition = findTemplateTagDefinition(normalizedTag);
       const fallbackText = getTemplateEditorTagText(normalizedTag);
@@ -151,6 +151,8 @@
             iconMarkup: fallbackIconMarkup,
             label: fallbackText,
             tag: normalizedTag,
+            formatValue,
+            formatType,
           }),
           fallbackText,
           fallbackIconMarkup,
@@ -226,7 +228,7 @@
       }
 
       const matchedDefinition = findTemplateTagDefinition(normalizedTag);
-      const presentation = getTemplateEditorTagPresentation(normalizedTag, { storage });
+      const presentation = getTemplateEditorTagPresentation(normalizedTag, { storage, formatValue: tokenElement.dataset.templateTagFormat || "", formatType: tokenElement.dataset.templateTagFormatType || "" });
       const label = String(matchedDefinition?.label || presentation.text || "").trim();
       const example = String(matchedDefinition?.example || "").trim();
       const title = presentation.title || [label, example].filter(Boolean).join(" / ");
@@ -316,6 +318,12 @@
         return;
       }
 
+      globalThis.ExamListDocumentHtmlSanitizer?.stripTransientDocumentState(rootElement);
+
+      rootElement.querySelectorAll("[data-template-object-flow-spacer]").forEach((element) => element.remove());
+      rootElement
+        .querySelectorAll("[data-template-object-flow-id]")
+        .forEach((element) => element.removeAttribute("data-template-object-flow-id"));
       rootElement
         .querySelectorAll(
           ".template-editor-image-selection, .template-editor-image-resize-handle, .examlist-object-selection, .examlist-object-resize-handle, .template-editor-table-selection, .template-editor-table-handle, .template-editor-table-move-handle, .template-editor-table-select-handle, [data-candidate-block-grid-resize-handle], [data-candidate-block-grid-move-handle], [data-candidate-block-focus-backdrop], .examlist-candidate-block-focus-backdrop, [data-candidate-block-focus-layer], .examlist-candidate-block-focus-layer",

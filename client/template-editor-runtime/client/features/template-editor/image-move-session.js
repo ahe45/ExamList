@@ -95,11 +95,19 @@
         return;
       }
 
+      const movementY = nextTop - moveSession.lastTop;
       moveSession.lastLeft = nextLeft;
       moveSession.lastTop = nextTop;
       moveSession.didChange = true;
       moveSession.image.style.left = `${nextLeft}px`;
       moveSession.image.style.top = `${nextTop}px`;
+      globalScope.ExamListTemplateEditorObjectFlowReflow?.reflowTemplateEditorObjectRows(moveSession.image, {
+        documentElement,
+        activeTop: nextTop,
+        activeHeight: imageHeight,
+        movementY,
+        strictGeometry: true,
+      });
       updateTemplateEditorImageSelectionOverlay();
     }
 
@@ -211,6 +219,13 @@
 
       selectedImage.style.left = `${nextLeft}px`;
       selectedImage.style.top = `${nextTop}px`;
+      globalScope.ExamListTemplateEditorObjectFlowReflow?.reflowTemplateEditorObjectRows(selectedImage, {
+        documentElement,
+        activeTop: nextTop,
+        activeHeight: imageHeight,
+        movementY: nextTop - Number(startingPosition.top || 0),
+        strictGeometry: true,
+      });
       updateTemplateEditorImageSelectionOverlay();
 
       if (didChange) {

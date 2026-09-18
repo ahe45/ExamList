@@ -1,3 +1,38 @@
+/* Paint the empty caret independently of Chromium's zero-height line painting. */
+.template-editor-surface [data-template-object-caret-host] > .template-object-caret {
+  display: inline-block;
+  height: 1em;
+  width: 1px;
+  vertical-align: top;
+  position: relative;
+  caret-color: transparent;
+}
+
+.template-editor-surface:focus [data-template-object-caret-host][data-template-object-caret-active] > .template-object-caret::after {
+  content: "";
+  background: currentColor;
+  height: 1em;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 1px;
+}
+
+.template-editor-surface [data-template-object-caret-host][data-template-object-caret-active] {
+  height: calc(1em + 1pt) !important;
+  margin-bottom: calc(-1em - 1pt) !important;
+}
+
+.template-editor-surface [data-template-object-caret-host] {
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  line-height: calc(1em + 1pt) !important;
+}
+
 .template-editor-runtime {
   display: grid;
   gap: 12px;

@@ -1,3 +1,4 @@
+import { getGridVisibleRows, gridPageSizeOptions } from "../../app/data-grid-model.js";
 import { formatCount } from "../../app/number-format.js";
 import {
   formatDateTime,
@@ -12,7 +13,7 @@ export const pdfGenerationArtifactGridColumns = Object.freeze([
   Object.freeze({ key: "createdAt", label: "생성일시", filterable: true, sortable: true }),
 ]);
 
-export const pdfGenerationArtifactPageSizeOptions = Object.freeze([10, 30, 50, 100, 500, 1000, 2000, 0]);
+export const pdfGenerationArtifactPageSizeOptions = gridPageSizeOptions;
 
 export function getPdfGenerationArtifactTableState(pdfGenerations = {}) {
   return {
@@ -158,20 +159,5 @@ export function getFilteredPdfGenerationArtifactRows(pdfGenerations = {}) {
 }
 
 export function getPdfGenerationArtifactVisibleRows(pdfGenerations = {}) {
-  const tableState = getPdfGenerationArtifactTableState(pdfGenerations);
-  const rows = getFilteredPdfGenerationArtifactRows(pdfGenerations);
-  const pageSize = Math.max(0, Number(tableState.pageSize) || 0);
-  const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(rows.length / pageSize)) : 1;
-  const currentPage = pageSize > 0 ? Math.min(Math.max(1, Number(tableState.page) || 1), totalPages) : 1;
-  const startIndex = pageSize > 0 ? (currentPage - 1) * pageSize : 0;
-  const visibleRows = pageSize > 0 ? rows.slice(startIndex, startIndex + pageSize) : rows;
-
-  return {
-    currentPage,
-    endRowNumber: rows.length === 0 ? 0 : startIndex + visibleRows.length,
-    rows,
-    startRowNumber: rows.length === 0 ? 0 : startIndex + 1,
-    totalPages,
-    visibleRows,
-  };
+  return getGridVisibleRows(getFilteredPdfGenerationArtifactRows(pdfGenerations), getPdfGenerationArtifactTableState(pdfGenerations));
 }

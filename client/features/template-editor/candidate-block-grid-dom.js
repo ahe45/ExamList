@@ -147,34 +147,22 @@ function createBlankTemplateParagraph() {
   return paragraph;
 }
 
-function isBlankEditableHost(element) {
-  const normalizedHtml = String(element?.innerHTML || "")
-    .replace(/<br\s*\/?>/gi, "")
-    .replace(/&nbsp;/gi, "")
-    .replace(/\s+/g, "")
-    .trim();
-
-  return normalizedHtml === "";
-}
-
 export function ensureCandidateBlockGridOutsideEditableHost(documentElement) {
   if (!(documentElement instanceof HTMLElement) || !getCandidateBlockGridElements(documentElement).length) {
     return null;
   }
 
-  const directEditableHost = Array.from(documentElement.children || []).find((child) =>
-    isCandidateBlockOutsideEditableHost(child, documentElement),
-  );
-
-  if (directEditableHost instanceof HTMLElement) {
-    return directEditableHost;
-  }
-
-  const paragraph = createBlankTemplateParagraph();
   const directGridElements = Array.from(documentElement.children || []).filter((child) =>
     child instanceof HTMLElement && child.matches("[data-candidate-block-grid], .examlist-candidate-block-grid"),
   );
   const lastGridElement = directGridElements[directGridElements.length - 1] || null;
+  const followingEditableHost = lastGridElement?.nextElementSibling;
+
+  if (isCandidateBlockOutsideEditableHost(followingEditableHost, documentElement)) {
+    return followingEditableHost;
+  }
+
+  const paragraph = createBlankTemplateParagraph();
 
   if (lastGridElement?.nextSibling) {
     documentElement.insertBefore(paragraph, lastGridElement.nextSibling);
@@ -183,64 +171,4 @@ export function ensureCandidateBlockGridOutsideEditableHost(documentElement) {
   }
 
   return paragraph;
-}
-
-function placeCaretAtEndOfElement(element) {
-  if (!(element instanceof HTMLElement) || typeof window === "undefined") {
-    return false;
-  }
-
-  const selection = window.getSelection?.();
-
-  if (!selection) {
-    return false;
-  }
-
-  const range = document.createRange();
-
-  range.selectNodeContents(element);
-  range.collapse(false);
-  selection.removeAllRanges();
-  selection.addRange(range);
-  (element.closest?.('[contenteditable="true"]') || element).focus?.({ preventScroll: true });
-  return true;
-}
-
-export function scheduleCandidateBlockGridOutsideCaretPlacement(event, surfaceElement) {
-  const target = event?.target instanceof Element ? event.target : null;
-  const documentElement = surfaceElement?.querySelector?.(".template-doc") || surfaceElement;
-
-  if (!(surfaceElement instanceof HTMLElement) || !(documentElement instanceof HTMLElement) || !target) {
-    return false;
-  }
-
-  if (target.closest?.("[data-candidate-block-grid], .examlist-candidate-block-grid")) {
-    return false;
-  }
-
-  const explicitEditableHost = target instanceof HTMLElement && isCandidateBlockOutsideEditableHost(target, documentElement)
-    ? target
-    : target.closest?.("p, div, h1, h2, h3, blockquote, ul, ol") || null;
-  const shouldPlaceInExistingHost =
-    explicitEditableHost instanceof HTMLElement &&
-    isCandidateBlockOutsideEditableHost(explicitEditableHost, documentElement) &&
-    isBlankEditableHost(explicitEditableHost);
-
-  if (target !== surfaceElement && target !== documentElement && !shouldPlaceInExistingHost) {
-    return false;
-  }
-
-  const editableHost = shouldPlaceInExistingHost
-    ? explicitEditableHost
-    : ensureCandidateBlockGridOutsideEditableHost(documentElement);
-  const placeCaret = () => {
-    if (editableHost instanceof HTMLElement && surfaceElement.contains(editableHost)) {
-      placeCaretAtEndOfElement(editableHost);
-    }
-  };
-
-  placeCaret();
-  window.setTimeout(placeCaret, 0);
-  window.requestAnimationFrame(placeCaret);
-  return editableHost instanceof HTMLElement;
 }

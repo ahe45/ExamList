@@ -58,7 +58,13 @@
       return cells;
     }
 
-    function getTemplateEditorCellOnlyMeasurementScale(measuredSize, configuredSize) {
+    function getTemplateEditorCellOnlyMeasurementScale(measuredSize, configuredSize, table) {
+      const focusBlock = table?.closest?.("[data-candidate-block-instance].is-candidate-block-focus-editor");
+      if (focusBlock) {
+        const style = window.getComputedStyle(focusBlock);
+        const scale = Number.parseFloat(style.getPropertyValue("--examlist-candidate-block-focus-editor-scale") || style.getPropertyValue("--examlist-candidate-block-focus-scale"));
+        if (Number.isFinite(scale) && scale > 0) return scale;
+      }
       const measured = Number(measuredSize) || 0;
       const configured = Number(configuredSize) || 0;
 
@@ -111,6 +117,7 @@
       const measurementScale = getTemplateEditorCellOnlyMeasurementScale(
         measuredTargetColumnHeight,
         hasConfiguredPixelTableHeight ? configuredTableHeight : 0,
+        table,
       );
       const tableHeight = Math.max(
         TEMPLATE_EDITOR_TABLE_MIN_SIZE * targetCells.length,

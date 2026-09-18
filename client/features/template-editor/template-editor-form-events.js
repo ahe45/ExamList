@@ -417,7 +417,9 @@ export function bindTemplateEditorFormEvents({
         pageId,
         preserveSelection: !isTemplateEditorControlTarget(event.relatedTarget),
         render: false,
-        revertOnOverflow: true,
+        // Clicking Save must preserve the draft even when validation fails.
+        // Restoring an older snapshot on blur can discard the table just edited.
+        revertOnOverflow: false,
       });
       restoreTemplateEditorObjectSelectionSnapshot(objectSelectionSnapshot, documentSurface);
     }

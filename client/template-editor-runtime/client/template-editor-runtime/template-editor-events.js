@@ -28,6 +28,7 @@
     handleTemplateEditorTableObjectPointerDown,
     handleTemplateEditorTablePointerDown,
     handleTemplatePageSettingChange,
+    insertTemplateHtml,
     insertTemplateImage,
     ownerDocument,
     ownerWindow,
@@ -60,6 +61,7 @@
 
       return Boolean(
         event?.isComposing ||
+          state.templateEditor.isComposing ||
           inputType === "insertCompositionText" ||
           inputType === "deleteCompositionText"
       );
@@ -447,19 +449,54 @@
       undoTemplateEditorHistory();
     }
 
-    function handleCompositionEnd(event) {
-      if (event.target !== getTemplateEditorSurface()) {
-        return;
-      }
+    let composingSurface = null;
+    let compositionSyncTimer = 0;
 
-      ownerWindow.setTimeout(() => {
+    function cancelCompositionSync() {
+      ownerWindow.clearTimeout(compositionSyncTimer);
+      compositionSyncTimer = 0;
+    }
+
+    function handleCompositionStart(event) {
+      if (event.target !== getTemplateEditorSurface()) return;
+      cancelCompositionSync();
+      composingSurface = event.target;
+      state.templateEditor.isComposing = true;
+      const anchor = ownerWindow.getSelection?.()?.anchorNode;
+      const anchorElement = anchor?.nodeType === 1 ? anchor : anchor?.parentElement;
+      const caretHost = anchorElement?.closest?.("[data-template-object-caret-host]");
+      // IME owns the caret as soon as composition starts, before normal input sync.
+      caretHost?.removeAttribute("data-template-object-caret-host");
+      caretHost?.removeAttribute("data-template-object-caret-active");
+    }
+
+    function handleCompositionEnd(event) {
+      if (event.target !== composingSurface && event.target !== getTemplateEditorSurface()) return;
+      const surface = event.target;
+      composingSurface = null;
+      state.templateEditor.isComposing = false;
+      cancelCompositionSync();
+      compositionSyncTimer = ownerWindow.setTimeout(() => {
+        compositionSyncTimer = 0;
+        // A Korean IME may already be composing the next syllable when the
+        // previous composition's deferred callback runs. Never replace its DOM.
+        if (state.templateEditor.isComposing || !surface.isConnected || surface !== getTemplateEditorSurface()) return;
         syncTemplateEditorContent(
-          getTemplateEditorSurface()?.dataset.templateEditorAllowOverflowSync === "true" ? { allowOverflow: true } : undefined,
+          surface.dataset.templateEditorAllowOverflowSync === "true" ? { allowOverflow: true } : undefined,
         );
       }, 0);
     }
 
     function handleSelectionChange() {
+      const caretSelection = ownerWindow.getSelection?.();
+      const caretAnchor = caretSelection?.anchorNode;
+      const caretElement = caretAnchor?.nodeType === 1 ? caretAnchor : caretAnchor?.parentElement;
+      const caretHost = !state.templateEditor.isComposing && caretSelection?.isCollapsed
+        ? caretElement?.closest?.("[data-template-object-caret-host]") : null;
+      shell.surfaceElement?.querySelectorAll?.("[data-template-object-caret-host], [data-template-object-caret-active]").forEach((host) => {
+        host.toggleAttribute("data-template-object-caret-active", host === caretHost);
+      });
+      if (state.templateEditor.isComposing) return;
       const activeElement = isElement(ownerDocument.activeElement) ? ownerDocument.activeElement : null;
       const selection = ownerWindow.getSelection?.();
 
@@ -483,17 +520,111 @@
         delete state.templateEditor.suppressToolbarSelectionChange;
       }
 
+      globalThis.ExamListTemplateEditorTextEditing?.ensureTemplateTokenCaret(templateEditorSurface);
       saveTemplateEditorSelection();
       updateTemplateEditorActiveCell();
       updateTemplateEditorFormattingControls();
       updateTemplateTableControls();
     }
 
+    function getClipboardSelectedTable(event) {
+      const surface = getTemplateEditorSurface();
+      const table = state.templateEditor.selectedTableElement;
+      const target = isElement(event.target) ? event.target : null;
+      const overlay = target?.closest(".template-editor-table-selection");
+      const isSelectedTableHandle = overlay?.__templateEditorTableElement === table && Boolean(table);
+      if ((target?.closest("input, textarea, select, button") && !isSelectedTableHandle) ||
+          !(table instanceof ownerWindow.HTMLTableElement) || !surface?.contains(table)) {
+        return null;
+      }
+      return table;
+    }
+
+    function prepareClipboardTable(table) {
+      for (const element of [table, ...table.querySelectorAll("*")]) {
+        element.removeAttribute("id");
+        element.removeAttribute("data-template-object-flow-id");
+        element.classList.remove("is-selected-table-object", "is-moving-table-object", "is-active-cell", "is-selected-cell");
+      }
+      // Placement belongs to the destination. Keep authored table/cell geometry.
+      for (const property of ["position", "left", "top", "right", "bottom", "z-index"]) {
+        table.style.removeProperty(property);
+      }
+      return table;
+    }
+
+    function handleCopy(event) {
+      const selectedTable = getClipboardSelectedTable(event);
+      if (!selectedTable || !event.clipboardData) return;
+      // With an object selected there may be no DOM text range. Chromium can
+      // dispatch copy at body/the previous selection instead of the surface.
+      // Only consume that document-level event while this editor owns focus.
+      const activeElement = ownerDocument.activeElement;
+      if (!shell.surfaceElement.contains(activeElement) &&
+          !getTemplateEditorSurface()?.contains(activeElement)) return;
+      const table = prepareClipboardTable(selectedTable.cloneNode(true));
+      const originals = [selectedTable, ...selectedTable.querySelectorAll("td, th")];
+      const copies = [table, ...table.querySelectorAll("td, th")];
+      originals.forEach((element, index) => {
+        const style = ownerWindow.getComputedStyle(element);
+        for (const property of ["font-family", "font-size", "font-weight", "font-style", "color", "line-height", "text-align"]) {
+          copies[index].style.setProperty(property, style.getPropertyValue(property));
+        }
+      });
+      table.setAttribute("data-template-table-clipboard", "true");
+      event.clipboardData.setData("text/html", globalThis.ExamListDocumentHtmlSanitizer.sanitizeHtml(table.outerHTML, ownerDocument));
+      event.clipboardData.setData("text/plain", Array.from(selectedTable.rows)
+        .map(row => Array.from(row.cells).map(cell => cell.innerText || cell.textContent || "").join("\t")).join("\n"));
+      event.preventDefault();
+      getTemplateEditorSurface().dispatchEvent(new ownerWindow.CustomEvent("template-editor-table-copied", { bubbles: true }));
+    }
+
     function handlePaste(event) {
-      if (event.target === getTemplateEditorSurface()) {
-        ownerWindow.setTimeout(() => {
-          syncTemplateEditorContent();
-        }, 0);
+      const surface = getTemplateEditorSurface();
+      const target = isElement(event.target) ? event.target : null;
+      const selectedTable = getClipboardSelectedTable(event);
+      if (!surface || target?.closest("input, textarea, select, button") ||
+          (!surface.contains(target) && !selectedTable)) return;
+      if (!surface.contains(target) && !shell.surfaceElement.contains(ownerDocument.activeElement)) return;
+      const clipboardHtml = event.clipboardData?.getData("text/html") || "";
+      // Only intercept whole tables copied by this editor; ordinary text paste
+      // continues to use the browser's contenteditable behavior.
+      if (clipboardHtml.includes("data-template-table-clipboard")) {
+        const template = ownerDocument.createElement("template");
+        template.innerHTML = globalThis.ExamListDocumentHtmlSanitizer.sanitizeHtml(clipboardHtml, ownerDocument);
+        const table = template.content.querySelector('table[data-template-table-clipboard="true"]');
+        if (table) {
+          event.preventDefault();
+          prepareClipboardTable(table).removeAttribute("data-template-table-clipboard");
+          if (selectedTable) {
+            const range = ownerDocument.createRange();
+            range.setStartAfter(selectedTable);
+            range.collapse(true);
+            const selection = ownerWindow.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            state.templateEditor.savedRange = range.cloneRange();
+            state.templateEditor.savedSelectionSnapshot = null;
+          }
+          const selection = ownerWindow.getSelection();
+          const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+          const root = surface.querySelector(":scope > .template-doc") || surface;
+          const blank = root.children.length === 1 ? root.firstElementChild : null;
+          if (range?.collapsed && (range.startContainer === root || range.startContainer === surface) &&
+              blank?.matches("p") && !blank.textContent.trim() && !blank.querySelector(":not(br)")) {
+            range.selectNodeContents(blank);
+            range.collapse(true);
+            state.templateEditor.savedRange = range.cloneRange();
+            state.templateEditor.savedSelectionSnapshot = null;
+          }
+          clearTemplateEditorTableObjectSelection();
+          clearTemplateEditorTableSelection();
+          insertTemplateHtml(table.outerHTML, { preserveTablePresentation: true });
+          return;
+        }
+      }
+      if (event.target === surface) {
+        ownerWindow.setTimeout(() => syncTemplateEditorContent(), 0);
       }
     }
 
@@ -557,7 +688,14 @@
       addListener(getTemplateEditorModal(), "change", handleChange);
       addListener(getTemplateEditorModal(), "beforeinput", handleBeforeInput);
       addListener(getTemplateEditorModal(), "input", handleInput);
-      addListener(getTemplateEditorModal(), "compositionend", handleCompositionEnd);
+      addListener(getTemplateEditorModal(), "compositionstart", handleCompositionStart, true);
+      addListener(getTemplateEditorModal(), "compositionend", handleCompositionEnd, true);
+      disposers.push(() => {
+        cancelCompositionSync();
+        state.templateEditor.isComposing = false;
+        composingSurface = null;
+      });
+      addListener(ownerDocument, "copy", handleCopy, true);
       addListener(getTemplateEditorModal(), "paste", handlePaste);
       addListener(getTemplateEditorModal(), "dragstart", handleDragStart);
       addListener(getTemplateEditorModal(), "pointermove", updateTemplateEditorImageHoverState);

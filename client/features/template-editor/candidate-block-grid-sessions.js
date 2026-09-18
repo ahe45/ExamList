@@ -8,7 +8,6 @@ import {
 } from "./candidate-block-grid-config.js";
 import { parseCandidateBlockPixelValue } from "./candidate-block-grid-pixels.js";
 import { ensurePageCandidateBlockGridConfig } from "./candidate-block-grid-renderer.js";
-import { removeCandidateBlockGridFlowSpacers } from "./candidate-block-grid-dom.js";
 import {
   getCandidateBlockGridTableMinimumSize,
   normalizeCandidateBlockTables,
@@ -23,6 +22,25 @@ import {
 let candidateBlockGridResizeSession = null;
 let candidateBlockGridMoveSession = null;
 const candidateBlockGridTableMinimumTolerance = 25;
+
+function syncCandidateBlockGridObjectFlow(gridElement, geometry = {}) {
+  const documentElement = gridElement?.closest?.(".template-doc") || null;
+  const reflowObjectRows = window.ExamListTemplateEditorObjectFlowReflow?.reflowTemplateEditorObjectRows;
+
+  if (!(documentElement instanceof HTMLElement) || typeof reflowObjectRows !== "function") {
+    return null;
+  }
+
+  return reflowObjectRows(gridElement, {
+    activeHeight: Number.isFinite(Number(geometry.height)) ? Number(geometry.height) : gridElement.offsetHeight,
+    activeTop: Number.isFinite(Number(geometry.top)) ? Number(geometry.top) : gridElement.offsetTop,
+    documentElement,
+    minimumHeight: candidateBlockGridMinimumHeight,
+    movementY: Number.isFinite(Number(geometry.movementY)) ? Number(geometry.movementY) : 0,
+    reorderByPosition: Math.abs(Number(geometry.movementY) || 0) > 0.5,
+    strictGeometry: true,
+  });
+}
 
 export function clearCandidateBlockGridMoveSession() {
   if (!candidateBlockGridMoveSession) {
@@ -41,6 +59,13 @@ export function resetCandidateBlockGridInteractionSessions() {
 
 export function writeCandidateBlockGridSizeToConfig(selectedPage, gridElement) {
   if (!selectedPage || !(gridElement instanceof HTMLElement)) {
+    return;
+  }
+
+  // Stored HTML contains only an empty grid placeholder. During mounting and
+  // history restoration it can be measured before its blocks are hydrated;
+  // that temporary 20px box must not replace the authored size and position.
+  if (!gridElement.querySelector("[data-candidate-block-instance]")) {
     return;
   }
 
@@ -129,8 +154,6 @@ function prepareCandidateBlockGridMove(gridElement) {
       )
     : clampCandidateBlockGridCoordinate((gridRect.top - documentMetrics.top) / safeScaleY, documentMetrics.height - height);
 
-  removeCandidateBlockGridFlowSpacers(documentElement);
-
   gridElement.style.position = "absolute";
   gridElement.style.left = `${left}px`;
   gridElement.style.top = `${top}px`;
@@ -139,6 +162,7 @@ function prepareCandidateBlockGridMove(gridElement) {
   gridElement.style.margin = "0";
   gridElement.style.maxWidth = "none";
   gridElement.style.zIndex = "0";
+  syncCandidateBlockGridObjectFlow(gridElement, { height, top });
 
   return {
     height,
@@ -314,6 +338,12 @@ export function handleCandidateBlockGridResizeMove(event) {
     }
   }
 
+  syncCandidateBlockGridObjectFlow(session.gridElement, {
+    height: parseCandidateBlockPixelValue(session.gridElement.style.height, nextHeight),
+    movementY: nextTop - session.startTop,
+    top: nextTop,
+  });
+
   normalizeCandidateBlockTables(session.gridElement);
   writeCandidateBlockGridSizeToConfig(session.selectedPage, session.gridElement);
   event.preventDefault();
@@ -406,6 +436,11 @@ export function nudgeCandidateBlockGridPosition(gridElement, deltaX = 0, deltaY 
 
   gridElement.style.left = `${nextLeft}px`;
   gridElement.style.top = `${nextTop}px`;
+  syncCandidateBlockGridObjectFlow(gridElement, {
+    height: metrics.height,
+    movementY: nextTop - metrics.top,
+    top: nextTop,
+  });
   writeCandidateBlockGridSizeToConfig(selectedPage, gridElement);
   selectGridElement?.(gridElement);
 
@@ -437,6 +472,11 @@ export function handleCandidateBlockGridMove(event) {
   if (nextLeft !== session.lastLeft || nextTop !== session.lastTop) {
     session.gridElement.style.left = `${nextLeft}px`;
     session.gridElement.style.top = `${nextTop}px`;
+    syncCandidateBlockGridObjectFlow(session.gridElement, {
+      height: session.height,
+      movementY: nextTop - session.lastTop,
+      top: nextTop,
+    });
     session.lastLeft = nextLeft;
     session.lastTop = nextTop;
     writeCandidateBlockGridSizeToConfig(session.selectedPage, session.gridElement);

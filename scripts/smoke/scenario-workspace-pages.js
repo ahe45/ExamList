@@ -10,7 +10,7 @@ async function runWorkspacePagesScenario(context) {
     const workspacePages = [
       { pathname: `/schools/${encodedWorkspaceSchoolCode}/candidates`, navLabel: "수험생 데이터", text: "수험생 데이터" },
       { pathname: `/schools/${encodedWorkspaceSchoolCode}/pdf-generations`, navLabel: "PDF 생성", text: "PDF 생성" },
-      { pathname: `/schools/${encodedWorkspaceSchoolCode}/pdf-history`, navLabel: "PDF 작업 로그", text: "PDF 작업 로그" },
+      { pathname: `/schools/${encodedWorkspaceSchoolCode}/pdf-history`, navLabel: "작업 로그", text: "작업 로그" },
       { pathname: `/schools/${encodedWorkspaceSchoolCode}/data-deletion`, navLabel: "데이터 삭제", text: "데이터 삭제" },
     ];
 
@@ -22,7 +22,7 @@ async function runWorkspacePagesScenario(context) {
       await waitForCondition(
         client,
         `document.querySelector('.workspace-nav-item.active')?.textContent.trim() === ${JSON.stringify(page.navLabel)}`,
-        `${page.text} 사이드바 내비게이션 활성 표시`,
+        `${page.text} 헤더 내비게이션 활성 표시`,
       );
       await waitForCondition(
         client,
@@ -30,15 +30,15 @@ async function runWorkspacePagesScenario(context) {
           (() => {
             const pageShell = document.querySelector('.app-shell.workspace-mode .page-shell');
             const appShell = document.querySelector('.app-shell.workspace-mode');
-            const sidebar = document.querySelector('#workspaceSidebar');
+            const sidebar = document.querySelector('#workspaceNav');
             const pageShellRect = pageShell?.getBoundingClientRect();
             const appShellRect = appShell?.getBoundingClientRect();
             const sidebarRect = sidebar?.getBoundingClientRect();
             const appShellStyle = appShell ? getComputedStyle(appShell) : null;
             const appShellPaddingRight = Number.parseFloat(appShellStyle?.paddingRight || '0') || 0;
-            const appShellColumnGap = Number.parseFloat(appShellStyle?.columnGap || appShellStyle?.gap || '0') || 0;
+            const appShellColumnGap = Number.parseFloat(appShellStyle?.paddingLeft || '0') || 0;
             const expectedPageShellWidth = appShellRect && sidebarRect
-              ? appShellRect.right - appShellPaddingRight - sidebarRect.right - appShellColumnGap
+              ? appShellRect.width - appShellPaddingRight - appShellColumnGap
               : 0;
 
             return Boolean(
@@ -46,7 +46,7 @@ async function runWorkspacePagesScenario(context) {
                 pageShellRect &&
                 sidebarRect &&
                 getComputedStyle(pageShell).maxWidth === 'none' &&
-                pageShellRect.left > sidebarRect.right &&
+                sidebar.closest("header") && sidebarRect.bottom <= pageShellRect.top &&
                 expectedPageShellWidth > 0 &&
                 pageShellRect.width >= expectedPageShellWidth - 4
             );
@@ -69,15 +69,15 @@ async function runWorkspacePagesScenario(context) {
               ].filter(Boolean).join('|');
               const pageShell = document.querySelector('.app-shell.workspace-mode .page-shell');
               const appShell = document.querySelector('.app-shell.workspace-mode');
-              const sidebar = document.querySelector('#workspaceSidebar');
+              const sidebar = document.querySelector('#workspaceNav');
               const pageShellRect = pageShell?.getBoundingClientRect();
               const appShellRect = appShell?.getBoundingClientRect();
               const sidebarRect = sidebar?.getBoundingClientRect();
               const appShellStyle = appShell ? getComputedStyle(appShell) : null;
               const appShellPaddingRight = Number.parseFloat(appShellStyle?.paddingRight || '0') || 0;
-              const appShellColumnGap = Number.parseFloat(appShellStyle?.columnGap || appShellStyle?.gap || '0') || 0;
+              const appShellColumnGap = Number.parseFloat(appShellStyle?.paddingLeft || '0') || 0;
               const expectedPageShellWidth = appShellRect && sidebarRect
-                ? appShellRect.right - appShellPaddingRight - sidebarRect.right - appShellColumnGap
+                ? appShellRect.width - appShellPaddingRight - appShellColumnGap
                 : 0;
               const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
               const pageShellFullWidth = Boolean(
@@ -87,7 +87,7 @@ async function runWorkspacePagesScenario(context) {
                   sidebarRect &&
                   pageShellRect &&
                   expectedPageShellWidth > 0 &&
-                  pageShellRect.left > sidebarRect.right &&
+                  sidebar.closest("header") && sidebarRect.bottom <= pageShellRect.top &&
                   pageShellRect.width >= expectedPageShellWidth - 4
               );
               const clippedHeaderLabels = [...document.querySelectorAll('.candidate-grid-table thead .table-header-label')]

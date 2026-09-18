@@ -10,6 +10,7 @@
     "dev": "node server.js",
     "worker:pdf": "node scripts/pdf-worker.js",
     "smoke:browser": "node scripts/smoke-browser.js",
+    "smoke:editor": "node scripts/smoke-editor-port.js",
     "smoke:bullmq": "node scripts/smoke-bullmq.js",
     "smoke:ui": "node scripts/smoke-ui.js",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test"

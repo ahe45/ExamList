@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS pdf_templates (
   deleted_at DATETIME NULL COMMENT '삭제 일시',
   PRIMARY KEY (id),
   KEY idx_pdf_templates_school_active (school_id, is_active, deleted_at),
+  KEY idx_pdf_templates_school_deleted_created (school_id, deleted_at, created_at),
   KEY idx_pdf_templates_active (is_active, deleted_at),
   KEY idx_pdf_templates_updated_at (updated_at),
   CONSTRAINT fk_pdf_templates_school
@@ -182,6 +183,7 @@ CREATE TABLE IF NOT EXISTS pdf_generation_histories (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '이력 수정 일시',
   PRIMARY KEY (id),
   KEY idx_pdf_generation_histories_school_created_at (school_id, created_at),
+  KEY idx_pdf_generation_histories_school_status_created (school_id, status, created_at),
   KEY idx_pdf_generation_histories_created_at (created_at),
   KEY idx_pdf_generation_histories_template (template_id, created_at),
   KEY idx_pdf_generation_histories_status (status, created_at),

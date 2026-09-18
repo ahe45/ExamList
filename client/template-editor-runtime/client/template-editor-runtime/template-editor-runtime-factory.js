@@ -247,6 +247,7 @@
       }
 
       function syncTemplateEditorContent(optionsForSync = {}) {
+        if (state.templateEditor.isComposing) return;
         const modalEditorController = getCandidateBlockModalEditorController();
         const modalSurfaceElement = modalEditorController?.getActiveSurface?.() || null;
         const syncOptions = modalSurfaceElement instanceof HTMLElement
@@ -327,6 +328,7 @@
           setFallbackStatus(...args);
         },
         syncTemplateEditorContent,
+        state,
         undoTemplateEditorHistory,
         updateTemplateEditorActiveCell,
       });
@@ -545,6 +547,8 @@
         clearTemplateEditorTableSelection,
         focusTemplateEditorCell,
         getTemplateEditorCellSplitConfig,
+        getTemplateEditorActiveTableSelection,
+        getTemplateEditorSurface,
         handleTemplateEditorInsert,
         handleTemplateEditorTokenDeletion,
         handleTemplateTableAction,
@@ -622,6 +626,7 @@
         handleTemplateEditorTableObjectPointerDown,
         handleTemplateEditorTablePointerDown,
         handleTemplatePageSettingChange,
+        insertTemplateHtml,
         insertTemplateImage,
         ownerDocument,
         ownerWindow,
@@ -647,12 +652,15 @@
       });
       api = createTemplateEditorRuntimeApiAndInitialize({
         apiHandlers: {
+          clearTemplateEditorActiveCell,
+          clearTemplateEditorImageHoverState,
           clearTemplateEditorImageSelection,
           clearTemplateEditorTableHoverState,
           clearTemplateEditorTableObjectHoverState,
           clearTemplateEditorTableObjectSelection,
           clearTemplateEditorTableSelection,
           handleTemplateEditorImageResizeStart,
+          ownerWindow,
           releaseTemplateEditorImageMoveSession,
           releaseTemplateEditorImageResizeSession,
           releaseTemplateEditorTableObjectMoveSession,
@@ -660,7 +668,9 @@
           releaseTemplateEditorTableResizeSession,
           releaseTemplateEditorTableSelectionSession,
           updateTemplateEditorImageSelectionOverlay,
+          updateTemplateEditorFormattingControls,
           updateTemplateEditorTableObjectOverlay,
+          updateTemplateTableControls,
         },
         commandController,
         createTemplateEditorRuntimePublicApi,

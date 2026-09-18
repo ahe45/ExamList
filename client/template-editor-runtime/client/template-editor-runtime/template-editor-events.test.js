@@ -41,6 +41,7 @@ function createRuntimeEventHarness({
   const toolbarHost = createFakeEventTarget({ contains: toolbarContains });
   const surface = {
     dataset: {},
+    isConnected: true,
     matches: () => false,
     contains: surfaceContains,
   };
@@ -177,6 +178,7 @@ function createRuntimeEventHarness({
     handleBeforeInput: modal.getListener("beforeinput"),
     handleChange: modal.getListener("change"),
     handleCompositionEnd: modal.getListener("compositionend"),
+    handleCompositionStart: modal.getListener("compositionstart"),
     handleInput: modal.getListener("input"),
     handlePointerDown: modal.getListener("pointerdown"),
     handlePointerDownCapture: modal.getListeners("pointerdown")[0],
@@ -191,6 +193,7 @@ function createRuntimeEventHarness({
     surface,
     syncCalls,
     timeoutCalls,
+    unbind: () => controller.unbindEvents(),
   };
 }
 
@@ -218,6 +221,39 @@ test("template editor runtime syncs after IME composition is committed", () => {
   handleCompositionEnd({ target: surface });
 
   assert.equal(syncCalls.length, 1);
+});
+
+test("a new IME syllable cancels the previous syllable's queued synchronization", () => {
+  const harness = createRuntimeEventHarness({ deferTimeouts: true });
+  const event = { target: harness.surface };
+  harness.handleCompositionStart(event);
+  harness.handleCompositionEnd(event);
+  harness.handleCompositionStart(event);
+  harness.handleInput({ target: harness.surface, inputType: "insertText", isComposing: false });
+  harness.runPendingTimers();
+  assert.equal(harness.syncCalls.length, 0);
+  assert.equal(harness.state.templateEditor.isComposing, true);
+  harness.handleCompositionEnd(event);
+  harness.runPendingTimers();
+  assert.equal(harness.syncCalls.length, 1);
+  assert.equal(harness.state.templateEditor.isComposing, false);
+});
+
+test("IME callbacks do not synchronize a detached or destroyed editor", () => {
+  const harness = createRuntimeEventHarness({ deferTimeouts: true });
+  const event = { target: harness.surface };
+  harness.handleCompositionStart(event);
+  harness.handleCompositionEnd(event);
+  harness.surface.isConnected = false;
+  harness.runPendingTimers();
+  assert.equal(harness.syncCalls.length, 0);
+  harness.surface.isConnected = true;
+  harness.handleCompositionStart(event);
+  harness.handleCompositionEnd(event);
+  harness.unbind();
+  harness.runPendingTimers();
+  assert.equal(harness.syncCalls.length, 0);
+  assert.equal(harness.state.templateEditor.isComposing, false);
 });
 
 test("template editor runtime debounces native color input while dragging", () => {

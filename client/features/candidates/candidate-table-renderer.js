@@ -1,3 +1,4 @@
+import { renderGridTable } from "../../app/data-grid-table.js";
 import { canUseAccess, hasAccess } from "../../app/access.js";
 import { candidateGridColumns } from "./candidate-table-model.js";
 import { renderCandidateRows } from "./candidate-table-body-renderer.js";
@@ -26,17 +27,13 @@ export function renderCandidateTable({ access, candidates }) {
           ? `<p class="helper-text">수험생 데이터를 불러오는 중입니다.</p>`
           : `
             <div class="table-wrap candidate-table-wrap" data-candidate-table-scroll>
-              <table class="data-table candidate-grid-table">
-                <thead>
-                  <tr>
-                    <th class="row-number-col">순번</th>
-                    ${candidateGridColumns.map((column) => renderTableHeaderCell(column, candidates)).join("")}
-                  </tr>
-                </thead>
-                <tbody>
-                  ${renderCandidateRows(candidates, canManageCandidates)}
-                </tbody>
-              </table>
+              ${renderGridTable({
+      className: "data-table candidate-grid-table",
+      headerHtml: `<th class="row-number-col">순번</th>
+                    ${candidateGridColumns.map((column) => renderTableHeaderCell(column, candidates)).join("")}`,
+      rowsHtml: `${renderCandidateRows(candidates, canManageCandidates)}`,
+      bodyClassName: ``,
+    })}
             </div>
             ${renderCandidatePagination(candidates)}
           `

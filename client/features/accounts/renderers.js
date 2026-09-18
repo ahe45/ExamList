@@ -1,3 +1,4 @@
+import { renderGridTable, renderGridStatusRow } from "../../app/data-grid-table.js";
 import { hasAccess } from "../../app/access.js";
 import { escapeHtml } from "../../app/html-utils.js";
 import { formatCount } from "../../app/number-format.js";
@@ -52,11 +53,7 @@ function renderRoleOptions(selectedRole = "admin") {
 
 function renderAccountRows(accounts = []) {
   if (!accounts.length) {
-    return `
-      <tr>
-        <td colspan="6" class="empty-cell">등록된 계정이 없습니다.</td>
-      </tr>
-    `;
+    return renderGridStatusRow(6, "등록된 계정이 없습니다.", "empty-cell");
   }
 
   return accounts
@@ -256,21 +253,17 @@ export function renderAccountManagementView({ access, accounts }) {
         </div>
         ${accounts.errorMessage ? `<p class="error-banner">${escapeHtml(accounts.errorMessage)}</p>` : ""}
         <div class="table-wrap">
-          <table class="result-grid account-management-grid account-management-table">
-            <thead>
-              <tr>
-                <th class="table-column-id"><div class="table-header-static">아이디</div></th>
+          ${renderGridTable({
+      className: "result-grid account-management-grid account-management-table",
+      headerHtml: `<th class="table-column-id"><div class="table-header-static">아이디</div></th>
                 <th class="table-column-name"><div class="table-header-static">이름</div></th>
                 <th class="table-column-role"><div class="table-header-static">권한</div></th>
                 <th class="table-column-recentAccess"><div class="table-header-static">마지막 로그인</div></th>
                 <th class="table-action-column"><div class="table-header-static">관리</div></th>
-                <th class="table-action-column"><div class="table-header-static">삭제</div></th>
-              </tr>
-            </thead>
-            <tbody>
-              ${accounts.loading ? '<tr><td colspan="6" class="empty-cell">계정 목록을 불러오는 중입니다.</td></tr>' : renderAccountRows(accounts.items || [])}
-            </tbody>
-          </table>
+                <th class="table-action-column"><div class="table-header-static">삭제</div></th>`,
+      rowsHtml: accounts.loading ? renderGridStatusRow(6, "계정 목록을 불러오는 중입니다.", "empty-cell") : renderAccountRows(accounts.items || []),
+      bodyClassName: ``,
+    })}
         </div>
       </article>
       ${renderAccountModal(accounts)}

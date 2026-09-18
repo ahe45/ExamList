@@ -82,6 +82,11 @@ async function ensurePdfGenerationHistoryColumns(connection, { defaultSchoolId, 
     tableName: "pdf_generation_histories",
   });
   await ensureIndex(connection, {
+    definition: "KEY idx_pdf_generation_histories_school_status_created (school_id, status, created_at)",
+    indexName: "idx_pdf_generation_histories_school_status_created",
+    tableName: "pdf_generation_histories",
+  });
+  await ensureIndex(connection, {
     definition: "KEY idx_pdf_generation_histories_job (job_id)",
     indexName: "idx_pdf_generation_histories_job",
     tableName: "pdf_generation_histories",

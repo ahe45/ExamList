@@ -266,6 +266,37 @@
     return cloneTemplateEditorInsertionRange(selectionRange, templateEditorSurface);
   }
 
+  function ensureInsertedTableCaretHost(tableElement, templateEditorSurface) {
+    if (!(tableElement instanceof HTMLTableElement) || !templateEditorSurface?.contains?.(tableElement)) {
+      return null;
+    }
+
+    const documentElement = tableElement.closest(".template-doc") || templateEditorSurface;
+
+    if (tableElement.parentElement !== documentElement || tableElement.closest("[data-candidate-block-grid], [data-candidate-block-instance]")) {
+      return null;
+    }
+
+    const nextElement = tableElement.nextElementSibling;
+
+    if (
+      nextElement instanceof HTMLElement &&
+      /^(P|DIV)$/i.test(String(nextElement.tagName || "")) &&
+      nextElement.getAttribute("contenteditable") !== "false"
+    ) {
+      if (!nextElement.childNodes.length) {
+        nextElement.append(document.createElement("br"));
+      }
+      return nextElement;
+    }
+
+    const paragraph = document.createElement("p");
+
+    paragraph.append(document.createElement("br"));
+    tableElement.after(paragraph);
+    return paragraph;
+  }
+
   function createTemplateEditorInsertionController({
     buildTemplateTokenHtml,
     escapeAttribute,
@@ -276,7 +307,23 @@
     state,
     syncTemplateEditorContent,
   }) {
-    function insertTemplateHtml(html) {
+    function removeEmptyInlineInsertionPlaceholder(range, surface) {
+      if (!range?.collapsed) return;
+      const start = range.startContainer.nodeType === Node.ELEMENT_NODE
+        ? range.startContainer : range.startContainer.parentElement;
+      const host = start?.closest?.("p, div, td, th, li");
+      if (!host || !surface.contains(host)) return;
+      if (String(host.textContent || "").replace(/[\u00a0\u200b\ufeff]/g, " ").trim()) return;
+      const descendants = Array.from(host.querySelectorAll("*"));
+      if (descendants.some(element => !element.matches("br, span, b, strong, i, em, u, s, strike, font") ||
+        element.matches("[contenteditable='false'], [data-template-tag-value], .template-generated-object"))) return;
+      const breaks = host.querySelectorAll("br");
+      // One BR in an otherwise empty host is the browser's caret placeholder.
+      // Multiple BRs represent intentional spacing and must remain intact.
+      if (breaks.length === 1) breaks[0].remove();
+    }
+
+    function insertTemplateHtml(html, { preserveTablePresentation = false } = {}) {
       const templateEditorSurface = getTemplateEditorSurface();
 
       if (!templateEditorSurface) {
@@ -307,6 +354,9 @@
       const insertionCell = getTemplateEditorInsertionCell(insertionRange, templateEditorSurface);
       const insertionCandidateBlock = getTemplateEditorInsertionCandidateBlock(insertionRange, templateEditorSurface);
       const hasInsertedTable = Boolean(fragment.querySelector?.("table"));
+      const insertionDocumentElement = templateEditorSurface.querySelector?.(".template-doc") || templateEditorSurface;
+      const flowTableCountBeforeInsertion = Array.from(insertionDocumentElement.children || [])
+        .filter((element) => element instanceof HTMLTableElement).length;
       const shouldReplaceBlankCandidateBlockImageHost = Boolean(
         !insertionCell &&
           insertionCandidateBlock &&
@@ -320,7 +370,15 @@
           insertionCandidateBlock,
           {
             insertionRange,
-            setStatus: setTemplateEditorStatus,
+            preservePresentation: preserveTablePresentation,
+            setStatus: (message, type) => {
+              setTemplateEditorStatus(message, type);
+              if (preserveTablePresentation) {
+                templateEditorSurface.dispatchEvent(new CustomEvent("template-editor-paste-error", {
+                  bubbles: true, detail: { message },
+                }));
+              }
+            },
           },
         )
       ) {
@@ -335,11 +393,18 @@
       if (!insertionCell) {
         fitTemplateEditorImagesToCandidateBlock(fragment, insertionCandidateBlock);
       }
-      applyTemplateEditorInsertedTokenContextStyle(fragment, insertionRange, insertionCell, templateEditorSurface);
+      if (!preserveTablePresentation) {
+        applyTemplateEditorInsertedTokenContextStyle(fragment, insertionRange, insertionCell, templateEditorSurface);
+      }
       const tableGeometrySnapshot = createTemplateEditorInsertionTableGeometrySnapshot(fragment, insertionCell);
+      const insertedFlowTable = !insertionCell && !insertionCandidateBlock
+        ? Array.from(fragment.childNodes || []).find((node) => node instanceof HTMLTableElement) || null
+        : null;
       const lastInsertedNode = fragment.lastChild;
+      const blankInsertionRoot = insertionCandidateBlock ||
+        (!insertionCell && hasInsertedTable ? insertionDocumentElement : null);
       const blankInsertionBlock = hasInsertedTable || shouldReplaceBlankCandidateBlockImageHost
-        ? getTemplateEditorBlankInsertionBlock(insertionRange, insertionCandidateBlock)
+        ? getTemplateEditorBlankInsertionBlock(insertionRange, blankInsertionRoot)
         : null;
 
       if (blankInsertionBlock) {
@@ -350,27 +415,64 @@
         }
       }
 
+      if (fragment.childNodes.length === 1 && fragment.firstElementChild?.matches(".template-token[data-template-tag-value]")) {
+        removeEmptyInlineInsertionPlaceholder(insertionRange, templateEditorSurface);
+      }
       insertionRange.deleteContents();
       insertionRange.insertNode(fragment);
       restoreTemplateEditorInsertionTableGeometrySnapshot(tableGeometrySnapshot);
+      const connectedInsertedFlowTable = insertedFlowTable ||
+        (lastInsertedNode instanceof HTMLTableElement ? lastInsertedNode : null);
+      const insertedObjectCaretHost = ensureInsertedTableCaretHost(connectedInsertedFlowTable, templateEditorSurface);
+      const insertedTableDocument = connectedInsertedFlowTable?.closest?.(".template-doc") || null;
+      const insertedFlowTableIndex = insertedTableDocument && connectedInsertedFlowTable
+        ? Array.from(insertedTableDocument.children).filter((element) => element instanceof HTMLTableElement)
+          .indexOf(connectedInsertedFlowTable)
+        : -1;
 
       if (selection) {
         const nextRange = document.createRange();
 
-        if (lastInsertedNode) {
+        if (insertedObjectCaretHost) {
+          nextRange.selectNodeContents(insertedObjectCaretHost);
+          nextRange.collapse(false);
+        } else if (lastInsertedNode) {
           nextRange.setStartAfter(lastInsertedNode);
         } else {
           nextRange.selectNodeContents(templateEditorSurface);
           nextRange.collapse(false);
         }
 
-        nextRange.collapse(true);
+        if (!insertedObjectCaretHost) {
+          nextRange.collapse(true);
+        }
         selection.removeAllRanges();
         selection.addRange(nextRange);
         state.templateEditor.savedRange = nextRange.cloneRange();
       }
 
       syncTemplateEditorContent();
+
+      if (selection && hasInsertedTable && !insertionCell && !insertionCandidateBlock) {
+        const currentDocumentElement = insertedTableDocument || insertionDocumentElement;
+        const currentTables = Array.from(currentDocumentElement.children || [])
+          .filter((element) => element instanceof HTMLTableElement);
+        const currentTable = insertedFlowTableIndex >= 0
+          ? currentTables[insertedFlowTableIndex] || null
+          : currentTables[Math.min(flowTableCountBeforeInsertion, currentTables.length - 1)] || null;
+        const currentCaretHost = ensureInsertedTableCaretHost(currentTable, templateEditorSurface);
+
+        if (currentCaretHost) {
+          const currentRange = document.createRange();
+
+          templateEditorSurface.focus?.({ preventScroll: true });
+          currentRange.selectNodeContents(currentCaretHost);
+          currentRange.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(currentRange);
+          state.templateEditor.savedRange = currentRange.cloneRange();
+        }
+      }
       return true;
     }
 

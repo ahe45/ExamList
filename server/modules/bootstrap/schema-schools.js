@@ -89,6 +89,11 @@ async function ensurePdfTemplateSchoolColumns(connection, { defaultSchoolId, ens
     indexName: "idx_pdf_templates_school_active",
     tableName: "pdf_templates",
   });
+  await ensureIndex(connection, {
+    definition: "KEY idx_pdf_templates_school_deleted_created (school_id, deleted_at, created_at)",
+    indexName: "idx_pdf_templates_school_deleted_created",
+    tableName: "pdf_templates",
+  });
 }
 
 async function backfillSchoolScopedRows(connection, { defaultSchoolId }) {

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { renderPdfHistoryManagementView } from "./pdf-generation-audit-log-renderer.js";
 
-test("PDF 작업 로그 renders audit logs as a readable grid", () => {
+test("작업 로그 renders audit logs as a readable grid", () => {
   const html = renderPdfHistoryManagementView({
     pdfGenerations: {
       auditLoading: false,
@@ -52,7 +52,7 @@ test("PDF 작업 로그 renders audit logs as a readable grid", () => {
     },
   });
 
-  assert.match(html, /PDF 작업 로그/);
+  assert.match(html, /작업 로그/);
   assert.match(html, /PDF 병합/);
   assert.match(html, /병합 PDF/);
   assert.match(html, /양식 고사실 수험표/);
@@ -75,7 +75,7 @@ test("PDF 작업 로그 renders audit logs as a readable grid", () => {
   assert.match(html, /data-pdf-audit-page-size-option="30"/);
 });
 
-test("PDF 작업 로그 page-size picker uses the shared combo classes", () => {
+test("작업 로그 page-size picker uses the shared combo classes", () => {
   const html = renderPdfHistoryManagementView({
     pdfGenerations: {
       auditLoading: false,

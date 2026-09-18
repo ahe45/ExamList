@@ -1,22 +1,36 @@
-.editor-overflow-warning {
-  background: rgba(254, 242, 242, 0.98);
-  border: 1px solid rgba(248, 113, 113, 0.46);
-  border-radius: 12px;
-  color: #b42318;
-  font-size: 0.78rem;
-  font-weight: 800;
-  line-height: 1.45;
-  margin: 0;
-  padding: 10px 12px;
+/* Paint the empty caret independently of Chromium's zero-height line painting. */
+.editor-document-surface [data-template-object-caret-host] > .template-object-caret {
+  display: inline-block;
+  height: 1em;
+  width: 1px;
+  vertical-align: top;
+  position: relative;
+  caret-color: transparent;
 }
 
-.editor-canvas-overflow-warning {
-  bottom: 16px;
-  box-shadow: 0 14px 30px rgba(127, 29, 29, 0.14);
-  left: 16px;
-  position: sticky;
-  right: 16px;
-  z-index: 6;
+.editor-document-surface:focus [data-template-object-caret-host][data-template-object-caret-active] > .template-object-caret::after {
+  content: "";
+  background: currentColor;
+  height: 1em;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 1px;
+}
+
+.editor-document-surface [data-template-object-caret-host][data-template-object-caret-active] {
+  height: calc(1em + 1pt) !important;
+  margin-bottom: calc(-1em - 1pt) !important;
+}
+
+.editor-document-surface [data-template-object-caret-host] {
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  line-height: calc(1em + 1pt) !important;
 }
 
 .editor-document-surface h1,

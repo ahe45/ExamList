@@ -33,6 +33,7 @@
     saveTemplateEditorSelection,
     setTemplateEditorStatus,
     syncTemplateEditorContent,
+    state,
     undoTemplateEditorHistory,
     updateTemplateEditorActiveCell,
   }) {
@@ -178,7 +179,9 @@
         return Number(spacingValue) <= 0 ? "1" : `calc(1em + ${spacingValue}pt)`;
       }
 
-      if (inlineLineHeight && inlineLineHeight !== "normal") {
+      // Preserve scalable line heights, but convert fixed lengths using the
+      // pre-format font size so enlarging text retains the authored spacing.
+      if (inlineLineHeight && !/^[\d.]+(?:px|pt)$/i.test(inlineLineHeight) && inlineLineHeight !== "inherit") {
         return inlineLineHeight;
       }
 
@@ -266,15 +269,28 @@
     }
 
     function createTemplateEditorLineHeightSnapshot(templateEditorSurface) {
+      const blockSelector = "p,h1,h2,h3,h4,h5,h6,li,blockquote,td,th,div";
+      const blocks = Array.from(templateEditorSurface.querySelectorAll(blockSelector));
       return getTemplateEditorLineHeightTargets(templateEditorSurface).map((element) => ({
         element,
+        surface: templateEditorSurface,
+        blockIndex: blocks.indexOf(element),
         lineHeight: getTemplateEditorPreservedLineHeightValue(element),
       }));
     }
 
     function restoreTemplateEditorLineHeightSnapshot(lineHeightSnapshot) {
+      const blockSelector = "p,h1,h2,h3,h4,h5,h6,li,blockquote,td,th,div";
       const connectedSnapshot = Array.isArray(lineHeightSnapshot)
-        ? lineHeightSnapshot.filter(({ element }) => element instanceof HTMLElement && element.isConnected)
+        ? lineHeightSnapshot.map((entry) => ({
+          ...entry,
+          // Font normalization may replace the content DOM. Formatting does
+          // not reorder blocks, so recover their live counterparts before sync.
+          element: entry.element.isConnected
+            ? entry.element
+            : entry.surface.querySelectorAll(blockSelector)[entry.blockIndex],
+        }))
+          .filter(({ element }) => element instanceof HTMLElement && element.isConnected)
         : [];
 
       if (!connectedSnapshot.length) {
@@ -283,6 +299,16 @@
 
       connectedSnapshot.forEach(({ element, lineHeight }) => {
         element.style.lineHeight = lineHeight;
+        // CSS computes an inherited calc(1em + spacing) on the parent. An
+        // enlarged inline span must evaluate it against its own font size.
+        element.querySelectorAll("[style]").forEach((inlineElement) => {
+          if (!inlineElement.style.fontSize || inlineElement.matches(blockSelector) ||
+              inlineElement.parentElement?.closest(blockSelector) !== element) return;
+          const ownLineHeight = inlineElement.style.lineHeight;
+          if (!ownLineHeight || ownLineHeight === "inherit" || /^[\d.]+(?:px|pt)$/i.test(ownLineHeight)) {
+            inlineElement.style.lineHeight = lineHeight;
+          }
+        });
       });
       return true;
     }
@@ -486,6 +512,17 @@
 
       if (applyTemplateEditorTableSelectionCommand(command, normalizedValue)) {
         return;
+      }
+
+      const alignment = { justifyLeft: "left", justifyCenter: "center", justifyRight: "right", justifyFull: "justify" }[command];
+      if (alignment) {
+        restoreTemplateEditorSelection();
+        const content = templateEditorSurface.querySelector(":scope > .template-doc") || templateEditorSurface;
+        if (globalThis.ExamListTemplateEditorTextEditing?.alignTemplateTextLines(content, alignment)) {
+          saveTemplateEditorSelection();
+          syncTemplateEditorContent({ preserveSelection: true, focusEditor: true });
+          return;
+        }
       }
 
       if (
@@ -770,10 +807,37 @@
       updateTemplateEditorActiveCell();
     }
 
+    function withFormattingHistory(operation) {
+      const historyState = state?.templateEditor;
+      if (!historyState || historyState.isRestoringHistory) return operation();
+      if (historyState.isComposing) return;
+      restoreTemplateEditorSelection();
+      const surface = getTemplateEditorSurface();
+      const textEditing = globalThis.ExamListTemplateEditorTextEditing;
+      const selection = surface && textEditing?.captureTemplateTextSelection(surface);
+      // Native text formatting and protected-token formatting synchronize in
+      // several stages. They are one user action, hence one undo snapshot.
+      historyState.isRestoringHistory = true;
+      try {
+        return operation();
+      } finally {
+        historyState.isRestoringHistory = false;
+        syncTemplateEditorContent({ preserveSelection: true, focusEditor: true });
+        // Preserve selected text across DOM normalization for successive toolbar
+        // commands. A collapsed caret must retain native pending typing styles.
+        if (selection && selection.start !== selection.end &&
+            surface === getTemplateEditorSurface() && textEditing.restoreTemplateTextSelection(surface, selection)) {
+          saveTemplateEditorSelection();
+        }
+      }
+    }
+
     return Object.freeze({
-      applyTemplateEditorCommand,
-      applyTemplateEditorFontFamily,
-      applyTemplateEditorFontSize,
+      applyTemplateEditorCommand: (command, value) => command === "undo" || command === "redo"
+        ? applyTemplateEditorCommand(command, value)
+        : withFormattingHistory(() => applyTemplateEditorCommand(command, value)),
+      applyTemplateEditorFontFamily: (...args) => withFormattingHistory(() => applyTemplateEditorFontFamily(...args)),
+      applyTemplateEditorFontSize: (...args) => withFormattingHistory(() => applyTemplateEditorFontSize(...args)),
       getTemplateEditorDocumentElement,
       getTemplateEditorImageOverlayContainer,
       placeCaretAtEnd,

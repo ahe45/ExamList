@@ -5,7 +5,7 @@ async function assertEditorWorkspaceShell(client) {
     client,
     `
       (() => {
-        const sidebar = document.querySelector("#workspaceSidebar");
+        const sidebar = document.querySelector("#workspaceNav");
         const activeItem = document.querySelector('.workspace-nav-item.active');
         const items = [...document.querySelectorAll('.workspace-nav-item')].map((item) => item.textContent.trim()).join('|');
         const activeStyle = activeItem ? getComputedStyle(activeItem) : null;
@@ -20,15 +20,15 @@ async function assertEditorWorkspaceShell(client) {
             sidebar.getAttribute('aria-hidden') === 'false' &&
             sidebarRect &&
             pageShellRect &&
-            sidebarRect.right < pageShellRect.left &&
-            items === "양식 관리|수험생 데이터|PDF 생성|PDF 작업 로그|데이터 삭제" &&
+            sidebar.closest("header") && sidebarRect.bottom <= pageShellRect.top &&
+            items === "양식 관리|수험생 데이터|PDF 생성|작업 로그|데이터 삭제" &&
             activeItem?.dataset.goView === "templateManagement" &&
             activeStyle?.backgroundImage !== "none" &&
-            activeStyle?.boxShadow.includes("inset")
+            getComputedStyle(activeItem, '::after').height === '3px'
         );
       })()
     `,
-    "작업공간 좌측 사이드바 내비게이션 표시",
+    "작업공간 헤더 내비게이션 표시",
   );
   await waitForCondition(
     client,

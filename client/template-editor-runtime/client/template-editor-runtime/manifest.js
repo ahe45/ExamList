@@ -11,6 +11,8 @@
   ]);
 
   const requiredScripts = Object.freeze([
+    "../../shared/document-html-sanitizer.js",
+    "client/features/template-editor/text-editing.js",
     "client/features/editor/content-shared.js",
     "client/features/editor/formatting-state.js",
     "client/features/editor/shared-commands.js",

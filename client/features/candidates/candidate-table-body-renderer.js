@@ -1,4 +1,5 @@
 import { escapeHtml } from "../../app/html-utils.js";
+import { renderGridStatusRow } from "../../app/data-grid-table.js";
 import { formatCount } from "../../app/number-format.js";
 import {
   candidateGridColumns,
@@ -27,11 +28,7 @@ export function renderCandidateRows(candidates = {}, canManageCandidates = false
   const { startRowNumber, visibleRows } = getCandidateVisibleRows(candidates);
 
   if (!visibleRows.length) {
-    return `
-      <tr class="table-empty-row">
-        <td class="table-empty-cell" colspan="${candidateGridColumns.length + 1}">표시할 수험생 데이터가 없습니다.</td>
-      </tr>
-    `;
+    return renderGridStatusRow(candidateGridColumns.length + 1, "표시할 수험생 데이터가 없습니다.");
   }
 
   return visibleRows

@@ -15,6 +15,8 @@
     clearTemplateEditorTableSelection,
     focusTemplateEditorCell,
     getTemplateEditorCellSplitConfig,
+    getTemplateEditorActiveTableSelection,
+    getTemplateEditorSurface,
     handleTemplateEditorInsert,
     handleTemplateEditorTokenDeletion,
     handleTemplateTableAction,
@@ -521,13 +523,24 @@
         return false;
       }
 
-      const documentElement = ensureProtectedTemplateDocumentElement();
+      const documentElement = getProtectedTemplateDocumentElement();
 
       if (hasMeaningfulTemplateDocumentContent(documentElement)) {
         return false;
       }
 
+      // A blank document may still contain several authored lines. Only guard
+      // its final caret host; otherwise preserve the selection for native
+      // Backspace/Delete, including selecting and clearing all blank lines.
+      const blockSelector = "p, div, h1, h2, h3, h4, h5, h6, li, blockquote, pre";
+      const leafBlocks = Array.from(documentElement?.querySelectorAll(blockSelector) || [])
+        .filter((element) => !element.querySelector(blockSelector));
+      if (leafBlocks.length > 1 || documentElement?.querySelectorAll("br").length > 1) {
+        return false;
+      }
+
       event.preventDefault();
+      ensureProtectedTemplateDocumentElement();
       syncTemplateEditorContent({ preserveSelection: true, focusEditor: true });
       return true;
     }
@@ -555,6 +568,46 @@
       selectedImage.remove();
       clearTemplateEditorImageSelection();
       syncTemplateEditorContent({ preserveSelection: true, focusEditor: true });
+      return true;
+    }
+
+    function clearSelectedTemplateEditorCellContents(event) {
+      if (event.isComposing || (event.key !== "Backspace" && event.key !== "Delete")) {
+        return false;
+      }
+
+      const surface = getTemplateEditorSurface?.() || shell.surfaceElement;
+      const selection = getTemplateEditorActiveTableSelection?.();
+      const target = event.target instanceof ownerWindow.Element ? event.target : null;
+      if (!surface || !selection?.selectedCells?.length || target?.closest("input, textarea, select, button")) {
+        return false;
+      }
+      if (!shell.surfaceElement.contains(ownerDocument.activeElement)) {
+        return false;
+      }
+      const cells = Array.from(new Set(selection.selectedCells)).filter(
+        (cell) => surface.contains(cell) && cell.closest("table") === selection.table,
+      );
+      if (!cells.length) {
+        return false;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      clearTemplateEditorTableObjectSelection();
+      releaseTemplateEditorTableSelectionSession({ keepSelection: true });
+      cells.forEach((cell) => cell.replaceChildren(ownerDocument.createElement("br")));
+
+      // Replace any stale text/object range with a caret inside the retained table.
+      const range = ownerDocument.createRange();
+      range.selectNodeContents(cells[0]);
+      range.collapse(true);
+      surface.focus({ preventScroll: true });
+      const nativeSelection = ownerWindow.getSelection();
+      nativeSelection.removeAllRanges();
+      nativeSelection.addRange(range);
+      state.templateEditor.savedRange = range.cloneRange();
+      syncTemplateEditorContent({ preserveSelection: true, normalizeTables: false });
       return true;
     }
 
@@ -644,6 +697,7 @@
     }
 
     function handleKeydown(event) {
+      if (event.isComposing || state.templateEditor.isComposing) return;
       const isSurfaceTarget = event.target === shell.surfaceElement || shell.surfaceElement.contains(event.target);
       const isModifierPressed = event.ctrlKey || event.metaKey;
       const normalizedKey = String(event.key || "").toLowerCase();
@@ -682,6 +736,10 @@
       }
 
       if (handleTemplateEditorPlainTextEnter(event, isSurfaceTarget, isModifierPressed)) {
+        return;
+      }
+
+      if (!isModifierPressed && !event.altKey && clearSelectedTemplateEditorCellContents(event)) {
         return;
       }
 

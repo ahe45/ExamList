@@ -148,6 +148,10 @@ function createPdfTemplateReadActions({ createHttpError, query, renderListThumbn
 
     const whereClause = `WHERE ${conditions.join(" AND ")}`;
     const countRows = await query(`SELECT COUNT(*) AS total FROM pdf_templates ${whereClause}`, params);
+    const total = Number(countRows[0]?.total) || 0;
+    if (total === 0) {
+      return { items: [], total: 0, page: filter.page, limit: filter.limit };
+    }
     const rows = await query(
       `
         SELECT
@@ -172,7 +176,7 @@ function createPdfTemplateReadActions({ createHttpError, query, renderListThumbn
 
     return {
       items: await Promise.all(rows.map(mapTemplateListRowForList)),
-      total: Number(countRows[0]?.total) || 0,
+      total,
       page: filter.page,
       limit: filter.limit,
     };
@@ -198,6 +202,10 @@ function createPdfTemplateReadActions({ createHttpError, query, renderListThumbn
       `,
       params,
     );
+    const totalTemplates = Number(countRows[0]?.totalTemplates) || 0;
+    if (totalTemplates === 0) {
+      return { totalTemplates: 0, recentTemplates: [] };
+    }
     const recentRows = await query(
       `
         SELECT
@@ -217,10 +225,8 @@ function createPdfTemplateReadActions({ createHttpError, query, renderListThumbn
       `,
       params,
     );
-    const summaryRow = countRows[0] || {};
-
     return {
-      totalTemplates: Number(summaryRow.totalTemplates) || 0,
+      totalTemplates,
       recentTemplates: recentRows.map(mapTemplateListRow),
     };
   }

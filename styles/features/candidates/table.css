@@ -9,7 +9,8 @@
 }
 
 .candidate-data-table {
-  --candidate-grid-min-width: 3500px;
+  /* Let the configured column widths determine the table's minimum width. */
+  --candidate-grid-min-width: 0px;
   height: 100%;
   min-height: 0;
   min-width: 0;

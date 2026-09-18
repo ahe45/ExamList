@@ -225,33 +225,33 @@
   pointer-events: none;
 }
 .candidate-records-table {
-  --candidate-col-admission: 102px;
-  --candidate-col-admission-code: 108px;
+  --candidate-col-admission: 92px;
+  --candidate-col-admission-code: 76px;
   --candidate-col-admission-year: 136px;
-  --candidate-col-birth: 112px;
+  --candidate-col-birth: 96px;
   --candidate-col-building: 124px;
-  --candidate-col-building-code: 132px;
+  --candidate-col-building-code: 96px;
   --candidate-col-campus: 112px;
   --candidate-col-campus-code: 124px;
-  --candidate-col-date: 112px;
-  --candidate-col-designated-sort: 108px;
+  --candidate-col-date: 96px;
+  --candidate-col-designated-sort: 76px;
   --candidate-col-exam-no: 112px;
   --candidate-col-major: 102px;
-  --candidate-col-major-code: 108px;
-  --candidate-col-name: 84px;
-  --candidate-col-opt: 100px;
-  --candidate-col-period: 102px;
-  --candidate-col-period-code: 108px;
+  --candidate-col-major-code: 76px;
+  --candidate-col-name: 72px;
+  --candidate-col-opt: 84px;
+  --candidate-col-period: 84px;
+  --candidate-col-period-code: 76px;
   --candidate-col-room: 108px;
-  --candidate-col-room-code: 116px;
+  --candidate-col-room-code: 88px;
   --candidate-col-row-number: 52px;
-  --candidate-col-series: 102px;
-  --candidate-col-series-code: 108px;
-  --candidate-col-temporary-no: 96px;
-  --candidate-col-time: 112px;
-  --candidate-col-track: 112px;
+  --candidate-col-series: 92px;
+  --candidate-col-series-code: 76px;
+  --candidate-col-temporary-no: 84px;
+  --candidate-col-time: 76px;
+  --candidate-col-track: 76px;
   --candidate-col-unit: 124px;
-  --candidate-col-unit-code: 132px;
+  --candidate-col-unit-code: 96px;
 }
 
 .candidate-records-table th.row-number-col,
@@ -394,8 +394,8 @@
 
 .candidate-records-table th.table-column-group,
 .candidate-records-table td.table-column-group {
-  min-width: 72px;
-  width: 72px;
+  min-width: 60px;
+  width: 60px;
 }
 
 .candidate-records-table th.table-column-examineeNo,
@@ -448,7 +448,7 @@
 
 .candidate-records-table th.table-column-hasPhoto,
 .candidate-records-table td.table-column-hasPhoto {
-  width: 68px;
+  width: 72px;
 }
 
 .print-history-table th.table-column-printedAt,

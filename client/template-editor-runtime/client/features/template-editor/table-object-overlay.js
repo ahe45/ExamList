@@ -138,13 +138,16 @@
         return false;
       }
 
-      overlayElement.style.left = `${Math.round(tableRect.left - overlayRect.left)}px`;
-      overlayElement.style.top = `${Math.round(tableRect.top - overlayRect.top)}px`;
-      overlayElement.style.width = `${Math.round(tableRect.width)}px`;
-      overlayElement.style.height = `${Math.round(tableRect.height)}px`;
+      const scaleX = overlayContainer.offsetWidth > 0 ? overlayRect.width / overlayContainer.offsetWidth : 1;
+      const scaleY = overlayContainer.offsetHeight > 0 ? overlayRect.height / overlayContainer.offsetHeight : 1;
+      overlayElement.style.left = `${Math.round((tableRect.left - overlayRect.left) / Math.max(scaleX, 0.01) - overlayContainer.clientLeft)}px`;
+      overlayElement.style.top = `${Math.round((tableRect.top - overlayRect.top) / Math.max(scaleY, 0.01) - overlayContainer.clientTop)}px`;
+      overlayElement.style.width = `${Math.round(tableRect.width / Math.max(scaleX, 0.01))}px`;
+      overlayElement.style.height = `${Math.round(tableRect.height / Math.max(scaleY, 0.01))}px`;
       overlayElement.classList.toggle("is-hover-only", !selected);
       overlayElement.classList.toggle("is-selected", selected);
-      overlayElement.classList.toggle("is-table-move-disabled", Boolean(tableElement.closest("[data-candidate-block-instance]")));
+      const block = tableElement.closest("[data-candidate-block-instance]");
+      overlayElement.classList.toggle("is-table-move-disabled", Boolean(block && !block.classList.contains("is-candidate-block-focus-editor")));
       overlayElement.classList.remove("hidden");
       overlayElement.__templateEditorTableElement = tableElement;
       return true;

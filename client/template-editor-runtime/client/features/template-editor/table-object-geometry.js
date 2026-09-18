@@ -157,9 +157,13 @@
       return spacerElement;
     }
 
-    function syncTemplateEditorTableObjectFlowSpacer(tableElement, _geometry = {}) {
-      removeTemplateEditorTableObjectFlowSpacer(tableElement);
-      return null;
+    function syncTemplateEditorTableObjectFlowSpacer(tableElement, geometry = {}) {
+      return globalThis.ExamListTemplateEditorObjectFlowReflow?.reflowTemplateEditorObjectRows(tableElement, {
+        documentElement: getTemplateEditorDocumentElement(),
+        activeTop: geometry.top,
+        activeHeight: geometry.height,
+        reorderByPosition: false,
+      })?.spacerElement || null;
     }
 
     function removeTemplateEditorTableObjectFlowSpacer(tableElement) {
@@ -456,8 +460,8 @@
 
       const tableRect = tableElement.getBoundingClientRect();
       const documentRect = documentElement.getBoundingClientRect();
-      const width = Math.max(TEMPLATE_EDITOR_TABLE_MIN_SIZE, Math.floor(tableRect.width || tableElement.offsetWidth || 0));
-      const height = Math.max(TEMPLATE_EDITOR_TABLE_MIN_SIZE, Math.floor(tableRect.height || tableElement.offsetHeight || 0));
+      const width = Math.max(TEMPLATE_EDITOR_TABLE_MIN_SIZE, tableElement.offsetWidth || Math.floor(tableRect.width || 0));
+      const height = Math.max(TEMPLATE_EDITOR_TABLE_MIN_SIZE, tableElement.offsetHeight || Math.floor(tableRect.height || 0));
       const scaleX = width > 0 ? Math.max(tableRect.width / width, 0.01) : 1;
       const scaleY = height > 0 ? Math.max(tableRect.height / height, 0.01) : 1;
       const documentOrigin = getTemplateEditorDocumentCoordinateOrigin(documentElement, scaleX, scaleY);

@@ -38,6 +38,8 @@
     - 템플릿 layout JSON, page settings, element config, toolbar/runtime/data tag/candidate block 세부 동작입니다.
 16. [API 상세 계약](doc/15-api-detailed-contracts.md)
     - endpoint별 query, body, 응답 payload, 권한, 파일 다운로드, 오류 처리 기준입니다.
+17. [examcheck 편집기 개선 반영](doc/16-examcheck-editor-integration.md)
+    - 표 복사·붙여넣기, 한글 입력, 줄별 정렬, 선택 영역 및 표 크기 보존의 반영 범위와 검증 방법입니다.
 
 ## 빠른 실행
 

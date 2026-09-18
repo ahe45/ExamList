@@ -8,6 +8,8 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
   function createTemplateEditorRuntimePublicApi({
     applyTemplateEditorCommand,
+    clearTemplateEditorActiveCell,
+    clearTemplateEditorImageHoverState,
     clearTemplateEditorImageSelection,
     clearTemplateEditorTableHoverState,
     clearTemplateEditorTableObjectHoverState,
@@ -19,6 +21,7 @@
     insertTemplateImage,
     insertTemplateImageSource,
     insertTemplateTag,
+    ownerWindow,
     redoTemplateEditorHistory,
     releaseTemplateEditorImageMoveSession,
     releaseTemplateEditorImageResizeSession,
@@ -36,9 +39,25 @@
     syncTemplateEditorContent,
     unbindEvents,
     undoTemplateEditorHistory,
+    updateTemplateEditorFormattingControls,
     updateTemplateEditorImageSelectionOverlay,
     updateTemplateEditorTableObjectOverlay,
+    updateTemplateTableControls,
   }) {
+    function clearObjectSelection() {
+      clearTemplateEditorImageHoverState();
+      clearTemplateEditorImageSelection();
+      clearTemplateEditorTableHoverState();
+      clearTemplateEditorTableObjectHoverState({ updateOverlay: false });
+      clearTemplateEditorTableObjectSelection();
+      clearTemplateEditorTableSelection();
+      clearTemplateEditorActiveCell();
+      ownerWindow.getSelection?.()?.removeAllRanges();
+      state.templateEditor.savedRange = null;
+      updateTemplateEditorFormattingControls();
+      updateTemplateTableControls();
+    }
+
     function destroy() {
       unbindEvents();
       clearTemplateEditorImageSelection();
@@ -56,6 +75,7 @@
 
     return Object.freeze({
       applyCommand: applyTemplateEditorCommand,
+      clearObjectSelection,
       clearTableObjectHoverState: clearTemplateEditorTableObjectHoverState,
       clearTableObjectSelection: clearTemplateEditorTableObjectSelection,
       destroy,

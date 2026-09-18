@@ -128,7 +128,7 @@ async function assertWorkspaceSidebar(context) {
     client,
     `
       (() => {
-        const sidebar = document.querySelector("#workspaceSidebar");
+        const sidebar = document.querySelector("#workspaceNav");
         const activeItem = document.querySelector('.workspace-nav-item.active');
         const items = [...document.querySelectorAll('.workspace-nav-item')];
         const labels = items.map((item) => item.textContent.trim()).join('|');
@@ -145,13 +145,13 @@ async function assertWorkspaceSidebar(context) {
             sidebar.getAttribute('aria-hidden') === 'false' &&
             sidebarRect &&
             pageShellRect &&
-            sidebarRect.right < pageShellRect.left &&
-            labels === "양식 관리|수험생 데이터|PDF 생성|PDF 작업 로그|데이터 삭제" &&
+            sidebar.closest("header") && sidebarRect.bottom <= pageShellRect.top &&
+            labels === "양식 관리|수험생 데이터|PDF 생성|작업 로그|데이터 삭제" &&
             activeItem?.dataset.goView === "templateManagement"
         );
       })()
     `,
-    "학교 작업공간 좌측 사이드바 내비게이션 표시",
+    "학교 작업공간 헤더 내비게이션 표시",
   );
 }
 

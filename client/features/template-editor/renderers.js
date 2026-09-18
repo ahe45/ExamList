@@ -67,7 +67,7 @@ function renderEditorSidebarFooter(editor, access) {
 
   if (hasTemplateManagement) {
     actionButtons.push(`
-      <button class="primary-button" data-action="save-template-layout" type="button" ${editor.isSaving || !canManageTemplates ? "disabled" : ""}>
+      <button class="primary-button" data-action="save-template-layout" type="button" ${!editor.isDirty || editor.isSaving || !canManageTemplates ? "disabled" : ""}>
         ${editor.isSaving ? "저장 중..." : "저장"}
       </button>
     `);
@@ -83,11 +83,6 @@ function renderEditorSidebarFooter(editor, access) {
 
   return `
     <div class="editor-toolbar-footer template-editor-toolbar-footer editor-sidebar-footer">
-      ${
-        editor.documentOverflowMessage
-          ? `<p class="editor-overflow-warning">${escapeHtml(editor.documentOverflowMessage)}</p>`
-          : ""
-      }
       ${actionButtons.join("")}
     </div>
   `;
@@ -250,7 +245,6 @@ export function renderTemplateEditorView({ access, editor }) {
                 ${canManageTemplates ? 'contenteditable="true" spellcheck="false"' : ""}
               ></div>
             </div>
-            <p class="editor-overflow-warning editor-canvas-overflow-warning hidden" id="templateEditorOverflowStatus"></p>
           </section>
 
           <aside class="template-page-properties-column" aria-label="페이지 속성 및 저장">

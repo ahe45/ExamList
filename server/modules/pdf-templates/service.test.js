@@ -582,7 +582,9 @@ test("updateTemplate uses the stored maximum version number when latest version 
 });
 
 test("listTemplates keeps card order stable by creation order", async () => {
-  const { service, topLevelQueries } = createServiceHarness();
+  const { service, topLevelQueries } = createServiceHarness({
+    listRows: [{ id: "template-order", schoolId: "school-1", name: "정렬 확인", latestVersionNo: 1 }],
+  });
 
   await service.listTemplates({
     limit: 100,

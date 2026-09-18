@@ -151,6 +151,27 @@
       ) || null;
     }
 
+    function preservePagePropertyControlFocus(controlElement, update) {
+      const ownerDocument = controlElement?.ownerDocument || null;
+      const wasFocused = ownerDocument?.activeElement === controlElement;
+      const settingName = String(controlElement?.dataset?.templatePageSetting || "");
+      const result = update();
+
+      if (!wasFocused || !settingName) {
+        return result;
+      }
+
+      const nextControl = controlElement.isConnected
+        ? controlElement
+        : getPagePropertyControl(settingName);
+
+      if (nextControl && ownerDocument.activeElement !== nextControl && !nextControl.disabled) {
+        nextControl.focus?.({ preventScroll: true });
+      }
+
+      return result;
+    }
+
     function syncTemplatePageControls(settings = getDefaultTemplatePageSettings()) {
       const normalizedSettings = normalizeTemplatePageSettings(settings);
       const sizeControl = getPagePropertyControl("size");
@@ -233,12 +254,16 @@
 
     function handleTemplatePageSettingChange(event) {
       const target = event?.target instanceof Element ? event.target : null;
+      const controlElement = target?.closest("[data-template-page-setting]") || null;
 
-      if (!target?.closest("[data-template-page-setting]")) {
+      if (!controlElement) {
         return false;
       }
 
-      return applyTemplatePageSettingsFromControls();
+      return preservePagePropertyControlFocus(
+        controlElement,
+        () => applyTemplatePageSettingsFromControls(),
+      );
     }
 
     return Object.freeze({

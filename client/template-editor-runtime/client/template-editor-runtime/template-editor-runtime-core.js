@@ -256,6 +256,9 @@
       throw new Error("Template editor toolbarHost and surface elements are required.");
     }
 
+    // Establish document coordinates before setHtml initializes flow spacers and history.
+    // Adding these classes later changes the containing block and shifts saved tables.
+    resolvedSurfaceElement.classList.add("editor-paper", "editor-document-surface");
     resolvedSurfaceElement.setAttribute("contenteditable", "true");
     return Object.freeze({
       rootElement,

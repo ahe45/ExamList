@@ -1,6 +1,7 @@
 .template-editor-shell {
   display: grid;
   gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
   justify-items: stretch;
   min-width: 0;
   overflow-x: auto;
@@ -81,7 +82,8 @@
 }
 
 .examlist-template-editor-sheet {
-  min-width: 100%;
+  margin-inline: auto;
+  min-width: max-content;
   width: max-content;
 }
 
@@ -288,10 +290,6 @@
 .template-page-properties-column > .template-editor-toolbar-footer {
   align-items: stretch;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.template-page-properties-column > .template-editor-toolbar-footer .editor-overflow-warning {
-  grid-column: 1 / -1;
 }
 
 .editor-toolbar-footer .primary-button,

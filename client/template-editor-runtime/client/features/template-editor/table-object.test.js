@@ -26,6 +26,7 @@ class FakeElement {
     this.classList = new FakeClassList(classNames);
     this.dataset = { ...dataset };
     this.parentElement = null;
+    this.nodeType = 1;
     this.tagName = tagName;
 
     if (parent) {
@@ -37,6 +38,10 @@ class FakeElement {
     child.parentElement = this;
     this.children.push(child);
     return child;
+  }
+
+  append(...children) {
+    children.forEach((child) => this.appendChild(child));
   }
 
   closest(selector) {
@@ -67,6 +72,62 @@ class FakeElement {
     return false;
   }
 
+  get previousElementSibling() {
+    if (!this.parentElement) {
+      return null;
+    }
+
+    const siblingIndex = this.parentElement.children.indexOf(this);
+
+    return siblingIndex > 0 ? this.parentElement.children[siblingIndex - 1] : null;
+  }
+
+  get nextElementSibling() {
+    if (!this.parentElement) {
+      return null;
+    }
+
+    const siblingIndex = this.parentElement.children.indexOf(this);
+
+    return siblingIndex >= 0 ? this.parentElement.children[siblingIndex + 1] || null : null;
+  }
+
+  get childNodes() {
+    return this.children;
+  }
+
+  get textContent() {
+    return "";
+  }
+
+  remove() {
+    if (!this.parentElement) {
+      return;
+    }
+
+    const siblingIndex = this.parentElement.children.indexOf(this);
+
+    if (siblingIndex >= 0) {
+      this.parentElement.children.splice(siblingIndex, 1);
+    }
+    this.parentElement = null;
+  }
+
+  replaceWith(replacement) {
+    if (!this.parentElement) {
+      return;
+    }
+
+    const parentElement = this.parentElement;
+    const siblingIndex = parentElement.children.indexOf(this);
+
+    if (siblingIndex >= 0) {
+      replacement.parentElement = parentElement;
+      parentElement.children.splice(siblingIndex, 1, replacement);
+    }
+    this.parentElement = null;
+  }
+
   getAttribute(name) {
     return this.attributes[name] ?? null;
   }
@@ -78,6 +139,10 @@ class FakeElement {
       .some((item) => {
         if (item === "table") {
           return this.tagName === "TABLE";
+        }
+
+        if (/^[a-z]+$/i.test(item)) {
+          return this.tagName === item.toUpperCase();
         }
 
         if (item === "[data-candidate-block-grid]") {
@@ -119,9 +184,11 @@ class FakeElement {
     visit(this);
     return matches;
   }
+
+  focus() {}
 }
 
-function createTableObjectController(surfaceElement) {
+function createTableObjectController(surfaceElement, { overlayContainer = surfaceElement } = {}) {
   const noop = () => {};
   const ownerWindow = {
     Element: FakeElement,
@@ -147,7 +214,7 @@ function createTableObjectController(surfaceElement) {
     clearTemplateEditorTableSelection: noop,
     ensureTemplateEditorTableColGroup: noop,
     getTemplateEditorDocumentElement: () => surfaceElement,
-    getTemplateEditorImageOverlayContainer: () => surfaceElement,
+    getTemplateEditorImageOverlayContainer: () => overlayContainer,
     getTemplateEditorMeasuredColumnWidth: () => 0,
     getTemplateEditorModal: () => ({ classList: { contains: () => false } }),
     ownerDocument,
@@ -209,6 +276,95 @@ test("template editor table object selection ignores candidate block column name
   } finally {
     global.Element = previousElement;
     global.HTMLElement = previousHTMLElement;
+    global.window = previousWindow;
+    global.document = previousDocument;
+    globalThis.ExamListTemplateEditorTableObjectOverlay = previousOverlay;
+  }
+});
+
+test("template editor table object selection prioritizes the bottom border over the following caret host", () => {
+  const previousElement = global.Element;
+  const previousHTMLElement = global.HTMLElement;
+  const previousOverlay = globalThis.ExamListTemplateEditorTableObjectOverlay;
+  const previousWindow = global.window;
+  const previousDocument = global.document;
+
+  global.Element = FakeElement;
+  global.HTMLElement = FakeElement;
+  global.window = { getComputedStyle: () => ({}) };
+  global.document = {};
+
+  try {
+    const surfaceElement = new FakeElement({ dataset: { editorDocumentSurface: "true" } });
+    const tableElement = new FakeElement({ parent: surfaceElement, tagName: "TABLE" });
+    const caretHost = new FakeElement({ parent: surfaceElement, tagName: "P" });
+    tableElement.getBoundingClientRect = () => ({
+      bottom: 200,
+      height: 100,
+      left: 50,
+      right: 350,
+      top: 100,
+      width: 300,
+    });
+    const controller = createTableObjectController(surfaceElement, { overlayContainer: null });
+    let prevented = false;
+    let stopped = false;
+
+    const handled = controller.handleTemplateEditorTableObjectPointerDown({
+      button: 0,
+      clientX: 200,
+      clientY: 202,
+      preventDefault: () => {
+        prevented = true;
+      },
+      stopPropagation: () => {
+        stopped = true;
+      },
+      target: caretHost,
+    });
+
+    assert.equal(handled, true);
+    assert.equal(tableElement.classList.contains("is-selected-table-object"), true);
+    assert.equal(prevented, true);
+    assert.equal(stopped, true);
+  } finally {
+    global.Element = previousElement;
+    global.HTMLElement = previousHTMLElement;
+    global.window = previousWindow;
+    global.document = previousDocument;
+    globalThis.ExamListTemplateEditorTableObjectOverlay = previousOverlay;
+  }
+});
+
+test("deleting a table reuses its adjacent blank caret host", () => {
+  const previousElement = global.Element;
+  const previousHTMLElement = global.HTMLElement;
+  const previousNode = global.Node;
+  const previousOverlay = globalThis.ExamListTemplateEditorTableObjectOverlay;
+  const previousWindow = global.window;
+  const previousDocument = global.document;
+
+  global.Element = FakeElement;
+  global.HTMLElement = FakeElement;
+  global.Node = { ELEMENT_NODE: 1, TEXT_NODE: 3 };
+  global.window = { getComputedStyle: () => ({}) };
+  global.document = {};
+
+  try {
+    const surfaceElement = new FakeElement({ dataset: { editorDocumentSurface: "true" } });
+    const tableElement = new FakeElement({ parent: surfaceElement, tagName: "TABLE" });
+    const caretHost = new FakeElement({ parent: surfaceElement, tagName: "P" });
+    new FakeElement({ parent: caretHost, tagName: "BR" });
+    const controller = createTableObjectController(surfaceElement);
+
+    const deletionHost = controller.replaceTemplateEditorTableWithCaretHost(tableElement);
+
+    assert.equal(deletionHost, caretHost);
+    assert.deepEqual(surfaceElement.children, [caretHost]);
+  } finally {
+    global.Element = previousElement;
+    global.HTMLElement = previousHTMLElement;
+    global.Node = previousNode;
     global.window = previousWindow;
     global.document = previousDocument;
     globalThis.ExamListTemplateEditorTableObjectOverlay = previousOverlay;

@@ -1,5 +1,18 @@
 import { hasAccess } from "./access.js";
 
+let headerResizeObserver = null;
+function syncHeaderHeight(header) {
+  if (!header) return;
+  const measure = () => {
+    document.documentElement.style.setProperty("--app-header-height", Math.ceil(header.getBoundingClientRect().height) + "px");
+  };
+  measure();
+  if (!headerResizeObserver && typeof ResizeObserver !== "undefined") {
+    headerResizeObserver = new ResizeObserver(measure);
+    headerResizeObserver.observe(header);
+  }
+}
+
 export function syncViewShell({ currentView, dom, summary = null, activeSchoolId = "", activeTemplateId = "" }) {
   const isSchoolListView = currentView === "accountManagement" || currentView === "schoolManagement";
   const activeNavigationView =
@@ -17,12 +30,14 @@ export function syncViewShell({ currentView, dom, summary = null, activeSchoolId
   dom.appShell?.classList.toggle("template-list-mode", isSchoolListView);
   dom.appShell?.classList.toggle("workspace-mode", !isSchoolListView);
   dom.appShell?.classList.toggle("editor-focus-mode", false);
-  dom.workspaceSidebar?.classList.toggle("hidden", isSchoolListView);
-  dom.workspaceSidebar?.setAttribute("aria-hidden", isSchoolListView ? "true" : "false");
+  dom.workspaceNav?.classList.toggle("hidden", isSchoolListView);
+  dom.workspaceNav?.setAttribute("aria-hidden", isSchoolListView ? "true" : "false");
 
   document.querySelectorAll("[data-go-view]").forEach((button) => {
     const isActive = button.dataset.goView === activeNavigationView;
     button.classList.toggle("active", isActive);
+    if (isActive) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
   });
 
   document.querySelectorAll("[data-required-permission]").forEach((element) => {
@@ -51,6 +66,8 @@ export function syncViewShell({ currentView, dom, summary = null, activeSchoolId
     element.classList.toggle("disabled", isDisabled);
     element.setAttribute("aria-disabled", isDisabled ? "true" : "false");
   });
+
+  syncHeaderHeight(dom.topbar);
 
   Object.entries(dom.panelsByView).forEach(([view, element]) => {
     element.classList.toggle("hidden", view !== currentView);
