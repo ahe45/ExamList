@@ -9,6 +9,7 @@ const { createRouteDeps } = require("./server/create-route-deps");
 const { createApiRoutes } = require("./server/http/api-routes");
 const { createPageRequestHandlers } = require("./server/http/page-handler");
 const { createRequestHandler } = require("./server/http/request-handler");
+const { buildClientAssets } = require("./server/client-assets");
 
 const appContext = createAppContext();
 const defaultHttpPort = 80;
@@ -24,21 +25,24 @@ function formatServerUrl(hostname) {
   return port === defaultHttpPort ? `http://${hostname}` : `http://${hostname}:${port}`;
 }
 
-const pageHandlers = createPageRequestHandlers({
-  fs,
-  getViewFromPathname,
-  path,
-  root,
-});
-const handleRequest = createRequestHandler({
-  apiRoutes,
-  pageHandlers,
-  path,
-  port,
-  translateError: appContext.translateDatabaseError,
-});
+async function startServer() {
+  const clientAssets = process.env.CLIENT_ASSETS_MODE === "source" ? null : await buildClientAssets(root);
+  const pageHandlers = createPageRequestHandlers({
+    fs,
+    getViewFromPathname,
+    path,
+    root,
+    clientAssets,
+  });
+  const handleRequest = createRequestHandler({
+    apiRoutes,
+    pageHandlers,
+    path,
+    port,
+    translateError: appContext.translateDatabaseError,
+  });
 
-bootstrapApp(appContext).finally(() => {
+  await bootstrapApp(appContext);
   const server = http.createServer(handleRequest);
 
   server.on("error", (error) => {
@@ -55,4 +59,9 @@ bootstrapApp(appContext).finally(() => {
   server.listen(port, () => {
     console.log(`ExamList server listening on ${formatServerUrl("localhost")}`);
   });
+}
+
+startServer().catch(error => {
+  console.error(`[startup] ${error.message}`);
+  process.exitCode = 1;
 });

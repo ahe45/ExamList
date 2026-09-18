@@ -35,7 +35,7 @@ function createRequestHandler({
       }
 
       if (path.extname(requestUrl.pathname)) {
-        pageHandlers.serveStaticFile(response, requestUrl.pathname);
+        await pageHandlers.serveStaticFile(response, requestUrl.pathname, request);
         return;
       }
 

@@ -1,3 +1,4 @@
+import { loadFeatureStyles } from "../../app/lazy-feature.js";
 export const editorRuntimeBaseUrl = "/client/template-editor-runtime/";
 
 const editorRuntimeLoaderUrl = `${editorRuntimeBaseUrl}loader.js`;
@@ -24,6 +25,26 @@ export function loadEditorRuntimeLoader() {
   }
 
   if (loaderPromise) {
+    return loaderPromise;
+  }
+
+  if (window.ExamListAssets?.runtimeScript) {
+    loaderPromise = Promise.all([
+      loadFeatureStyles(window.ExamListAssets.runtimeStyles),
+      new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = window.ExamListAssets.runtimeScript;
+        script.onload = resolve;
+        script.onerror = () => { script.remove(); reject(new Error("양식 편집기를 불러오지 못했습니다.")); };
+        document.head.append(script);
+      }),
+    ]).then(() => {
+      const runtime = window.ExamListTemplateEditorRuntime;
+      if (!runtime) throw new Error("양식 편집기가 초기화되지 않았습니다.");
+      const loader = { load: () => Promise.resolve(runtime), createTemplateEditor: options => runtime.createTemplateEditor(options) };
+      window[editorRuntimeGlobals.loader] = loader;
+      return loader;
+    }).catch(error => { loaderPromise = null; throw error; });
     return loaderPromise;
   }
 

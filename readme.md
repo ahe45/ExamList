@@ -50,7 +50,13 @@ npm run start
 
 기본 서버 주소는 `http://localhost`입니다. `PORT`를 별도로 설정하지 않으면 HTTP 기본 포트인 `80`을 사용하므로 주소 뒤에 포트 번호를 붙이지 않습니다. DB, PDF 큐, 브라우저 경로는 `.env` 또는 `.env.example` 기준 환경 변수로 설정합니다.
 
-Windows 11 PC를 실제 서버처럼 사용할 경우에는 프로젝트 루트의 `start-server.bat`를 실행합니다. 최초 실행이면 `.env` 생성, 의존성 설치, DB 스키마 준비, 기본 슈퍼 관리자 계정과 `한국대학교`의 `기본 템플릿` 생성 후 서버를 시작하고, 이미 구성되어 있으면 바로 서버를 시작합니다. 자세한 내용은 [Windows 간편 배포 가이드](deploy/README.md)를 참고합니다.
+운영 실행(`npm start` 또는 `node server.js`)은 시작할 때 브라우저용 JS/CSS를 자동 빌드합니다. Windows에서 `start-server.bat`를 사용하면 변경되거나 누락된 의존성도 자동 설치합니다. 직접 `npm start`를 실행할 때는 의존성이 변경된 업데이트에서 먼저 `npm ci` 또는 `npm install`을 실행하세요. `npm run build`로 별도 빌드 검증도 가능합니다. 개발 중에는 `npm run dev`를 사용하면 파일을 묶지 않고 소스 변경을 새로고침으로 확인할 수 있습니다.
+
+배포 파일은 `.client-assets/`에 내용 해시를 포함한 이름으로 생성되며 `/assets/` 경로에서 브라우저·CDN 장기 캐시와 Brotli/Gzip 압축을 사용합니다. 변경된 파일은 새 URL로 제공하고 HTML·로그인·API 응답은 `no-store`를 유지합니다. 이미 열린 탭이 이전 파일을 요청할 수 있어 시작 시 과거 해시 파일을 지우지 않습니다. Cloudflare에서는 원본 캐시 헤더를 따르게 하고, HTML이나 `/api/`까지 강제로 캐시하는 규칙을 적용하지 않습니다.
+
+계정·수험생·PDF·데이터 삭제·양식 편집 코드는 해당 화면에 진입할 때 불러오며, 편집기 런타임은 하나의 파일로 묶습니다. 현재 화면만 렌더링하고, 학교 ID 확인 뒤 독립적인 요약·목록 조회 및 편집기 설정·양식 조회를 동시에 처리합니다.
+
+Windows 11 PC를 실제 서버처럼 사용할 경우에는 프로젝트 루트의 `start-server.bat`를 실행합니다. 최초 실행이면 `.env` 생성, 의존성 설치, DB 스키마 준비, 기본 슈퍼 관리자 계정과 `한국대학교`의 `기본 템플릿` 생성 후 서버를 시작하고, 이미 구성되어 있으면 의존성을 확인하고 필요 시 자동 설치한 뒤 서버를 시작합니다. 자세한 내용은 [Windows 간편 배포 가이드](deploy/README.md)를 참고합니다.
 
 Git clone으로 설치한 서버를 GitHub 최신 코드로 갱신할 때는 서버를 중지한 뒤 `update-server.bat`를 실행합니다. 이 배치 파일은 `git fetch`, `git pull --ff-only origin <branch>`, `npm install`, `npm run setup:db`를 순서대로 실행하고, 완료 후 `start-server.bat`로 서버를 다시 시작하도록 안내합니다.
 

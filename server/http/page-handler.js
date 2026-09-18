@@ -1,3 +1,4 @@
+const { createStaticRepresentation, sendStaticRepresentation } = require("./static-response");
 const defaultMimeTypes = Object.freeze({
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -23,8 +24,10 @@ function createPageRequestHandlers({
   getViewFromPathname,
   path,
   root,
+  clientAssets = null,
   mimeTypes = defaultMimeTypes,
 }) {
+  const assetCache = new Map();
   function resolveStaticFilePath(pathname) {
     const requestPath = pathname === "/" ? "/index.html" : pathname;
     const safePath = path
@@ -37,37 +40,39 @@ function createPageRequestHandlers({
     };
   }
 
-  function serveStaticFile(response, pathname) {
-    const { filePath } = resolveStaticFilePath(pathname);
-
-    fs.readFile(filePath, (error, data) => {
-      if (error) {
-        response.writeHead(error.code === "ENOENT" ? 404 : 500, {
-          "Content-Type": "text/plain; charset=utf-8",
-        });
-        response.end(error.code === "ENOENT" ? "404 Not Found" : "500 Internal Server Error");
-        return;
+  async function serveStaticFile(response, pathname, request = { headers: {}, method: "GET" }) {
+    const decoded = decodeURIComponent(pathname);
+    const isAsset = Boolean(clientAssets && /^\/assets\/[a-zA-Z0-9_-]+\.(js|css|png|svg|jpg|woff2)$/.test(decoded));
+    const extension = path.extname(decoded).toLowerCase();
+    const isSource = /^\/(client|shared|styles)\//.test(decoded) && Boolean(mimeTypes[extension]);
+    const isRootFile = ["/styles.css", "/index.html", "/login.html"].includes(decoded);
+    const { filePath } = isAsset ? { filePath: path.join(clientAssets.outdir, path.basename(decoded)) } : resolveStaticFilePath(pathname);
+    const relative = path.relative(root, filePath);
+    if ((!isAsset && !isSource && !isRootFile) || relative.startsWith("..") || path.isAbsolute(relative) || decoded.includes("\\") || decoded.split("/").includes("..")) {
+      response.writeHead(404, { "Cache-Control": "no-store" });
+      response.end("404 Not Found");
+      return;
+    }
+    try {
+      let representation = isAsset ? assetCache.get(decoded) : null;
+      if (!representation) {
+        const data = await fs.promises.readFile(filePath);
+        representation = createStaticRepresentation(data, mimeTypes[extension] || "application/octet-stream");
+        if (isAsset) assetCache.set(decoded, representation);
       }
-
-      const extension = path.extname(filePath).toLowerCase();
-      response.writeHead(200, {
-        "Cache-Control": "no-store",
-        "Content-Type": mimeTypes[extension] || "application/octet-stream",
-      });
-      response.end(data);
-    });
+      await sendStaticRepresentation(request, response, representation, isAsset ? "public, max-age=31536000, immutable" : extension === ".html" ? "no-store" : "no-cache");
+    } catch (error) {
+      response.writeHead(error.code === "ENOENT" ? 404 : 500, { "Cache-Control": "no-store", "Content-Type": "text/plain; charset=utf-8" });
+      response.end(error.code === "ENOENT" ? "404 Not Found" : "500 Internal Server Error");
+    }
   }
 
-  async function serveHtmlFile(response, pathname) {
+  async function serveHtmlFile(request, response, pathname) {
     const { filePath } = resolveStaticFilePath(pathname);
 
     try {
-      const markup = await fs.promises.readFile(filePath, "utf8");
-      response.writeHead(200, {
-        "Cache-Control": "no-store",
-        "Content-Type": mimeTypes[".html"] || "text/html; charset=utf-8",
-      });
-      response.end(markup);
+      const markup = clientAssets?.pages[pathname === "/login.html" ? "login" : "app"] || await fs.promises.readFile(filePath, "utf8");
+      await sendStaticRepresentation(request, response, createStaticRepresentation(Buffer.from(markup), mimeTypes[".html"]), "no-store");
     } catch (error) {
       response.writeHead(error.code === "ENOENT" ? 404 : 500, {
         "Content-Type": "text/plain; charset=utf-8",
@@ -76,14 +81,14 @@ function createPageRequestHandlers({
     }
   }
 
-  async function handlePageRequest(_request, response, pathname) {
+  async function handlePageRequest(request, response, pathname) {
     if (pathname === "/") {
       sendRedirect(response, "/login");
       return true;
     }
 
     if (pathname === "/login" || pathname === "/login/") {
-      await serveHtmlFile(response, "/login.html");
+      await serveHtmlFile(request, response, "/login.html");
       return true;
     }
 
@@ -98,7 +103,7 @@ function createPageRequestHandlers({
       return false;
     }
 
-    await serveHtmlFile(response, "/index.html");
+    await serveHtmlFile(request, response, "/index.html");
     return true;
   }
 

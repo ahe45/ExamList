@@ -1,3 +1,4 @@
+import { createLazyActions, loadFeatureStyles } from "./app/lazy-feature.js";
 import { appState } from "./app/app-state.js";
 import { createAppRenderer } from "./app/app-renderer.js";
 import { loadViewData } from "./app/bootstrap-loader.js";
@@ -9,15 +10,8 @@ import { resetGridStateForRouteNavigation } from "./app/grid-state-reset.js";
 import { clearProtectedState as clearProtectedAppState } from "./app/protected-state-reset.js";
 import { getActiveSchoolRouteKey } from "./app/school-context.js";
 import { attachGridCellTooltips } from "./app/grid-tooltip.js";
-import { setupAccountActions } from "./features/accounts/actions.js";
 import { setupAuthActions } from "./features/auth/actions.js";
-import { setupCandidateActions } from "./features/candidates/actions.js";
-import { setupDataDeletionActions } from "./features/data-deletion/actions.js";
-import { setupPdfGenerationActions } from "./features/pdf-generations/actions.js";
-import { setupSchoolSettingsActions } from "./features/school-settings/actions.js";
 import { setupSchoolActions } from "./features/schools/actions.js";
-import { setupTemplateEditorActions } from "./features/template-editor/actions.js";
-import { attachTemplateEditorToolbarTooltips } from "./features/template-editor/toolbar-tooltip.js";
 import { setupTemplateActions } from "./features/templates/actions.js";
 
 const appConfig = window.ExamListAppConfig;
@@ -33,12 +27,16 @@ let requestUnsavedTemplateEditorAction = async (action) => {
 let pendingTemplateEditorAction = null;
 let editorActions = null;
 
-const renderApp = createAppRenderer({
+const renderAppView = createAppRenderer({
   appState,
   dom,
   getEditorActions: () => editorActions,
   renderModalClosePrompt,
 });
+let loadingViewData = 0;
+async function renderApp() {
+  if (!loadingViewData) await renderAppView();
+}
 const clearProtectedState = () => clearProtectedAppState(appState);
 
 function performNavigateToPath(pathname, options = {}) {
@@ -107,42 +105,63 @@ const schoolActions = setupSchoolActions({
   onStateChange: renderApp,
 });
 
-const accountActions = setupAccountActions({
-  appState,
-  onStateChange: renderApp,
+const accountActions = createLazyActions(async () => {
+  const { setupAccountActions } = await import("./features/accounts/actions.js");
+  return setupAccountActions({
+    appState,
+    onStateChange: renderApp,
+  });
 });
 
-const candidateActions = setupCandidateActions({
-  appState,
-  onStateChange: renderApp,
+const candidateActions = createLazyActions(async () => {
+  const { setupCandidateActions } = await import("./features/candidates/actions.js");
+  return setupCandidateActions({
+    appState,
+    onStateChange: renderApp,
+  });
 });
 
-const generationActions = setupPdfGenerationActions({
-  appState,
-  navigateToPath,
-  onStateChange: renderApp,
+const generationActions = createLazyActions(async () => {
+  const { setupPdfGenerationActions } = await import("./features/pdf-generations/actions.js");
+  return setupPdfGenerationActions({
+    appState,
+    navigateToPath,
+    onStateChange: renderApp,
+  });
 });
 
-const schoolSettingsActions = setupSchoolSettingsActions({
-  appState,
-  onStateChange: renderApp,
+const schoolSettingsActions = createLazyActions(async () => {
+  const { setupSchoolSettingsActions } = await import("./features/school-settings/actions.js");
+  return setupSchoolSettingsActions({
+    appState,
+    onStateChange: renderApp,
+  });
 });
 
-const dataDeletionActions = setupDataDeletionActions({
-  appState,
-  candidateActions,
-  generationActions,
-  schoolActions,
-  templatesActions: templateActions,
-  onStateChange: renderApp,
+const dataDeletionActions = createLazyActions(async () => {
+  const { setupDataDeletionActions } = await import("./features/data-deletion/actions.js");
+  return setupDataDeletionActions({
+    appState,
+    candidateActions,
+    generationActions,
+    schoolActions,
+    templatesActions: templateActions,
+    onStateChange: renderApp,
+  });
 });
 
-editorActions = setupTemplateEditorActions({
-  appState,
-  navigateToPath,
-  onStateChange: renderApp,
-  requestUnsavedTemplateEditorAction: (...args) => requestUnsavedTemplateEditorAction(...args),
-  templatesActions: templateActions,
+editorActions = createLazyActions(async () => {
+  const { setupTemplateEditorActions } = await import("./features/template-editor/actions.js");
+  await loadFeatureStyles(window.ExamListAssets?.editorStyles);
+  const { attachTemplateEditorToolbarTooltips } = await import("./features/template-editor/toolbar-tooltip.js");
+  attachTemplateEditorToolbarTooltips();
+  return setupTemplateEditorActions({
+    appState,
+    navigateToPath,
+    onStateChange: renderApp,
+    requestUnsavedTemplateEditorAction: (...args) => requestUnsavedTemplateEditorAction(...args),
+    templatesActions: templateActions,
+  });
 });
 
 const authActions = setupAuthActions({
@@ -325,7 +344,6 @@ registerAppModalGuards({
 });
 modalCloseGuard.attach();
 attachGridCellTooltips();
-attachTemplateEditorToolbarTooltips();
 
 async function navigateTo(routeMatch) {
   const nextRoute = routeMatch || appConfig.getRouteMatch(window.location.pathname) || appConfig.getRouteMatch("/schools");
@@ -354,10 +372,12 @@ async function navigateTo(routeMatch) {
     return;
   }
 
+  loadingViewData += 1;
   try {
     await loadViewData({
       accountActions,
       candidatesActions: candidateActions,
+      dataDeletionActions,
       editorActions,
       generationActions,
       route: nextRoute,
@@ -374,6 +394,8 @@ async function navigateTo(routeMatch) {
     } else {
       throw error;
     }
+  } finally {
+    loadingViewData -= 1;
   }
 
   const canonicalSchoolPath = buildCanonicalSchoolPath(nextRoute);

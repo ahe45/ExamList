@@ -7,3 +7,4 @@ uploads/
 storage/
 log/
 *.log
+.client-assets/

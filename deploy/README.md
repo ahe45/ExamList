@@ -27,7 +27,11 @@
 start-server.bat
 ```
 
-`start-server.bat`는 `.env`, `node_modules`, `node`, `npm`을 확인합니다. 아직 서버가 구성되어 있지 않으면 Windows setup을 먼저 실행하고, 이미 구성되어 있으면 바로 서버를 시작합니다. Node.js가 없으면 setup 단계에서 스스로 관리자 권한으로 다시 실행되어 설치를 시도합니다.
+`start-server.bat`는 `.env`, `node`, `npm`을 확인합니다. 아직 서버가 구성되어 있지 않으면 Windows setup을 먼저 실행합니다. Node.js가 없으면 setup 단계에서 스스로 관리자 권한으로 다시 실행되어 설치를 시도합니다.
+
+이미 구성된 서버는 실행 전에 필요한 패키지를 확인합니다. 자동 설치 확인 이력이 없거나 `package.json`/`package-lock.json`이 변경됐거나 패키지가 누락된 경우에는 `npm ci`를 자동 실행합니다(`package-lock.json`이 없으면 `npm install`). 새로 추가된 화면 최적화 패키지 `esbuild`도 함께 설치되므로 별도의 설치 명령을 입력할 필요가 없습니다. 이 과정에서는 기존 `.env`와 DB 설정을 다시 입력받지 않습니다.
+
+설치에는 인터넷 연결이 필요하며, 이후 변경이 없는 재실행에서는 설치를 건너뜁니다. 설치 결과는 `log\dependencies.log`에 기록됩니다. 설치에 실패하면 서버를 시작하지 않고 오류를 표시하므로, 원인을 해결한 뒤 `start-server.bat`를 다시 실행하세요. 패키지 준비가 끝나면 서버 시작 과정에서 브라우저용 JS/CSS를 자동 빌드합니다.
 
 ## setup 입력 순서
 
