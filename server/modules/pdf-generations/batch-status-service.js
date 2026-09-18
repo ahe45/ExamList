@@ -7,7 +7,17 @@ function createPdfGenerationBatchStatusService({
   query,
   writeAuditLog,
 }) {
+  const pendingRefreshes = new Map();
   async function refreshPdfGenerationBatch(batchId) {
+    const key = String(batchId || "").trim();
+    const previous = pendingRefreshes.get(key) || Promise.resolve();
+    const pending = previous.catch(() => {}).then(() => refreshBatch(key));
+    pendingRefreshes.set(key, pending);
+    try { return await pending; }
+    finally { if (pendingRefreshes.get(key) === pending) pendingRefreshes.delete(key); }
+  }
+
+  async function refreshBatch(batchId) {
     const normalizedBatchId = String(batchId || "").trim();
 
     if (!normalizedBatchId) {
@@ -20,7 +30,7 @@ function createPdfGenerationBatchStatusService({
       return null;
     }
 
-    const generationRows = await getBatchGenerationRows(normalizedBatchId);
+    const generationRows = await getBatchGenerationRows(normalizedBatchId, { statusOnly: true });
     const statusSummary = summarizePdfGenerationBatchStatus(batchRow, generationRows);
 
     await query(
@@ -34,7 +44,6 @@ function createPdfGenerationBatchStatusService({
           succeeded_count = ?,
           failed_count = ?,
           progress_percent = ?,
-          error_message = ?,
           completed_at = CASE WHEN ? THEN COALESCE(completed_at, CURRENT_TIMESTAMP) ELSE completed_at END,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
@@ -48,13 +57,12 @@ function createPdfGenerationBatchStatusService({
         statusSummary.succeededCount,
         statusSummary.failedCount,
         statusSummary.progressPercent,
-        String(batchRow.errorMessage || ""),
         statusSummary.isTerminal,
         normalizedBatchId,
       ],
     );
 
-    if (statusSummary.isTerminal) {
+    if (statusSummary.isTerminal && !batchRow.completedAt) {
       await writeAuditLog({
         action: "pdf_generation_batch_completed",
         entityId: normalizedBatchId,
@@ -68,7 +76,7 @@ function createPdfGenerationBatchStatusService({
       });
     }
 
-    return getPdfGenerationBatch(normalizedBatchId);
+    return getPdfGenerationBatch(normalizedBatchId, { includeItems: false });
   }
 
   return {

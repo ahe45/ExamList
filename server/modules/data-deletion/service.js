@@ -180,11 +180,15 @@ function createDataDeletionService({
   }
 
   async function getProjectDataDeletionSummary(request = {}) {
+    const scope = normalizeDataDeletionScope(request.scope || "all");
+    if (!scope) {
+      throw createHttpError(400, "삭제 범위가 올바르지 않습니다.", "DATA_DELETION_SCOPE_INVALID");
+    }
     const school = await resolveSchool(request.schoolId || request.schoolCode || "");
     const filters = normalizeDataDeletionFilters(request.filters || request.targetFilters || {});
     const isFilteredDeletion = hasDataDeletionFilters(filters);
     const explicitTemplateSelection = hasExplicitTemplateIdSelection(request);
-    const templateData = !isFilteredDeletion || explicitTemplateSelection
+    const templateData = (scope === "all" || scope === "templates") && (!isFilteredDeletion || explicitTemplateSelection)
       ? await getTemplateDataCounts(query, school.id, {
           explicitSelection: explicitTemplateSelection,
           templateIds: request.templateIds,
@@ -197,8 +201,8 @@ function createDataDeletionService({
     } = templateData;
     const counts = {
       ...createEmptyDeletionCounts(),
-      ...(await getCandidateDataCounts(query, school.id, filters)),
-      ...(await getPdfGenerationDataCounts(query, school.id, filters)),
+      ...(["all", "candidates", "photos"].includes(scope) ? await getCandidateDataCounts(query, school.id, filters) : {}),
+      ...(["all", "pdf-generations"].includes(scope) ? await getPdfGenerationDataCounts(query, school.id, filters) : {}),
       ...templateCounts,
     };
 
@@ -208,7 +212,7 @@ function createDataDeletionService({
       filters,
       schoolId: school.id,
       schoolName: school.name,
-      scopes: buildDataDeletionScopeSummaries(counts),
+      scopes: buildDataDeletionScopeSummaries(counts).filter((item) => scope === "all" || item.scope === scope),
       templates: {
         items: templateItems,
         selectedIds: selectedTemplateIds,

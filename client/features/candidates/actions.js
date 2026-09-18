@@ -16,6 +16,9 @@ export function setupCandidateActions({ appState, onStateChange }) {
   }
 
   const {
+    buildCandidateQuery,
+    loadCandidateGridOptions,
+    reloadCandidatePage,
     clampCandidatePage,
     closeCandidateFilterMenu,
     closeCandidatePageSizeMenu,
@@ -76,6 +79,9 @@ export function setupCandidateActions({ appState, onStateChange }) {
   }
 
   const eventContext = {
+    buildCandidateQuery,
+    loadCandidateGridOptions,
+    reloadCandidatePage,
     appState,
     canManageCandidates,
     clampCandidatePage,

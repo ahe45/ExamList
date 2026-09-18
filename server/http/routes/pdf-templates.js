@@ -30,6 +30,7 @@ function createPdfTemplateRoutes(deps) {
         response,
         200,
         await deps.listTemplates({
+          summary: searchParams.get("summary") === "1",
           generationUnit: searchParams.get("generationUnit") || "",
           keyword: searchParams.get("keyword") || "",
           limit: searchParams.get("limit") || "",

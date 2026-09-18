@@ -1,5 +1,8 @@
+const { mapWithConcurrency } = require("../../lib/concurrency");
+const { createRequestSnapshotStore } = require("./request-snapshot-store");
 const { normalizeGenerationListFilter, normalizeGenerationRequestFilters, parseJsonColumn } = require("./filters");
 const { mapBatchRow, mapGenerationDetailRow, mapGenerationRow } = require("./mappers");
+const { summarizePdfGenerationBatchStatus } = require("./batch-status");
 
 const generationResultScopeCandidateColumns = Object.freeze({
   admission: "admission",
@@ -88,7 +91,7 @@ function createPdfGenerationReadActions({
   getBatchRow,
   query,
 }) {
-  async function inferMissingResultScope(row = {}) {
+  async function inferMissingResultScope(row = {}, scopeCache = new Map()) {
     const requestSnapshot = parseJsonColumn(row.requestJson, null);
 
     if (
@@ -103,7 +106,8 @@ function createPdfGenerationReadActions({
 
     const filters = normalizeGenerationRequestFilters(requestSnapshot.filters);
     const { params, whereClause } = buildCandidateScopeWhereClause(row, filters);
-    const [candidateScopeRow] = await query(
+    const cacheKey = JSON.stringify({ schoolId: row.schoolId, filters: Object.fromEntries(Object.entries(filters).sort()) });
+    if (!scopeCache.has(cacheKey)) scopeCache.set(cacheKey, query(
       `
         SELECT
           ${buildCandidateResultScopeSelectList()}
@@ -111,8 +115,8 @@ function createPdfGenerationReadActions({
         ${whereClause}
       `,
       params,
-    );
-    const resultScope = buildResultScopeFromCandidateAggregate(candidateScopeRow || {});
+    ).then(rows => buildResultScopeFromCandidateAggregate(rows[0] || {})));
+    const resultScope = await scopeCache.get(cacheKey);
 
     if (!Object.keys(resultScope).length) {
       return row;
@@ -128,13 +132,8 @@ function createPdfGenerationReadActions({
   }
 
   async function inferMissingResultScopes(rows = []) {
-    const inferredRows = [];
-
-    for (const row of rows) {
-      inferredRows.push(await inferMissingResultScope(row));
-    }
-
-    return inferredRows;
+    const scopeCache = new Map();
+    return mapWithConcurrency(rows, 3, row => inferMissingResultScope(row, scopeCache));
   }
 
   async function listPdfGenerations(rawFilter = {}) {
@@ -203,7 +202,12 @@ function createPdfGenerationReadActions({
           max_attempts AS maxAttempts,
           warning_json AS warningJson,
           error_message AS errorMessage,
-          request_json AS requestJson,
+          CASE WHEN JSON_VALID(request_json) THEN JSON_OBJECT(
+            'filters', JSON_EXTRACT(request_json, '$.filters'),
+            'resultScope', JSON_EXTRACT(request_json, '$.resultScope'),
+            'generationUnit', JSON_EXTRACT(request_json, '$.generationUnit'),
+            'targetName', JSON_EXTRACT(request_json, '$.targetName')
+          ) ELSE NULL END AS requestJson,
           expires_at AS expiresAt,
           purged_at AS purgedAt,
           started_at AS startedAt,
@@ -229,7 +233,7 @@ function createPdfGenerationReadActions({
     };
   }
 
-  async function getPdfGenerationBatch(batchId) {
+  async function getPdfGenerationBatch(batchId, { includeItems = true } = {}) {
     const normalizedBatchId = String(batchId || "").trim();
     const batchRow = await getBatchRow(normalizedBatchId);
 
@@ -237,12 +241,17 @@ function createPdfGenerationReadActions({
       throw createHttpError(404, "PDF 배치 생성 작업을 찾을 수 없습니다.", "PDF_GENERATION_BATCH_NOT_FOUND");
     }
 
+    if (!includeItems) {
+      const rows = await getBatchGenerationRows(normalizedBatchId, { statusOnly: true });
+      return { ...mapBatchRow(batchRow), ...summarizePdfGenerationBatchStatus(batchRow, rows) };
+    }
     const generationRows = await getBatchGenerationRows(normalizedBatchId);
 
     const inferredGenerationRows = await inferMissingResultScopes(generationRows);
 
     return {
       ...mapBatchRow(batchRow),
+      ...summarizePdfGenerationBatchStatus(batchRow, generationRows),
       items: inferredGenerationRows.map(mapGenerationRow),
     };
   }
@@ -281,7 +290,7 @@ function createPdfGenerationReadActions({
       `,
       [generationId],
     );
-    const generationRow = rows[0];
+    const [generationRow] = await createRequestSnapshotStore(query).hydrateRows(rows);
 
     if (!generationRow) {
       throw createHttpError(404, "PDF 생성 이력을 찾을 수 없습니다.", "PDF_GENERATION_DETAIL_NOT_FOUND");

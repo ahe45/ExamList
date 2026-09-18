@@ -12,6 +12,7 @@ test("enqueuePdfGenerationBatch queues one generation job per selected target", 
   const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), "examlist-test-"));
   const batchRows = new Map();
   const historyRows = new Map();
+  const snapshots = new Map();
   const template = {
     description: "",
     generationUnit: "room",
@@ -43,6 +44,8 @@ test("enqueuePdfGenerationBatch queues one generation job per selected target", 
       },
     },
     async query(sql, params = []) {
+      if (sql.includes("INSERT IGNORE INTO pdf_request_templates")) { snapshots.set(params[0], params[1]); return []; }
+      if (sql.includes("FROM pdf_request_templates")) return params[0].map(id => ({ id, templateJson: snapshots.get(id) }));
       if (sql.includes("INSERT INTO pdf_generation_batches")) {
         const row = {
           archiveFileName: params[13],

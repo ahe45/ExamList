@@ -26,6 +26,8 @@ export function renderPdfGenerationDownloadProgressOverlay(pdfGenerations = {}) 
     : mode === "merge"
     ? "선택한 PDF를 하나의 파일로 병합하고 있습니다."
     : "선택한 PDF 파일을 ZIP으로 묶고 있습니다.";
+  const progress = pdfGenerations.artifactProgress || {};
+  const percent = progress.total ? Math.min(99, Math.round(progress.processed / progress.total * 100)) : null;
   const countLabel = isGeneratedResultDownload ? "이번 생성" : "선택";
 
   return `
@@ -38,10 +40,10 @@ export function renderPdfGenerationDownloadProgressOverlay(pdfGenerations = {}) 
         <div class="busy-overlay-progress" aria-hidden="true">
           <div class="busy-overlay-progress-meta">
             <span>다운로드 파일 준비</span>
-            <span class="busy-overlay-progress-value">처리 중</span>
+            <span class="busy-overlay-progress-value">${percent === null ? (progress.status === "queued" ? "대기 중" : "처리 중") : percent + "%"}</span>
           </div>
-          <div class="progress-bar is-indeterminate">
-            <span></span>
+          <div class="progress-bar ${percent === null ? "is-indeterminate" : ""}">
+            <span style="width: ${percent ?? 100}%"></span>
           </div>
         </div>
         <p class="pdf-generation-download-busy-meta">${countLabel} ${formatCount(targetCount)}건</p>

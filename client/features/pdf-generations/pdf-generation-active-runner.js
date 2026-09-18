@@ -221,11 +221,13 @@ export function createPdfGenerationActiveRunner({
     }
 
     try {
-      const batchPayload = await getJson(`/api/pdf-generations/batches/${encodeURIComponent(normalizedBatchId)}`);
+      let batchPayload = await getJson(`/api/pdf-generations/batches/${encodeURIComponent(normalizedBatchId)}?summary=1`);
 
       updateActiveGenerationFromBatch(batchPayload);
 
       if (isTerminalBatch(batchPayload)) {
+        // The complete file list is needed only once, for the result/download dialog.
+        batchPayload = await getJson(`/api/pdf-generations/batches/${encodeURIComponent(normalizedBatchId)}`);
         const failedCount = Number(batchPayload.failedCount) || 0;
         const wasCancelled = String(batchPayload.errorMessage || "").includes("중단");
 

@@ -1,3 +1,4 @@
+const { createRequestSnapshotStore } = require("./request-snapshot-store");
 const { normalizeArchiveGenerationIds } = require("./archives");
 const { restoreGenerationRequestFromHistory } = require("./snapshots");
 
@@ -30,7 +31,7 @@ function createPdfGenerationRerunActions({
       `,
       generationIds,
     );
-    const generationRowMap = new Map(rows.map((row) => [String(row.id || ""), row]));
+    const generationRowMap = new Map((await createRequestSnapshotStore(query).hydrateRows(rows)).map((row) => [String(row.id || ""), row]));
     const items = [];
 
     for (const generationId of generationIds) {
@@ -95,7 +96,7 @@ function createPdfGenerationRerunActions({
       `,
       [generationId],
     );
-    const generationRow = rows[0];
+    const [generationRow] = await createRequestSnapshotStore(query).hydrateRows(rows);
 
     if (!generationRow) {
       throw createHttpError(404, "재생성할 PDF 이력을 찾을 수 없습니다.", "PDF_GENERATION_RERUN_NOT_FOUND");

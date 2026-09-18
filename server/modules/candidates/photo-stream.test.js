@@ -1,0 +1,32 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs/promises");
+const path = require("node:path");
+const os = require("node:os");
+const { Readable } = require("node:stream");
+const AdmZip = require("adm-zip");
+const { createCandidatePhotoParser } = require("./photo-parser");
+const { createCandidatePhotoArchiveSessionStore } = require("./photo-archive-session-store");
+const parser = createCandidatePhotoParser({ createHttpError: (statusCode, message, errorCode) => Object.assign(new Error(message), { statusCode, errorCode }), getCandidatePhotoMimeType: ext => [".jpg", ".png", ".jpeg"].includes(ext) ? "image/jpeg" : "" });
+test("photo ZIP is streamed to disk and only requested photos are expanded, including duplicate fallback", async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "examlist-photo-stream-")); t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const zip = new AdmZip(); zip.addFile("a/1.jpg", Buffer.from("first")); zip.addFile("z/1.jpg", Buffer.alloc(0)); zip.addFile("2.png", Buffer.from("second")); zip.addFile("readme.txt", Buffer.from("ignored"));
+  const bytes = zip.toBuffer(); const store = createCandidatePhotoArchiveSessionStore({ directoryPath: root });
+  const session = await store.createSessionFromStream(Readable.from([bytes.subarray(0, 100), bytes.subarray(100)]), {}, { maxBodyBytes: bytes.length });
+  assert.deepEqual(await fs.readFile(await store.readSessionFile(session.token)), bytes);
+  const parsed = await parser.parseCandidatePhotoArchiveFile(session.archivePath);
+  assert.equal(parsed.photos.length, 2); assert.equal(parsed.skippedEntries, 1); assert.equal(parsed.duplicateEntries, 1);
+  for (const photo of parsed.photos) assert.equal(photo.fileBuffer, undefined);
+  assert.equal((await parsed.photos.find(photo => photo.examineeNo === "1").readPhoto()).fileBuffer.toString(), "first");
+  const original = parser.parseCandidatePhotoArchiveBuffer(bytes);
+  for (const photo of parsed.photos) assert.deepEqual(await photo.readPhoto(), original.photos.find(old => old.examineeNo === photo.examineeNo));
+  await store.deleteSession(session.token); assert.deepEqual(await fs.readdir(root), []);
+});
+test("oversized and interrupted ZIP uploads remove partial files", async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "examlist-photo-stream-")); t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const store = createCandidatePhotoArchiveSessionStore({ directoryPath: root });
+  await assert.rejects(store.createSessionFromStream(Readable.from([Buffer.alloc(20)]), {}, { maxBodyBytes: 10 }), { statusCode: 413 });
+  assert.deepEqual(await fs.readdir(root), []);
+  await assert.rejects(store.createSessionFromStream(Readable.from((async function* () { yield Buffer.alloc(10); throw new Error("disconnected"); })()), {}, { maxBodyBytes: 100 }), /disconnected/);
+  assert.deepEqual(await fs.readdir(root), []);
+});

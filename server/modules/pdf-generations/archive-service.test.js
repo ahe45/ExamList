@@ -6,6 +6,7 @@ const path = require("node:path");
 const { PDFDocument } = require("pdf-lib");
 
 const { createPdfGenerationArchiveService } = require("./archive-service");
+const { mergePdfFiles } = require("./merge-worker");
 
 const ACADEMIC_YEAR_SUFFIX = "\uD559\uB144\uB3C4";
 const ARCHIVE_ARTIFACT_LABEL = "\uAC1C\uBCC4";
@@ -110,6 +111,7 @@ test("createPdfGenerationMergedFile reads PDFs in generation unit ascending orde
         await fs.promises.mkdir(path.join(storageRoot, "merged"), { recursive: true });
       },
       fs: trackedFs,
+      mergePdfFiles: (files, outputPath) => mergePdfFiles(files, outputPath, { fileSystem: trackedFs }),
       legacyStorageRoot: tempDir,
       path,
       query: async () => rows,
@@ -237,8 +239,7 @@ test("listPdfGenerationArtifacts returns downloadable merged and zip files for a
     assert.equal(result.items[0].downloadUrl, "/api/pdf-generations/archives/pdf-archive-1/download?name=generated.zip");
     assert.match(queryCalls[0].sql, /pdf_generation_archive_created/);
     assert.deepEqual(queryCalls[0].params, [
-      '%"schoolId":"school-1"%',
-      '%"schoolIds":[%"school-1"%]%',
+      'school-1',
       10,
     ]);
   } finally {

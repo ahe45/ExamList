@@ -1,3 +1,4 @@
+const { createHash } = require("node:crypto");
 const { normalizeTemplateLayout } = require("./layout");
 const { mapTemplateListRow, parseJsonColumn } = require("./mappers");
 const { normalizeListFilter } = require("./validation");
@@ -22,7 +23,17 @@ function mapTemplateVersionRow(row) {
 }
 
 function createPdfTemplateReadActions({ createHttpError, query, renderListThumbnail = null }) {
+  const thumbnailCache = new Map();
   async function mapTemplateListRowForList(row) {
+    const key = createHash("sha256").update(JSON.stringify(row)).digest("hex");
+    const cached = thumbnailCache.get(key);
+    if (cached && Date.now() - cached.time < 60000) return cached.value;
+    const value = renderTemplateListItem(row);
+    thumbnailCache.set(key, { value, time: Date.now() });
+    while (thumbnailCache.size > 100) thumbnailCache.delete(thumbnailCache.keys().next().value);
+    return value;
+  }
+  async function renderTemplateListItem(row) {
     const shouldUseAsyncThumbnail = typeof renderListThumbnail === "function";
     const item = mapTemplateListRow(row, { renderThumbnail: !shouldUseAsyncThumbnail });
 
@@ -163,7 +174,7 @@ function createPdfTemplateReadActions({ createHttpError, query, renderListThumbn
           orientation,
           generation_unit AS generationUnit,
           latest_version_no AS latestVersionNo,
-          layout_json AS layoutJson,
+          ${rawFilter.summary ? "NULL" : "layout_json"} AS layoutJson,
           created_at AS createdAt,
           updated_at AS updatedAt
         FROM pdf_templates
@@ -175,7 +186,7 @@ function createPdfTemplateReadActions({ createHttpError, query, renderListThumbn
     );
 
     return {
-      items: await Promise.all(rows.map(mapTemplateListRowForList)),
+      items: rawFilter.summary ? rows.map(row => mapTemplateListRow(row, { renderThumbnail: false })) : await Promise.all(rows.map(mapTemplateListRowForList)),
       total,
       page: filter.page,
       limit: filter.limit,

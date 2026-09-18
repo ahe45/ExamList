@@ -134,6 +134,9 @@ function sumCandidateCount(options = []) {
 }
 
 function getTargetEstimate({ filters, modal, selectedFilterKeys, selectedTemplate }) {
+  if (modal.isLoadingTargetEstimate) {
+    return { candidateCount: null, pdfCount: null };
+  }
   const generationUnit = String(selectedTemplate?.generationUnit || "").trim();
   const serverEstimate =
     modal.targetEstimate &&
@@ -165,6 +168,9 @@ function getTargetEstimate({ filters, modal, selectedFilterKeys, selectedTemplat
     };
   }
 
+  if (!Array.isArray(modal.options?.[targetFilterKey])) {
+    return { candidateCount: null, pdfCount: null };
+  }
   const options = getOptionList(modal, targetFilterKey);
   const selectedValue = String(filters[targetFilterKey] || "").trim();
   const hasTargetSelection = selectedFilterKeys.includes(targetFilterKey);

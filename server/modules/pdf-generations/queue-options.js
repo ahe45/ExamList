@@ -1,5 +1,10 @@
 const defaultQueueName = "examlist-pdf-generation";
 
+function resolveQueueConcurrency() {
+  const value = Number(process.env.PDF_QUEUE_CONCURRENCY);
+  return Number.isFinite(value) && value >= 1 ? Math.min(Math.floor(value), 5) : 2;
+}
+
 function normalizeProgressPercent(value, fallback = 0) {
   const parsedValue = Math.round(Number(value));
 
@@ -71,4 +76,5 @@ module.exports = {
   normalizeRetentionDays,
   normalizeRetryAttempts,
   resolveQueueDriver,
+  resolveQueueConcurrency,
 };

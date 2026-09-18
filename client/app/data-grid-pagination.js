@@ -114,7 +114,7 @@ export function renderGridPagination({ tableState, visibleRows, pageSizeOptions,
         >다음</button>
         ${renderGridPagePicker(currentPage, totalPages, namespace)}
       </div>
-      <div class="table-pagination-summary">${rows.length ? `${formatCount(startRowNumber)}-${formatCount(endRowNumber)}` : "0"} / 총 ${formatCount(rows.length)}건</div>
+      <div class="table-pagination-summary">${rows.length ? `${formatCount(startRowNumber)}-${formatCount(endRowNumber)}` : "0"} / 총 ${formatCount(visibleRows.totalRows ?? rows.length)}건</div>
     </div>
   `;
 }

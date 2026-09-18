@@ -1,4 +1,4 @@
-const { defaultQueueName, resolveQueueDriver } = require("./queue-options");
+const { defaultQueueName, resolveQueueDriver, resolveQueueConcurrency } = require("./queue-options");
 
 function createPdfGenerationQueueService({
   createHttpError,
@@ -6,7 +6,7 @@ function createPdfGenerationQueueService({
   writeAuditLog,
 }) {
   const memoryQueue = {
-    active: false,
+    activeIds: new Set(),
     ids: [],
     scheduledIds: new Set(),
   };
@@ -88,7 +88,7 @@ function createPdfGenerationQueueService({
         await processQueuedPdfGeneration(String(job.data?.generationId || ""));
       },
       {
-        concurrency: Math.min(Math.max(Number(process.env.PDF_QUEUE_CONCURRENCY) || 1, 1), 5),
+        concurrency: resolveQueueConcurrency(),
         connection: bullQueueState.connection,
       },
     );
@@ -127,25 +127,23 @@ function createPdfGenerationQueueService({
     setImmediate(schedule);
   }
 
-  async function drainMemoryQueue() {
-    if (memoryQueue.active) {
-      return;
-    }
-
-    memoryQueue.active = true;
-
-    try {
-      while (memoryQueue.ids.length) {
-        const generationId = memoryQueue.ids.shift();
-        memoryQueue.scheduledIds.delete(generationId);
-        await processQueuedPdfGeneration(generationId);
-      }
-    } finally {
-      memoryQueue.active = false;
-
-      if (memoryQueue.ids.length) {
-        setImmediate(drainMemoryQueue);
-      }
+  function drainMemoryQueue() {
+    while (memoryQueue.activeIds.size < resolveQueueConcurrency()) {
+      // A retry can be scheduled before its current attempt has returned.
+      const index = memoryQueue.ids.findIndex(id => !memoryQueue.activeIds.has(id));
+      if (index < 0) return;
+      const [generationId] = memoryQueue.ids.splice(index, 1);
+      memoryQueue.scheduledIds.delete(generationId);
+      memoryQueue.activeIds.add(generationId);
+      Promise.resolve().then(() => processQueuedPdfGeneration(generationId)).catch(async error => {
+        await writeAuditLog({
+          action: "pdf_generation_queue_worker_failed", entityId: generationId,
+          metadata: { errorCode: String(error?.code || "") }, status: "failed",
+        }).catch(() => {});
+      }).finally(() => {
+        memoryQueue.activeIds.delete(generationId);
+        drainMemoryQueue();
+      });
     }
   }
 

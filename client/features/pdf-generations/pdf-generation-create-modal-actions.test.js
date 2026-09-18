@@ -82,3 +82,37 @@ test("PDF generation create modal option request excludes each field from its ow
   assert.equal(targetParams.get("track"), "수시");
   assert.equal(targetParams.get("excludeSelfFilters"), null);
 });
+
+test("PDF options load independently of estimates and ignore older requests", async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const requests = [];
+  globalThis.fetch = (url) => new Promise((resolve) => requests.push({ url: String(url), resolve: (payload) => resolve(createJsonResponse(payload)) }));
+  const modal = { isOpen: true, filters: { track: "first" }, selectedFilterKeys: ["track"], selectedTemplateId: "template-1", templates: [{ id: "template-1", generationUnit: "roomCode" }] };
+  const actions = createPdfGenerationCreateModalActions({
+    getCreateModalState: () => modal,
+    getCurrentSchoolId: () => "school-1",
+    onStateChange: async () => {},
+  });
+  const first = actions.loadCreateModalOptions();
+  await new Promise(setImmediate);
+  assert.equal(requests.length, 2);
+  assert.deepEqual(getUrlParams(requests[0].url).get("fields").split(","), ["track", "admission", "series"]);
+  requests[0].resolve({ options: { track: [{ value: "first" }] } });
+  await new Promise(setImmediate);
+  assert.equal(modal.isLoadingOptions, false);
+  assert.equal(modal.isLoadingTargetEstimate, true);
+  modal.filters.track = "second";
+  modal.selectedFilterKeys = ["track", "admission", "series"];
+  const second = actions.loadCreateModalOptions();
+  await new Promise(setImmediate);
+  assert.deepEqual(getUrlParams(requests[2].url).get("fields").split(","), ["track", "admission", "series", "unit"]);
+  requests[2].resolve({ options: { track: [{ value: "second" }] } });
+  requests[3].resolve({ items: [{ candidateCount: 2 }], total: 1 });
+  await second;
+  requests[1].resolve({ items: [{ candidateCount: 99 }], total: 1 });
+  await first;
+  assert.equal(modal.targetEstimate.candidateCount, 2);
+  assert.equal(modal.options.track[0].value, "second");
+  assert.equal(modal.isLoadingTargetEstimate, false);
+});

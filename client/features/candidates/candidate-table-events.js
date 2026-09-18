@@ -78,6 +78,7 @@ export async function handleCandidateFilterChange(event, context) {
       : currentValues.filter((value) => String(value || "") !== filterValue);
 
     setCandidateFilterValues(columnKey, nextValues);
+    await context.reloadCandidatePage?.();
     await onStateChangePreservingCandidateGridScroll();
     return true;
   }
@@ -92,6 +93,7 @@ export async function handleCandidateFilterChange(event, context) {
       : currentValues.filter((value) => !visibleOptionSet.has(String(value || "")));
 
     setCandidateFilterValues(columnKey, nextValues);
+    await context.reloadCandidatePage?.();
     await onStateChangePreservingCandidateGridScroll();
     return true;
   }
@@ -117,7 +119,7 @@ export async function handleCandidateTableChange(event, context) {
   closeCandidateFilterMenu();
   closeCandidatePageSizeMenu();
   clampCandidatePage();
-  await onStateChange();
+  await (context.reloadCandidatePage || onStateChange)();
   return true;
 }
 
@@ -192,6 +194,7 @@ export async function handleCandidateTableClick(event, context) {
 
   if (sortButton) {
     toggleCandidateSort(sortButton.dataset.candidateGridSort || "");
+    await context.reloadCandidatePage?.();
     closeCandidateFilterMenu();
     closeCandidatePageSizeMenu();
     await onStateChangePreservingCandidateGridScroll();
@@ -208,6 +211,7 @@ export async function handleCandidateTableClick(event, context) {
     tableState.filterMenuKey = isClosingCurrentMenu ? "" : nextFilterKey;
     tableState.filterMenuPosition = isClosingCurrentMenu ? null : resolveCandidateFilterMenuPosition(filterButton);
     tableState.filterMenuSearch = "";
+    if (!isClosingCurrentMenu) await context.loadCandidateGridOptions?.(nextFilterKey);
     closeCandidatePageSizeMenu();
     await onStateChangePreservingCandidateGridScroll();
     return true;
@@ -233,7 +237,7 @@ export async function handleCandidateTableClick(event, context) {
     tableState.page = 1;
     tableState.pageSizeMenuOpen = false;
     clampCandidatePage();
-    await onStateChange();
+    await (context.reloadCandidatePage || onStateChange)();
     return true;
   }
 
@@ -243,7 +247,7 @@ export async function handleCandidateTableClick(event, context) {
     event.preventDefault();
     getCandidateTableState().page = Math.max(1, Number(pageButton.dataset.candidateGridPage) || 1);
     clampCandidatePage();
-    await onStateChange();
+    await (context.reloadCandidatePage || onStateChange)();
     return true;
   }
 
@@ -268,7 +272,7 @@ export async function handleCandidateTableClick(event, context) {
     const currentPage = Math.min(Math.max(1, Number(tableState.page) || 1), totalPages);
 
     tableState.page = direction === "prev" ? Math.max(1, currentPage - 1) : Math.min(totalPages, currentPage + 1);
-    await onStateChange();
+    await (context.reloadCandidatePage || onStateChange)();
     return true;
   }
 
@@ -299,6 +303,7 @@ export async function handleCandidateTableAction(actionTarget, action, context) 
 
   if (action === "clear-candidate-filter") {
     setCandidateFilterValues(actionTarget.dataset.filterKey || "", []);
+    await context.reloadCandidatePage?.();
     getCandidateTableState().filterMenuSearch = "";
     await onStateChangePreservingCandidateGridScroll();
     return true;
@@ -306,8 +311,9 @@ export async function handleCandidateTableAction(actionTarget, action, context) 
 
   if (action === "download-candidates") {
     const rows = getFilteredCandidateRows(appState.candidates);
+    const rowCount = appState.candidates.serverPaged ? appState.candidates.total : rows.length;
 
-    if (!rows.length) {
+    if (!rowCount) {
       appState.candidates.errorMessage = "다운로드할 수험생 데이터가 없습니다.";
       showToast(appState.candidates.errorMessage, { tone: "warning" });
       await onStateChange();
@@ -315,7 +321,7 @@ export async function handleCandidateTableAction(actionTarget, action, context) 
     }
 
     appState.candidates.downloadConfirm = {
-      count: rows.length,
+      count: rowCount,
       isDownloading: false,
       isOpen: true,
     };
@@ -335,8 +341,9 @@ export async function handleCandidateTableAction(actionTarget, action, context) 
 
   if (action === "confirm-candidate-download") {
     const rows = getFilteredCandidateRows(appState.candidates);
+    const rowCount = appState.candidates.serverPaged ? appState.candidates.total : rows.length;
 
-    if (!rows.length) {
+    if (!rowCount) {
       appState.candidates.downloadConfirm = {
         count: 0,
         isDownloading: false,
@@ -349,7 +356,7 @@ export async function handleCandidateTableAction(actionTarget, action, context) 
     }
 
     appState.candidates.downloadConfirm = {
-      count: rows.length,
+      count: rowCount,
       isDownloading: true,
       isOpen: true,
     };
@@ -360,7 +367,7 @@ export async function handleCandidateTableAction(actionTarget, action, context) 
         await fetchBlob(
           "/api/candidates/export.xlsx",
           {
-            body: JSON.stringify({ rows }),
+            body: JSON.stringify(appState.candidates.serverPaged ? { ...context.buildCandidateQuery(), gridFilters: getCandidateTableState().filters } : { rows }),
             headers: {
               "Content-Type": "application/json",
             },
@@ -378,7 +385,7 @@ export async function handleCandidateTableAction(actionTarget, action, context) 
       };
     } catch (error) {
       appState.candidates.downloadConfirm = {
-        count: rows.length,
+        count: rowCount,
         isDownloading: false,
         isOpen: true,
       };

@@ -18,69 +18,11 @@ function collectUniqueValues(values = []) {
 
 function buildAuditSchoolFilter(rawSchoolId = "") {
   const schoolId = String(rawSchoolId || "").trim();
-
-  if (!schoolId) {
-    return {
-      params: [],
-      whereClause: "",
-    };
-  }
-
-  const encodedSchoolId = JSON.stringify(schoolId);
-  const metadataSchoolIdPattern = `%"schoolId":${encodedSchoolId}%`;
-  const metadataSchoolIdsPattern = `%"schoolIds":[%${encodedSchoolId}%]%`;
-  const metadataSchoolConditions = [
-    "audit_log.metadata_json LIKE ?",
-    "audit_log.metadata_json LIKE ?",
-  ];
-  const scopedMetadataSchoolConditions = [
-    "audit_scope.metadata_json LIKE ?",
-    "audit_scope.metadata_json LIKE ?",
-  ];
-
-  return {
-    params: [
-      metadataSchoolIdPattern,
-      metadataSchoolIdsPattern,
-      schoolId,
-      schoolId,
-      schoolId,
-      metadataSchoolIdPattern,
-      metadataSchoolIdsPattern,
-    ],
-    whereClause: `
-        WHERE (
-          ${metadataSchoolConditions.join("\n          OR ")}
-          OR EXISTS (
-            SELECT 1
-            FROM pdf_generation_histories audit_history
-            WHERE audit_history.id = audit_log.entity_id
-              AND audit_history.school_id = ?
-          )
-          OR EXISTS (
-            SELECT 1
-            FROM pdf_generation_batches audit_batch
-            WHERE audit_batch.id = audit_log.entity_id
-              AND audit_batch.school_id = ?
-          )
-          OR EXISTS (
-            SELECT 1
-            FROM pdf_generation_batches audit_archive_batch
-            WHERE audit_archive_batch.archive_id = audit_log.entity_id
-              AND audit_archive_batch.school_id = ?
-          )
-          OR EXISTS (
-            SELECT 1
-            FROM pdf_audit_logs audit_scope
-            WHERE audit_scope.entity_id = audit_log.entity_id
-              AND audit_scope.id <> audit_log.id
-              AND (
-                ${scopedMetadataSchoolConditions.join("\n                OR ")}
-              )
-          )
-        )
-      `,
-  };
+  return schoolId ? {
+    params: [schoolId],
+    joinClause: "INNER JOIN pdf_audit_log_schools school_scope ON school_scope.audit_id = audit_log.id",
+    whereClause: "WHERE school_scope.school_id = ?",
+  } : { params: [], joinClause: "", whereClause: "" };
 }
 
 async function queryRowsOrEmpty(query, sql, params = []) {
@@ -408,6 +350,7 @@ function createPdfGenerationFileActions({
           metadata_json AS metadataJson,
           created_at AS createdAt
         FROM pdf_audit_logs audit_log
+        ${schoolFilter.joinClause}
         ${schoolFilter.whereClause}
         ORDER BY created_at DESC
         LIMIT ?

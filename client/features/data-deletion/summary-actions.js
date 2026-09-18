@@ -1,8 +1,9 @@
+import { getPdfGenerationVisibleFilterSteps } from "../pdf-generations/pdf-generation-flow.js";
 import { getJson } from "../../app/api-client.js";
 import { showToast } from "../../app/toast.js";
 import { toQueryString } from "../pdf-generations/pdf-generation-action-utils.js";
 import {
-  dataDeletionOptionFields,
+  dataDeletionGenerationUnit,
   emptyTemplateSelectionQueryValue,
   normalizeTemplateIds,
 } from "./state.js";
@@ -13,7 +14,9 @@ export function createDataDeletionSummaryActions({
   getDataDeletionModalState,
   onStateChange,
 }) {
+  let requestVersion = 0;
   async function loadDataDeletionModalData() {
+    const version = ++requestVersion;
     const modal = getDataDeletionModalState();
     const schoolId = getCurrentSchoolId();
 
@@ -29,61 +32,62 @@ export function createDataDeletionSummaryActions({
       return;
     }
 
+    const isCurrent = () => version === requestVersion && getDataDeletionModalState() === modal && modal.isOpen && getCurrentSchoolId() === schoolId;
     const filterPayload = buildDataDeletionFilterPayload();
     const isTemplateScope = modal.selectedScope === "templates";
 
     modal.isLoadingOptions = !isTemplateScope;
     modal.isLoadingSummary = true;
+    modal.summary = null;
     modal.summaryErrorMessage = "";
     await onStateChange();
 
+    if (!isCurrent()) return;
     const selectedTemplateIds = normalizeTemplateIds(modal.selectedTemplateIds);
     const optionQueryString = isTemplateScope
       ? ""
       : toQueryString({
           ...filterPayload,
           excludeSelfFilters: "1",
-          fields: dataDeletionOptionFields.join(","),
+          fields: getPdfGenerationVisibleFilterSteps(dataDeletionGenerationUnit).map(step => step.key).join(","),
           schoolId,
         });
     const summaryQueryString = toQueryString({
+      scope: modal.selectedScope,
       ...filterPayload,
       schoolId,
       ...(isTemplateScope
         ? { templateIds: selectedTemplateIds.length ? selectedTemplateIds.join(",") : emptyTemplateSelectionQueryValue }
         : {}),
     });
-    const [optionsResult, summaryResult] = await Promise.allSettled([
-      isTemplateScope
-        ? Promise.resolve({ options: {} })
-        : getJson(`/api/candidates/filter-options${optionQueryString ? `?${optionQueryString}` : ""}`),
-      getJson(`/api/data-deletion/summary${summaryQueryString ? `?${summaryQueryString}` : ""}`),
+    await Promise.all([
+      (async () => {
+        try {
+          const payload = isTemplateScope ? { options: {} } : await getJson(`/api/candidates/filter-options?${optionQueryString}`);
+          if (isCurrent()) modal.options = payload?.options || {};
+        } catch {
+          // Keep the last usable list on a transient failure; selected filters remain authoritative.
+        } finally {
+          if (isCurrent()) { modal.isLoadingOptions = false; await onStateChange(); }
+        }
+      })(),
+      (async () => {
+        try {
+          const payload = await getJson(`/api/data-deletion/summary?${summaryQueryString}`);
+          if (!isCurrent()) return;
+          modal.summary = payload;
+          modal.summaryErrorMessage = "";
+          if (isTemplateScope) modal.selectedTemplateIds = normalizeTemplateIds(payload?.templates?.selectedIds);
+        } catch (error) {
+          if (!isCurrent()) return;
+          modal.summary = null;
+          modal.summaryErrorMessage = error.message || "삭제 대상 건수를 불러오지 못했습니다.";
+          showToast(modal.summaryErrorMessage, { tone: "error" });
+        } finally {
+          if (isCurrent()) { modal.isLoadingSummary = false; await onStateChange(); }
+        }
+      })(),
     ]);
-
-    if (optionsResult.status === "fulfilled") {
-      modal.options =
-        optionsResult.value?.options && typeof optionsResult.value.options === "object"
-          ? optionsResult.value.options
-          : {};
-    } else {
-      modal.options = {};
-    }
-
-    if (summaryResult.status === "fulfilled") {
-      modal.summary = summaryResult.value;
-      modal.summaryErrorMessage = "";
-      if (isTemplateScope) {
-        modal.selectedTemplateIds = normalizeTemplateIds(summaryResult.value?.templates?.selectedIds);
-      }
-    } else {
-      modal.summary = null;
-      modal.summaryErrorMessage = summaryResult.reason?.message || "삭제 대상 건수를 불러오지 못했습니다.";
-      showToast(modal.summaryErrorMessage, { tone: "error" });
-    }
-
-    modal.isLoadingOptions = false;
-    modal.isLoadingSummary = false;
-    await onStateChange();
   }
 
   return {

@@ -1,3 +1,4 @@
+const { createRequestSnapshotStore } = require("./request-snapshot-store");
 function createPdfGenerationQueueHistoryStore({ query }) {
   async function getGenerationQueueRow(generationId) {
     const rows = await query(
@@ -19,7 +20,7 @@ function createPdfGenerationQueueHistoryStore({ query }) {
       [generationId],
     );
 
-    return rows[0] || null;
+    return (await createRequestSnapshotStore(query).hydrateRows(rows))[0] || null;
   }
 
   async function markQueuedGenerationForRetry(generationId, { attemptCount, errorMessage, maxAttempts }) {
@@ -119,9 +120,9 @@ function createPdfGenerationQueueHistoryStore({ query }) {
         FROM pdf_generation_histories
         WHERE status = 'queued'
         ORDER BY created_at ASC
-        LIMIT ?
+        ${limit === null ? "" : "LIMIT ?"}
       `,
-      [limit],
+      limit === null ? [] : [limit],
     );
 
     return rows.map((row) => String(row.id || "")).filter(Boolean);

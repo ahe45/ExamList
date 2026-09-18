@@ -418,7 +418,7 @@ test("deleteProjectData removes pdf audit logs linked through metadata", async (
         return [];
       }
 
-      if (compactSql.includes("FROM pdf_audit_logs") && compactSql.includes("metadata_json LIKE")) {
+      if (compactSql.includes("FROM pdf_audit_logs") && compactSql.includes("pdf_audit_log_schools")) {
         return [
           {
             entityId: "preview-1",
@@ -709,4 +709,26 @@ test("deleteProjectData requires the confirmation phrase for all data", async ()
     () => service.deleteProjectData("all", { confirmationPhrase: "삭제", schoolId: "school-1" }),
     (error) => error.statusCode === 400 && error.errorCode === "DATA_DELETION_CONFIRMATION_REQUIRED",
   );
+});
+
+for (const scope of ["candidates", "photos"]) {
+  test(`summary for ${scope} does not read PDF or template data`, async () => {
+    const queries = [];
+    const service = createDataDeletionService({
+      createHttpError,
+      getSchoolById: async () => ({ id: "school-1", name: "School" }),
+      query: async (sql) => { queries.push(sql); return [{ total: 7 }]; },
+    });
+    const result = await service.getProjectDataDeletionSummary({ schoolId: "school-1", scope });
+    assert.equal(result.scopes.length, 1);
+    assert.equal(result.scopes[0].scope, scope);
+    assert.equal(result.counts.candidatePhotos, 7);
+    assert.ok(queries.length > 0);
+    assert.ok(queries.every(sql => !sql.includes("pdf_")));
+  });
+}
+
+test("summary rejects an invalid scope before querying data", async () => {
+  const service = createDataDeletionService({ createHttpError, query: async () => { throw Error("Unexpected query"); } });
+  await assert.rejects(service.getProjectDataDeletionSummary({ scope: "invalid" }), { errorCode: "DATA_DELETION_SCOPE_INVALID" });
 });

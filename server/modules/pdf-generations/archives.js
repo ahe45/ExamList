@@ -33,17 +33,29 @@ function createArchiveEntryNameFactory() {
   };
 }
 
-async function writeZipArchive({ entries, filePath, fs }) {
+async function writeZipArchive({ entries, filePath, fs, onProgress }) {
   await new Promise((resolve, reject) => {
     const zipFile = new ZipFile();
     const outputStream = fs.createWriteStream(filePath);
+    let processed = 0;
+    let progressWrite = Promise.resolve();
+    zipFile.on("error", reject);
 
-    outputStream.on("close", resolve);
+    outputStream.on("close", () => progressWrite.then(resolve, reject));
     outputStream.on("error", reject);
     zipFile.outputStream.on("error", reject);
 
     entries.forEach((entry) => {
-      zipFile.addFile(entry.filePath, entry.entryName);
+      if (!onProgress) { zipFile.addFile(entry.filePath, entry.entryName); return; }
+      zipFile.addReadStreamLazy(entry.entryName, callback => {
+        const input = fs.createReadStream(entry.filePath);
+        input.once("end", () => {
+          const progress = { processed: ++processed, total: entries.length };
+          progressWrite = progressWrite.then(() => onProgress(progress));
+          progressWrite.catch(() => {});
+        });
+        callback(null, input);
+      });
     });
     zipFile.end();
     zipFile.outputStream.pipe(outputStream);

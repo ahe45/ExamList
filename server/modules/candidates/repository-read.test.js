@@ -107,3 +107,19 @@ test("findCandidates reads, filters, and sorts by OPT10", async () => {
   assert.match(calls[1].sql, /\bopt10,/);
   assert.match(calls[1].sql, /opt10 DESC/);
 });
+
+test("server grid filters use vetted columns, bound values, stable order and page offset", async () => {
+  const calls = [];
+  const repository = createCandidateReadRepository({ createHttpError: (statusCode, message) => Object.assign(new Error(message), { statusCode }), query: async (sql, params) => { calls.push({ sql, params }); return sql.includes("COUNT(*)") ? [{ total: 91 }] : []; } });
+  const result = await repository.findCandidates({ schoolId: "school", gridFilters: { roomCode: ["R1", "R2"], name: ["O'Reilly"] }, sortKey: "name", sortDirection: "desc", page: 2, limit: 30 });
+  assert.equal(result.total, 91); assert.equal(result.page, 2);
+  for (const call of calls) { assert.match(call.sql, /TRIM\(COALESCE\(room_code/); assert.deepEqual(call.params.grid_roomCode, ["R1", "R2"]); assert.deepEqual(call.params.grid_name, ["O'Reilly"]); assert.doesNotMatch(call.sql, /O'Reilly/); }
+  assert.equal(calls[1].params.offset, 30); assert.match(calls[1].sql, /name DESC/); assert.match(calls[1].sql, /id ASC/);
+});
+test("grid option values use the whole school instead of current page filters", async () => {
+  let captured;
+  const repository = createCandidateReadRepository({ createHttpError: (statusCode, message) => Object.assign(new Error(message), { statusCode }), query: async (sql, params) => { captured = { sql, params }; return [{ value: "R10" }, { value: "R2" }]; } });
+  const values = await repository.findCandidateGridOptions({ schoolId: "school", gridFilters: { name: ["person"] } }, "roomCode");
+  assert.deepEqual(values, ["R2", "R10"]); assert.doesNotMatch(captured.sql, /grid_name/);
+  await assert.rejects(repository.findCandidateGridOptions({ schoolId: "school" }, "invalid"), { statusCode: 400 });
+});

@@ -29,6 +29,7 @@ function createCandidateRecordService({ createHttpError, getDefaultSchoolId = nu
     getCandidatePhoto,
     hydrateCandidatesWithPhotos,
     previewCandidatePhotoArchiveBuffer,
+    previewCandidatePhotoArchiveStream,
     saveCandidatePhoto,
     saveCandidatePhotoArchiveBuffer,
     saveCandidatePhotoArchiveSession,
@@ -39,6 +40,7 @@ function createCandidateRecordService({ createHttpError, getDefaultSchoolId = nu
     resolveSchoolId,
   });
   const candidateImportService = createCandidateImportService({
+    rootDir,
     createHttpError,
     getPool,
     normalizeCandidateWorkbookInput,
@@ -51,6 +53,7 @@ function createCandidateRecordService({ createHttpError, getDefaultSchoolId = nu
   const { importCandidates, previewCandidateImport } = candidateImportService;
   const {
     findCandidateFilterOptions,
+    findCandidateGridOptions,
     findCandidateGroups,
     findCandidates,
     getDashboardCandidateSummary,
@@ -93,7 +96,18 @@ function createCandidateRecordService({ createHttpError, getDefaultSchoolId = nu
     return candidateRepository.getCandidateViewRowById(normalizedCandidateId, { schoolId });
   }
 
+  async function exportCandidateRows(filters = {}) {
+    const first = await findCandidates({ ...filters, page: 1, limit: 5000 });
+    const rows = [...first.items];
+    for (let page = 2; page <= Math.ceil(first.total / first.limit); page++) {
+      rows.push(...(await findCandidates({ ...filters, page, limit: 5000 })).items);
+    }
+    return buildCandidateExportBuffer(rows);
+  }
+
   return Object.freeze({
+    exportCandidateRows,
+    findCandidateGridOptions,
     buildCandidateExportBuffer,
     buildCandidateTemplateBuffer,
     findCandidateFilterOptions,
@@ -106,6 +120,7 @@ function createCandidateRecordService({ createHttpError, getDefaultSchoolId = nu
     importCandidates,
     previewCandidateImport,
     previewCandidatePhotoArchiveBuffer,
+    previewCandidatePhotoArchiveStream,
     saveCandidatePhoto,
     saveCandidatePhotoArchiveBuffer,
     saveCandidatePhotoArchiveSession,

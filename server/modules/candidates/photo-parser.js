@@ -1,4 +1,6 @@
 const AdmZip = require("adm-zip");
+const unzipper = require("unzipper");
+const crc32 = require("buffer-crc32");
 const path = require("path");
 
 function createCandidatePhotoParser({ createHttpError, getCandidatePhotoMimeType }) {
@@ -109,7 +111,43 @@ function createCandidatePhotoParser({ createHttpError, getCandidatePhotoMimeType
     return parseCandidatePhotoArchiveBuffer(fileBuffer, { includeFileData: false });
   }
 
+  async function parseCandidatePhotoArchiveFile(filePath) {
+    let directory;
+    try { directory = await unzipper.Open.file(filePath); } catch { throw createHttpError(400, "사진 ZIP 파일을 해석할 수 없습니다.", "CANDIDATE_PHOTO_ARCHIVE_INVALID"); }
+    const grouped = new Map();
+    let totalEntries = 0, skippedEntries = 0, duplicateEntries = 0;
+    for (const entry of directory.files) {
+      if (entry.type === "Directory") continue;
+      totalEntries++;
+      try {
+        const metadata = parseCandidatePhotoFileName(entry.path);
+        if (grouped.has(metadata.examineeNo)) duplicateEntries++;
+        const entries = grouped.get(metadata.examineeNo) || [];
+        entries.push({ metadata, entry });
+        grouped.set(metadata.examineeNo, entries);
+      } catch { skippedEntries++; }
+    }
+    if (!grouped.size) throw createHttpError(400, "ZIP 파일에서 업로드 가능한 수험생 사진을 찾을 수 없습니다.", "CANDIDATE_PHOTO_ARCHIVE_NO_PHOTO");
+    const photos = [...grouped.values()].map(entries => ({
+      ...entries[entries.length - 1].metadata,
+      async readPhoto() {
+        // Last valid duplicate wins, as in the original ZIP parser.
+        for (let index = entries.length - 1; index >= 0; index--) {
+          const { entry, metadata } = entries[index];
+          try {
+            const buffer = await entry.buffer();
+            if (crc32.unsigned(buffer) !== entry.crc32) continue;
+            return parseCandidatePhotoFile(metadata.fileName, buffer);
+          } catch {}
+        }
+        return null;
+      },
+    }));
+    return { photos, totalEntries, skippedEntries, duplicateEntries };
+  }
+
   return Object.freeze({
+    parseCandidatePhotoArchiveFile,
     parseCandidatePhotoArchiveBuffer,
     parseCandidatePhotoArchivePreviewBuffer,
     parseCandidatePhotoFile,

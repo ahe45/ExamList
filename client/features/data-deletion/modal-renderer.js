@@ -102,7 +102,7 @@ export function renderDataDeletionModal(dataDeletion = {}, { access, school } = 
                     })
                   : renderDataDeletionFilterList({
                       filters,
-                      isBusy,
+                      isBusy: isDeleting,
                       isLoadingOptions,
                       modal,
                       selectedFilterKeys,

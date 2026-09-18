@@ -1,6 +1,8 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const { pipeline } = require("node:stream/promises");
+const { Transform } = require("node:stream");
 
 const defaultSessionTtlMs = 30 * 60 * 1000;
 const sessionTokenPattern = /^[0-9a-f-]{36}$/i;
@@ -176,7 +178,7 @@ function createCandidatePhotoArchiveSessionStore({
     };
   }
 
-  async function readSessionBuffer(token, options = {}) {
+  async function readSessionFile(token, options = {}) {
     assertSessionDirectory(options);
 
     const { archivePath, metadataPath } = getSessionPaths(token, options);
@@ -196,14 +198,40 @@ function createCandidatePhotoArchiveSessionStore({
     }
 
     try {
-      return await fs.promises.readFile(archivePath);
+      await fs.promises.access(archivePath);
+      return archivePath;
     } catch (_error) {
       await deleteSession(token, options);
       throw createError(410, "사진 ZIP 미리보기 세션이 만료되었습니다. ZIP 파일을 다시 선택해 주세요.", "CANDIDATE_PHOTO_ARCHIVE_SESSION_EXPIRED");
     }
   }
 
+  async function readSessionBuffer(token, options = {}) {
+    return fs.promises.readFile(await readSessionFile(token, options));
+  }
+  async function createSessionFromStream(input, metadata = {}, options = {}) {
+    const directory = assertSessionDirectory(options);
+    await fs.promises.mkdir(directory, { recursive: true });
+    await cleanupExpiredSessions(Date.now(), options);
+    const token = crypto.randomUUID();
+    const { archivePath, metadataPath } = getSessionPaths(token, options);
+    let fileSize = 0;
+    const expiresAt = new Date(Date.now() + sessionTtlMs).toISOString();
+    const limiter = new Transform({ transform(chunk, encoding, callback) {
+      fileSize += chunk.length;
+      callback(fileSize > options.maxBodyBytes ? createStoreError(createHttpError, 413, "사진 ZIP 파일이 너무 큽니다.", "PAYLOAD_TOO_LARGE") : null, chunk);
+    } });
+    try {
+      await pipeline(input, limiter, fs.createWriteStream(archivePath));
+      if (!fileSize) throw createError(400, "사진 ZIP 파일 데이터가 없습니다.", "CANDIDATE_PHOTO_ARCHIVE_EMPTY");
+      await fs.promises.writeFile(metadataPath, JSON.stringify({ ...metadata, token, expiresAt, fileSize }));
+      return { token, expiresAt, fileSize, archivePath };
+    } catch (error) { await deleteSession(token, options); throw error; }
+  }
+
   return Object.freeze({
+    createSessionFromStream,
+    readSessionFile,
     cleanupExpiredSessions,
     createSession,
     deleteSession,

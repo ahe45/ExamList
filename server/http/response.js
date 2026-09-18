@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { pipeline } = require("node:stream/promises");
 
 function getCorsHeaders() {
   return {
@@ -38,17 +39,28 @@ function sendBinary(response, statusCode, headers = {}, fileBuffer) {
 }
 
 async function sendDownload(response, filePath, fileName, headers = {}) {
-  const fileBuffer = await fs.promises.readFile(filePath);
+  const fileHandle = await fs.promises.open(filePath, "r");
+  try {
+    const stat = await fileHandle.stat();
 
-  response.writeHead(200, {
-    ...getCorsHeaders(),
-    "Cache-Control": "no-store",
-    "Content-Disposition": buildContentDisposition("attachment", String(fileName || "download.pdf")),
-    "Content-Length": fileBuffer.length,
-    "Content-Type": "application/pdf",
-    ...headers,
-  });
-  response.end(fileBuffer);
+    response.writeHead(200, {
+      ...getCorsHeaders(),
+      "Cache-Control": "no-store",
+      "Content-Disposition": buildContentDisposition("attachment", String(fileName || "download.pdf")),
+      "Content-Length": stat.size,
+      "Content-Type": "application/pdf",
+      ...headers,
+    });
+    await pipeline(fileHandle.createReadStream(), response);
+  } catch (error) {
+    if (response.headersSent || response.destroyed) {
+      response.destroy(error);
+    } else {
+      throw error;
+    }
+  } finally {
+    await fileHandle.close();
+  }
 }
 
 module.exports = {

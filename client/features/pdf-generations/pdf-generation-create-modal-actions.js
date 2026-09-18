@@ -6,6 +6,7 @@ import {
   createEmptyPdfGenerationFilters,
   getPdfGenerationSelectedFilterKeysAfterSelection,
   getPdfGenerationVisibleFilterSteps,
+  getPdfGenerationRevealedFilterSteps,
   isPdfGenerationCreateConditionComplete,
   normalizePdfGenerationSelectedFilterKeys,
   pdfGenerationCreateSteps,
@@ -13,18 +14,6 @@ import {
   resetPdfGenerationFiltersAfterSelection,
   resetPdfGenerationUnitLowerFilters,
 } from "./pdf-generation-flow.js";
-
-const pdfGenerationCreateOptionFields = Object.freeze([
-  ...new Set([
-    ...pdfGenerationFilterSteps.map((step) => step.key),
-    "admissionCode",
-    "buildingCode",
-    "periodCode",
-    "roomCode",
-    "seriesCode",
-    "unitCode",
-  ]),
-]);
 
 export function createPdfGenerationCreateModalActions({
   appState,
@@ -81,14 +70,16 @@ export function createPdfGenerationCreateModalActions({
     );
   }
 
-  async function loadCreateModalTemplates() {
+  async function loadCreateModalTemplates(isCurrent = () => true) {
     const modal = getCreateModalState();
     const queryString = toQueryString({
       limit: 100,
+      summary: "1",
       schoolId: getCurrentSchoolId(),
     });
     const payload = await getJson(`/api/pdf-templates${queryString ? `?${queryString}` : ""}`);
 
+    if (!isCurrent()) return;
     modal.templates = Array.isArray(payload?.items) ? payload.items : [];
 
     if (!modal.templates.some((template) => String(template.id || "") === String(modal.selectedTemplateId || ""))) {
@@ -96,65 +87,52 @@ export function createPdfGenerationCreateModalActions({
     }
   }
 
-  async function loadCreateModalTargetEstimate() {
-    const modal = getCreateModalState();
-    const selectedTemplate = getSelectedCreateTemplate();
-
-    if (!selectedTemplate) {
-      modal.targetEstimate = null;
-      return;
-    }
-
-    try {
-      const queryString = toQueryString({
-        ...buildCreateModalFilterPayload(),
-        generationUnit: selectedTemplate.generationUnit || "",
-        schoolId: getCurrentSchoolId(),
-        templateId: selectedTemplate.id || "",
-      });
-      const payload = await getJson(`/api/pdf-generations/targets${queryString ? `?${queryString}` : ""}`);
-      const items = Array.isArray(payload?.items) ? payload.items : [];
-
-      modal.targetEstimate = {
-        candidateCount: items.reduce((total, item) => total + (Number(item?.candidateCount) || 0), 0),
-        generationUnit: String(payload?.generationUnit || selectedTemplate.generationUnit || ""),
-        pdfCount: Number(payload?.total) || items.length,
-        templateId: String(selectedTemplate.id || ""),
-      };
-    } catch (_error) {
-      modal.targetEstimate = null;
-    }
-  }
-
+  let optionRequestVersion = 0;
   async function loadCreateModalOptions(options = {}) {
     const modal = getCreateModalState();
-
+    const version = ++optionRequestVersion;
+    const schoolId = getCurrentSchoolId();
+    const selectedTemplate = getSelectedCreateTemplate();
+    const filterPayload = buildCreateModalFilterPayload();
+    const isCurrent = () => version === optionRequestVersion && getCreateModalState() === modal &&
+      modal.isOpen !== false && schoolId === getCurrentSchoolId();
     modal.isLoadingOptions = true;
+    modal.isLoadingTargetEstimate = Boolean(selectedTemplate);
     modal.targetEstimate = null;
-    if (!options.silent) {
-      await onStateChange();
-    }
-
-    try {
-      const queryString = toQueryString({
-        ...buildCreateModalFilterPayload(),
-        excludeSelfFilters: "1",
-        fields: pdfGenerationCreateOptionFields.join(","),
-        schoolId: getCurrentSchoolId(),
-      });
-      const payload = await getJson(`/api/candidates/filter-options${queryString ? `?${queryString}` : ""}`);
-
-      modal.options = payload?.options && typeof payload.options === "object" ? payload.options : {};
-      await loadCreateModalTargetEstimate();
-      modal.errorMessage = "";
-    } catch (error) {
-      modal.options = {};
-      modal.targetEstimate = null;
-      modal.errorMessage = "";
-    } finally {
-      modal.isLoadingOptions = false;
-      await onStateChange();
-    }
+    if (!options.silent) await onStateChange();
+    if (!isCurrent()) return;
+    const fields = getPdfGenerationRevealedFilterSteps(modal.selectedFilterKeys, selectedTemplate?.generationUnit || "")
+      .map(step => step.key);
+    const optionQuery = toQueryString({ ...filterPayload, excludeSelfFilters: "1", fields: fields.join(","), schoolId });
+    const optionRequest = (async () => {
+      try {
+        const payload = await getJson(`/api/candidates/filter-options?${optionQuery}`);
+        if (isCurrent()) { modal.options = payload?.options || {}; modal.errorMessage = ""; }
+      } catch (error) {
+        if (isCurrent()) { modal.options = {}; modal.errorMessage = error.message; }
+      } finally {
+        if (isCurrent()) { modal.isLoadingOptions = false; await onStateChange(); }
+      }
+    })();
+    const estimateRequest = (async () => {
+      if (!selectedTemplate) return;
+      try {
+        const query = toQueryString({ ...filterPayload, generationUnit: selectedTemplate.generationUnit || "", schoolId, templateId: selectedTemplate.id });
+        const payload = await getJson(`/api/pdf-generations/targets?${query}`);
+        if (!isCurrent()) return;
+        const items = Array.isArray(payload?.items) ? payload.items : [];
+        modal.targetEstimate = {
+          candidateCount: items.reduce((total, item) => total + (Number(item.candidateCount) || 0), 0),
+          pdfCount: Number(payload?.total) || items.length,
+          generationUnit: selectedTemplate.generationUnit || "", templateId: selectedTemplate.id,
+        };
+      } catch {
+        if (isCurrent()) modal.targetEstimate = null;
+      } finally {
+        if (isCurrent()) { modal.isLoadingTargetEstimate = false; await onStateChange(); }
+      }
+    })();
+    await Promise.all([optionRequest, estimateRequest]);
   }
 
   async function openPdfGenerationCreateModal() {
@@ -163,12 +141,18 @@ export function createPdfGenerationCreateModalActions({
     }
 
     const modal = getCreateModalState();
+    const version = ++optionRequestVersion;
+    const schoolId = getCurrentSchoolId();
+    const isCurrent = () => version === optionRequestVersion && getCreateModalState() === modal &&
+      modal.isOpen && getCurrentSchoolId() === schoolId;
 
     modal.errorMessage = "";
     modal.activeStepIndex = 0;
     modal.filters = createEmptyPdfGenerationFilters();
     modal.isOpen = true;
     modal.isSubmitting = false;
+    modal.isLoadingOptions = true;
+    modal.isLoadingTargetEstimate = false;
     modal.options = {};
     modal.selectedFilterKeys = [];
     modal.selectedTemplateId = "";
@@ -177,8 +161,8 @@ export function createPdfGenerationCreateModalActions({
     await onStateChange();
 
     try {
-      modal.isLoadingOptions = true;
-      await loadCreateModalTemplates();
+      await loadCreateModalTemplates(isCurrent);
+      if (!isCurrent()) return;
       modal.filters = resetPdfGenerationUnitLowerFilters(
         modal.filters,
         getSelectedCreateTemplate()?.generationUnit || "",
@@ -187,17 +171,19 @@ export function createPdfGenerationCreateModalActions({
         modal.selectedFilterKeys,
         getSelectedCreateTemplate()?.generationUnit || "",
       );
-      await loadCreateModalOptions({ silent: true });
     } catch (error) {
+      if (!isCurrent()) return;
+      modal.isLoadingOptions = false;
       modal.errorMessage = error.message;
       showToast(modal.errorMessage, { tone: "error" });
-    } finally {
-      modal.isLoadingOptions = false;
       await onStateChange();
+      return;
     }
+    await loadCreateModalOptions({ silent: true });
   }
 
   async function closePdfGenerationCreateModal() {
+    optionRequestVersion++;
     const modal = getCreateModalState();
 
     modal.isOpen = false;
@@ -369,6 +355,24 @@ export function createPdfGenerationCreateModalActions({
     const modal = getCreateModalState();
 
     modal.selectedTemplateId = String(templateId || "").trim();
+    const schoolId = getCurrentSchoolId();
+    const selectedId = modal.selectedTemplateId;
+    const version = ++optionRequestVersion;
+    modal.isLoadingOptions = true;
+    await onStateChange();
+    try {
+      if (selectedId) {
+        const template = await getJson(`/api/pdf-templates/${encodeURIComponent(selectedId)}?schoolId=${encodeURIComponent(schoolId)}`);
+        if (version !== optionRequestVersion || !modal.isOpen || schoolId !== getCurrentSchoolId()) return;
+        modal.templates = modal.templates.map(item => item.id === selectedId ? template : item);
+      }
+    } catch (error) {
+      if (version !== optionRequestVersion) return;
+      modal.errorMessage = error.message;
+      modal.isLoadingOptions = false;
+      await onStateChange();
+      return;
+    }
     modal.errorMessage = "";
     modal.targetEstimate = null;
     resetPdfGenerationTemplatePreview();

@@ -138,7 +138,7 @@ export function createDataDeletionModalActions({
     modal.confirmationOpen = false;
     modal.confirmationPhrase = "";
     modal.errorMessage = "";
-    await onStateChange();
+    await loadDataDeletionModalData();
   }
 
   async function updateDataDeletionModalFilter(filterKey = "", value = "") {
@@ -243,7 +243,7 @@ export function createDataDeletionModalActions({
   async function submitDataDeletionModal() {
     const modal = getDataDeletionModalState();
 
-    if (!modal.isOpen) {
+    if (!modal.isOpen || modal.isLoadingSummary || modal.isLoadingOptions) {
       return;
     }
 

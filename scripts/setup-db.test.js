@@ -137,36 +137,33 @@ function createSeedPool(initialState = {}) {
       }
 
       if (compactSql.startsWith("DELETE FROM pdf_template_elements")) {
-        state.elements = state.elements.filter((element) => element.templateId !== params[0]);
+        state.elements = state.elements.filter((element) => element.templateId !== params[0] || params[1]?.includes(element.id));
         return [{ affectedRows: 1 }];
       }
 
       if (compactSql.startsWith("DELETE FROM pdf_template_pages")) {
-        state.pages = state.pages.filter((page) => page.templateId !== params[0]);
+        state.pages = state.pages.filter((page) => page.templateId !== params[0] || params[1]?.includes(page.id));
         return [{ affectedRows: 1 }];
       }
 
       if (compactSql.startsWith("INSERT INTO pdf_template_pages")) {
-        state.pages.push({
-          enabled: params[5],
-          heightPt: params[8],
-          id: params[0],
-          name: params[3],
-          pageType: params[2],
-          repeatable: params[6],
-          settings: JSON.parse(params[9]),
-          sortOrder: params[4],
-          templateId: params[1],
-          widthPt: params[7],
-        });
+        for (const row of params[0]) { state.pages.push({
+          enabled: row[5],
+          heightPt: row[8],
+          id: row[0],
+          name: row[3],
+          pageType: row[2],
+          repeatable: row[6],
+          settings: JSON.parse(row[9]),
+          sortOrder: row[4],
+          templateId: row[1],
+          widthPt: row[7],
+        }); }
         return [{ affectedRows: 1 }];
       }
 
       if (compactSql.startsWith("INSERT INTO pdf_template_elements")) {
-        state.elements.push({
-          id: params[0],
-          templateId: params[1],
-        });
+        for (const row of params[0]) state.elements.push({ id: row[0], templateId: row[1] });
         return [{ affectedRows: 1 }];
       }
 

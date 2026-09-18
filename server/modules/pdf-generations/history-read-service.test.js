@@ -6,6 +6,26 @@ const {
   createPdfGenerationReadActions,
 } = require("./history-read-service");
 
+test("batch progress uses current statuses without loading templates or candidate scopes", async () => {
+  const actions = createPdfGenerationReadActions({
+    getBatchRow: async () => ({ id: "batch-1", totalRequested: 4, status: "queued" }),
+    getBatchGenerationRows: async (id, options) => {
+      assert.equal(id, "batch-1");
+      assert.deepEqual(options, { statusOnly: true });
+      return ["completed", "failed", "running", "queued"].map(status => ({ status }));
+    },
+    query: async () => { throw new Error("Progress must not infer candidate scopes"); },
+  });
+  const result = await actions.getPdfGenerationBatch("batch-1", { includeItems: false });
+  assert.equal(result.status, "running");
+  assert.equal(result.progressPercent, 50);
+  assert.equal(result.succeededCount, 1);
+  assert.equal(result.failedCount, 1);
+  assert.equal(result.runningCount, 1);
+  assert.equal(result.queuedCount, 1);
+  assert.equal(result.items, undefined);
+});
+
 test("buildResultScopeFromCandidateAggregate keeps only single candidate scope values", () => {
   const resultScope = buildResultScopeFromCandidateAggregate({
     trackDistinct: 1,

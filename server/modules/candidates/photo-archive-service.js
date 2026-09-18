@@ -1,8 +1,11 @@
+const { mapWithConcurrency } = require("../../lib/concurrency");
+
 function createCandidatePhotoArchiveService({
   buildStoredCandidatePhotoFileRecord,
   createHttpError,
   getPool,
   parseCandidatePhotoArchiveBuffer,
+  parseCandidatePhotoArchiveFile = null,
   parseCandidatePhotoArchivePreviewBuffer = parseCandidatePhotoArchiveBuffer,
   photoArchiveSessionStore = null,
   persistStoredCandidatePhotoFile,
@@ -109,38 +112,46 @@ function createCandidatePhotoArchiveService({
     );
     const unmatchedPhotos = Math.max(0, (Array.isArray(photos) ? photos.length : 0) - matchedPhotos.length);
 
+    let invalidPhotos = 0;
     if (matchedPhotos.length > 0) {
+      const schoolStorageCodes = new Map();
       const storedPhotoRecords = [];
-      const connection = await getPool().getConnection();
-
       for (const photo of matchedPhotos) {
         const candidateRows = candidateRowsByNo.get(String(photo.examineeNo || "").trim()) || [];
-        const candidateRow = candidateRows[0] || null;
-        const schoolStorageCode = await resolvePhotoStorageCode(candidateRow?.schoolId || schoolId);
-
+        const candidateSchoolId = candidateRows[0]?.schoolId || schoolId;
+        if (!schoolStorageCodes.has(candidateSchoolId)) {
+          schoolStorageCodes.set(candidateSchoolId, await resolvePhotoStorageCode(candidateSchoolId));
+        }
         storedPhotoRecords.push({
-          ...buildStoredCandidatePhotoFileRecord(photo, { schoolStorageCode }),
+          photo,
+          schoolStorageCode: schoolStorageCodes.get(candidateSchoolId),
           candidateIds: candidateRows.map((row) => String(row?.id || "").trim()).filter(Boolean),
         });
       }
 
+      const connection = await getPool().getConnection();
       try {
         await connection.beginTransaction();
-
-        for (const storedPhotoRecord of storedPhotoRecords) {
-          await persistStoredCandidatePhotoFile(storedPhotoRecord);
-          await connection.query(
-            `
-              UPDATE candidate_records
-              SET
-                photo_name = ?,
-                photo_mime = ?
-              WHERE id IN (?)
-            `,
-            [storedPhotoRecord.fileName, storedPhotoRecord.mimeType, storedPhotoRecord.candidateIds],
-          );
+        for (let offset = 0; offset < storedPhotoRecords.length; offset += 200) {
+          const batch = (await mapWithConcurrency(storedPhotoRecords.slice(offset, offset + 200), 4, async descriptor => {
+            const photo = descriptor.photo.readPhoto ? await descriptor.photo.readPhoto() : descriptor.photo;
+            if (!photo) { invalidPhotos++; return null; }
+            const record = buildStoredCandidatePhotoFileRecord(photo, { schoolStorageCode: descriptor.schoolStorageCode });
+            await persistStoredCandidatePhotoFile(record);
+            return { fileName: record.fileName, mimeType: record.mimeType, candidateIds: descriptor.candidateIds };
+          })).filter(Boolean);
+          const updates = batch.flatMap((photo) => photo.candidateIds.map(id => [id, photo.fileName, photo.mimeType]));
+          for (let index = 0; index < updates.length; index += 200) {
+            const rows = updates.slice(index, index + 200);
+            const selects = rows.map(() => "SELECT ? AS id, ? AS photoName, ? AS photoMime").join(" UNION ALL ");
+            await connection.query(
+              `UPDATE candidate_records c JOIN (${selects}) photos ON photos.id = c.id
+               SET c.photo_name = photos.photoName, c.photo_mime = photos.photoMime`,
+              rows.flat(),
+            );
+          }
+          await options.onProgress?.({ processed: Math.min(offset + 200, storedPhotoRecords.length), total: storedPhotoRecords.length });
         }
-
         await connection.commit();
       } catch (error) {
         await connection.rollback();
@@ -151,8 +162,8 @@ function createCandidatePhotoArchiveService({
     }
 
     return {
-      photoSkipped: unmatchedPhotos + Number(skippedEntries || 0) + Number(duplicateEntries || 0),
-      photoUploaded: matchedPhotos.length,
+      photoSkipped: unmatchedPhotos + invalidPhotos + Number(skippedEntries || 0) + Number(duplicateEntries || 0),
+      photoUploaded: matchedPhotos.length - invalidPhotos,
     };
   }
 
@@ -167,14 +178,26 @@ function createCandidatePhotoArchiveService({
 
     const schoolId = String(options.schoolId || "").trim();
     const schoolStorageCode = schoolId ? await resolvePhotoStorageCode(schoolId) : "";
-    const fileBuffer = await photoArchiveSessionStore.readSessionBuffer(previewToken, { schoolStorageCode });
-    const result = await saveCandidatePhotoArchiveBuffer(fileBuffer, options);
+    const result = parseCandidatePhotoArchiveFile && photoArchiveSessionStore.readSessionFile
+      ? await saveParsedCandidatePhotos(await parseCandidatePhotoArchiveFile(await photoArchiveSessionStore.readSessionFile(previewToken, { schoolStorageCode })), options)
+      : await saveCandidatePhotoArchiveBuffer(await photoArchiveSessionStore.readSessionBuffer(previewToken, { schoolStorageCode }), options);
 
     await photoArchiveSessionStore.deleteSession?.(previewToken, { schoolStorageCode });
     return result;
   }
 
+  async function previewCandidatePhotoArchiveStream(input, options = {}) {
+    const schoolId = String(options.schoolId || "");
+    const schoolStorageCode = await resolvePhotoStorageCode(schoolId);
+    const session = await photoArchiveSessionStore.createSessionFromStream(input, { schoolId, schoolStorageCode }, { ...options, schoolStorageCode });
+    try {
+      const preview = await previewParsedCandidatePhotos(await parseCandidatePhotoArchiveFile(session.archivePath), options);
+      return { ...preview, previewToken: session.token, previewExpiresAt: session.expiresAt, previewFileSize: session.fileSize };
+    } catch (error) { await photoArchiveSessionStore.deleteSession(session.token, { schoolStorageCode }); throw error; }
+  }
+
   return Object.freeze({
+    previewCandidatePhotoArchiveStream,
     previewCandidatePhotoArchiveBuffer,
     saveCandidatePhotoArchiveSession,
     saveCandidatePhotoArchiveBuffer,

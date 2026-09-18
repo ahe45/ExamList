@@ -1,4 +1,6 @@
 const { randomUUID } = require("crypto");
+const { mapWithConcurrency } = require("../../lib/concurrency");
+const { mergePdfFilesInWorker } = require("./merge-service");
 
 const {
   createArchiveEntryNameFactory,
@@ -82,14 +84,9 @@ function buildArtifactSchoolWhereClause(rawSchoolId = "") {
     };
   }
 
-  const encodedSchoolId = JSON.stringify(schoolId);
-
   return {
-    params: [
-      `%"schoolId":${encodedSchoolId}%`,
-      `%"schoolIds":[%${encodedSchoolId}%]%`,
-    ],
-    sql: " AND (metadata_json LIKE ? OR metadata_json LIKE ?)",
+    params: [schoolId],
+    sql: " AND EXISTS (SELECT 1 FROM pdf_audit_log_schools scope WHERE scope.audit_id = pdf_audit_logs.id AND scope.school_id = ?)",
   };
 }
 
@@ -138,6 +135,7 @@ function createPdfGenerationArchiveService({
   ensureStorageDirectories,
   fs,
   legacyStorageRoot,
+  mergePdfFiles = mergePdfFilesInWorker,
   path,
   query,
   resolvePdfStorageRootForSchool,
@@ -158,7 +156,17 @@ function createPdfGenerationArchiveService({
           file_path AS filePath,
           generation_unit AS generationUnit,
           purged_at AS purgedAt,
-          request_json AS requestJson,
+          CASE WHEN JSON_VALID(request_json) THEN JSON_OBJECT(
+            'filters', JSON_EXTRACT(request_json, '$.filters'),
+            'resultScope', JSON_EXTRACT(request_json, '$.resultScope'),
+            'generationUnit', JSON_EXTRACT(request_json, '$.generationUnit'),
+            'chunk', JSON_EXTRACT(request_json, '$.chunk'),
+            'targetName', JSON_EXTRACT(request_json, '$.targetName'),
+            'template', JSON_OBJECT(
+              'generationUnit', JSON_EXTRACT(request_json, '$.template.generationUnit'),
+              'layout', JSON_OBJECT('generation', JSON_OBJECT('unitFields', JSON_EXTRACT(request_json, '$.template.layout.generation.unitFields')))
+            )
+          ) ELSE NULL END AS requestJson,
           status,
           target_name AS targetName
         FROM pdf_generation_histories
@@ -171,9 +179,7 @@ function createPdfGenerationArchiveService({
       generationIds,
     );
     const generationRowMap = new Map(rows.map((row) => [String(row.id || ""), row]));
-    const files = [];
-
-    for (const generationId of generationIds) {
+    return mapWithConcurrency(generationIds, 16, async (generationId) => {
       const generationRow = generationRowMap.get(generationId);
 
       if (!generationRow || String(generationRow.status || "") !== "completed" || generationRow.purgedAt) {
@@ -190,7 +196,7 @@ function createPdfGenerationArchiveService({
         throw createHttpError(404, "대상 PDF 파일이 존재하지 않습니다.", "PDF_GENERATION_FILE_MISSING");
       }
 
-      files.push({
+      return {
         academicYear: generationRow.academicYear,
         fileName: generationRow.fileName,
         filePath,
@@ -202,10 +208,8 @@ function createPdfGenerationArchiveService({
         schoolName: generationRow.schoolName,
         schoolSettingsName: generationRow.schoolSettingsName,
         targetName: generationRow.targetName,
-      });
-    }
-
-    return files;
+      };
+    });
   }
 
   async function createPdfGenerationArchive(request = {}) {
@@ -247,6 +251,7 @@ function createPdfGenerationArchiveService({
 
     await writeZipArchive({
       entries: archiveEntries,
+      onProgress: request.onProgress,
       filePath: archivePath,
       fs,
     });
@@ -285,7 +290,6 @@ function createPdfGenerationArchiveService({
       throw createHttpError(400, "병합할 PDF 생성 이력을 선택해주세요.", "PDF_MERGE_GENERATION_IDS_REQUIRED");
     }
 
-    const { PDFDocument } = require("pdf-lib");
     const generationFiles = sortGenerationFilesForMergedDownload(
       await resolveCompletedGenerationFiles(
         generationIds,
@@ -300,18 +304,6 @@ function createPdfGenerationArchiveService({
 
     await ensureStorageDirectories(storageRoot);
 
-    const mergedDocument = await PDFDocument.create();
-    let mergedPageCount = 0;
-
-    for (const generationFile of generationFiles) {
-      const sourceBytes = await fs.promises.readFile(generationFile.filePath);
-      const sourceDocument = await PDFDocument.load(sourceBytes);
-      const copiedPages = await mergedDocument.copyPages(sourceDocument, sourceDocument.getPageIndices());
-
-      copiedPages.forEach((page) => mergedDocument.addPage(page));
-      mergedPageCount += copiedPages.length;
-    }
-
     const mergedId = `pdf-merged-${randomUUID()}`;
     const createdAt = new Date();
     const mergedFileName = normalizeMergedPdfFileName(
@@ -319,10 +311,11 @@ function createPdfGenerationArchiveService({
       buildArtifactDefaultFileName(generationFiles, MERGED_ARTIFACT_LABEL, createdAt),
     );
     const mergedPath = path.join(storageRoot, "merged", `${mergedId}.pdf`);
-    const mergedBytes = await mergedDocument.save();
+    const { pageCount: mergedPageCount } = await mergePdfFiles(
+      generationFiles.map((file) => file.filePath), mergedPath, { onProgress: request.onProgress },
+    );
 
-    await fs.promises.writeFile(mergedPath, mergedBytes);
-
+    await request.onProgress?.({ processed: generationFiles.length + 1, total: generationFiles.length + 1 });
     const mergedStat = await getFileStatOrNull(fs, mergedPath);
 
     await writeAuditLog({
@@ -376,9 +369,7 @@ function createPdfGenerationArchiveService({
       `,
       [...schoolWhere.params, limit],
     );
-    const items = [];
-
-    for (const row of Array.isArray(rows) ? rows : []) {
+    const items = await mapWithConcurrency(Array.isArray(rows) ? rows : [], 16, async (row) => {
       const metadata = parseJsonObject(row.metadataJson);
       const kind = getArtifactKind(String(row.entityType || ""));
       const artifactId = String(row.entityId || "").trim();
@@ -399,7 +390,7 @@ function createPdfGenerationArchiveService({
         ? `${downloadPath}?name=${encodeURIComponent(fileName)}`
         : downloadPath;
 
-      items.push({
+      return {
         action: String(row.action || ""),
         createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt || ""),
         downloadUrl,
@@ -415,8 +406,8 @@ function createPdfGenerationArchiveService({
         pageCount: Number(metadata.pageCount) || 0,
         schoolIds: createUniqueStringList(metadata.schoolIds || metadata.schoolId),
         status: String(row.status || ""),
-      });
-    }
+      };
+    });
 
     return {
       items,

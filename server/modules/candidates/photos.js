@@ -1,4 +1,5 @@
 const path = require("path");
+const { mapWithConcurrency } = require("../../lib/concurrency");
 const { createCandidatePhotoArchiveService } = require("./photo-archive-service");
 const { createCandidatePhotoFileStorage } = require("./photo-file-storage");
 const { createCandidatePhotoParser } = require("./photo-parser");
@@ -48,6 +49,7 @@ function createCandidatePhotoService({
     createHttpError,
     getPool,
     parseCandidatePhotoArchiveBuffer: photoParser.parseCandidatePhotoArchiveBuffer,
+    parseCandidatePhotoArchiveFile: photoParser.parseCandidatePhotoArchiveFile,
     parseCandidatePhotoArchivePreviewBuffer: photoParser.parseCandidatePhotoArchivePreviewBuffer,
     photoArchiveSessionStore,
     persistStoredCandidatePhotoFile: photoStorage.persistStoredCandidatePhotoFile,
@@ -148,13 +150,14 @@ function createCandidatePhotoService({
       return Array.isArray(candidates) ? candidates : [];
     }
 
-    return Promise.all(candidates.map((candidate) => hydrateCandidateWithPhoto(candidate)));
+    return mapWithConcurrency(candidates, 8, hydrateCandidateWithPhoto);
   }
 
   return Object.freeze({
     getCandidatePhoto: photoRecordService.getCandidatePhoto,
     hydrateCandidatesWithPhotos,
     previewCandidatePhotoArchiveBuffer: photoArchiveService.previewCandidatePhotoArchiveBuffer,
+    previewCandidatePhotoArchiveStream: photoArchiveService.previewCandidatePhotoArchiveStream,
     saveCandidatePhoto: photoRecordService.saveCandidatePhoto,
     saveCandidatePhotoArchiveBuffer: photoArchiveService.saveCandidatePhotoArchiveBuffer,
     saveCandidatePhotoArchiveSession: photoArchiveService.saveCandidatePhotoArchiveSession,

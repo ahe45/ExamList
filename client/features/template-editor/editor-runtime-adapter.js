@@ -1,3 +1,4 @@
+import { measureClientWork } from "../../app/performance-metrics.js";
 import {
   commitCandidateBlockGridControlsToPage,
   getCandidateBlockGridConfig,
@@ -496,8 +497,10 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
       syncMountedRuntimeHtmlToState(appState, selectedPage, html);
     },
     onChange(html) {
+      let normalizedHtml;
+      measureClientWork("editor.change", () => {
       const selectedMountedPage = getCurrentMountedSelectedPage(appState, selectedPage);
-      const normalizedHtml = normalizeSavedRuntimeHtml(html, mountedTagDefinitions);
+      normalizedHtml = normalizeSavedRuntimeHtml(html, mountedTagDefinitions);
 
       // History restores the grid DOM without emitting a flow-layout event.
       // Keep its saved geometry in step with the restored document as well.
@@ -507,13 +510,14 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
       }
       syncMountedRuntimeHtmlToState(appState, selectedPage, html);
       updateMountedRuntimeDirtyState(appState, selectedMountedPage, normalizedHtml);
-      window.requestAnimationFrame(() => {
+      });
+      window.requestAnimationFrame(() => measureClientWork("editor.layoutAndCompare", () => {
         const currentSelectedPage = getCurrentMountedSelectedPage(appState, selectedPage);
 
         syncCandidateBlockTemplateFromSurface(surfaceElement, currentSelectedPage);
         applyMountedDataTagViewOptions(surfaceElement);
         updateMountedRuntimeDirtyState(appState, currentSelectedPage, normalizedHtml);
-      });
+      }));
     },
   });
   normalizeCandidateBlockTables(surfaceElement);

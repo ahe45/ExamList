@@ -1,3 +1,4 @@
+const { createWorkbookSessionStore } = require("./workbook-session-store");
 const candidateFields = require("../../../shared/domain/candidate-fields");
 const { withDatabaseTransaction } = require("../database/connection");
 
@@ -27,6 +28,7 @@ function createCandidateImportCompositeKey(row = {}) {
 
 function createCandidateImportService({
   createHttpError,
+  rootDir,
   getPool,
   normalizeCandidateWorkbookInput,
   parseCandidateWorkbook,
@@ -35,6 +37,7 @@ function createCandidateImportService({
   toCandidateWorkbookRow,
   upsertCandidateWorkbookRows,
 }) {
+  const sessions = rootDir ? createWorkbookSessionStore(rootDir) : null;
   function buildCandidateImportDuplicateError(duplicateEntries = []) {
     const normalizedEntries = (Array.isArray(duplicateEntries) ? duplicateEntries : [])
       .map((entry) => ({
@@ -229,6 +232,7 @@ function createCandidateImportService({
           schoolId,
         });
         processed += batchRows.length;
+        await options.onProgress?.({ processed, total: candidateRows.length });
       }
 
       return { processed };
@@ -285,6 +289,7 @@ function createCandidateImportService({
     });
 
     return {
+      ...(sessions ? { previewToken: await sessions.put(normalizedRows, schoolId, payload.ownerId || "") } : {}),
       fileName: String(payload.fileName || "").trim(),
       insertCount,
       previewRows,
@@ -295,9 +300,10 @@ function createCandidateImportService({
   }
 
   async function importCandidates(payload = {}) {
-    const sourceRows = await parseCandidateWorkbook(payload.fileContentBase64);
     const schoolId = await resolveSchoolId(payload.schoolId);
-    const normalizedRows = prepareCandidateImportRows(sourceRows);
+    const normalizedRows = payload.previewToken && sessions
+      ? await sessions.get(payload.previewToken, schoolId, payload.ownerId || "")
+      : prepareCandidateImportRows(await parseCandidateWorkbook(payload.fileContentBase64));
     const existingDataPolicy = normalizeCandidateImportExistingDataPolicy(payload.existingDataPolicy);
     const existingRowMap = await getExistingCandidateImportRowsByKeys(normalizedRows, schoolId);
     const selectedRows = classifyCandidateImportRows(normalizedRows, existingRowMap).filter((entry) =>
@@ -308,7 +314,9 @@ function createCandidateImportService({
       throw createHttpError(400, "선택한 기존 데이터 처리 방식에 따라 반영할 수험생 데이터가 없습니다.", "CANDIDATE_IMPORT_NOTHING_SELECTED");
     }
 
-    return saveCandidateRows(selectedRows, { schoolId });
+    const result = await saveCandidateRows(selectedRows, { schoolId, onProgress: payload.onProgress });
+    if (sessions && payload.previewToken) await sessions.remove(payload.previewToken);
+    return result;
   }
 
   return Object.freeze({

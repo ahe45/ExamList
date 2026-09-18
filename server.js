@@ -43,6 +43,7 @@ async function startServer() {
   });
 
   await bootstrapApp(appContext);
+  await appContext.services.operationService.recover();
   const server = http.createServer(handleRequest);
 
   server.on("error", (error) => {

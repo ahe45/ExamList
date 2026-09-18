@@ -1,3 +1,4 @@
+import { waitForOperation } from "../../app/operation-client.js";
 import { showToast } from "../../app/toast.js";
 import {
   arrayBufferToBase64,
@@ -78,6 +79,7 @@ export function createCandidateUploadSubmitActions({
         result = await postJsonWithProgress(
           "/api/candidates/photo-archive",
           {
+            async: true,
             previewToken,
             schoolId: getCurrentSchoolId(),
           },
@@ -109,7 +111,7 @@ export function createCandidateUploadSubmitActions({
           stageLabel: "파일 처리",
         });
 
-        const fileBuffer = await readFileAsArrayBuffer(file, {
+        const fileBuffer = upload.preview.previewToken ? null : await readFileAsArrayBuffer(file, {
           onProgress: (progress) => {
             void setCandidateUploadProgressOverlay(
               {
@@ -134,10 +136,12 @@ export function createCandidateUploadSubmitActions({
           stageLabel: "데이터 처리 중",
         });
 
-        const fileContentBase64 = arrayBufferToBase64(fileBuffer);
+        const fileContentBase64 = fileBuffer ? arrayBufferToBase64(fileBuffer) : undefined;
         result = await postJsonWithProgress(
           "/api/candidates/import",
           {
+            async: true,
+            previewToken: upload.preview.previewToken,
             existingDataPolicy: upload.existingDataPolicy,
             fileContentBase64,
             fileName: file.name,
@@ -147,6 +151,15 @@ export function createCandidateUploadSubmitActions({
         );
       }
 
+      result = await waitForOperation(result, async job => {
+        await setCandidateUploadProgressOverlay({
+          detail: job.total ? job.processed.toLocaleString() + " / " + job.total.toLocaleString() + "건 처리" : "작업을 준비하고 있습니다.",
+          isOpen: true, isIndeterminate: !job.total,
+          message: job.status === "queued" ? "앞선 작업이 끝나면 시작합니다." : "데이터를 저장하는 중입니다.",
+          percent: job.total ? Math.min(99, Math.round(job.processed / job.total * 100)) : 0,
+          stageLabel: job.status === "queued" ? "대기" : "저장",
+        });
+      });
       const successMessage = createUploadResultMessage(result);
 
       upload.successMessage = successMessage;

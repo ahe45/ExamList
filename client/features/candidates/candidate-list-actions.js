@@ -60,7 +60,8 @@ export function createCandidateListActions({ appState, getCurrentSchoolId, onSta
     const tableState = getCandidateTableState();
     const rows = getFilteredCandidateRows(appState.candidates);
     const pageSize = Math.max(0, Number(tableState.pageSize) || 0);
-    const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(rows.length / pageSize)) : 1;
+    const total = appState.candidates.serverPaged ? appState.candidates.total : rows.length;
+    const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(total / pageSize)) : 1;
 
     tableState.page = pageSize > 0 ? Math.min(Math.max(1, Number(tableState.page) || 1), totalPages) : 1;
     return totalPages;
@@ -135,70 +136,66 @@ export function createCandidateListActions({ appState, getCurrentSchoolId, onSta
     );
   }
 
-  async function fetchCandidateListPage({ page = 1, schoolId = "" } = {}) {
-    const queryString = toQueryString({
-      limit: candidateListPageFetchLimit,
-      page,
-      schoolId,
-    });
-
-    return getJson(`/api/candidates?${queryString}`);
+  let requestVersion = 0;
+  let optionsVersion = 0;
+  function buildCandidateQuery() {
+    const state = getCandidateTableState();
+    const sort = state.sortRules[0] || {};
+    return { schoolId: getCurrentSchoolId(), gridFilters: JSON.stringify(state.filters), sortKey: sort.key || "", sortDirection: sort.direction || "", limit: state.pageSize || candidateListPageFetchLimit, page: state.pageSize ? state.page : 1 };
   }
-
-  async function fetchAllCandidateRows(schoolId = "") {
-    const firstPayload = await fetchCandidateListPage({ page: 1, schoolId });
-    const firstItems = Array.isArray(firstPayload.items) ? firstPayload.items : [];
-    const total = Number(firstPayload.total) || firstItems.length;
-    const pageLimit = Math.max(1, Number(firstPayload.limit) || candidateListPageFetchLimit);
-    const totalPages = Math.max(1, Math.ceil(total / pageLimit));
-
-    if (totalPages <= 1) {
-      return {
-        ...firstPayload,
-        items: firstItems,
-        total,
-      };
-    }
-
-    const remainingPayloads = await Promise.all(
-      Array.from({ length: totalPages - 1 }, (_, index) =>
-        fetchCandidateListPage({ page: index + 2, schoolId }),
-      ),
-    );
-    const remainingItems = remainingPayloads.flatMap((payload) =>
-      Array.isArray(payload.items) ? payload.items : [],
-    );
-
-    return {
-      ...firstPayload,
-      items: [...firstItems, ...remainingItems],
-      total,
-    };
+  async function loadCandidateGridOptions(field) {
+    const schoolId = getCurrentSchoolId();
+    const version = ++optionsVersion;
+    let payload;
+    try { payload = await getJson(`/api/candidates/grid-options?${toQueryString({ schoolId, field })}`); }
+    catch (error) { if (version === optionsVersion && schoolId === getCurrentSchoolId()) showToast(error.message, { tone: "error" }); return; }
+    if (version !== optionsVersion || schoolId !== getCurrentSchoolId()) return;
+    appState.candidates.gridOptions = { ...(appState.candidates.gridOptions || {}), [field]: payload.values || [] };
+    await onStateChangePreservingCandidateGridScroll();
   }
-
   async function loadCandidates() {
+    const version = ++requestVersion;
+    const query = buildCandidateQuery();
+    if (appState.candidates.gridOptionsSchoolId !== query.schoolId) {
+      appState.candidates.gridOptions = {};
+      appState.candidates.gridOptionsSchoolId = query.schoolId;
+    }
+    const current = () => version === requestVersion && query.schoolId === getCurrentSchoolId();
+    const scroll = captureCandidateGridScroll();
     appState.candidates.loading = true;
-
     try {
-      const payload = await fetchAllCandidateRows(getCurrentSchoolId());
-
-      appState.candidates.items = payload.items || [];
+      const payload = await getJson(`/api/candidates?${toQueryString(query)}`);
+      if (!current()) return;
+      const items = [...(payload.items || [])];
+      if (!getCandidateTableState().pageSize) {
+        for (let page = 2; page <= Math.ceil(payload.total / payload.limit); page++) {
+          const next = await getJson(`/api/candidates?${toQueryString({ ...query, page })}`);
+          if (!current()) return;
+          items.push(...(next.items || []));
+        }
+      }
+      appState.candidates.serverPaged = true;
+      appState.candidates.items = items;
       appState.candidates.total = payload.total || 0;
       appState.candidates.errorMessage = "";
       appState.candidates.successMessage = "";
+      const requestedPage = getCandidateTableState().page;
       clampCandidatePage();
+      if (query.page > 1 && requestedPage !== getCandidateTableState().page) return await loadCandidates();
     } catch (error) {
+      if (!current()) return;
       appState.candidates.items = [];
       appState.candidates.errorMessage = error.message;
-      appState.candidates.successMessage = "";
-      showToast(appState.candidates.errorMessage, { tone: "error" });
+      showToast(error.message, { tone: "error" });
     } finally {
-      appState.candidates.loading = false;
-      await onStateChange();
+      if (current()) { appState.candidates.loading = false; await onStateChange(); restoreCandidateGridScroll(scroll); }
     }
   }
 
   return Object.freeze({
+    buildCandidateQuery,
+    loadCandidateGridOptions,
+    reloadCandidatePage: loadCandidates,
     clampCandidatePage,
     closeCandidateFilterMenu,
     closeCandidatePageSizeMenu,

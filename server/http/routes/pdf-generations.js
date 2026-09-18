@@ -126,8 +126,10 @@ function createPdfGenerationRoutes(deps) {
     regexRoute(
       "GET",
       /^\/api\/pdf-generations\/batches\/(?<batchId>[^/]+)$/,
-      withPermission("viewGenerations", async ({ response, params }) => {
-        deps.sendJson(response, 200, await deps.getPdfGenerationBatch(params.batchId));
+      withPermission("viewGenerations", async ({ response, params, searchParams }) => {
+        deps.sendJson(response, 200, await deps.getPdfGenerationBatch(params.batchId, {
+          includeItems: searchParams.get("summary") !== "1",
+        }));
       }),
       { getParams: (match) => decodeRouteParams(match.groups) },
     ),
@@ -173,10 +175,14 @@ function createPdfGenerationRoutes(deps) {
       deps.sendJson(response, 200, await deps.cleanupExpiredPdfGenerations(body));
     })),
     exactRoute("POST", "/api/pdf-generations/archive", withPermission("downloadPdfs", async ({ request, response }) => {
-      deps.sendJson(response, 201, await deps.createPdfGenerationArchive(await deps.readJsonBody(request)));
+      const body = await deps.readJsonBody(request);
+      if (body.async) return deps.sendJson(response, 202, await deps.submitOperation(request, { kind: "pdf-archive" }, onProgress => deps.createPdfGenerationArchive({ ...body, onProgress })));
+      deps.sendJson(response, 201, await deps.createPdfGenerationArchive(body));
     })),
     exactRoute("POST", "/api/pdf-generations/merge", withPermission("downloadPdfs", async ({ request, response }) => {
-      deps.sendJson(response, 201, await deps.createPdfGenerationMergedFile(await deps.readJsonBody(request)));
+      const body = await deps.readJsonBody(request);
+      if (body.async) return deps.sendJson(response, 202, await deps.submitOperation(request, { kind: "pdf-merge" }, onProgress => deps.createPdfGenerationMergedFile({ ...body, onProgress })));
+      deps.sendJson(response, 201, await deps.createPdfGenerationMergedFile(body));
     })),
     exactRoute("POST", "/api/pdf-generations/batch", withPermission("generatePdfs", async ({ request, response }) => {
       const body = await deps.readJsonBody(request);

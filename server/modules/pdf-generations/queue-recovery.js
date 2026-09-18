@@ -44,7 +44,7 @@ function createPdfGenerationQueueRecoveryController({
   async function recoverQueuedPdfGenerations() {
     await queueHistoryStore.requeueRunningGenerations();
 
-    const generationIds = await queueHistoryStore.listQueuedGenerationIds(100);
+    const generationIds = await queueHistoryStore.listQueuedGenerationIds(null);
 
     for (const generationId of generationIds) {
       await scheduleQueuedGeneration(generationId);

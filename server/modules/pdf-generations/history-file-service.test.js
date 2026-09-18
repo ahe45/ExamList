@@ -118,19 +118,21 @@ test("listPdfAuditLogs scopes audit rows by school id", async () => {
   const [auditQuery] = queryCalls;
 
   assert.equal(result.items.length, 1);
-  assert.match(auditQuery.sql, /WHERE \(/);
-  assert.match(auditQuery.sql, /FROM pdf_generation_histories audit_history/);
-  assert.match(auditQuery.sql, /FROM pdf_generation_batches audit_batch/);
-  assert.deepEqual(auditQuery.params, [
-    '%"schoolId":"school-1"%',
-    '%"schoolIds":[%"school-1"%]%',
-    "school-1",
-    "school-1",
-    "school-1",
-    '%"schoolId":"school-1"%',
-    '%"schoolIds":[%"school-1"%]%',
-    5,
-  ]);
+  assert.match(auditQuery.sql, /INNER JOIN pdf_audit_log_schools/);
+  assert.match(auditQuery.sql, /school_scope.school_id = \?/);
+  assert.doesNotMatch(auditQuery.sql, /metadata_json LIKE/);
+  assert.doesNotMatch(auditQuery.sql, /UNION ALL/);
+  assert.deepEqual(auditQuery.params, ["school-1", 5]);
+});
+
+test("listPdfAuditLogs without a school skips the school lookup and keeps the result limit", async () => {
+  let auditQuery;
+  const actions = createPdfGenerationFileActions({
+    query: async (sql, params) => { auditQuery = { sql, params }; return []; },
+  });
+  assert.deepEqual(await actions.listPdfAuditLogs({ limit: 3000 }), { items: [], limit: 2000, total: 0 });
+  assert.deepEqual(auditQuery.params, [2000]);
+  assert.doesNotMatch(auditQuery.sql, /school_entities|undefined/);
 });
 
 test("cleanupExpiredPdfGenerations purges files without creating storage directories", async () => {

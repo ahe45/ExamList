@@ -19,6 +19,7 @@ function createDataDeletionRoutes(deps) {
       withPermission("deleteProjectData", async ({ request, response, searchParams }) => {
         await deps.assertSchoolWriteAccess(searchParams.get("schoolId") || searchParams.get("school_id") || "", request);
         deps.sendJson(response, 200, await deps.getProjectDataDeletionSummary({
+          scope: searchParams.get("scope") || "",
           filters: readGenerationTargetFilters(searchParams),
           schoolId: searchParams.get("schoolId") || searchParams.get("school_id") || "",
           ...(searchParams.has("templateIds") ? { templateIds: readTemplateIds(searchParams) } : {}),

@@ -1,9 +1,13 @@
 const { randomUUID } = require("crypto");
+const { indexAuditLogSchools } = require("./audit-school-index");
+const { createRequestSnapshotStore } = require("./request-snapshot-store");
 
 const { normalizeProgressPercent } = require("./queue-options");
 
 function createPdfGenerationRepository({ query }) {
+  const snapshotStore = createRequestSnapshotStore(query);
   async function insertHistoryRow(historyRow) {
+    historyRow = { ...historyRow, requestJson: await snapshotStore.compactRequestJson(historyRow.requestJson) };
     await query(
       `
         INSERT INTO pdf_generation_histories (
@@ -64,6 +68,7 @@ function createPdfGenerationRepository({ query }) {
   }
 
   async function updateHistoryRow(historyRow) {
+    historyRow = { ...historyRow, requestJson: await snapshotStore.compactRequestJson(historyRow.requestJson) };
     await query(
       `
         UPDATE pdf_generation_histories
@@ -172,6 +177,7 @@ function createPdfGenerationRepository({ query }) {
   }
 
   async function writeAuditLog({ action, entityId = "", entityType = "pdf_generation", metadata = {}, status = "" }) {
+    const auditId = `pdf-audit-${randomUUID()}`;
     await query(
       `
         INSERT INTO pdf_audit_logs (
@@ -185,17 +191,18 @@ function createPdfGenerationRepository({ query }) {
         VALUES (?, ?, ?, ?, ?, ?)
       `,
       [
-        `pdf-audit-${randomUUID()}`,
+        auditId,
         String(action || "").slice(0, 80),
         String(entityType || "pdf_generation").slice(0, 80),
         String(entityId || "").slice(0, 64),
         String(status || "").slice(0, 32),
         JSON.stringify(metadata && typeof metadata === "object" ? metadata : {}),
       ],
-    ).catch(() => {});
+    ).then(() => indexAuditLogSchools(query, auditId, entityId, metadata)).catch(() => {});
   }
 
   async function insertBatchRow(batchRow) {
+    batchRow = { ...batchRow, requestJson: await snapshotStore.compactRequestJson(batchRow.requestJson) };
     await query(
       `
         INSERT INTO pdf_generation_batches (
@@ -282,7 +289,10 @@ function createPdfGenerationRepository({ query }) {
     return rows[0] || null;
   }
 
-  async function getBatchGenerationRows(batchId) {
+  async function getBatchGenerationRows(batchId, { statusOnly = false } = {}) {
+    if (statusOnly) {
+      return query("SELECT status FROM pdf_generation_histories WHERE batch_id = ?", [batchId]);
+    }
     return query(
       `
         SELECT

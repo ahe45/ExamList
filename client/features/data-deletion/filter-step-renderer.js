@@ -9,7 +9,14 @@ import { dataDeletionGenerationUnit } from "./constants.js";
 const unselectedFilterValue = "__pdf_generation_unselected__";
 
 function renderDataDeletionFilterOptions(options = [], selectedValue = "", hasSelection = false) {
-  const renderedOptions = (Array.isArray(options) ? options : [])
+  const optionList = Array.isArray(options) ? options : [];
+  // A refreshed/empty result must not make an active condition appear as "전체".
+  // The chosen value is owned by the modal, not by the available option list.
+  const hasSelectedOption = optionList.some((option) => String(option?.value || "").trim() === selectedValue);
+  const retainedSelection = hasSelection && selectedValue && !hasSelectedOption
+    ? `<option value="${escapeHtml(selectedValue)}" selected>${escapeHtml(selectedValue)}</option>`
+    : "";
+  const renderedOptions = optionList
     .map((option) => {
       const value = String(option?.value || "").trim();
 
@@ -30,6 +37,7 @@ function renderDataDeletionFilterOptions(options = [], selectedValue = "", hasSe
   return `
     <option value="${unselectedFilterValue}" ${hasSelection ? "" : "selected"} disabled>선택</option>
     <option value="" ${hasSelection && !selectedValue ? "selected" : ""}>전체</option>
+    ${retainedSelection}
     ${renderedOptions}
   `;
 }

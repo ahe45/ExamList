@@ -193,6 +193,15 @@ function buildCandidateWhereClause(filter) {
     params.periodCode = filter.periodCode;
   }
 
+  for (const [key, rawValues] of Object.entries(filter.gridFilters || {})) {
+    const column = Object.hasOwn(candidateSortColumnMap, key) ? candidateSortColumnMap[key] : null;
+    const values = Array.isArray(rawValues) ? rawValues.map(value => String(value).trim()).filter(Boolean) : [];
+    if (!column || !values.length) continue;
+    const parameter = "grid_" + key;
+    conditions.push(`TRIM(COALESCE(${column}, '')) IN (:${parameter})`);
+    params[parameter] = values;
+  }
+
   return {
     params,
     whereClause: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "",
@@ -218,6 +227,7 @@ function normalizeCandidateGroupFields(groupBy) {
 
 function normalizeRepositoryFilter(rawFilter = {}) {
   const filter = normalizeCandidateFilter(rawFilter);
+  filter.gridFilters = rawFilter.gridFilters && typeof rawFilter.gridFilters === "object" ? rawFilter.gridFilters : {};
   filter.schoolId = String(rawFilter.schoolId || "").trim();
   const candidateSort = rawFilter.candidateSort && typeof rawFilter.candidateSort === "object"
     ? rawFilter.candidateSort
@@ -239,12 +249,13 @@ function buildDefaultCandidateOrderByClause() {
           designated_sort ASC,
           exam_date ASC,
           room ASC,
-          examinee_no ASC
+          examinee_no ASC,
+          id ASC
       `;
 }
 
 function buildCandidateOrderByClause(filter = {}) {
-  const columnName = candidateSortColumnMap[filter.sortKey];
+  const columnName = Object.hasOwn(candidateSortColumnMap, filter.sortKey) ? candidateSortColumnMap[filter.sortKey] : null;
 
   if (!columnName) {
     return buildDefaultCandidateOrderByClause();
@@ -481,12 +492,20 @@ function createCandidateReadRepository({ createHttpError, query }) {
     });
   }
 
+  async function findCandidateGridOptions(rawFilter = {}, field = "") {
+    const column = Object.hasOwn(candidateSortColumnMap, field) ? candidateSortColumnMap[field] : null;
+    if (!column) throw createHttpError(400, "필터 항목이 올바르지 않습니다.", "CANDIDATE_FILTER_INVALID");
+    const { params, whereClause } = buildCandidateWhereClause(normalizeRepositoryFilter({ schoolId: rawFilter.schoolId }));
+    const rows = await query(`SELECT DISTINCT TRIM(${column}) AS value FROM candidate_records ${appendOptionValueCondition(whereClause, column)}`, params);
+    return rows.map(row => String(row.value || "")).filter(Boolean).sort((a, b) => a.localeCompare(b, "ko", { numeric: true, sensitivity: "base" }));
+  }
+
   async function findCandidateFilterOptions(rawFilter = {}, fields = [], options = {}) {
     const filter = normalizeRepositoryFilter(rawFilter);
     const requestedFields = normalizeCandidateFilterOptionFields(fields);
     const optionGroups = {};
 
-    for (const field of requestedFields) {
+    async function loadField(field) {
       const columnName = candidateFilterOptionColumns[field];
       const displayExpression = columnName;
       const fieldFilter = buildCandidateFilterForOptionField(filter, field, options);
@@ -506,6 +525,10 @@ function createCandidateReadRepository({ createHttpError, query }) {
         candidateCount: Number(row.candidateCount) || 0,
         value: String(row.value || ""),
       }));
+    }
+
+    for (let index = 0; index < requestedFields.length; index += 3) {
+      await Promise.all(requestedFields.slice(index, index + 3).map(loadField));
     }
 
     return optionGroups;
@@ -620,6 +643,7 @@ function createCandidateReadRepository({ createHttpError, query }) {
 
   return Object.freeze({
     findCandidateFilterOptions,
+    findCandidateGridOptions,
     findCandidateGroups,
     findCandidates,
     getCandidateViewRowById,

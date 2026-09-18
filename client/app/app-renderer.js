@@ -1,3 +1,4 @@
+import { renderPartialHtml, clearPartialHtml } from "./partial-render.js";
 import { renderAuthStatus } from "../features/auth/renderers.js";
 import { syncStableBusyOverlays } from "./stable-busy-overlays.js";
 import { getActiveSchoolId } from "./school-context.js";
@@ -42,7 +43,7 @@ export function createAppRenderer({ appState, dom, getEditorActions, renderModal
     const access = appState.summary.access;
     const school = appState.schools.detail;
     const pdfGenerations = appState.pdfGenerations;
-    dom.authStatus.innerHTML = renderAuthStatus({ access, auth: appState.auth, currentView: view, school });
+    renderPartialHtml(dom.authStatus, renderAuthStatus({ access, auth: appState.auth, currentView: view, school }));
     const module = modules[feature];
     const renderView = {
       accountManagement: () => module.renderAccountManagementView({ access, accounts: appState.accounts }),
@@ -56,13 +57,15 @@ export function createAppRenderer({ appState, dom, getEditorActions, renderModal
       templateEditor: () => module.renderTemplateEditorView({ access, editor: appState.templateEditor }),
     };
     for (const [name, panel] of Object.entries(dom.panelsByView)) {
-      if (name === view) panel.innerHTML = renderView[view]?.() || "";
-      else if (panel.childNodes.length) panel.replaceChildren();
+      if (name === view) {
+        if (view === "templateEditor") panel.innerHTML = renderView[view]?.() || "";
+        else renderPartialHtml(panel, renderView[view]?.() || "");
+      } else if (panel.childNodes.length) clearPartialHtml(panel);
     }
     const pdf = modules.pdf;
     const deletion = modules.deletion;
     if (dom.globalModalHost) {
-      dom.globalModalHost.innerHTML = [
+      renderPartialHtml(dom.globalModalHost, [
         pdf?.renderPdfGenerationCreateModal(pdfGenerations),
         pdf?.renderPdfGenerationDetailModal({ access, detail: appState.pdfGenerationDetail, pdfGenerations }),
         pdf?.renderPdfGenerationDeleteConfirmModal(pdfGenerations),
@@ -70,7 +73,7 @@ export function createAppRenderer({ appState, dom, getEditorActions, renderModal
         pdf?.renderPdfGenerationGeneratedResultModal(pdfGenerations),
         deletion?.renderDataDeletionModal(appState.dataDeletion, { access, school }),
         renderModalClosePrompt(appState.ui.modalClosePrompt),
-      ].filter(Boolean).join("");
+      ].filter(Boolean).join(""));
     }
     syncStableBusyOverlays([
       modules.candidates?.renderCandidatePreviewProgressOverlay(appState.candidates.upload?.previewProgress),

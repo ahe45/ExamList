@@ -14,6 +14,12 @@ function readBooleanSearchParam(searchParams, key) {
   return /^(1|true|yes)$/i.test(String(searchParams.get(key) || "").trim());
 }
 
+function readGridFilters(value) {
+  if (!value) return {};
+  try { const parsed = JSON.parse(value); if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed; } catch {}
+  throw Object.assign(new Error("필터 형식이 올바르지 않습니다."), { statusCode: 400 });
+}
+
 function createCandidateRoutes(deps) {
   function isJsonRequest(request) {
     return String(request?.headers?.["content-type"] || "").toLowerCase().includes("application/json");
@@ -25,6 +31,9 @@ function createCandidateRoutes(deps) {
       response,
       200,
         await deps.getCandidates({
+          gridFilters: readGridFilters(searchParams.get("gridFilters")),
+          sortKey: searchParams.get("sortKey") || "",
+          sortDirection: searchParams.get("sortDirection") || "",
           admission: searchParams.get("admission") || "",
           admissionCode: searchParams.get("admissionCode") || searchParams.get("admission_code") || "",
           examDate: searchParams.get("examDate") || "",
@@ -58,7 +67,9 @@ function createCandidateRoutes(deps) {
     exactRoute("POST", "/api/candidates/export.xlsx", async ({ request, response }) => {
       deps.assertPermission("viewCandidates", request);
       const body = await deps.readJsonBody(request);
-      const workbookBuffer = await deps.buildCandidateExportBuffer(Array.isArray(body?.rows) ? body.rows : []);
+      const workbookBuffer = body?.schoolId
+        ? await deps.exportCandidateRows({ schoolId: body.schoolId, gridFilters: body.gridFilters || {}, sortKey: body.sortKey || "", sortDirection: body.sortDirection || "" })
+        : await deps.buildCandidateExportBuffer(Array.isArray(body?.rows) ? body.rows : []);
 
       return deps.sendBinary(
         response,
@@ -75,14 +86,16 @@ function createCandidateRoutes(deps) {
       const body = await deps.readJsonBody(request);
 
       await deps.assertSchoolWriteAccess(body?.schoolId || "", request);
-      deps.sendJson(response, 200, await deps.previewCandidateImport(body));
+      deps.sendJson(response, 200, await deps.previewCandidateImport({ ...body, ownerId: deps.getRequestAccountId?.(request) || "" }));
     }),
     exactRoute("POST", "/api/candidates/import", async ({ request, response }) => {
       deps.assertPermission("manageCandidates", request);
       const body = await deps.readJsonBody(request);
 
       await deps.assertSchoolWriteAccess(body?.schoolId || "", request);
-      deps.sendJson(response, 200, await deps.importCandidates(body));
+      const payload = { ...body, ownerId: deps.getRequestAccountId?.(request) || "" };
+      if (body.async) return deps.sendJson(response, 202, await deps.submitOperation(request, { kind: "candidate-import", schoolId: body.schoolId }, onProgress => deps.importCandidates({ ...payload, onProgress })));
+      deps.sendJson(response, 200, await deps.importCandidates(payload));
     }),
     exactRoute("POST", "/api/candidates/photo-archive/preview", async ({ request, response, searchParams }) => {
       deps.assertPermission("manageCandidates", request);
@@ -92,9 +105,7 @@ function createCandidateRoutes(deps) {
       deps.sendJson(
         response,
         200,
-        await deps.previewCandidatePhotoArchiveBuffer(await deps.readBinaryBody(request, photoArchiveReadOptions), {
-          schoolId,
-        }),
+        await deps.previewCandidatePhotoArchiveStream(request, { ...photoArchiveReadOptions, schoolId }),
       );
     }),
     exactRoute("POST", "/api/candidates/photo-archive", async ({ request, response, searchParams }) => {
@@ -104,6 +115,7 @@ function createCandidateRoutes(deps) {
         const body = await deps.readJsonBody(request);
         await deps.assertSchoolWriteAccess(body?.schoolId || "", request);
 
+        if (body.async) return deps.sendJson(response, 202, await deps.submitOperation(request, { kind: "photo-upload", schoolId: body.schoolId }, onProgress => deps.saveCandidatePhotoArchiveSession(body.previewToken || body.uploadSessionId || "", { schoolId: body.schoolId || "", onProgress })));
         deps.sendJson(
           response,
           200,
@@ -138,6 +150,10 @@ function createCandidateRoutes(deps) {
           excludeSelfFilters: readBooleanSearchParam(searchParams, "excludeSelfFilters"),
         }),
       });
+    }),
+    exactRoute("GET", "/api/candidates/grid-options", async ({ request, response, searchParams }) => {
+      deps.assertPermission("viewCandidates", request);
+      deps.sendJson(response, 200, { values: await deps.getCandidateGridOptions({ schoolId: searchParams.get("schoolId") || "" }, searchParams.get("field") || "") });
     }),
     exactRoute("GET", "/api/candidates", handleCandidateList),
     regexRoute(

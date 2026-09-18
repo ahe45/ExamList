@@ -85,7 +85,7 @@ export function createTemplateCreateModalActions({
     await onStateChange();
 
     try {
-      const payload = await getJson(`/api/pdf-templates?limit=100&schoolId=${encodeURIComponent(normalizedSchoolId)}`);
+      const payload = await getJson(`/api/pdf-templates?limit=100&summary=1&schoolId=${encodeURIComponent(normalizedSchoolId)}`);
 
       modal.sourceTemplates = Array.isArray(payload?.items) ? payload.items : [];
     } catch (error) {

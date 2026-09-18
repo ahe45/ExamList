@@ -112,3 +112,7 @@ Git clone으로 설치한 서버를 GitHub 최신 코드로 갱신할 때는 서
 - `server/modules/auth/workbook.js`, `client/features/accounts/*`: 계정 엑셀 업로드 API와 화면 동작.
 
 상세 검증 결과는 [구현 검증 기록](doc/00-implementation-verification.md)에 정리했습니다.
+
+### PDF 생성 처리량
+
+기본 메모리 큐와 BullMQ 큐 모두 PDF를 기본 2개씩 동시에 생성합니다. 서버 사양에 맞춰 .env의 PDF_QUEUE_CONCURRENCY를 1~5로 지정할 수 있으며, 생략하면 2입니다. 진행률 조회는 작업 상태만 읽고, 파일 목록은 완료 후 조회합니다.

@@ -12,14 +12,17 @@ const {
 } = require("./utils");
 const { resolveLegacyPdfStorageRoot } = require("../storage-paths");
 
-async function collectPdfGenerationRows(queryFn, schoolId) {
+async function collectPdfGenerationRows(queryFn, schoolId, { summaryOnly = false } = {}) {
   return queryFn(
     `
       SELECT
         id,
         batch_id AS batchId,
         generation_unit AS generationUnit,
-        request_json AS requestJson,
+        ${summaryOnly ? `CASE WHEN JSON_VALID(request_json) THEN JSON_OBJECT(
+          'filters', JSON_EXTRACT(request_json, '$.filters'),
+          'resultScope', JSON_EXTRACT(request_json, '$.resultScope')
+        ) ELSE NULL END` : "request_json"} AS requestJson,
         target_name AS targetName,
         file_path AS filePath
       FROM pdf_generation_histories
@@ -44,7 +47,7 @@ async function collectPdfGenerationBatchRows(queryFn, schoolId) {
   );
 }
 
-async function collectPdfMergedAuditRows(queryFn) {
+async function collectPdfMergedAuditRows(queryFn, schoolId) {
   const rows = await queryFn(
     `
       SELECT
@@ -54,13 +57,16 @@ async function collectPdfMergedAuditRows(queryFn) {
         metadata_json AS metadataJson
       FROM pdf_audit_logs
       WHERE entity_type = 'pdf_generation_merged'
+        AND (EXISTS (SELECT 1 FROM pdf_audit_log_schools scope WHERE scope.audit_id = pdf_audit_logs.id AND scope.school_id = ?)
+          OR NOT EXISTS (SELECT 1 FROM pdf_audit_log_schools scope WHERE scope.audit_id = pdf_audit_logs.id))
     `,
+    [schoolId],
   );
 
   return Array.isArray(rows) ? rows : [];
 }
 
-async function collectPdfAuditRowsByMetadataValues(queryFn, values = []) {
+async function collectPdfAuditRowsByMetadataValues(queryFn, values = [], schoolId = "") {
   const uniqueValues = createUniqueValueList(values);
 
   if (!uniqueValues.length) {
@@ -76,9 +82,9 @@ async function collectPdfAuditRowsByMetadataValues(queryFn, values = []) {
         entity_id AS entityId,
         metadata_json AS metadataJson
       FROM pdf_audit_logs
-      WHERE ${uniqueValues.map(() => "metadata_json LIKE ?").join(" OR ")}
+      WHERE EXISTS (SELECT 1 FROM pdf_audit_log_schools scope WHERE scope.audit_id = pdf_audit_logs.id AND scope.school_id = ?)
     `,
-    uniqueValues.map((value) => `%${value}%`),
+    [schoolId],
   );
 
   return Array.isArray(rows) ? rows : [];
@@ -250,10 +256,10 @@ function selectPdfMergedAuditData({
 
 function createPdfGenerationDeleteService({ pathModule = require("path"), rootDir = process.cwd() } = {}) {
   async function getPdfGenerationDataCounts(queryFn, schoolId, filters = {}) {
-    const generationRows = await collectPdfGenerationRows(queryFn, schoolId);
+    const generationRows = await collectPdfGenerationRows(queryFn, schoolId, { summaryOnly: true });
     const batchRows = await collectPdfGenerationBatchRows(queryFn, schoolId);
     const selection = createPdfGenerationSelection({ batchRows, filters, generationRows });
-    const mergedAuditRows = await collectPdfMergedAuditRows(queryFn);
+    const mergedAuditRows = await collectPdfMergedAuditRows(queryFn, schoolId);
     const mergedAuditSelection = selectPdfMergedAuditData({
       filters,
       mergedAuditRows,
@@ -267,7 +273,7 @@ function createPdfGenerationDeleteService({ pathModule = require("path"), rootDi
       ...selection.generationIds,
       ...selection.batchIds,
       ...selection.archiveIds,
-    ]);
+    ], schoolId);
     const metadataAuditSelection = selectPdfMetadataAuditData({
       filters,
       metadataAuditRows,
@@ -297,7 +303,7 @@ function createPdfGenerationDeleteService({ pathModule = require("path"), rootDi
     const generationRows = await collectPdfGenerationRows(transactionQuery, schoolId);
     const batchRows = await collectPdfGenerationBatchRows(transactionQuery, schoolId);
     const selection = createPdfGenerationSelection({ batchRows, filters, generationRows });
-    const mergedAuditRows = await collectPdfMergedAuditRows(transactionQuery);
+    const mergedAuditRows = await collectPdfMergedAuditRows(transactionQuery, schoolId);
     const mergedAuditSelection = selectPdfMergedAuditData({
       filters,
       mergedAuditRows,
@@ -311,7 +317,7 @@ function createPdfGenerationDeleteService({ pathModule = require("path"), rootDi
       ...selection.generationIds,
       ...selection.batchIds,
       ...selection.archiveIds,
-    ]);
+    ], schoolId);
     const metadataAuditSelection = selectPdfMetadataAuditData({
       filters,
       metadataAuditRows,

@@ -120,7 +120,7 @@ function createServiceHarness(options = {}) {
         };
       }
 
-      return [];
+      return [[]];
     },
   };
   const service = createPdfTemplateService({

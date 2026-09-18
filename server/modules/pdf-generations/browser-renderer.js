@@ -1,5 +1,7 @@
 const { spawn } = require("child_process");
+const fs = require("node:fs");
 const { pathToFileURL } = require("url");
+const { createPdfGenerationCanceledError } = require("./cancellation");
 
 const { resolveSchoolPdfStorageRoot } = require("../storage-paths");
 
@@ -48,16 +50,40 @@ async function resolveBrowserExecutable(fs, createHttpError) {
   );
 }
 
-function renderHtmlToPdf({
+async function getCompletedPdfSignature(pdfFilePath) {
+  let file;
+  try {
+    file = await fs.promises.open(pdfFilePath, "r");
+    const stat = await file.stat();
+    if (stat.size < 16) return "";
+    const header = Buffer.alloc(5);
+    const tail = Buffer.alloc(Math.min(stat.size, 1024));
+    await file.read(header, 0, header.length, 0);
+    await file.read(tail, 0, tail.length, stat.size - tail.length);
+    if (header.toString() !== "%PDF-" || !/%%EOF\s*$/.test(tail.toString())) return "";
+    return `${stat.size}:${stat.mtimeMs}`;
+  } catch (error) {
+    if (["ENOENT", "EBUSY", "EPERM", "EACCES"].includes(error.code)) return "";
+    throw error;
+  } finally {
+    await file?.close();
+  }
+}
+
+async function renderHtmlToPdf({
   browserExecutable,
   browserProfileDir,
   htmlFilePath,
   pdfFilePath,
   shouldCancel = null,
   timeoutMs = 45000,
+  spawnBrowser = spawn,
+  pollIntervalMs = 200,
 }) {
+  // A retry must never accept the previous attempt's output as a new result.
+  await fs.promises.rm(pdfFilePath, { force: true });
   return new Promise((resolve, reject) => {
-    const browserProcess = spawn(
+    const browserProcess = spawnBrowser(
       browserExecutable,
       [
         "--headless",
@@ -78,12 +104,12 @@ function renderHtmlToPdf({
       },
     );
     let stderr = "";
-    let timedOut = false;
     let timer = null;
-    let cancelTimer = null;
+    let pollTimer = null;
     let settled = false;
-    let checkingCancellation = false;
-    function rejectOnce(error) {
+    let checking = false;
+    let previousSignature = "";
+    function finish(error) {
       if (settled) {
         return;
       }
@@ -92,69 +118,47 @@ function renderHtmlToPdf({
       if (timer) {
         clearTimeout(timer);
       }
-      if (cancelTimer) {
-        clearInterval(cancelTimer);
+      if (pollTimer) {
+        clearInterval(pollTimer);
       }
-      reject(error);
+      if (error) {
+        browserProcess.kill();
+        reject(error);
+      } else {
+        resolve();
+      }
     }
     timer = setTimeout(() => {
-      timedOut = true;
-      browserProcess.kill();
+      finish(new Error("PDF 생성 시간이 초과되었습니다."));
     }, timeoutMs);
 
-    if (typeof shouldCancel === "function") {
-      cancelTimer = setInterval(async () => {
-        if (settled || checkingCancellation) {
-          return;
-        }
-
-        checkingCancellation = true;
-        try {
-          const canceled = await shouldCancel();
-
-          if (canceled) {
-            browserProcess.kill();
-            rejectOnce(new Error("PDF 생성이 중단되었습니다."));
-          }
-        } catch (error) {
-          browserProcess.kill();
-          rejectOnce(error);
-        } finally {
-          checkingCancellation = false;
-        }
-      }, 500);
-    }
+    pollTimer = setInterval(async () => {
+      if (settled || checking) return;
+      checking = true;
+      try {
+        if (await shouldCancel?.()) throw createPdfGenerationCanceledError();
+        const signature = await getCompletedPdfSignature(pdfFilePath);
+        // Edge on Windows may hand printing to a child and exit immediately.
+        // Wait for a complete, stable PDF, even after a successful launcher exit.
+        if (signature && signature === previousSignature) finish();
+        previousSignature = signature;
+      } catch (error) {
+        finish(error);
+      } finally {
+        checking = false;
+      }
+    }, pollIntervalMs);
 
     browserProcess.stderr.on("data", (chunk) => {
-      stderr += chunk.toString("utf8");
+      stderr = (stderr + chunk.toString("utf8")).slice(-8192);
     });
     browserProcess.on("error", (error) => {
-      rejectOnce(error);
+      finish(error);
     });
     browserProcess.on("close", (code) => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      if (timer) {
-        clearTimeout(timer);
-      }
-      if (cancelTimer) {
-        clearInterval(cancelTimer);
-      }
-
-      if (timedOut) {
-        reject(new Error("PDF 생성 시간이 초과되었습니다."));
-        return;
-      }
-
       if (code !== 0) {
-        reject(new Error(stderr.trim() || "브라우저 PDF 생성이 실패했습니다."));
-        return;
+        finish(new Error(stderr.trim() || "브라우저 PDF 생성이 실패했습니다."));
       }
-
-      resolve();
     });
   });
 }

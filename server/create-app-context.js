@@ -1,3 +1,4 @@
+const { createOperationService } = require("./modules/operations/service");
 const fs = require("fs");
 const path = require("path");
 
@@ -101,6 +102,7 @@ function createAppContext() {
     createHttpError,
     root,
     services: Object.freeze({
+      operationService: createOperationService({ query }),
       authService,
       candidateRecordService,
       dataDeletionService,

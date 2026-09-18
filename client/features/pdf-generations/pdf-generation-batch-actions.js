@@ -1,3 +1,4 @@
+import { postOperation } from "../../app/operation-client.js";
 import { postJson } from "../../app/api-client.js";
 import { formatCount } from "../../app/number-format.js";
 import { showToast } from "../../app/toast.js";
@@ -34,13 +35,17 @@ export function createPdfGenerationBatchActions({
     appState.pdfGenerations.archiveErrorMessage = "";
     appState.pdfGenerations.downloadModal.errorMessage = "";
     appState.pdfGenerations.downloadModal.isSubmitting = true;
+    appState.pdfGenerations.artifactProgress = null;
     appState.pdfGenerations.isCreatingArchive = true;
     await onStateChange();
 
     try {
       const isMergeMode = downloadMode === "merge";
-      const payload = await postJson(isMergeMode ? "/api/pdf-generations/merge" : "/api/pdf-generations/archive", {
+      const payload = await postOperation(isMergeMode ? "/api/pdf-generations/merge" : "/api/pdf-generations/archive", {
         generationIds,
+      }, async job => {
+        appState.pdfGenerations.artifactProgress = job;
+        await onStateChange();
       });
 
       if (payload?.downloadUrl) {
@@ -80,12 +85,16 @@ export function createPdfGenerationBatchActions({
     modal.isSubmitting = true;
     modal.mode = isMergeMode ? "merge" : "zip";
     appState.pdfGenerations.generatedResultModal = modal;
+    appState.pdfGenerations.artifactProgress = null;
     appState.pdfGenerations.isCreatingArchive = true;
     await onStateChange();
 
     try {
-      const payload = await postJson(isMergeMode ? "/api/pdf-generations/merge" : "/api/pdf-generations/archive", {
+      const payload = await postOperation(isMergeMode ? "/api/pdf-generations/merge" : "/api/pdf-generations/archive", {
         generationIds,
+      }, async job => {
+        appState.pdfGenerations.artifactProgress = job;
+        await onStateChange();
       });
 
       if (payload?.downloadUrl) {

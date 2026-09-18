@@ -1,3 +1,4 @@
+const { createOperationRoutes } = require("./routes/operations");
 const { createAccountRoutes } = require("./routes/accounts");
 const { createAuthRoutes } = require("./routes/auth");
 const { createCandidateRoutes } = require("./routes/candidates");
@@ -12,6 +13,7 @@ const { createSystemRoutes } = require("./routes/system");
 
 function createApiRoutes(deps) {
   return Object.freeze([
+    ...createOperationRoutes(deps),
     ...createAccountRoutes(deps),
     ...createAuthRoutes(deps),
     ...createSystemRoutes(deps),

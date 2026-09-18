@@ -121,6 +121,7 @@ export function normalizeCandidateValue(item = {}, key = "") {
 }
 
 export function getCandidateFilterOptionValues(candidates = {}, key = "") {
+  if (candidates.serverPaged) return candidates.gridOptions?.[key] || [];
   return Array.from(
     new Set(
       (Array.isArray(candidates.items) ? candidates.items : [])
@@ -153,6 +154,7 @@ export function getActiveFilterEntries(candidates = {}) {
 }
 
 export function getFilteredCandidateRows(candidates = {}) {
+  if (candidates.serverPaged) return candidates.items || [];
   const tableState = getCandidateTableState(candidates);
   const filterEntries = Object.entries(tableState.filters || {});
   const rows = (Array.isArray(candidates.items) ? candidates.items : []).filter((item) =>
@@ -179,5 +181,5 @@ export function getFilteredCandidateRows(candidates = {}) {
 }
 
 export function getCandidateVisibleRows(candidates = {}) {
-  return getGridVisibleRows(getFilteredCandidateRows(candidates), getCandidateTableState(candidates));
+  return getGridVisibleRows(getFilteredCandidateRows(candidates), getCandidateTableState(candidates), candidates.serverPaged ? { total: candidates.total } : null);
 }
