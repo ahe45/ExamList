@@ -68,15 +68,14 @@ export function createClosedDataDeletionModalState() {
   };
 }
 
-export function getDeletionImpact(scope = "", result = {}) {
+export function getDeletionImpact(scope = "") {
   const normalizedScope = String(scope || "").trim();
-  const hasFilters = Object.keys(result?.filters || {}).length > 0;
 
   return {
     candidates: normalizedScope === "all" || normalizedScope === "candidates",
     pdfGenerations: normalizedScope === "all" || normalizedScope === "pdf-generations",
     photos: normalizedScope === "all" || normalizedScope === "candidates" || normalizedScope === "photos",
-    templates: normalizedScope === "templates" || (normalizedScope === "all" && !hasFilters),
+    templates: false,
   };
 }
 
@@ -91,7 +90,7 @@ export function buildDataDeletionSuccessMessage(result = {}) {
   const label = String(result.scopeLabel || scopeLabels[scope] || "데이터");
 
   if (scope === "all") {
-    return `전체 데이터를 삭제했습니다. 수험생 ${formatCount(result.deletedCandidateRecords)}건, 사진 ${formatCount(result.deletedCandidatePhotos)}건, 생성 PDF 데이터 ${formatCount(result.deletedPdfGenerationHistories)}건, 양식 ${formatCount(result.deletedPdfTemplates)}건이 정리되었습니다.`;
+    return `전체 데이터를 삭제했습니다. 수험생 ${formatCount(result.deletedCandidateRecords)}건, 사진 ${formatCount(result.deletedCandidatePhotos)}건, 생성 PDF 데이터 ${formatCount(result.deletedPdfGenerationHistories)}건이 정리되었습니다. 양식은 유지됩니다.`;
   }
 
   if (scope === "candidates") {
@@ -104,10 +103,6 @@ export function buildDataDeletionSuccessMessage(result = {}) {
 
   if (scope === "pdf-generations") {
     return `생성 PDF 데이터 ${formatCount(result.deletedPdfGenerationHistories)}건과 일괄 생성 결과 ${formatCount(result.deletedPdfGenerationBatches)}건을 삭제했습니다.`;
-  }
-
-  if (scope === "templates") {
-    return `양식 데이터 ${formatCount(result.deletedPdfTemplates)}건을 삭제했습니다.`;
   }
 
   return `${label}를 삭제했습니다.`;

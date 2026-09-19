@@ -17,7 +17,7 @@ const loaders = {
 };
 const viewFeatures = {
   accountManagement: "accounts", schoolManagement: "schools", templateManagement: "templates",
-  candidateLookup: "candidates", pdfGenerationHistory: "pdf", pdfGenerationDetail: "pdf",
+  candidateLookup: "candidates", pdfGenerationHistory: "pdf",
   pdfHistoryManagement: "pdf", dataDeletion: "deletion", templateEditor: "editor",
 };
 
@@ -51,7 +51,6 @@ export function createAppRenderer({ appState, dom, getEditorActions, renderModal
       templateManagement: () => module.renderTemplateListView({ access, school, templates: appState.templates }),
       candidateLookup: () => module.renderCandidateView({ access, candidates: appState.candidates }, { includeBusyOverlays: false }),
       pdfGenerationHistory: () => module.renderPdfGenerationView({ access, pdfGenerations }),
-      pdfGenerationDetail: () => module.renderPdfGenerationDetailView({ access, detail: appState.pdfGenerationDetail, pdfGenerations }),
       pdfHistoryManagement: () => module.renderPdfHistoryManagementView({ access, pdfGenerations }),
       dataDeletion: () => module.renderDataDeletionView({ access, dataDeletion: appState.dataDeletion, school }),
       templateEditor: () => module.renderTemplateEditorView({ access, editor: appState.templateEditor }),
@@ -67,7 +66,6 @@ export function createAppRenderer({ appState, dom, getEditorActions, renderModal
     if (dom.globalModalHost) {
       renderPartialHtml(dom.globalModalHost, [
         pdf?.renderPdfGenerationCreateModal(pdfGenerations),
-        pdf?.renderPdfGenerationDetailModal({ access, detail: appState.pdfGenerationDetail, pdfGenerations }),
         pdf?.renderPdfGenerationDeleteConfirmModal(pdfGenerations),
         pdf?.renderPdfGenerationDownloadModal(pdfGenerations),
         pdf?.renderPdfGenerationGeneratedResultModal(pdfGenerations),

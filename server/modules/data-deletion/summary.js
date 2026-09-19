@@ -75,19 +75,11 @@ function buildDataDeletionScopeSummaries(counts = createEmptyDeletionCounts()) {
     createSummaryItem("pdfFiles", "PDF/ZIP 파일", counts.pdfFiles, "저장된 PDF 및 압축 파일 참조"),
     createSummaryItem("pdfAuditLogs", "PDF 작업 로그", counts.pdfAuditLogs, "생성/병합/재시도 등 작업 로그"),
   ];
-  const templateItems = [
-    createSummaryItem("pdfTemplates", "양식", counts.pdfTemplates, "양식 기본 정보"),
-    createSummaryItem("pdfTemplatePages", "페이지", counts.pdfTemplatePages, "양식 페이지 구성"),
-    createSummaryItem("pdfTemplateElements", "요소", counts.pdfTemplateElements, "텍스트/표/이미지 등 배치 요소"),
-    createSummaryItem("pdfTemplateVersions", "버전 스냅샷", counts.pdfTemplateVersions, "저장된 양식 버전 정보"),
-  ];
-
   return [
-    buildScopeSummary("all", [...candidateItems, ...pdfGenerationItems, ...templateItems]),
+    buildScopeSummary("all", [...candidateItems, ...pdfGenerationItems]),
     buildScopeSummary("candidates", candidateItems),
     buildScopeSummary("photos", photoItems),
     buildScopeSummary("pdf-generations", pdfGenerationItems),
-    buildScopeSummary("templates", templateItems),
   ];
 }
 

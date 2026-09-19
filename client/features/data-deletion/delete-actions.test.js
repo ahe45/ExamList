@@ -14,9 +14,9 @@ test("data deletion renders progress state before sending the delete request", a
       filters: {},
       isOpen: true,
       summary: {
-        scopes: [{ scope: "templates", totalCount: 1 }],
+        scopes: [{ scope: "candidates", totalCount: 1 }],
       },
-      selectedScope: "templates",
+      selectedScope: "candidates",
       selectedTemplateIds: ["template-1"],
     },
     progressOverlay: {
@@ -48,16 +48,16 @@ test("data deletion renders progress state before sending the delete request", a
   globalThis.fetch = async (url, options = {}) => {
     deleteRequestStarted = true;
 
-    assert.equal(url, "/api/data-deletion/templates");
+    assert.equal(url, "/api/data-deletion/candidates");
     assert.equal(options.method, "DELETE");
     assert.equal(state.isDeleting, true);
 
     return new Response(
       JSON.stringify({
-        deletedPdfTemplates: 1,
+        deletedCandidateRecords: 1,
         filters: {},
-        scope: "templates",
-        scopeLabel: "양식 데이터",
+        scope: "candidates",
+        scopeLabel: "수험생 데이터",
       }),
       {
         headers: {
@@ -87,7 +87,7 @@ test("data deletion renders progress state before sending the delete request", a
       getCurrentSchoolId: () => "school-1",
       getDataDeletionModalState: () => state.modal,
       getDataDeletionState: () => state,
-      getScopeItem: () => ({ scope: "templates", title: "양식 데이터" }),
+      getScopeItem: () => ({ scope: "candidates", title: "수험생 데이터" }),
       hasPermission: () => true,
       onStateChange: async () => {
         renderSnapshots.push({
@@ -104,13 +104,13 @@ test("data deletion renders progress state before sending the delete request", a
         assert.equal(state.isDeleting, true);
         assert.equal(state.modal.isDeleting, true);
         state.modal.summary = {
-          scopes: [{ scope: "templates", totalCount: 0 }],
+          scopes: [{ scope: "candidates", totalCount: 0 }],
         };
         state.modal.selectedTemplateIds = [];
       },
     });
 
-    await deleteProjectData("templates");
+    await deleteProjectData("candidates");
   } finally {
     globalThis.fetch = originalFetch;
     globalThis.document = originalDocument;

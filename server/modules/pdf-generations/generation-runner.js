@@ -94,6 +94,7 @@ function createPdfGenerationRunner({
       emptyValueData: previewPayload.emptyValueData,
       generatedAt: previewPayload.generatedAt,
       sampleData: {},
+      kyungheeCoverText: previewPayload.kyungheeCoverText,
       schoolSettings: previewPayload.schoolSettings,
       template: previewPayload.template,
     });

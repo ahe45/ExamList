@@ -6,6 +6,7 @@ const { escapeHtml } = require("./renderer-html-utils");
 const { renderDocumentPage } = require("./renderer-document-page");
 const { isCoverPage, renderPageNumberSetting, renderRecognitionMarks } = require("./renderer-page-settings");
 const { buildRoomTokenMap, createRoomAssignmentCountMap } = require("./room-context");
+const { buildKyungheeCoverText, hasKyungheeCoverTag } = require("./kyunghee-cover");
 const {
   buildCandidateTokenMap,
   buildSchoolTokenMap,
@@ -18,6 +19,7 @@ function createBaseContext({
   candidates,
   emptyValueData = {},
   generatedAt,
+  kyungheeCoverText = "",
   pageNumber,
   representativeCandidate,
   roomAssignmentCountMap,
@@ -47,6 +49,7 @@ function createBaseContext({
     },
     candidate: buildCandidateTokenMap(candidate, school),
     document: {
+      kyungheeCover: isOtherRoomPage ? "" : kyungheeCoverText,
       generatedAt: formatDateTimeValue(generatedAt),
       templateName: String(templateName || ""),
       totalCandidates: Array.isArray(candidates) ? candidates.length : 0,
@@ -81,7 +84,7 @@ function getTemplateDataTagSettings(template = {}) {
     : {};
 }
 
-function renderPreviewDocumentParts({ candidates, emptyValueData = null, generatedAt, sampleData = null, schoolSettings = {}, template }) {
+function renderPreviewDocumentParts({ candidates, emptyValueData = null, generatedAt, kyungheeCoverText = null, sampleData = null, schoolSettings = {}, template }) {
   const previewPages = buildPreviewPages(template?.layout, candidates);
   const totalPages = previewPages.length;
   const dataTagSettings = getTemplateDataTagSettings(template);
@@ -95,6 +98,7 @@ function renderPreviewDocumentParts({ candidates, emptyValueData = null, generat
       : dataTagSettings.emptyValueData || resolvedSampleData;
   const pageNumberByIndex = new Map();
   const roomAssignmentCountMap = createRoomAssignmentCountMap(candidates);
+  const resolvedKyungheeCoverText = kyungheeCoverText ?? (hasKyungheeCoverTag(template) ? buildKyungheeCoverText(candidates) : "");
   let totalNumberedPages = 0;
 
   previewPages.forEach((pageInstance, index) => {
@@ -114,6 +118,7 @@ function renderPreviewDocumentParts({ candidates, emptyValueData = null, generat
         candidates,
         emptyValueData: resolvedEmptyValueData,
         generatedAt,
+        kyungheeCoverText: resolvedKyungheeCoverText,
         isOtherRoomPage: pageInstance.isOtherRoomPage,
         pageNumber: pageNumberByIndex.get(index) || 0,
         representativeCandidate,

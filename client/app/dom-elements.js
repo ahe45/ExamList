@@ -7,7 +7,6 @@ export const dom = {
     accountManagement: document.querySelector('[data-view-panel="accountManagement"]'),
     candidateLookup: document.querySelector('[data-view-panel="candidateLookup"]'),
     dataDeletion: document.querySelector('[data-view-panel="dataDeletion"]'),
-    pdfGenerationDetail: document.querySelector('[data-view-panel="pdfGenerationDetail"]'),
     pdfGenerationHistory: document.querySelector('[data-view-panel="pdfGenerationHistory"]'),
     pdfHistoryManagement: document.querySelector('[data-view-panel="pdfHistoryManagement"]'),
     schoolManagement: document.querySelector('[data-view-panel="schoolManagement"]'),

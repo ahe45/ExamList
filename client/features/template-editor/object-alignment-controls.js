@@ -105,6 +105,7 @@ export function bindObjectAlignmentControls({ editor, surfaceElement, toolbarHos
     const selectedElements = getSelectedObjectAlignmentElements(surfaceElement);
     const selectedCount = selectedElements.length;
     const hasCellContainedObject = selectedElements.some((element) => getObjectTableCellElement(element, surfaceElement));
+    const allCellContainedObjects = selectedCount > 0 && selectedElements.every((element) => getObjectTableCellElement(element, surfaceElement));
     const hasCandidateBlockModalObject = selectedElements.some((element) => getObjectCandidateBlockModalElement(element, surfaceElement));
 
     getOptions().forEach((option) => {
@@ -113,8 +114,8 @@ export function bindObjectAlignmentControls({ editor, surfaceElement, toolbarHos
       const disabled =
         isObjectEditorReadOnly(surfaceElement) ||
         selectedCount < minimumCount ||
-        hasCellContainedObject ||
-        hasCandidateBlockModalObject;
+        (hasCellContainedObject && (!allCellContainedObjects || command.startsWith("distribute-"))) ||
+        (hasCandidateBlockModalObject && !allCellContainedObjects);
 
       option.disabled = disabled;
       option.setAttribute("aria-disabled", disabled ? "true" : "false");
@@ -131,7 +132,7 @@ export function bindObjectAlignmentControls({ editor, surfaceElement, toolbarHos
       }
 
       if (referenceElement) {
-        referenceElement.textContent = `기준: ${selectedCount > 1 ? "개체" : "캔버스"}`;
+        referenceElement.textContent = `기준: ${allCellContainedObjects ? "셀" : selectedCount > 1 ? "개체" : "캔버스"}`;
       }
 
       if (shouldDisable) {

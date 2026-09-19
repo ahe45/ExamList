@@ -291,6 +291,7 @@ function createPdfGenerationService({
       emptyValueData: previewPayload.emptyValueData,
       generatedAt,
       sampleData: renderActualCandidates ? {} : previewPayload.sampleData,
+      kyungheeCoverText: renderActualCandidates ? previewPayload.kyungheeCoverText : null,
       schoolSettings: previewPayload.schoolSettings,
       template: previewPayload.template,
     });

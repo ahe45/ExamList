@@ -20,6 +20,13 @@
       return node instanceof HTMLElement && node.matches(".template-token[data-template-tag-value]");
     }
 
+    function isTemplateEditorTokenTraversalBoundary(node) {
+      if (!(node instanceof Element)) return false;
+      if (node.matches("br, hr")) return true;
+      const display = node.ownerDocument.defaultView.getComputedStyle(node).display;
+      return display !== "inline" && display !== "contents";
+    }
+
     function getTemplateEditorSelectionToken() {
       const templateEditorSurface = getTemplateEditorSurface();
 
@@ -76,7 +83,7 @@
       return null;
     }
 
-    function getTemplateEditorBoundaryToken(node, direction) {
+    function getTemplateEditorBoundaryNode(node, direction, matches) {
       let currentNode = node || null;
 
       while (currentNode) {
@@ -84,8 +91,18 @@
           return null;
         }
 
-        if (isTemplateEditorTokenElement(currentNode)) {
+        if (matches(currentNode)) {
           return currentNode;
+        }
+
+        if (isTemplateEditorTokenElement(currentNode)) {
+          return null;
+        }
+
+        // A token in another paragraph/cell is not adjacent to the caret.
+        // Leave the intervening line break to native editing before deleting it.
+        if (isTemplateEditorTokenTraversalBoundary(currentNode)) {
+          return null;
         }
 
         if (!(currentNode instanceof Element) || currentNode.childNodes.length === 0) {
@@ -101,7 +118,7 @@
       return null;
     }
 
-    function getTemplateEditorAdjacentToken(direction) {
+    function getTemplateEditorAdjacentNodeMatching(direction, matches, rangeOverride = null) {
       const templateEditorSurface = getTemplateEditorSurface();
 
       if (!templateEditorSurface) {
@@ -109,10 +126,10 @@
       }
 
       const selection = window.getSelection();
-      const range =
+      const range = rangeOverride || (
         selection && selection.rangeCount > 0 && templateEditorSurface.contains(selection.anchorNode)
           ? selection.getRangeAt(0)
-          : state.templateEditor.savedRange;
+          : state.templateEditor.savedRange);
 
       if (!range || !range.collapsed) {
         return null;
@@ -144,7 +161,7 @@
                 direction,
               );
 
-        const adjacentToken = getTemplateEditorBoundaryToken(adjacentNode, direction);
+        const adjacentToken = getTemplateEditorBoundaryNode(adjacentNode, direction, matches);
 
         if (adjacentToken) {
           return adjacentToken;
@@ -154,7 +171,7 @@
           return null;
         }
 
-        if (currentNode === templateEditorSurface) {
+        if (currentNode === templateEditorSurface || isTemplateEditorTokenTraversalBoundary(currentNode)) {
           return null;
         }
 
@@ -174,7 +191,7 @@
 
     function removeTemplateEditorAdjacentToken(direction) {
       const templateEditorSurface = getTemplateEditorSurface();
-      const targetToken = getTemplateEditorSelectionToken() || getTemplateEditorAdjacentToken(direction);
+      const targetToken = getTemplateEditorSelectionToken() || getTemplateEditorAdjacentNodeMatching(direction, isTemplateEditorTokenElement);
 
       if (!templateEditorSurface || !targetToken) {
         return false;
@@ -202,6 +219,36 @@
       return true;
     }
 
+    function removeEmptyLineAdjacentToTemplateToken(direction) {
+      const surface = getTemplateEditorSurface();
+      const selection = window.getSelection();
+      const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+      if (!range?.collapsed || !surface?.contains(range.startContainer)) return false;
+      const element = range.startContainer.nodeType === Node.ELEMENT_NODE ? range.startContainer : range.startContainer.parentElement;
+      const line = element?.closest("p, div");
+      if (!line || line === surface || line.matches(".template-doc, [data-template-object-caret-host]") ||
+          line.textContent.replace(/\u200B/g, "").trim() || line.querySelectorAll("br").length > 1 ||
+          line.querySelector("img, table, hr, [contenteditable='false'], [data-template-tag-value]")) return false;
+      const parent = line.parentNode;
+      const index = Array.prototype.indexOf.call(parent.childNodes, line);
+      const backward = direction === "backward";
+      const adjacent = getTemplateEditorAdjacentNode(parent, index + (backward ? -1 : 1), direction);
+      let token = getTemplateEditorBoundaryNode(adjacent, direction, isTemplateEditorTokenElement);
+      if (!token && adjacent instanceof Element && adjacent.matches("p, div")) {
+        const adjacentRange = line.ownerDocument.createRange();
+        adjacentRange.selectNodeContents(adjacent);
+        adjacentRange.collapse(!backward);
+        token = getTemplateEditorAdjacentNodeMatching(direction, isTemplateEditorTokenElement, adjacentRange);
+      }
+      if (!token) return false;
+      // Native merging may retain a placeholder BR or delete a preceding
+      // noneditable tag. Remove just the empty paragraph as a single edit.
+      line.remove();
+      setTemplateEditorCollapsedSelection(token.parentNode, Array.prototype.indexOf.call(token.parentNode.childNodes, token) + (backward ? 1 : 0));
+      syncTemplateEditorContent({ preserveSelection: true, focusEditor: true });
+      return true;
+    }
+
     function handleTemplateEditorTokenDeletion(event) {
       const templateEditorSurface = getTemplateEditorSurface();
 
@@ -214,6 +261,28 @@
 
       if (!direction) {
         return false;
+      }
+
+      if (removeEmptyLineAdjacentToTemplateToken(direction)) {
+        event.preventDefault();
+        return true;
+      }
+      {
+        const lineBreak = getTemplateEditorAdjacentNodeMatching(direction, (node) => node instanceof Element && node.matches("br"));
+        if (lineBreak) {
+          const afterBreak = lineBreak.ownerDocument.createRange();
+          if (direction === "backward") afterBreak.setStartBefore(lineBreak);
+          else afterBreak.setStartAfter(lineBreak);
+          afterBreak.collapse(true);
+          if (getTemplateEditorAdjacentNodeMatching(direction, isTemplateEditorTokenElement, afterBreak)) {
+            // Chromium may delete a noneditable token together with the BR.
+            // Remove only the break and preserve the existing caret and token.
+            lineBreak.remove();
+            syncTemplateEditorContent({ preserveSelection: true, focusEditor: true });
+            event.preventDefault();
+            return true;
+          }
+        }
       }
 
       const didRemove = removeTemplateEditorAdjacentToken(direction);

@@ -98,14 +98,14 @@ test("PDF generation header keeps only the selected count badge", () => {
   assert.doesNotMatch(headerActionsHtml, /총 \d+건/);
 });
 
-test("PDF generation grid adds detail column to the right of print", () => {
+test("PDF generation grid retains print and removes the detail column", () => {
   const html = renderViewWithSelection([]);
   const printHeaderIndex = html.indexOf('<span class="table-header-label">인쇄</span>');
   const detailHeaderIndex = html.indexOf('<span class="table-header-label">상세</span>');
 
   assert.ok(printHeaderIndex >= 0);
-  assert.ok(detailHeaderIndex > printHeaderIndex);
-  assert.match(html, /pdf-generation-detail-column/);
+  assert.equal(detailHeaderIndex, -1);
+  assert.doesNotMatch(html, /pdf-generation-detail-column/);
 });
 
 test("PDF generation grid does not render filter strip when filters are active", () => {

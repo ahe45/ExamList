@@ -69,6 +69,7 @@ export const dataTagAccordionGroups = Object.freeze([
     id: "etc",
     keys: Object.freeze([
       "row.indexInPage",
+      "document.kyungheeCover",
       "candidate.opt1",
       "candidate.opt2",
       "candidate.opt3",
@@ -100,6 +101,7 @@ const dataTagIconMarkup = Object.freeze({
 });
 
 export const dataTagFallbackDefinitions = Object.freeze({
+  "document.kyungheeCover": Object.freeze({ example: generatedObjectPreviewValues["document.kyungheeCover"], label: "경희대 표지", type: "string" }),
   "school.name": Object.freeze({ example: generatedObjectPreviewValues["school.name"], label: "학교명", type: "string" }),
   "school.code": Object.freeze({ example: generatedObjectPreviewValues["school.code"], label: "학교코드", type: "string" }),
   "candidate.campusName": Object.freeze({ example: generatedObjectPreviewValues["candidate.campusName"], label: "캠퍼스명", type: "string" }),

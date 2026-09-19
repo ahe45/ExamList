@@ -141,13 +141,6 @@ export function registerAppModalGuards({
     isOpen: () => Boolean(appState.pdfGenerations.createModal.templatePreview?.isOpen),
   });
   modalCloseGuard.registerModal({
-    id: "pdf-generation-detail",
-    closeActions: ["close-pdf-generation-detail-modal"],
-    close: generationActions.closePdfGenerationDetailModal,
-    isDirty: () => false,
-    isOpen: () => Boolean(appState.pdfGenerations.detailModal?.isOpen),
-  });
-  modalCloseGuard.registerModal({
     id: "pdf-generation-download",
     closeActions: ["close-pdf-generation-download-modal"],
     close: generationActions.closePdfGenerationDownloadModal,

@@ -1,5 +1,3 @@
-export { renderPdfGenerationDetailView } from "./pdf-generation-detail-renderer.js";
-export { renderPdfGenerationDetailModal } from "./pdf-generation-detail-modal-renderer.js";
 export { renderPdfGenerationCreateModal } from "./pdf-generation-create-modal-renderer.js";
 export { renderPdfGenerationDeleteConfirmModal } from "./pdf-generation-delete-confirm-renderer.js";
 export { renderPdfGenerationDownloadModal } from "./pdf-generation-download-modal-renderer.js";

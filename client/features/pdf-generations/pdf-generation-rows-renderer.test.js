@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { renderGenerationRows } from "./pdf-generation-rows-renderer.js";
+import { pdfGenerationGridColumns } from "./pdf-generation-table-model.js";
 
 const access = Object.freeze({
   permissions: {
@@ -30,7 +31,7 @@ test("PDF generation rows render print action with inline print url", () => {
   assert.doesNotMatch(html, /href="/);
 });
 
-test("PDF generation rows render a detail action next to print", () => {
+test("PDF generation rows retain print without a detail action or column", () => {
   const html = renderGenerationRows(
     [
       {
@@ -44,10 +45,14 @@ test("PDF generation rows render a detail action next to print", () => {
     access,
   );
   const printIndex = html.indexOf('class="pdf-generation-print-column"');
-  const detailIndex = html.indexOf('class="pdf-generation-detail-column"');
-
   assert.ok(printIndex >= 0);
-  assert.ok(detailIndex > printIndex);
-  assert.match(html, /data-action="open-pdf-generation-detail-modal"/);
+  assert.doesNotMatch(html, /pdf-generation-detail-column/);
+  assert.doesNotMatch(html, /open-pdf-generation-detail-modal/);
   assert.match(html, /data-generation-id="generation-1"/);
+  assert.equal((html.match(/<td\b/g) || []).length, pdfGenerationGridColumns.length + 2);
+});
+
+test("empty PDF generation rows span the visible columns", () => {
+  const html = renderGenerationRows([]);
+  assert.match(html, new RegExp(`colspan="${pdfGenerationGridColumns.length + 2}"`));
 });

@@ -131,7 +131,6 @@ export function createPdfGenerationBatchActions({
     generationIds.forEach((generationId) => rerunningIds.add(generationId));
     setRerunningGenerationIds([...rerunningIds]);
     appState.pdfGenerations.isBatchRerunning = true;
-    appState.pdfGenerations.lastRerunGeneration = null;
     appState.pdfGenerations.rerunErrorMessage = "";
     await onStateChange();
 
@@ -158,78 +157,9 @@ export function createPdfGenerationBatchActions({
     }
   }
 
-  async function rerunGeneration(generationId) {
-    if (!hasPermission("generatePdfs")) {
-      return;
-    }
-
-    const normalizedGenerationId = String(generationId || "").trim();
-
-    if (!normalizedGenerationId) {
-      return;
-    }
-
-    const rerunningIds = new Set(appState.pdfGenerations.rerunningGenerationIds);
-
-    rerunningIds.add(normalizedGenerationId);
-    setRerunningGenerationIds([...rerunningIds]);
-    appState.pdfGenerations.isBatchRerunning = false;
-    appState.pdfGenerations.lastBatchRerun = null;
-    appState.pdfGenerations.rerunErrorMessage = "";
-    await onStateChange();
-
-    try {
-      const payload = await postJson(`/api/pdf-generations/${encodeURIComponent(normalizedGenerationId)}/rerun`, {});
-
-      appState.pdfGenerations.lastRerunGeneration = payload || null;
-      appState.pdfGenerations.rerunErrorMessage = "";
-
-      if (payload?.downloadUrl) {
-        triggerDownload(payload.downloadUrl, payload.fileName || "");
-      }
-
-      showToast("PDF를 재생성했습니다.");
-      await loadGenerations();
-    } catch (error) {
-      appState.pdfGenerations.rerunErrorMessage = error.message;
-      showToast(appState.pdfGenerations.rerunErrorMessage, { tone: "error" });
-    } finally {
-      rerunningIds.delete(normalizedGenerationId);
-      setRerunningGenerationIds([...rerunningIds]);
-      await onStateChange();
-    }
-  }
-
-  async function retryGeneration(generationId) {
-    if (!hasPermission("generatePdfs")) {
-      return;
-    }
-
-    const normalizedGenerationId = String(generationId || "").trim();
-
-    if (!normalizedGenerationId) {
-      return;
-    }
-
-    appState.pdfGenerations.rerunErrorMessage = "";
-    await onStateChange();
-
-    try {
-      await postJson(`/api/pdf-generations/${encodeURIComponent(normalizedGenerationId)}/retry`, {});
-      showToast("PDF 생성 재시도를 요청했습니다.");
-      await loadGenerations();
-    } catch (error) {
-      appState.pdfGenerations.rerunErrorMessage = error.message;
-      showToast(appState.pdfGenerations.rerunErrorMessage, { tone: "error" });
-      await onStateChange();
-    }
-  }
-
   return Object.freeze({
     downloadGeneratedBatchResult,
     downloadSelectedGenerationArchive,
-    rerunGeneration,
     rerunSelectedGenerations,
-    retryGeneration,
   });
 }

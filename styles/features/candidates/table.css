@@ -146,6 +146,10 @@
   width: auto;
 }
 
+.candidate-data-table .candidate-table-wrap {
+  scrollbar-gutter: auto;
+}
+
 .candidate-grid-table th {
   background: #f8fbff;
   white-space: nowrap;

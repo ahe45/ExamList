@@ -6,6 +6,7 @@ const {
   normalizeGenerationUnitFieldKey,
 } = require("../pdf-generations/generation-unit-fields");
 const { renderPreviewDocument } = require("./renderer");
+const { resolveKyungheeCoverText } = require("./kyunghee-cover");
 const { buildPreviewSampleCandidates, previewSampleCandidateCount } = require("./sample-candidates");
 
 const generationUnitConfig = Object.freeze({
@@ -297,6 +298,14 @@ function createPdfPreviewService({ candidateService, createHttpError, pdfTemplat
       sortKey: candidateSort.sortKey,
     });
     const sampledCandidates = Array.isArray(candidatePayload?.items) ? candidatePayload.items : [];
+    const kyungheeCoverText = await resolveKyungheeCoverText({
+      candidateService,
+      template,
+      filters: previewRequest.filters || {},
+      schoolId,
+      candidatePayload,
+      samplePage,
+    });
     const selectedCandidates = selectPreviewCandidates(
       sampledCandidates,
       template.generationUnit,
@@ -320,6 +329,7 @@ function createPdfPreviewService({ candidateService, createHttpError, pdfTemplat
       candidates: hydratedCandidates,
       emptyValueData,
       generatedAt,
+      kyungheeCoverText,
       sampleData,
       schoolSettings,
       template,
@@ -342,6 +352,7 @@ function createPdfPreviewService({ candidateService, createHttpError, pdfTemplat
       candidates: renderCandidates,
       emptyValueData: previewPayload.emptyValueData,
       generatedAt: previewPayload.generatedAt,
+      kyungheeCoverText: renderActualCandidates ? previewPayload.kyungheeCoverText : null,
       sampleData: renderActualCandidates ? {} : previewPayload.sampleData,
       schoolSettings: previewPayload.schoolSettings,
       template: previewPayload.template,

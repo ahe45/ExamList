@@ -464,31 +464,20 @@ export async function handlePdfGenerationListClick(event, context) {
 
 export async function handlePdfGenerationListAction(actionTarget, action, context) {
   const {
-    appConfig,
-    appState,
     cancelActivePdfGeneration,
     clearGenerationSelection,
-    closePdfAuditLogFilterMenu,
-    closePdfGenerationDetailModal,
     closePdfGenerationArtifactFilterMenu,
     closePdfGenerationArtifactPageSizeMenu,
     closePdfGenerationFilterMenu,
     closePdfGenerationPageSizeMenu,
     downloadPdfGenerationArtifact,
     downloadSelectedGenerationArchive,
-    getCurrentSchoolRouteKey,
     getPdfGenerationArtifactTableState,
     getPdfGenerationTableState,
-    loadGenerationDetail,
     loadArtifacts,
     loadGenerations,
-    navigateToPath,
     onStateChange,
-    openGenerationDetail,
-    openPdfGenerationDetailModal,
-    rerunGeneration,
     rerunSelectedGenerations,
-    retryGeneration,
     selectAllVisibleGenerations,
     setPdfGenerationArtifactFilterValues,
     setPdfGenerationActiveTab,
@@ -561,21 +550,6 @@ export async function handlePdfGenerationListAction(actionTarget, action, contex
     return true;
   }
 
-  if (action === "open-pdf-generation-detail-modal") {
-    await openPdfGenerationDetailModal(actionTarget.dataset.generationId || "");
-    return true;
-  }
-
-  if (action === "close-pdf-generation-detail-modal") {
-    await closePdfGenerationDetailModal();
-    return true;
-  }
-
-  if (action === "refresh-pdf-generation-detail") {
-    await loadGenerationDetail(appState.route?.params?.generationId || appState.pdfGenerationDetail.item?.id || "");
-    return true;
-  }
-
   if (action === "select-all-pdf-generations") {
     selectAllVisibleGenerations();
     return true;
@@ -598,40 +572,6 @@ export async function handlePdfGenerationListAction(actionTarget, action, contex
 
   if (action === "rerun-selected-pdf-generations") {
     await rerunSelectedGenerations();
-    return true;
-  }
-
-  if (action === "rerun-pdf-generation") {
-    await rerunGeneration(actionTarget.dataset.generationId || "");
-    return true;
-  }
-
-  if (action === "retry-pdf-generation") {
-    await retryGeneration(actionTarget.dataset.generationId || "");
-    return true;
-  }
-
-  if (action === "open-generation-detail") {
-    openGenerationDetail(actionTarget.dataset.generationId || "");
-    return true;
-  }
-
-  if (action === "back-to-pdf-generations") {
-    navigateToPath(appConfig.getViewRoutePath("pdfGenerationHistory", {
-      schoolId: getCurrentSchoolRouteKey(),
-    }));
-    return true;
-  }
-
-  if (action === "open-generation-template") {
-    const templateId = String(actionTarget.dataset.templateId || "").trim();
-
-    if (!templateId) {
-      return true;
-    }
-
-    appState.ui.activeTemplateId = templateId;
-    navigateToPath(appConfig.getViewRoutePath("templateEditor", { schoolId: getCurrentSchoolRouteKey(), templateId }));
     return true;
   }
 

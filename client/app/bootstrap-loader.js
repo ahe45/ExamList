@@ -10,7 +10,7 @@ export async function loadViewData({ accountActions, candidatesActions, dataDele
   const features = {
     accountManagement: [accountActions], candidateLookup: [candidatesActions],
     pdfGenerationHistory: [generationActions], pdfHistoryManagement: [generationActions],
-    pdfGenerationDetail: [generationActions], templateEditor: [editorActions, schoolSettingsActions],
+    templateEditor: [editorActions, schoolSettingsActions],
     dataDeletion: [dataDeletionActions],
   };
   // Resolve the canonical school ID before school-scoped requests begin.
@@ -51,11 +51,6 @@ export async function loadViewData({ accountActions, candidatesActions, dataDele
 
     if (view === "pdfHistoryManagement") {
       await generationActions.loadAuditLogs();
-      return;
-    }
-
-    if (view === "pdfGenerationDetail") {
-      await generationActions.loadGenerationDetail(route?.params?.generationId || "");
       return;
     }
 

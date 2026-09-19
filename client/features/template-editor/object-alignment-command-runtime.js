@@ -14,6 +14,7 @@ import {
   resolveObjectAlignmentCommand,
 } from "./object-alignment-positioning.js";
 import { syncObjectAlignmentMutation } from "./object-alignment-selection.js";
+import { alignObjectsInsideCells } from "./object-cell-alignment.js";
 
 export function runObjectAlignmentCommand(editor, surfaceElement, command) {
   const selectedElements = getSelectedObjectAlignmentElements(surfaceElement);
@@ -24,8 +25,20 @@ export function runObjectAlignmentCommand(editor, surfaceElement, command) {
   }
 
   if (selectedElements.some((element) => getObjectTableCellElement(element, surfaceElement))) {
-    showToast("표 셀 안의 개체는 정렬 기능을 사용할 수 없습니다.", "warning");
-    return false;
+    if (!selectedElements.every((element) => getObjectTableCellElement(element, surfaceElement))) {
+      showToast("셀 안의 개체끼리 선택해 주세요.", "warning");
+      return false;
+    }
+    if (!alignObjectsInsideCells(selectedElements, surfaceElement, command)) return false;
+    const modalSurfaces = new Set(selectedElements.map(element => getObjectCandidateBlockModalElement(element, surfaceElement)).filter(Boolean));
+    if (modalSurfaces.size) {
+      modalSurfaces.forEach(modal => modal.dispatchEvent(new Event("input", { bubbles: true })));
+      window.ExamListCandidateBlockModalEditor?.syncActiveEditor?.({ markDirty: true });
+    } else {
+      syncObjectAlignmentMutation(editor, surfaceElement, selectedElements);
+    }
+    editor?.updateImageSelectionOverlay?.();
+    return true;
   }
 
   if (selectedElements.some((element) => getObjectCandidateBlockModalElement(element, surfaceElement))) {

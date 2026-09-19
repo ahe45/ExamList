@@ -6,7 +6,7 @@ export function normalizeEditableDocumentRoot(rootNode, options = {}) {
     return;
   }
 
-  stripTransientDocumentState(rootNode);
+  stripTransientDocumentState(rootNode, { preserveTokenCarets: options.preserveTokenCarets === true });
   sanitizeNodeTree(rootNode);
   normalizeDocumentFontNodes(rootNode);
   normalizeDocumentTokenNodes(rootNode, {

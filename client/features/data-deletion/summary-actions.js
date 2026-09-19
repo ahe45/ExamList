@@ -1,4 +1,4 @@
-import { getPdfGenerationVisibleFilterSteps } from "../pdf-generations/pdf-generation-flow.js";
+import { autoSelectSingleFilterOptions, getPdfGenerationVisibleFilterSteps } from "../pdf-generations/pdf-generation-flow.js";
 import { getJson } from "../../app/api-client.js";
 import { showToast } from "../../app/toast.js";
 import { toQueryString } from "../pdf-generations/pdf-generation-action-utils.js";
@@ -64,7 +64,14 @@ export function createDataDeletionSummaryActions({
       (async () => {
         try {
           const payload = isTemplateScope ? { options: {} } : await getJson(`/api/candidates/filter-options?${optionQueryString}`);
-          if (isCurrent()) modal.options = payload?.options || {};
+          if (!isCurrent()) return;
+          modal.options = payload?.options || {};
+          if (!isTemplateScope && autoSelectSingleFilterOptions(modal,
+            getPdfGenerationVisibleFilterSteps(dataDeletionGenerationUnit).map(step => step.key))) {
+            modal.confirmationOpen = false;
+            modal.confirmationPhrase = "";
+            return await loadDataDeletionModalData();
+          }
         } catch {
           // Keep the last usable list on a transient failure; selected filters remain authoritative.
         } finally {

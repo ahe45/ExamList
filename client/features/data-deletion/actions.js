@@ -168,22 +168,12 @@ export function setupDataDeletionActions({
     }
 
     if (impact.pdfGenerations) {
-      appState.pdfGenerationDetail.item = null;
-      appState.pdfGenerationDetail.errorMessage = "";
       appState.pdfGenerations.auditLogs = [];
       appState.pdfGenerations.cleanupResult = null;
       appState.pdfGenerations.items = [];
       appState.pdfGenerations.selectedGenerationIds = [];
       appState.pdfGenerations.table = getEmptyPdfGenerationTableState();
       appState.pdfGenerations.total = 0;
-    }
-
-    if (impact.templates) {
-      appState.templates.items = [];
-      appState.templates.total = 0;
-      appState.templateEditor.template = null;
-      appState.templateEditor.savedTemplateSnapshot = null;
-      appState.ui.activeTemplateId = "";
     }
   }
 

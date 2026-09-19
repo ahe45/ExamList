@@ -28,21 +28,11 @@ function renderPrintIcon() {
   `;
 }
 
-function renderDetailIcon() {
-  return `
-    <svg class="button-icon" viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true">
-      <path d="M12 11v6" />
-      <path d="M12 7h.01" />
-      <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-    </svg>
-  `;
-}
-
 export function renderGenerationRows(items = [], selectedGenerationIds = [], rerunningGenerationIds = [], access = null) {
   const selectedSet = new Set(Array.isArray(selectedGenerationIds) ? selectedGenerationIds : []);
 
   if (!items.length) {
-    return renderGridStatusRow(pdfGenerationGridColumns.length + 3, "생성 결과가 없습니다.");
+    return renderGridStatusRow(pdfGenerationGridColumns.length + 2, "생성 결과가 없습니다.");
   }
 
   return items
@@ -86,17 +76,6 @@ export function renderGenerationRows(items = [], selectedGenerationIds = [], rer
                   </button>
                 `
             }
-          </td>
-          <td class="pdf-generation-detail-column">
-            <button
-              class="icon-button generation-detail-button"
-              data-action="open-pdf-generation-detail-modal"
-              data-generation-id="${escapeHtml(item.id || "")}"
-              type="button"
-              aria-label="PDF 생성 상세"
-              title="PDF 생성 상세"
-              ${item.id ? "" : "disabled"}
-            >${renderDetailIcon()}</button>
           </td>
         </tr>
       `,

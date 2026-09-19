@@ -15,12 +15,7 @@ function syncHeaderHeight(header) {
 
 export function syncViewShell({ currentView, dom, summary = null, activeSchoolId = "", activeTemplateId = "" }) {
   const isSchoolListView = currentView === "accountManagement" || currentView === "schoolManagement";
-  const activeNavigationView =
-    currentView === "pdfGenerationDetail"
-        ? "pdfGenerationHistory"
-        : currentView === "templateEditor"
-          ? "templateManagement"
-        : currentView;
+  const activeNavigationView = currentView === "templateEditor" ? "templateManagement" : currentView;
   const hasActiveSchool = Boolean(String(activeSchoolId || "").trim());
   const hasActiveTemplate = Boolean(String(activeTemplateId || "").trim());
 

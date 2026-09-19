@@ -33,7 +33,7 @@
 }
 
 .pdf-generation-result-grid {
-  --pdf-generation-grid-min-width: 2292px;
+  --pdf-generation-grid-min-width: 0px;
   height: 100%;
   min-height: 0;
   min-width: 0;
@@ -207,6 +207,11 @@
   width: auto;
 }
 
+.pdf-generation-result-grid .pdf-generation-table-wrap,
+.pdf-history-log-grid .pdf-history-table-wrap {
+  scrollbar-gutter: auto;
+}
+
 .pdf-generation-result-grid .pdf-generation-table {
   min-width: var(--pdf-generation-grid-min-width);
   table-layout: fixed;
@@ -312,52 +317,59 @@
   width: 15px;
 }
 
-.pdf-generation-print-column,
-.pdf-generation-detail-column {
+.pdf-generation-print-column {
   width: 60px;
 }
 
 .pdf-generation-records-table th.pdf-generation-select-column,
 .pdf-generation-records-table td.pdf-generation-select-column {
-  min-width: 52px;
-  width: 52px;
+  min-width: 44px;
+  width: 44px;
+}
+
+.pdf-generation-records-table th.table-header-enhanced {
+  padding: 4px;
+}
+
+.pdf-generation-records-table .table-header-shell.has-filter {
+  column-gap: 0;
+}
+
+.pdf-generation-records-table .table-sort-button {
+  gap: 2px;
 }
 
 .pdf-generation-records-table th.pdf-generation-select-column,
-.pdf-generation-records-table th.pdf-generation-print-column,
-.pdf-generation-records-table th.pdf-generation-detail-column {
+.pdf-generation-records-table th.pdf-generation-print-column {
   padding: 4px 6px;
 }
 
 .pdf-generation-records-table th.pdf-generation-select-column .table-header-static,
-.pdf-generation-records-table th.pdf-generation-print-column .table-header-static,
-.pdf-generation-records-table th.pdf-generation-detail-column .table-header-static {
+.pdf-generation-records-table th.pdf-generation-print-column .table-header-static {
   min-height: 29px;
   padding-left: 0;
   padding-right: 0;
 }
 
-.pdf-generation-records-table th.pdf-generation-print-column,
-.pdf-generation-records-table td.pdf-generation-print-column,
-.pdf-generation-records-table th.pdf-generation-detail-column,
-.pdf-generation-records-table td.pdf-generation-detail-column {
-  max-width: 60px;
-  min-width: 60px;
-  width: 60px;
+.pdf-generation-result-grid .pdf-generation-records-table th.pdf-generation-print-column,
+.pdf-generation-result-grid .pdf-generation-records-table td.pdf-generation-print-column {
+  max-width: 52px;
+  min-width: 52px;
+  width: 52px;
 }
 
 .pdf-generation-records-table th.table-column-pageCount,
 .pdf-generation-records-table td.table-column-pageCount,
 .pdf-generation-records-table th.table-column-candidateCount,
 .pdf-generation-records-table td.table-column-candidateCount {
-  min-width: 112px;
-  width: 112px;
+  min-width: 80px;
+  width: 80px;
 }
 
 .pdf-generation-records-table th.table-column-sequenceNumber,
 .pdf-generation-records-table td.table-column-sequenceNumber {
-  min-width: 72px;
-  width: 72px;
+  min-width: 52px;
+  width: 52px;
 }
 
 .pdf-generation-records-table th.table-column-sequenceNumber .table-header-shell {
@@ -382,40 +394,60 @@
 
 .pdf-generation-records-table th.table-column-campus,
 .pdf-generation-records-table td.table-column-campus,
-.pdf-generation-records-table th.table-column-track,
-.pdf-generation-records-table td.table-column-track,
 .pdf-generation-records-table th.table-column-admission,
 .pdf-generation-records-table td.table-column-admission,
+.pdf-generation-records-table th.table-column-major,
+.pdf-generation-records-table td.table-column-major {
+  min-width: 92px;
+  width: 92px;
+}
+
 .pdf-generation-records-table th.table-column-series,
 .pdf-generation-records-table td.table-column-series,
-.pdf-generation-records-table th.table-column-major,
-.pdf-generation-records-table td.table-column-major,
+.pdf-generation-records-table th.table-column-time,
+.pdf-generation-records-table td.table-column-time,
+.pdf-generation-records-table th.table-column-endTime,
+.pdf-generation-records-table td.table-column-endTime {
+  min-width: 76px;
+  width: 76px;
+}
+
 .pdf-generation-records-table th.table-column-period,
-.pdf-generation-records-table td.table-column-period,
+.pdf-generation-records-table td.table-column-period {
+  min-width: 68px;
+  width: 68px;
+}
+
 .pdf-generation-records-table th.table-column-room,
-.pdf-generation-records-table td.table-column-room,
+.pdf-generation-records-table td.table-column-room {
+  min-width: 96px;
+  width: 96px;
+}
+
 .pdf-generation-records-table th.table-column-group,
 .pdf-generation-records-table td.table-column-group {
-  min-width: 116px;
-  width: 116px;
+  min-width: 60px;
+  width: 60px;
+}
+
+.pdf-generation-records-table th.table-column-track,
+.pdf-generation-records-table td.table-column-track {
+  min-width: 76px;
+  width: 76px;
 }
 
 .pdf-generation-records-table th.table-column-unit,
 .pdf-generation-records-table td.table-column-unit,
 .pdf-generation-records-table th.table-column-building,
 .pdf-generation-records-table td.table-column-building {
-  min-width: 136px;
-  width: 136px;
+  min-width: 124px;
+  width: 124px;
 }
 
 .pdf-generation-records-table th.table-column-examDate,
-.pdf-generation-records-table td.table-column-examDate,
-.pdf-generation-records-table th.table-column-time,
-.pdf-generation-records-table td.table-column-time,
-.pdf-generation-records-table th.table-column-endTime,
-.pdf-generation-records-table td.table-column-endTime {
-  min-width: 128px;
-  width: 128px;
+.pdf-generation-records-table td.table-column-examDate {
+  min-width: 96px;
+  width: 96px;
 }
 
 .pdf-generation-records-table th.table-column-createdAt,
@@ -424,15 +456,13 @@
   width: 148px;
 }
 
-.generation-print-button,
-.generation-detail-button {
+.generation-print-button {
   height: 34px;
   margin: 0 auto;
   width: 34px;
 }
 
-.generation-print-button:disabled,
-.generation-detail-button:disabled {
+.generation-print-button:disabled {
   cursor: default;
   opacity: 0.46;
   transform: none;
@@ -605,24 +635,6 @@
   }
 }
 
-.pdf-generation-detail-overlay {
-  overflow: auto;
-  z-index: 1550;
-}
-
-.pdf-generation-detail-modal-card {
-  display: flex;
-  flex-direction: column;
-  max-height: min(86vh, 820px);
-  max-width: 980px;
-  min-height: 0;
-  width: min(980px, calc(100vw - 32px));
-}
-
-.pdf-generation-detail-modal-body {
-  overflow: auto;
-  padding-right: 2px;
-}
 
 .pdf-generation-create-overlay {
   align-items: center;
@@ -1319,70 +1331,6 @@
   margin: 0;
 }
 
-.generation-detail-toolbar {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.generation-detail-grid,
-.generation-detail-sections {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-}
-
-.generation-detail-sections {
-  margin-top: 16px;
-}
-
-.generation-detail-card {
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(203, 213, 225, 0.58);
-  border-radius: 18px;
-  padding: 18px;
-}
-
-.generation-detail-list {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-}
-
-.generation-detail-list div {
-  display: grid;
-  gap: 4px;
-}
-
-.generation-detail-list dt {
-  color: var(--text-muted);
-  font-size: 0.88rem;
-}
-
-.generation-detail-list dd {
-  margin: 0;
-}
-
-.generation-filter-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.generation-filter-chip {
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(203, 213, 225, 0.72);
-  border-radius: 999px;
-  display: inline-flex;
-  gap: 8px;
-  padding: 8px 12px;
-}
-
-.generation-detail-message {
-  margin-top: 12px;
-}
 
 .generation-file-title {
   display: block;

@@ -140,6 +140,10 @@
   white-space: nowrap;
 }
 
+.template-token[data-template-tag-value="document.kyungheeCover"] {
+  white-space: pre-wrap;
+}
+
 .template-token > svg {
   background: rgba(34, 197, 94, 0.1);
   border-radius: 0.24em;

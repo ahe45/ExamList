@@ -233,3 +233,40 @@ export function normalizeCandidateBlockBoundaryHostHtml(value = "") {
 export function isBlankCandidateBlockBoundaryHost(element) {
   return normalizeCandidateBlockBoundaryHostHtml(element?.innerHTML || "") === "";
 }
+
+// Chromium's forward deletion can merge an empty paragraph with an uneditable
+// flow spacer, adding BRs while the layout restores that spacer. Delete the
+// authored blank line ourselves and leave the grid's reserved row intact.
+export function deleteBlankLineBeforeCandidateBlockGrid(range, surfaceElement) {
+  if (!range?.collapsed || !surfaceElement?.contains(range.startContainer)) return null;
+  const host = getCandidateBlockBoundaryHostElement(range, surfaceElement);
+  if (!host?.parentElement?.matches(".template-doc")) return null;
+
+  const contents = host.cloneNode(true);
+  contents.querySelectorAll(".template-object-caret").forEach((caret) => {
+    caret.replaceWith(String(caret.textContent || "").replace(/[\u200b\ufeff]/g, ""));
+  });
+  if (!isBlankCandidateBlockBoundaryHost(contents)) return null;
+
+  let next = host.nextSibling;
+  while (next && (isIgnorableCandidateBlockBoundaryNode(next) ||
+      next.matches?.("[data-template-object-flow-spacer]"))) next = next.nextSibling;
+  if (!next?.matches?.(CANDIDATE_BLOCK_GRID_SELECTOR)) return null;
+
+  // The final zero-space caret is editor scaffolding, not another blank line.
+  if (host.hasAttribute("data-template-object-caret-host")) return { changed: false };
+
+  const breaks = host.querySelectorAll("br");
+  if (breaks.length > 1) {
+    breaks[breaks.length - 1].remove();
+    range.setStart(host, Math.min(range.startContainer === host ? range.startOffset : 0, host.childNodes.length - 1));
+  } else {
+    range.setStartBefore(host);
+    host.remove();
+  }
+  range.collapse(true);
+  const selection = surfaceElement.ownerDocument.defaultView.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+  return { changed: true };
+}

@@ -61,7 +61,13 @@
       const blockElement = imageElement?.closest?.("[data-candidate-block-instance]") || null;
 
       if (!(blockElement instanceof HTMLElement)) {
-        return { x: 1, y: 1 };
+        const surface = getTemplateEditorSurface();
+        const documentElement = surface?.querySelector(".template-doc") || surface;
+        const rect = documentElement?.getBoundingClientRect();
+        return {
+          x: documentElement?.offsetWidth > 0 ? rect.width / documentElement.offsetWidth : 1,
+          y: documentElement?.offsetHeight > 0 ? rect.height / documentElement.offsetHeight : 1,
+        };
       }
 
       const blockRect = blockElement.getBoundingClientRect();

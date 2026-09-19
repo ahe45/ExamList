@@ -28,7 +28,6 @@ function createAppState() {
         templatePreview: { isOpen: false },
       },
       deleteConfirm: { isDeleting: false, isOpen: false },
-      detailModal: { isOpen: false },
       downloadModal: { isOpen: false, isSubmitting: false },
       generatedResultModal: { isOpen: false, isSubmitting: false },
     },
@@ -85,7 +84,6 @@ function createGuardRegistrationContext() {
     generationActions: {
       closePdfGenerationCreateModal: noop,
       closePdfGenerationDeleteConfirm: noop,
-      closePdfGenerationDetailModal: noop,
       closePdfGenerationDownloadModal: noop,
       closePdfGenerationGeneratedResultModal: noop,
       closePdfGenerationTemplatePreview: noop,
@@ -135,7 +133,6 @@ test("registers every app modal close action with the modal close guard", () => 
     "close-generation-unit-settings-modal",
     "close-pdf-generation-create-modal",
     "close-pdf-generation-template-preview",
-    "close-pdf-generation-detail-modal",
     "close-pdf-generation-download-modal",
     "close-pdf-generation-generated-result-modal",
     "close-pdf-generation-delete-confirm",

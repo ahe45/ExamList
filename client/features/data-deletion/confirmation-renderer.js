@@ -23,6 +23,7 @@ export function renderDataDeletionConfirmation({
         </div>
         <form class="modal-form data-deletion-confirm-form" data-data-deletion-confirm-form>
           <p class="data-deletion-confirm-message">${escapeHtml(selectedItem?.title || "선택한 데이터")} ${formatCount(totalCount)}건을 삭제합니다. 실행 후에는 복구할 수 없습니다.</p>
+          ${isAll ? `<p class="data-deletion-confirm-message">양식 및 편집 스냅샷은 유지됩니다.</p>` : ""}
           ${
             isAll
               ? `

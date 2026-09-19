@@ -6,6 +6,16 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { getAvailablePort, resolveBrowserPath } = require("./smoke-utils");
+const { runTokenTableTypingCheck } = require("./smoke/template-editor/token-table-typing");
+const { runDataTagFormatStabilityCheck } = require("./smoke/template-editor/data-tag-format-stability");
+const { runGridBoundaryDeletionCheck } = require("./smoke/template-editor/grid-boundary-deletion");
+const { runObjectScrollStabilityCheck } = require("./smoke/template-editor/object-scroll-stability");
+const { runTableTextDragCheck } = require("./smoke/template-editor/table-text-drag");
+const { runCellObjectAlignmentCheck } = require("./smoke/template-editor/cell-object-alignment");
+const { runCellObjectKeyboardCheck } = require("./smoke/template-editor/cell-object-keyboard");
+const { runKyungheeCoverWrapCheck } = require("./smoke/template-editor/kyunghee-cover-wrap");
+const { runTokenLineDeletionCheck } = require("./smoke/template-editor/token-line-deletion");
+const { runTokenTrailingLineCheck } = require("./smoke/template-editor/token-trailing-line");
 const {
   createCdpClient,
   evaluate,
@@ -75,8 +85,88 @@ async function run() {
       "window.ExamListTemplateEditorRuntimeLoader",
       "editor loader",
     );
+    if (process.argv.includes("--token-trailing-line")) {
+      await runTokenTrailingLineCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Token trailing line checks passed");
+      return;
+    }
+    if (process.argv.includes("--token-line")) {
+      await runTokenLineDeletionCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Token line deletion checks passed");
+      return;
+    }
+    if (process.argv.includes("--cover-wrap")) {
+      await runKyungheeCoverWrapCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Kyunghee cover wrapping checks passed");
+      return;
+    }
+    if (process.argv.includes("--token-caret")) {
+      await runTokenTableTypingCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Table token caret checks passed");
+      return;
+    }
+    if (process.argv.includes("--cell-keyboard")) {
+      await runCellObjectKeyboardCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Cell object keyboard checks passed");
+      return;
+    }
+    if (process.argv.includes("--cell-align")) {
+      await runCellObjectAlignmentCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Cell object alignment checks passed");
+      return;
+    }
+    if (process.argv.includes("--table-text-drag")) {
+      await runTableTextDragCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Table text drag checks passed");
+      return;
+    }
+    if (process.argv.includes("--object-scroll")) {
+      await runObjectScrollStabilityCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Object scroll stability checks passed");
+      return;
+    }
+    if (process.argv.includes("--grid-boundary")) {
+      await runGridBoundaryDeletionCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Grid boundary deletion checks passed");
+      return;
+    }
+    if (process.argv.includes("--tag-format")) {
+      await runDataTagFormatStabilityCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Data tag format stability checks passed");
+      return;
+    }
     const result = await evaluate(client, `(${browserChecks.toString()})()`);
     assert.equal(result.failed.length, 0, JSON.stringify(result, null, 2));
+    await runTokenTrailingLineCheck(client);
+    result.passed.push("Backspace removes the blank line after a cover tag while retaining its content, caret, formatting and history");
+    await runTokenLineDeletionCheck(client);
+    result.passed.push("Delete joins the line before a data tag without deleting it, including cells, formatting and undo/redo");
+    await runKyungheeCoverWrapCheck(client);
+    result.passed.push("cover departments always use two lines with a blank line between departments at every cell width");
+    await runCellObjectKeyboardCheck(client);
+    result.passed.push("cell image selection accepts arrow keys at zoom, clamps movement to the cell and retains size");
+    await runCellObjectAlignmentCheck(client);
+    result.passed.push("cell objects align within padded merged cells at zoom, preserving size, history and modal Apply/Cancel");
+    await runTableTextDragCheck(client);
+    result.passed.push("mouse drags select and format partial text inside cells while cross-cell drags select cells");
+    await runObjectScrollStabilityCheck(client);
+    result.passed.push("table, image and grid drags preserve scroll through movement, resize and focus changes");
+    await runGridBoundaryDeletionCheck(client);
+    result.passed.push("Delete removes the blank line before a data block like Backspace, with undo/redo and reload");
+    await runDataTagFormatStabilityCheck(client);
+    result.passed.push("deleting whitespace after the cover tag preserves other tags' date/time formats");
+    await runTokenTableTypingCheck(client);
+    result.passed.push("native Latin and Korean input after table data tags stays in the cell through application sync");
     const blankPaperPoint = await evaluate(client, `(${setupBlankPaperCaretCheck.toString()})()`);
     await client.send("Input.dispatchMouseEvent", { type: "mousePressed", button: "left", clickCount: 1, ...blankPaperPoint });
     await client.send("Input.dispatchMouseEvent", { type: "mouseReleased", button: "left", clickCount: 1, ...blankPaperPoint });
@@ -121,9 +211,16 @@ async function run() {
     assert.deepEqual(client.getPageErrors(), []);
     console.log(JSON.stringify(result, null, 2));
   } finally {
+    if (client) {
+      await Promise.race([
+        client.send("Browser.close").catch(() => {}),
+        new Promise((resolve) => setTimeout(resolve, 2000)),
+      ]);
+    }
     client?.close();
     browser.kill();
     server.close();
+    server.closeAllConnections();
     await fs
       .rm(profile, {
         recursive: true,

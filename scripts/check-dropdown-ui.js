@@ -800,14 +800,6 @@ async function run() {
         });
       }
 
-      if (data.generation?.id) {
-        routes.push({
-          name: "pdf-generation-detail",
-          path: `/schools/${encodedSchoolId}/pdf-generations/${encodeURIComponent(data.generation.id)}`,
-          view: "pdfGenerationDetail",
-          waitFor: "document.body.innerText.includes('상세') || document.body.innerText.includes('생성 상세')",
-        });
-      }
     }
 
     const scans = [];

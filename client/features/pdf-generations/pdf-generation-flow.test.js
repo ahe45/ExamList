@@ -2,11 +2,24 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  autoSelectSingleFilterOptions,
   getPdfGenerationRevealedFilterSteps,
   getPdfGenerationSelectedFilterKeysAfterSelection,
   getPdfGenerationVisibleFilterSteps,
   resetPdfGenerationFiltersAfterSelection,
 } from "./pdf-generation-flow.js";
+
+test("single-option selection respects explicit all, chosen values and visible fields", () => {
+  const modal = { filters: { track: "", admission: "수시" }, selectedFilterKeys: ["track", "admission"], options: {
+    track: [{ value: "정시" }], admission: [{ value: "논술" }],
+    series: [{ value: " 인문 " }, { value: "인문" }, { value: "" }],
+    unit: [{ value: "학과1" }, { value: "학과2" }], major: [{ value: " " }], room: [{ value: "101" }],
+  } };
+  assert.equal(autoSelectSingleFilterOptions(modal, ["track", "admission", "series", "unit", "major"]), true);
+  assert.deepEqual(modal.filters, { track: "", admission: "수시", series: "인문" });
+  assert.deepEqual(modal.selectedFilterKeys, ["track", "admission", "series"]);
+  assert.equal(autoSelectSingleFilterOptions(modal, ["track", "admission", "series", "unit", "major"]), false);
+});
 
 test("PDF generation create flow always reveals through series", () => {
   assert.deepEqual(

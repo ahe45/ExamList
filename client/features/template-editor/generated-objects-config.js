@@ -18,6 +18,7 @@ export const generatedObjectDefaults = Object.freeze({
 });
 
 export const generatedObjectPreviewValues = Object.freeze({
+  "document.kyungheeCover": "건축학과(5년제)\n: 3005200001 ~ 3005200004",
   "candidate.admissionRoundName": "수시",
   "candidate.admissionTypeCode": "SU",
   "candidate.admissionTypeName": "학생부종합전형",

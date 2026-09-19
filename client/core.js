@@ -125,7 +125,6 @@ const generationActions = createLazyActions(async () => {
   const { setupPdfGenerationActions } = await import("./features/pdf-generations/actions.js");
   return setupPdfGenerationActions({
     appState,
-    navigateToPath,
     onStateChange: renderApp,
   });
 });

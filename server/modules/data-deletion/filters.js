@@ -5,7 +5,6 @@ const dataDeletionScopeDefinitions = Object.freeze({
   candidates: Object.freeze({ label: "수험생 데이터" }),
   photos: Object.freeze({ label: "사진 데이터" }),
   "pdf-generations": Object.freeze({ label: "생성 PDF 데이터" }),
-  templates: Object.freeze({ label: "양식 데이터" }),
 });
 
 const dataDeletionFilterColumns = Object.freeze({

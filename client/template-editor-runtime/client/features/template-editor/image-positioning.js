@@ -96,8 +96,12 @@
       const cellRect = cellElement.getBoundingClientRect();
       const computedStyle = window.getComputedStyle(cellElement);
       const candidateBlockContainer = getTemplateEditorCandidateBlockImageContainer(imageElement);
-      const scaleX = Math.max(candidateBlockContainer?.scaleX || 1, 0.01);
-      const scaleY = Math.max(candidateBlockContainer?.scaleY || 1, 0.01);
+      const documentElement = getTemplateEditorDocumentElement();
+      const documentRect = documentElement?.getBoundingClientRect();
+      const documentScaleX = documentElement?.offsetWidth > 0 ? documentRect.width / documentElement.offsetWidth : 1;
+      const documentScaleY = documentElement?.offsetHeight > 0 ? documentRect.height / documentElement.offsetHeight : 1;
+      const scaleX = Math.max(candidateBlockContainer?.scaleX || documentScaleX, 0.01);
+      const scaleY = Math.max(candidateBlockContainer?.scaleY || documentScaleY, 0.01);
       const borderLeft = getTemplateEditorFinitePixelValue(computedStyle.borderLeftWidth);
       const borderRight = getTemplateEditorFinitePixelValue(computedStyle.borderRightWidth);
       const borderTop = getTemplateEditorFinitePixelValue(computedStyle.borderTopWidth);
@@ -117,8 +121,8 @@
         element: cellElement,
         height: Math.max(TEMPLATE_EDITOR_IMAGE_MIN_SIZE, Math.floor(paddingBoxHeight || TEMPLATE_EDITOR_IMAGE_MIN_SIZE)),
         rect: {
-          left: cellRect.left + borderLeft * scaleX,
-          top: cellRect.top + borderTop * scaleY,
+          left: cellRect.left + cellElement.clientLeft * scaleX,
+          top: cellRect.top + cellElement.clientTop * scaleY,
         },
         scaleX,
         scaleY,
@@ -126,32 +130,19 @@
       };
     }
 
-    function lockTemplateEditorImageTableCellSize(cellElement, scaleY = 1) {
+    function lockTemplateEditorImageTableCellSize(cellElement) {
       if (!(cellElement instanceof HTMLElement)) {
         return;
       }
 
-      const safeScaleY = Math.max(Number(scaleY) || 1, 0.01);
-      const cellRect = cellElement.getBoundingClientRect();
       const rowElement = cellElement.parentElement;
-      const measuredCellHeight = cellRect.height > 0 ? cellRect.height / safeScaleY : cellElement.offsetHeight || 0;
-      const cellHeight = Math.max(TEMPLATE_EDITOR_IMAGE_MIN_SIZE, Math.round(measuredCellHeight));
-
-      if (cellHeight > 0) {
-        cellElement.style.height = `${cellHeight}px`;
-      }
-
+      // Preserve used CSS height, not the border-box height: assigning the
+      // latter adds cell padding again when an inline image becomes absolute.
+      const cellHeight = window.getComputedStyle(cellElement).height;
+      const rowHeight = rowElement ? window.getComputedStyle(rowElement).height : "";
+      cellElement.style.height = cellHeight;
       if (rowElement instanceof HTMLTableRowElement && Number(cellElement.rowSpan || 1) <= 1) {
-        const rowRect = rowElement.getBoundingClientRect();
-        const measuredRowHeight = rowRect.height > 0 ? rowRect.height / safeScaleY : rowElement.offsetHeight || 0;
-        const rowHeight = Math.max(cellHeight, Math.round(measuredRowHeight));
-
-        if (rowHeight > 0) {
-          rowElement.style.height = `${rowHeight}px`;
-          Array.from(rowElement.cells || []).forEach((rowCellElement) => {
-            rowCellElement.style.height = `${rowHeight}px`;
-          });
-        }
+        rowElement.style.height = rowHeight;
       }
     }
 
@@ -203,7 +194,7 @@
         );
         const previousParent = imageElement.parentElement;
 
-        lockTemplateEditorImageTableCellSize(cellContainer.element, cellContainer.scaleY);
+        lockTemplateEditorImageTableCellSize(cellContainer.element);
         imageElement.style.width = `${imageWidth}px`;
         imageElement.style.height = `${imageHeight}px`;
         imageElement.style.position = "absolute";

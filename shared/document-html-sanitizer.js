@@ -365,7 +365,7 @@
     });
   }
 
-  function stripTransientDocumentState(rootElement) {
+  function stripTransientDocumentState(rootElement, options = {}) {
     if (!rootElement?.querySelectorAll) {
       return;
     }
@@ -396,6 +396,9 @@
     // Caret guards are editing positions, not authored whitespace. Keep any
     // characters subsequently typed into them, including their formatting.
     rootElement.querySelectorAll(".template-token-caret").forEach((guard) => {
+      // Live input sync must keep this node and its offsets intact. Storage
+      // serialization cleans a clone, where removing the guard is safe.
+      if (options.preserveTokenCarets === true) return;
       const walker = guard.ownerDocument.createTreeWalker(guard, 4);
       let text;
       while ((text = walker.nextNode()))

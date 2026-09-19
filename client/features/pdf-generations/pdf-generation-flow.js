@@ -58,6 +58,29 @@ export function createEmptyPdfGenerationFilters() {
   }, {});
 }
 
+export function autoSelectSingleFilterOptions(modal, filterKeys = []) {
+  const selectedKeys = new Set(modal.selectedFilterKeys || []);
+  const filters = { ...modal.filters };
+  let changed = false;
+
+  for (const key of filterKeys) {
+    // An explicit selection, including "all", belongs to the user.
+    if (selectedKeys.has(key)) continue;
+    const options = Array.isArray(modal.options?.[key]) ? modal.options[key] : [];
+    const values = [...new Set(options.map(option => String(option?.value || "").trim()).filter(Boolean))];
+    if (values.length !== 1) continue;
+    filters[key] = values[0];
+    selectedKeys.add(key);
+    changed = true;
+  }
+
+  if (changed) {
+    modal.filters = filters;
+    modal.selectedFilterKeys = [...selectedKeys];
+  }
+  return changed;
+}
+
 export function getPdfGenerationStepIndex(stepKey = "") {
   return pdfGenerationFilterSteps.findIndex((step) => step.key === stepKey);
 }

@@ -1,6 +1,7 @@
 const { renderPhotoCell } = require("./elements");
 const { createCandidateBlockGridRenderer } = require("./candidate-block-grid-renderer");
 const { replaceTemplateGeneratedObjectImagesInHtml } = require("./generated-objects");
+const { formatTemplateTokenHtmlValue } = require("./token-expressions");
 const { normalizeDocumentSafeArea, formatPtValue } = require("./renderer-page-settings");
 const {
   escapeHtml,
@@ -40,7 +41,7 @@ function renderTemplateTokenSpanValue(tokenExpression, context) {
   }
 
   const result = evaluateTokenExpressionDetailed(normalizedExpression, context);
-  const value = escapeHtml(result.value);
+  const value = formatTemplateTokenHtmlValue(normalizedExpression, result.value);
 
   return result.usedEmptyValueFallback && shouldStyleEmptyValueFallback(context)
     ? `<span class="preview-empty-data-fallback">${value}</span>`
@@ -251,7 +252,12 @@ function renderTemplateTokenSpan(openingTag, tokenExpression, context, innerHtml
     return replacementText;
   }
 
-  const replacementMarkup = `<span class="template-data-fit" data-template-data-fit="true">${replacementText}</span>`;
+  // Isolate the multiline cover's line boxes from the surrounding span/cell's
+  // fixed line height, so fitting can scale both text and line spacing.
+  const fitStyle = normalizedExpression.split("|")[0].trim() === "document.kyungheeCover"
+    ? ' style="display:inline-block;max-width:100%;vertical-align:middle"'
+    : "";
+  const replacementMarkup = `<span class="template-data-fit" data-template-data-fit="true"${fitStyle}>${replacementText}</span>`;
   return `${buildPreviewTokenOpeningTag(openingTag)}${replaceTokenInnerTextWithMarkup(innerHtml, replacementMarkup)}</span>`;
 }
 

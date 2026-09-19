@@ -525,10 +525,6 @@ async function runPdfChecks(context, results, screenshotDir, schoolCode) {
     });
   }
 
-  await navigate(client, `${baseUrl}/schools/${encodedSchoolCode}/pdf-generations/browser-regression-missing`);
-  await waitForCondition(client, "document.documentElement.dataset.currentView === 'pdfGenerationDetail'", "PDF 생성 상세 화면 표시");
-  await addCheckpoint({ client, results, screenshotDir }, "20-pdf-generation-detail-empty");
-
   await navigate(client, `${baseUrl}/schools/${encodedSchoolCode}/pdf-history`);
   await waitForCondition(client, "document.documentElement.dataset.currentView === 'pdfHistoryManagement'", "PDF 작업 로그 화면 표시");
   await addCheckpoint({ client, results, screenshotDir }, "21-pdf-history");

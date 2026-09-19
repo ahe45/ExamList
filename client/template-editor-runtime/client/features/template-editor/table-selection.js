@@ -217,8 +217,11 @@
 
       if (
         !selectionSession.isRangeSelecting &&
-        (!focusCell || focusCell.closest("table") !== selectionSession.table || pointerDistance < TEMPLATE_EDITOR_TABLE_SELECTION_DRAG_THRESHOLD)
+        (!focusCell || focusCell === selectionSession.anchorCell ||
+          focusCell.closest("table") !== selectionSession.table || pointerDistance < TEMPLATE_EDITOR_TABLE_SELECTION_DRAG_THRESHOLD)
       ) {
+        // Let native text selection continue within the starting cell. Switch
+        // to rectangular cell selection only after crossing into another cell.
         return;
       }
 

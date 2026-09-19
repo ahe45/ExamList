@@ -71,7 +71,7 @@ test("options become usable before the summary and stale results cannot replace 
   t.after(() => { globalThis.fetch = originalFetch; });
   const requests = [];
   globalThis.fetch = (url) => new Promise((resolve) => requests.push({ url: String(url), resolve: (payload) => resolve(createJsonResponse(payload)) }));
-  const modal = { isOpen: true, selectedScope: "candidates", selectedTemplateIds: [], summary: { old: true } };
+  const modal = { isOpen: true, selectedScope: "candidates", selectedTemplateIds: [], selectedFilterKeys: ["track"], summary: { old: true } };
   let track = "first";
   const actions = createDataDeletionSummaryActions({
     buildDataDeletionFilterPayload: () => ({ track }),
@@ -133,6 +133,42 @@ test("failed option refresh preserves the available list and chosen conditions w
   assert.deepEqual(modal.filters, filters);
   assert.deepEqual(modal.selectedFilterKeys, ["track", "admission"]);
   assert.equal(modal.summary.scopes[0].totalCount, 0);
+  assert.equal(modal.isLoadingOptions, false);
+  assert.equal(modal.isLoadingSummary, false);
+});
+
+test("deletion singleton filters refresh the summary without changing explicit selections or sending a delete", async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const modal = { isOpen: true, selectedScope: "candidates", filters: { unit: "" },
+    selectedFilterKeys: ["unit"], selectedTemplateIds: [], confirmationOpen: true, confirmationPhrase: "previous" };
+  const summaries = [];
+  let resolveOldSummary;
+  globalThis.fetch = async (url, init = {}) => {
+    assert.notEqual(init.method, "DELETE");
+    const params = getUrlParams(url);
+    if (String(url).startsWith("/api/candidates/filter-options")) return createJsonResponse({ options: {
+      track: [{ value: "수시" }], admission: params.get("track") ? [{ value: "논술" }] : [{ value: "논술" }, { value: "일반" }],
+      unit: [{ value: "학과" }], examDate: [{ value: "2026-08-08" }], major: [], group: [{ value: "숨김" }],
+    } });
+    summaries.push(params);
+    if (summaries.length === 1) return await new Promise(resolve => { resolveOldSummary = resolve; });
+    return createJsonResponse({ scopes: [{ scope: "candidates", totalCount: params.get("admission") ? 7 : 99 }] });
+  };
+  const actions = createDataDeletionSummaryActions({
+    buildDataDeletionFilterPayload: () => Object.fromEntries(Object.entries(modal.filters).filter(([, value]) => value)),
+    getCurrentSchoolId: () => "school-1", getDataDeletionModalState: () => modal, onStateChange: async () => {},
+  });
+  const loading = actions.loadDataDeletionModalData();
+  for (let i = 0; i < 20 && modal.summary?.scopes[0].totalCount !== 7; i++) await new Promise(setImmediate);
+  assert.equal(modal.summary?.scopes[0].totalCount, 7);
+  resolveOldSummary(createJsonResponse({ scopes: [{ scope: "candidates", totalCount: 999 }] }));
+  await loading;
+  assert.deepEqual(modal.filters, { unit: "", track: "수시", examDate: "2026-08-08", admission: "논술" });
+  assert.equal(modal.summary.scopes[0].totalCount, 7);
+  assert.equal(summaries.at(-1).get("admission"), "논술");
+  assert.equal(modal.confirmationOpen, false);
+  assert.equal(modal.confirmationPhrase, "");
   assert.equal(modal.isLoadingOptions, false);
   assert.equal(modal.isLoadingSummary, false);
 });

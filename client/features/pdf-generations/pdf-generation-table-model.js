@@ -5,21 +5,21 @@ import {
 
 export const pdfGenerationGridColumns = Object.freeze([
   Object.freeze({ key: "sequenceNumber", label: "순서", filterable: false, sortable: true }),
-  Object.freeze({ key: "track", label: "모집시기", filterable: true, sortable: true }),
+  Object.freeze({ key: "track", label: "모집시기", headerLines: ["모집", "시기"], filterable: true, sortable: true }),
   Object.freeze({ key: "admission", label: "전형", filterable: true, sortable: true }),
   Object.freeze({ key: "series", label: "계열", filterable: true, sortable: true }),
   Object.freeze({ key: "unit", label: "모집단위", filterable: true, sortable: true }),
   Object.freeze({ key: "major", label: "전공", filterable: true, sortable: true }),
-  Object.freeze({ key: "examDate", label: "시험날짜", filterable: true, sortable: true }),
-  Object.freeze({ key: "time", label: "시작시간", filterable: true, sortable: true }),
-  Object.freeze({ key: "endTime", label: "종료시간", filterable: true, sortable: true }),
+  Object.freeze({ key: "examDate", label: "시험날짜", headerLines: ["시험", "날짜"], filterable: true, sortable: true }),
+  Object.freeze({ key: "time", label: "시작시간", headerLines: ["시작", "시간"], filterable: true, sortable: true }),
+  Object.freeze({ key: "endTime", label: "종료시간", headerLines: ["종료", "시간"], filterable: true, sortable: true }),
   Object.freeze({ key: "period", label: "교시", filterable: true, sortable: true }),
   Object.freeze({ key: "building", label: "고사건물", filterable: true, sortable: true }),
   Object.freeze({ key: "room", label: "고사실", filterable: true, sortable: true }),
   Object.freeze({ key: "group", label: "조", filterable: true, sortable: true }),
   Object.freeze({ key: "pageCount", label: "페이지", filterable: true, sortable: true }),
   Object.freeze({ key: "candidateCount", label: "수험생", filterable: true, sortable: true }),
-  Object.freeze({ key: "createdAt", label: "생성일시", filterable: true, sortable: true }),
+  Object.freeze({ key: "createdAt", label: "생성일시", headerLines: ["생성", "일시"], filterable: true, sortable: true }),
 ]);
 
 export const pdfGenerationPageSizeOptions = gridPageSizeOptions;

@@ -153,13 +153,14 @@ test("data deletion view renders scoped delete cards with data summaries", () =>
   assert.match(html, /대상 데이터/);
   assert.match(html, /수험생 정보 및 사진/);
   assert.match(html, /PDF 생성 결과\/파일\/작업 로그/);
-  assert.match(html, /페이지\/요소 구성/);
+  assert.doesNotMatch(html, /페이지\/요소 구성/);
   assert.match(html, /data-action="open-data-deletion-modal"/);
   assert.match(html, /data-data-deletion-scope="all"/);
   assert.match(html, /data-data-deletion-scope="candidates"/);
   assert.match(html, /data-data-deletion-scope="photos"/);
   assert.match(html, /data-data-deletion-scope="pdf-generations"/);
-  assert.match(html, /data-data-deletion-scope="templates"/);
+  assert.doesNotMatch(html, /data-data-deletion-scope="templates"/);
+  assert.doesNotMatch(html, /양식 데이터/);
 });
 
 test("data deletion view disables actions without permission", () => {
@@ -301,6 +302,7 @@ test("data deletion confirmation popup requires phrase for all data", () => {
   );
 
   assert.match(html, /전체 데이터 삭제 확인 문구/);
+  assert.match(html, /양식 및 편집 스냅샷은 유지됩니다/);
   assert.match(html, new RegExp(DATA_DELETION_CONFIRMATION_PHRASE));
   assert.match(html, /data-data-deletion-confirm-form/);
   assert.match(html, /type="submit" disabled>\s*삭제 실행/);
@@ -331,7 +333,7 @@ test("data deletion progress overlay shows target counts while deleting", () => 
   assert.match(html, /progress-bar is-indeterminate/);
 });
 
-test("template data deletion modal renders templates as selectable deletion units", () => {
+test("removed template scope cannot render template deletion controls", () => {
   const html = renderDataDeletionModal(
     {
       isDeleting: false,
@@ -355,33 +357,8 @@ test("template data deletion modal renders templates as selectable deletion unit
     },
   );
 
-  assert.match(html, /data-data-deletion-template-id="template-1"/);
-  assert.match(html, /data-deletion-modal-content-grid is-template-scope/);
-  assert.match(html, /삭제할 양식/);
-  assert.match(html, /<span class="field-required-badge">필수<\/span>/);
-  assert.match(html, /data-data-deletion-template-id="template-2"/);
-  assert.match(html, /data-data-deletion-template-select-all/);
-  assert.match(html, /data-deletion-template-select-all-row/);
-  assert.doesNotMatch(html, /data-deletion-template-option-all/);
-  assert.match(html, /수험표/);
-  assert.match(html, /명단/);
-  assert.match(html, /1 \/ 2개 선택/);
-  assert.match(html, /용지 속성/);
-  assert.match(html, /A4 · 세로/);
-  assert.match(html, /표지/);
-  assert.match(html, /정렬/);
-  assert.match(html, /수험번호 \/ 오름차순/);
-  assert.doesNotMatch(html, /타입/);
-  assert.doesNotMatch(html, /사진형 2열 × 10행/);
-  assert.match(html, /생성 단위/);
-  assert.match(html, /고사실/);
-  assert.match(html, /타고사실/);
-  assert.match(html, /<strong>양식 데이터<\/strong>/);
-  assert.match(html, /<strong>9건<\/strong>/);
-  assert.doesNotMatch(html, /양식 기본 정보/);
-  assert.doesNotMatch(html, /양식 페이지 구성/);
-  assert.doesNotMatch(html, /텍스트\/표\/이미지 등 배치 요소/);
-  assert.doesNotMatch(html, /저장된 양식 버전 정보/);
-  assert.doesNotMatch(html, /data-data-deletion-modal-filter="campus"/);
-  assert.match(html, /type="submit" >삭제 실행/);
+  assert.doesNotMatch(html, /data-data-deletion-template-id/);
+  assert.doesNotMatch(html, /삭제할 양식/);
+  assert.doesNotMatch(html, /양식 데이터/);
+  assert.match(html, /type="submit" disabled>삭제 실행/);
 });

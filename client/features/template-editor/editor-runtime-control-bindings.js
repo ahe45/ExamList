@@ -12,6 +12,7 @@ import {
   bindTemplateMetadataControls,
 } from "./editor-runtime-page-controls.js";
 import { bindDocumentWrapperNormalization } from "./template-document-normalizer.js";
+import { bindObjectInteractionScroll } from "./object-interaction-scroll.js";
 
 function isContentTemplatePage(page) {
   return String(page?.type || "").trim() === "content";
@@ -49,6 +50,7 @@ export function createEditorRuntimeDisposerState() {
     lineHeight: null,
     objectAlignment: null,
     objectSize: null,
+    objectScroll: null,
     otherRoomPage: null,
     pageNumber: null,
     recognitionMarks: null,
@@ -189,6 +191,10 @@ export function ensureEditorRuntimeControls({
 }) {
   if (!disposers.documentWrapper) {
     disposers.documentWrapper = bindDocumentWrapperNormalization({ editor, surfaceElement });
+  }
+
+  if (!disposers.objectScroll) {
+    disposers.objectScroll = bindObjectInteractionScroll({ surfaceElement });
   }
 
   if (!disposers.formatToolbar) {

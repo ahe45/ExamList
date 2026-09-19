@@ -15,6 +15,7 @@ import {
   resetDataTagPanelState,
 } from "./data-tags-adapter.js";
 import { normalizeDataTagSampleValues } from "./data-tag-samples.js";
+import { formatDataTagSampleValue } from "./data-tag-value-formatting.js";
 import { sanitizeHtml } from "./document-editor-sanitizer.js";
 import { getTemplateGenerationUnitFields } from "./generation-unit-settings.js";
 import { dataTagViewOptionsEventName, getDataTagViewOptions, normalizeDataTagViewOptions } from "./data-tags-view-options.js";
@@ -359,11 +360,12 @@ function findMountedTagDefinitionForDisplay(runtimeDefinition = {}) {
   }) || null;
 }
 
-function getMountedTemplateTagDisplay({ definition } = {}) {
+function getMountedTemplateTagDisplay({ definition, formatValue = "", formatType = "" } = {}) {
   const options = normalizeDataTagViewOptions(getDataTagViewOptions());
   const runtimeDefinition = definition && typeof definition === "object" ? definition : {};
   const displayDefinition = findMountedTagDefinitionForDisplay(runtimeDefinition) || runtimeDefinition;
-  const sampleText = String(displayDefinition.example || "").trim();
+  const sampleValue = String(displayDefinition.example || "").trim();
+  const sampleText = formatDataTagSampleValue(displayDefinition, sampleValue, formatValue, formatType) || sampleValue;
   const labelText = String(displayDefinition.label || displayDefinition.key || displayDefinition.token || "").trim();
   const displayText = options.showSampleData && sampleText ? sampleText : labelText;
 
@@ -372,7 +374,7 @@ function getMountedTemplateTagDisplay({ definition } = {}) {
     iconMarkup: options.showIcons ? String(displayDefinition.iconMarkup || "") : "",
     sampleDisplay: options.showSampleData,
     text: displayText,
-    title: [displayDefinition.label, displayDefinition.example].map((value) => String(value || "").trim()).filter(Boolean).join(" · "),
+    title: [displayDefinition.label, sampleText].map((value) => String(value || "").trim()).filter(Boolean).join(" · "),
   };
 }
 

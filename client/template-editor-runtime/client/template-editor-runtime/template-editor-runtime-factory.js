@@ -548,6 +548,7 @@
         focusTemplateEditorCell,
         getTemplateEditorCellSplitConfig,
         getTemplateEditorActiveTableSelection,
+        getTemplateEditorSelectedCell,
         getTemplateEditorSurface,
         handleTemplateEditorInsert,
         handleTemplateEditorTokenDeletion,

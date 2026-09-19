@@ -21,7 +21,7 @@ test("normalizeDataDeletionScope supports aliases", () => {
   assert.equal(normalizeDataDeletionScope("unknown"), "");
 });
 
-test("deleteProjectData deletes all project data for a school without deleting the school", async () => {
+test("deleteProjectData deletes all project data for a school without deleting the school or templates", async () => {
   const queries = [];
   const removedFiles = [];
   const rootDir = path.join("C:\\", "examlist");
@@ -99,13 +99,13 @@ test("deleteProjectData deletes all project data for a school without deleting t
   assert.equal(result.deletedPdfGenerationHistories, 1);
   assert.equal(result.deletedPdfGenerationBatches, 1);
   assert.equal(result.deletedPdfAuditLogs, 5);
-  assert.equal(result.deletedPdfTemplates, 1);
+  assert.equal(result.deletedPdfTemplates, 0);
   assert.equal(result.deletedPdfFiles, 3);
   assert.equal(result.deletedCandidatePhotoFiles, 1);
   assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM pdf_generation_histories WHERE school_id = ?")));
   assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM pdf_audit_logs WHERE id IN")));
   assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM candidate_records WHERE school_id = ?")));
-  assert.ok(executedSql.some((sql) => sql.includes("DELETE FROM pdf_templates WHERE school_id = ?")));
+  assert.ok(executedSql.every((sql) => !sql.includes("pdf_template")));
   assert.ok(executedSql.some((sql) => sql.includes("UPDATE schools SET updated_at = CURRENT_TIMESTAMP WHERE id = ?")));
   assert.equal(executedSql.some((sql) => sql.includes("DELETE FROM schools")), false);
   assert.deepEqual(
@@ -456,51 +456,20 @@ test("deleteProjectData removes pdf audit logs linked through metadata", async (
   assert.deepEqual(metadataAuditDeleteQuery.params, ["audit-preview-school", "audit-generation-metadata"]);
 });
 
-test("deleteProjectData deletes only selected templates for template scope", async () => {
-  const queries = [];
+test("data deletion rejects the removed templates scope before accessing data", async () => {
   const service = createDataDeletionService({
     createHttpError,
-    fs: {
-      existsSync: () => false,
-      promises: {
-        rm: async () => {},
-      },
-    },
-    getSchoolById: async () => ({ id: "school-1", name: "서울대학교" }),
-    query: async (sql, params = []) => {
-      queries.push({ params, sql });
-      const compactSql = sql.replace(/\s+/g, " ");
-
-      if (compactSql.includes("FROM pdf_templates WHERE school_id = ?")) {
-        return [
-          { id: "template-1", name: "삭제 대상" },
-          { id: "template-2", name: "유지 대상" },
-        ];
-      }
-
-      if (compactSql.includes("DELETE FROM pdf_templates WHERE id IN")) {
-        return { affectedRows: 1 };
-      }
-
-      return { affectedRows: 1 };
-    },
+    getSchoolById: async () => { throw new Error("Unexpected school lookup"); },
+    query: async () => { throw new Error("Unexpected query"); },
   });
 
-  const result = await service.deleteProjectData("templates", {
-    schoolId: "school-1",
-    templateIds: ["template-1"],
-  });
-  const templateDeleteQuery = queries.find((query) =>
-    query.sql.replace(/\s+/g, " ").includes("DELETE FROM pdf_templates WHERE id IN"),
-  );
-  const pageDeleteQuery = queries.find((query) =>
-    query.sql.replace(/\s+/g, " ").includes("DELETE FROM pdf_template_pages WHERE template_id IN"),
-  );
-
-  assert.equal(result.deletedPdfTemplates, 1);
-  assert.deepEqual(templateDeleteQuery.params, ["template-1"]);
-  assert.deepEqual(pageDeleteQuery.params, ["template-1"]);
-  assert.equal(result.filters && Object.keys(result.filters).length, 0);
+  assert.equal(normalizeDataDeletionScope("templates"), "");
+  await assert.rejects(service.deleteProjectData("templates", {
+    schoolId: "school-1", templateIds: ["template-1"],
+  }), { statusCode: 400, errorCode: "DATA_DELETION_SCOPE_INVALID" });
+  await assert.rejects(service.getProjectDataDeletionSummary({
+    schoolId: "school-1", scope: "templates",
+  }), { statusCode: 400, errorCode: "DATA_DELETION_SCOPE_INVALID" });
 });
 
 test("getProjectDataDeletionSummary returns delete scope counts", async () => {
@@ -576,84 +545,31 @@ test("getProjectDataDeletionSummary returns delete scope counts", async () => {
   assert.equal(summary.counts.pdfGenerationBatches, 1);
   assert.equal(summary.counts.pdfFiles, 4);
   assert.equal(summary.counts.pdfAuditLogs, 6);
-  assert.equal(summary.counts.pdfTemplates, 2);
-  assert.equal(templateScope.items.find((item) => item.key === "pdfTemplateElements").count, 7);
+  assert.equal(summary.counts.pdfTemplates, 0);
+  assert.equal(templateScope, undefined);
+  assert.ok(allScope.items.every((item) => !item.key.startsWith("pdfTemplate")));
   assert.equal(pdfScope.totalCount, 13);
-  assert.equal(allScope.totalCount, 34);
+  assert.equal(allScope.totalCount, 20);
 });
 
-test("getProjectDataDeletionSummary returns template list and counts selected templates only", async () => {
+test("all-data summary ignores legacy template selections", async () => {
   const service = createDataDeletionService({
     createHttpError,
-    getSchoolById: async () => ({ id: "school-1", name: "서울대학교" }),
-    query: async (sql, params = []) => {
-      const compactSql = sql.replace(/\s+/g, " ");
-
-      if (compactSql.includes("COUNT(*) AS total FROM candidate_records")) {
-        return [{ total: 0 }];
-      }
-
-      if (compactSql.includes("FROM pdf_generation_histories WHERE school_id = ?")) {
-        return [];
-      }
-
-      if (compactSql.includes("FROM pdf_generation_batches WHERE school_id = ?")) {
-        return [];
-      }
-
-      if (compactSql.includes("FROM pdf_templates WHERE school_id = ?")) {
-        assert.deepEqual(params, ["school-1"]);
-        return [
-          {
-            description: "첫 번째",
-            generationUnit: "roomCode",
-            id: "template-1",
-            layoutJson: JSON.stringify({ pages: [{ id: "page-1", type: "cover" }] }),
-            name: "수험표",
-          },
-          {
-            description: "두 번째",
-            generationUnit: "examDate",
-            id: "template-2",
-            layoutJson: JSON.stringify({ pages: [{ id: "page-2", type: "content" }] }),
-            name: "명단",
-          },
-        ];
-      }
-
-      if (compactSql.includes("FROM pdf_template_pages")) {
-        assert.deepEqual(params, ["template-2"]);
-        return [{ total: 2 }];
-      }
-
-      if (compactSql.includes("FROM pdf_template_elements")) {
-        assert.deepEqual(params, ["template-2"]);
-        return [{ total: 5 }];
-      }
-
-      if (compactSql.includes("FROM pdf_template_versions")) {
-        assert.deepEqual(params, ["template-2"]);
-        return [{ total: 1 }];
-      }
-
-      return [{ total: 0 }];
+    getSchoolById: async () => ({ id: "school-1", name: "School" }),
+    query: async (sql) => {
+      assert.ok(!sql.includes("pdf_template"));
+      return [];
     },
   });
-
   const summary = await service.getProjectDataDeletionSummary({
-    schoolId: "school-1",
-    templateIds: ["template-2"],
+    schoolId: "school-1", templateIds: ["template-2"],
   });
-  const templateScope = summary.scopes.find((scope) => scope.scope === "templates");
-
-  assert.equal(summary.templates.items.length, 2);
-  assert.deepEqual(summary.templates.items[0].layout, { pages: [{ id: "page-1", type: "cover" }] });
-  assert.deepEqual(summary.templates.selectedIds, ["template-2"]);
-  assert.equal(summary.counts.pdfTemplates, 1);
-  assert.equal(summary.counts.pdfTemplatePages, 2);
-  assert.equal(summary.counts.pdfTemplateElements, 5);
-  assert.equal(summary.counts.pdfTemplateVersions, 1);
-  assert.equal(templateScope.totalCount, 9);
+  assert.equal(summary.counts.pdfTemplates, 0);
+  assert.equal(summary.counts.pdfTemplatePages, 0);
+  assert.equal(summary.counts.pdfTemplateElements, 0);
+  assert.equal(summary.counts.pdfTemplateVersions, 0);
+  assert.ok(summary.scopes.every((scope) => scope.scope !== "templates"));
+  assert.ok(summary.scopes[0].items.every((item) => !item.key.startsWith("pdfTemplate")));
 });
 
 test("getProjectDataDeletionSummary excludes template counts when deletion unit filters are active", async () => {
@@ -692,10 +608,9 @@ test("getProjectDataDeletionSummary excludes template counts when deletion unit 
   const templateScope = summary.scopes.find((scope) => scope.scope === "templates");
 
   assert.equal(summary.filterMode, "filtered");
-  assert.equal(summary.templatesExcludedByFilters, true);
   assert.equal(summary.counts.candidateRecords, 3);
   assert.equal(summary.counts.pdfTemplates, 0);
-  assert.equal(templateScope.totalCount, 0);
+  assert.equal(templateScope, undefined);
 });
 
 test("deleteProjectData requires the confirmation phrase for all data", async () => {

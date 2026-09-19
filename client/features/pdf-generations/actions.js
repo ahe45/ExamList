@@ -1,7 +1,5 @@
 import { canUseAccess } from "../../app/access.js";
-import { getJson } from "../../app/api-client.js";
-import { getActiveSchoolId, getActiveSchoolRouteKey } from "../../app/school-context.js";
-import { showToast } from "../../app/toast.js";
+import { getActiveSchoolId } from "../../app/school-context.js";
 import { createPdfGenerationActiveRunner } from "./pdf-generation-active-runner.js";
 import { createPdfGenerationArtifactActions } from "./pdf-generation-artifact-actions.js";
 import { createPdfGenerationAuditActions } from "./pdf-generation-audit-actions.js";
@@ -16,7 +14,6 @@ import { getFilteredPdfGenerationRows } from "./pdf-generation-table-model.js";
 import {
   getCreateModalState as ensureCreateModalState,
   getDeleteConfirmState as ensureDeleteConfirmState,
-  getDetailModalState as ensureDetailModalState,
   getDownloadModalState as ensureDownloadModalState,
   getGeneratedResultModalState as ensureGeneratedResultModalState,
   getPdfGenerationArtifactTableState as ensurePdfGenerationArtifactTableState,
@@ -24,12 +21,9 @@ import {
   resetPdfGenerationTemplatePreview as resetTemplatePreviewState,
 } from "./pdf-generation-state.js";
 
-const appConfig = window.ExamListAppConfig;
-
-export function setupPdfGenerationActions({ appState, navigateToPath, onStateChange }) {
+export function setupPdfGenerationActions({ appState, onStateChange }) {
   const getCreateModalState = () => ensureCreateModalState(appState);
   const getDeleteConfirmState = () => ensureDeleteConfirmState(appState);
-  const getDetailModalState = () => ensureDetailModalState(appState);
   const getDownloadModalState = () => ensureDownloadModalState(appState);
   const getGeneratedResultModalState = () => ensureGeneratedResultModalState(appState);
   const getPdfGenerationArtifactTableState = () => ensurePdfGenerationArtifactTableState(appState);
@@ -38,10 +32,6 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
 
   function getCurrentSchoolId() {
     return getActiveSchoolId(appState);
-  }
-
-  function getCurrentSchoolRouteKey() {
-    return getActiveSchoolRouteKey(appState);
   }
 
   function hasPermission(permissionKey) {
@@ -144,72 +134,6 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
     updateActiveGenerationOverlayDom,
   });
 
-  async function openPdfGenerationDetailModal(generationId = "") {
-    const normalizedGenerationId = String(generationId || "").trim();
-
-    if (!normalizedGenerationId || !hasPermission("viewGenerations")) {
-      return;
-    }
-
-    const modal = getDetailModalState();
-
-    modal.generationId = normalizedGenerationId;
-    modal.isOpen = true;
-    appState.pdfGenerationDetail.errorMessage = "";
-    appState.pdfGenerationDetail.item = null;
-    appState.pdfGenerationDetail.loading = true;
-    await onStateChange();
-    await loadGenerationDetail(normalizedGenerationId);
-  }
-
-  async function closePdfGenerationDetailModal() {
-    const modal = getDetailModalState();
-
-    modal.generationId = "";
-    modal.isOpen = false;
-    await onStateChange();
-  }
-
-  async function loadGenerationDetail(generationId) {
-    const normalizedGenerationId = String(generationId || "").trim();
-
-    appState.pdfGenerationDetail.loading = true;
-
-    if (!normalizedGenerationId) {
-      appState.pdfGenerationDetail.errorMessage = "PDF 생성 이력 ID가 없습니다.";
-      appState.pdfGenerationDetail.item = null;
-      appState.pdfGenerationDetail.loading = false;
-      showToast(appState.pdfGenerationDetail.errorMessage, { tone: "error" });
-      await onStateChange();
-      return;
-    }
-
-    try {
-      const payload = await getJson(`/api/pdf-generations/${encodeURIComponent(normalizedGenerationId)}`);
-
-      appState.pdfGenerationDetail.errorMessage = "";
-      appState.pdfGenerationDetail.item = payload || null;
-    } catch (error) {
-      appState.pdfGenerationDetail.errorMessage = error.message;
-      appState.pdfGenerationDetail.item = null;
-      showToast(appState.pdfGenerationDetail.errorMessage, { tone: "error" });
-    } finally {
-      appState.pdfGenerationDetail.loading = false;
-      await onStateChange();
-    }
-  }
-
-  function openGenerationDetail(generationId) {
-    const normalizedGenerationId = String(generationId || "").trim();
-    const schoolId = getCurrentSchoolRouteKey();
-
-    if (!normalizedGenerationId) {
-      return;
-    }
-
-    navigateToPath(appConfig.getViewRoutePath("pdfGenerationDetail", { generationId: normalizedGenerationId, schoolId }));
-  }
-
   const {
     clearGenerationSelection,
     clearVisibleGenerationSelection,
@@ -224,9 +148,7 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
   const {
     downloadGeneratedBatchResult,
     downloadSelectedGenerationArchive,
-    rerunGeneration,
     rerunSelectedGenerations,
-    retryGeneration,
   } = createPdfGenerationBatchActions({
     appState,
     getCurrentSchoolId,
@@ -269,7 +191,6 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
   });
 
   bindPdfGenerationEventHandlers({
-    appConfig,
     appState,
     cancelActivePdfGeneration,
     clampPdfAuditLogPage,
@@ -286,7 +207,6 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
     clearGenerationSelection,
     closePdfGenerationCreateModal,
     closePdfGenerationDeleteConfirm,
-    closePdfGenerationDetailModal,
     closePdfGenerationDownloadModal,
     closePdfGenerationGeneratedResultModal,
     closePdfGenerationTemplatePreview,
@@ -299,24 +219,17 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
     getVisiblePdfGenerationArtifactFilterOptions,
     getPdfGenerationTableState,
     getVisiblePdfGenerationFilterOptions,
-    getCurrentSchoolRouteKey,
     loadAuditLogs,
     loadArtifacts,
     loadCreateModalOptions,
-    loadGenerationDetail,
     loadGenerations,
-    navigateToPath,
     onStateChange,
     openPdfGenerationCreateModal,
     openPdfGenerationDeleteConfirm,
-    openPdfGenerationDetailModal,
     openPdfGenerationDownloadModal,
     openPdfGenerationFirstResultPreview,
     openPdfGenerationTemplatePreview,
-    openGenerationDetail,
-    rerunGeneration,
     rerunSelectedGenerations,
-    retryGeneration,
     selectAllVisibleGenerations,
     setPdfAuditLogFilterValues,
     setPdfGenerationArtifactFilterValues,
@@ -343,7 +256,6 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
     clearVisibleGenerationSelection,
     closePdfGenerationCreateModal,
     closePdfGenerationDeleteConfirm,
-    closePdfGenerationDetailModal,
     closePdfGenerationDownloadModal,
     closePdfGenerationGeneratedResultModal,
     closePdfGenerationTemplatePreview,
@@ -354,17 +266,12 @@ export function setupPdfGenerationActions({ appState, navigateToPath, onStateCha
     cleanupExpiredGenerations,
     loadAuditLogs,
     loadArtifacts,
-    loadGenerationDetail,
     loadGenerations,
     openPdfGenerationCreateModal,
     openPdfGenerationDeleteConfirm,
-    openPdfGenerationDetailModal,
     openPdfGenerationFirstResultPreview,
     openPdfGenerationTemplatePreview,
-    openGenerationDetail,
     resetPdfGenerationActiveTab,
     rerunSelectedGenerations,
-    rerunGeneration,
-    retryGeneration,
   };
 }

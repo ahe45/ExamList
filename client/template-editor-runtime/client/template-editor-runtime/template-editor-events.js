@@ -319,6 +319,14 @@
         clearTemplateEditorTableHoverState();
         selectTemplateEditorImage(selectedImage);
 
+        // Pointer default is prevented, so explicitly give arrow keys to the
+        // active editor (including a data-block modal) instead of the old field.
+        const surface = getTemplateEditorSurface();
+        surface?.focus({ preventScroll: true });
+        surface?.ownerDocument.defaultView.getSelection()?.removeAllRanges();
+        state.templateEditor.savedRange = null;
+        state.templateEditor.savedSelectionSnapshot = null;
+
         startTemplateEditorImageMoveSession(selectedImage, event);
 
         return;
@@ -401,6 +409,22 @@
       if (event.target === getTemplateEditorSurface()) {
         if (isCompositionInputEvent(event)) {
           return;
+        }
+
+        if (event.inputType === "deleteContentForward") {
+          const selection = ownerWindow.getSelection();
+          const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+          const element = range?.startContainer.nodeType === ownerWindow.Node.ELEMENT_NODE
+            ? range.startContainer : range?.startContainer.parentElement;
+          const token = element?.closest?.(".template-token[contenteditable='false']");
+          // Chromium can join paragraphs with the caret inside the tag at
+          // offset zero. Put it before the tag so subsequent typing is editable.
+          if (range?.collapsed && range.startOffset === 0 && token) {
+            range.setStartBefore(token);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
         }
 
         syncTemplateEditorContent(

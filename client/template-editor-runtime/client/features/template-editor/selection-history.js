@@ -414,7 +414,7 @@
       }
 
       if (selectionSnapshot && focusEditor) {
-        templateEditorSurface.focus();
+        templateEditorSurface.focus({ preventScroll: true });
       }
 
       if (!(selectionSnapshot && restoreTemplateEditorSelectionSnapshot(selectionSnapshot))) {

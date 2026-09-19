@@ -1,5 +1,4 @@
 import { formatGenerationUnitLabel as formatSharedGenerationUnitLabel } from "../../app/generation-units.js";
-import { escapeHtml } from "../../app/html-utils.js";
 import { formatCount, formatDecimalNumber } from "../../app/number-format.js";
 
 export function formatDateTime(value) {
@@ -175,39 +174,6 @@ export function renderAuditMetadata(metadata = {}) {
     .join(" / ");
 }
 
-export function getStatusBadgeClass(value) {
-  if (value === "completed") {
-    return "active";
-  }
-
-  if (value === "queued" || value === "running") {
-    return "neutral";
-  }
-
-  return "danger";
-}
-
 export function formatOrientationLabel(value) {
   return value === "landscape" ? "가로" : value === "portrait" ? "세로" : value || "-";
-}
-
-export function renderRequestFilters(filters = []) {
-  if (!Array.isArray(filters) || !filters.length) {
-    return '<p class="helper-text">저장된 요청 필터가 없습니다.</p>';
-  }
-
-  return `
-    <div class="generation-filter-list">
-      ${filters
-        .map(
-          (filter) => `
-            <span class="generation-filter-chip">
-              <strong>${escapeHtml(filter.label || filter.key || "-")}</strong>
-              <span>${escapeHtml(filter.value || "-")}</span>
-            </span>
-          `,
-        )
-        .join("")}
-    </div>
-  `;
 }

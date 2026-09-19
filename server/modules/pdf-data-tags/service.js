@@ -10,6 +10,7 @@ const roomTagDefinitions = Object.freeze([
 
 const otherTagDefinitions = Object.freeze([
   Object.freeze({ key: "row.indexInPage", label: "순번", type: "number", example: "1" }),
+  Object.freeze({ key: "document.kyungheeCover", label: "경희대 표지", type: "string", example: "건축학과(5년제)\n: 3005200001 ~ 3005200004" }),
 ]);
 
 const candidateTagOrder = Object.freeze([

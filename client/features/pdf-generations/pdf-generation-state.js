@@ -185,23 +185,6 @@ export function getDeleteConfirmState(appState) {
   return modal;
 }
 
-export function getDetailModalState(appState) {
-  const modal = appState.pdfGenerations.detailModal || {};
-  const defaults = {
-    generationId: "",
-    isOpen: false,
-  };
-
-  Object.entries(defaults).forEach(([key, value]) => {
-    if (!Object.prototype.hasOwnProperty.call(modal, key)) {
-      modal[key] = value;
-    }
-  });
-  appState.pdfGenerations.detailModal = modal;
-
-  return modal;
-}
-
 export function resetPdfGenerationTemplatePreview(appState) {
   getCreateModalState(appState).templatePreview = createEmptyTemplatePreviewState();
 }

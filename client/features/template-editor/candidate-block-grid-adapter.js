@@ -59,6 +59,7 @@ import {
   isCandidateBlockTemplateSource,
 } from "./candidate-block-grid-block-roles.js";
 import {
+  deleteBlankLineBeforeCandidateBlockGrid,
   shouldPreventCandidateBlockGridNativeDeletion,
 } from "./candidate-block-grid-boundary.js";
 import { getSelectedPage } from "./state.js";
@@ -732,6 +733,24 @@ export function bindCandidateBlockGridControls({
       event.stopImmediatePropagation?.();
       markDirty();
       return;
+    }
+
+    if (event.key === "Delete" && !event.defaultPrevented && !event.isComposing &&
+        !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+      const selection = surfaceElement.ownerDocument.defaultView.getSelection();
+      const result = deleteBlankLineBeforeCandidateBlockGrid(
+        selection?.rangeCount ? selection.getRangeAt(0) : null,
+        surfaceElement,
+      );
+      if (result) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (result.changed) {
+          editor?.sync?.({ preserveSelection: true, focusEditor: true });
+          markDirty();
+        }
+        return;
+      }
     }
 
     if (shouldPreventCandidateBlockGridNativeDeletion(event, surfaceElement)) {

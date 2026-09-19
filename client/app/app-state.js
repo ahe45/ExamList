@@ -351,10 +351,6 @@ export const appState = {
       templateName: "",
       totalRequested: 0,
     },
-    detailModal: {
-      generationId: "",
-      isOpen: false,
-    },
     deleteConfirm: {
       candidateCount: 0,
       count: 0,
@@ -387,7 +383,6 @@ export const appState = {
     },
     items: [],
     lastBatchRerun: null,
-    lastRerunGeneration: null,
     limit: 20,
     loading: false,
     rerunErrorMessage: "",
@@ -405,11 +400,6 @@ export const appState = {
       sortRules: [{ key: "sequenceNumber", direction: "asc" }],
     },
     total: 0,
-  },
-  pdfGenerationDetail: {
-    errorMessage: "",
-    item: null,
-    loading: false,
   },
   templateEditor: {
     canvasZoom: 1,

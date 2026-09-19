@@ -168,8 +168,7 @@ function renderGenerationTable({
               `<input data-pdf-generation-select-all type="checkbox" ${selectedFilteredDownloadableCount && selectedFilteredDownloadableCount === filteredCompletedRows.length ? "checked" : ""} />`,
             )}
             ${pdfGenerationGridColumns.map((column) => renderPdfGenerationHeaderCell(column, pdfGenerations)).join("")}
-            ${renderStaticHeaderCell("pdf-generation-print-column", '<span class="table-header-label">인쇄</span>')}
-            ${renderStaticHeaderCell("pdf-generation-detail-column", '<span class="table-header-label">상세</span>')}`,
+            ${renderStaticHeaderCell("pdf-generation-print-column", '<span class="table-header-label">인쇄</span>')}`,
       rowsHtml: `${renderGenerationRows(
             visibleRows,
             pdfGenerations.selectedGenerationIds,

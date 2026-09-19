@@ -14,7 +14,6 @@
     templateEditor: "양식 편집",
     candidateLookup: "수험생 데이터",
     pdfGenerationHistory: "PDF 생성",
-    pdfGenerationDetail: "PDF 생성 상세",
     pdfHistoryManagement: "PDF 작업 로그",
     dataDeletion: "데이터 삭제",
   });
@@ -74,28 +73,6 @@
       pathBuilder: ({ schoolId } = {}) =>
         schoolId ? `/schools/${encodeURIComponent(String(schoolId).trim())}/pdf-generations` : "/schools",
       title: pageTitles.pdfGenerationHistory,
-    }),
-    Object.freeze({
-      view: "pdfGenerationDetail",
-      pattern: /^\/templates\/(?<templateId>[^/]+)\/pdf-generations\/(?<generationId>[^/]+)$/,
-      pathBuilder: ({ generationId, templateId } = {}) =>
-        templateId && generationId
-          ? `/templates/${encodeURIComponent(String(templateId).trim())}/pdf-generations/${encodeURIComponent(String(generationId).trim())}`
-          : templateId
-            ? `/templates/${encodeURIComponent(String(templateId).trim())}/pdf-generations`
-            : "/templates",
-      title: pageTitles.pdfGenerationDetail,
-    }),
-    Object.freeze({
-      view: "pdfGenerationDetail",
-      pattern: /^\/schools\/(?<schoolId>[^/]+)\/pdf-generations\/(?<generationId>[^/]+)$/,
-      pathBuilder: ({ generationId, schoolId } = {}) =>
-        schoolId && generationId
-          ? `/schools/${encodeURIComponent(String(schoolId).trim())}/pdf-generations/${encodeURIComponent(String(generationId).trim())}`
-          : schoolId
-            ? `/schools/${encodeURIComponent(String(schoolId).trim())}/pdf-generations`
-            : "/schools",
-      title: pageTitles.pdfGenerationDetail,
     }),
     Object.freeze({
       view: "pdfHistoryManagement",

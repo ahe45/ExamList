@@ -2,6 +2,7 @@ import { getJson, postJson } from "../../app/api-client.js";
 import { showToast } from "../../app/toast.js";
 import { toQueryString } from "./pdf-generation-action-utils.js";
 import {
+  autoSelectSingleFilterOptions,
   clampPdfGenerationCreateStepIndex,
   createEmptyPdfGenerationFilters,
   getPdfGenerationSelectedFilterKeysAfterSelection,
@@ -107,7 +108,17 @@ export function createPdfGenerationCreateModalActions({
     const optionRequest = (async () => {
       try {
         const payload = await getJson(`/api/candidates/filter-options?${optionQuery}`);
-        if (isCurrent()) { modal.options = payload?.options || {}; modal.errorMessage = ""; }
+        if (!isCurrent()) return;
+        modal.options = payload?.options || {};
+        modal.errorMessage = "";
+        const selectableFields = selectedTemplate
+          ? fields.filter(key => key !== "series" || modal.selectedFilterKeys?.includes("admission"))
+          : [];
+        if (autoSelectSingleFilterOptions(modal, selectableFields)) {
+          // Refresh dependent options and counts under the new conditions.
+          // A new request version also invalidates the earlier estimate.
+          return await loadCreateModalOptions({ silent: true });
+        }
       } catch (error) {
         if (isCurrent()) { modal.options = {}; modal.errorMessage = error.message; }
       } finally {
@@ -177,6 +188,10 @@ export function createPdfGenerationCreateModalActions({
       modal.errorMessage = error.message;
       showToast(modal.errorMessage, { tone: "error" });
       await onStateChange();
+      return;
+    }
+    if (!modal.selectedTemplateId && modal.templates.length === 1) {
+      await updatePdfGenerationCreateTemplate(modal.templates[0].id);
       return;
     }
     await loadCreateModalOptions({ silent: true });

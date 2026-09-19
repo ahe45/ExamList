@@ -82,7 +82,11 @@ test("getCatalog builds tags from school settings and candidate columns", async 
       ["room.otherRoom", "타고사실", "string", ""],
     ],
   );
-  assert.deepEqual(otherTags.map((tag) => [tag.key, tag.label, tag.type, tag.example]), [["row.indexInPage", "순번", "number", "1"]]);
+  assert.deepEqual(otherTags.map((tag) => [tag.key, tag.label, tag.type]), [
+    ["row.indexInPage", "순번", "number"],
+    ["document.kyungheeCover", "경희대 표지", "string"],
+  ]);
+  assert.equal(otherTags.find((tag) => tag.key === "document.kyungheeCover").example, "건축학과(5년제)\n: 3005200001 ~ 3005200004");
 });
 
 test("buildCandidateTags appends unknown candidate adapter mappings", () => {
@@ -99,5 +103,5 @@ test("buildCandidateTags appends unknown candidate adapter mappings", () => {
 });
 
 test("buildOtherTags exposes the candidate block sequence tag", () => {
-  assert.deepEqual(buildOtherTags().map((tag) => tag.key), ["row.indexInPage"]);
+  assert.deepEqual(buildOtherTags().map((tag) => tag.key), ["row.indexInPage", "document.kyungheeCover"]);
 });

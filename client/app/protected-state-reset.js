@@ -70,8 +70,6 @@ export function resetAccountState(appState) {
 }
 
 export function resetPdfGenerationState(appState) {
-  appState.pdfGenerationDetail.item = null;
-  appState.pdfGenerationDetail.errorMessage = "";
   appState.pdfGenerations.activeTab = "generations";
   appState.pdfGenerations.activeGeneration = {
     batchId: "",
@@ -146,10 +144,6 @@ export function resetPdfGenerationState(appState) {
     totalRequested: 0,
   };
   appState.pdfGenerations.isCreatingArchive = false;
-  appState.pdfGenerations.detailModal = {
-    generationId: "",
-    isOpen: false,
-  };
   appState.pdfGenerations.deleteConfirm = {
     candidateCount: 0,
     count: 0,

@@ -23,3 +23,12 @@ test("template data tag configuration exposes OPT10 in the other group", async (
   assert.equal(dataTagFallbackDefinitions["candidate.opt10"].label, "OPT10");
   assert.equal(dataTagFallbackDefinitions["candidate.opt10"].example, "옵션10");
 });
+
+test("Kyunghee cover is available in the other group with the server's single-department example", async () => {
+  const { dataTagFallbackDefinitions, getDataTagGroupForKey } = await importClientModule("data-tags-config.js");
+  const { buildOtherTags } = require("../../../server/modules/pdf-data-tags/service");
+  const tag = dataTagFallbackDefinitions["document.kyungheeCover"];
+  assert.equal(getDataTagGroupForKey("document.kyungheeCover").id, "etc");
+  assert.equal(tag.label, "경희대 표지");
+  assert.equal(tag.example, buildOtherTags().find((item) => item.key === "document.kyungheeCover").example);
+});

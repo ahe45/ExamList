@@ -69,7 +69,7 @@ export function serializeEditableDocumentRoot(rootNode) {
 }
 
 export function syncEditableDocumentRoot(rootNode) {
-  normalizeEditableDocumentRoot(rootNode, { preserveTokenPresentation: true });
+  normalizeEditableDocumentRoot(rootNode, { preserveTokenPresentation: true, preserveTokenCarets: true });
 }
 
 export function sanitizeEditableDocumentHtml(value) {

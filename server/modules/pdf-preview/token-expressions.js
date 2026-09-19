@@ -10,6 +10,19 @@ const {
 
 const otherRoomTokenKey = "room.otherRoom";
 
+function formatTemplateTokenHtmlValue(expression, value) {
+  const escapedValue = escapeHtml(value);
+  if (String(expression || "").split("|")[0].trim() !== "document.kyungheeCover") {
+    return escapedValue;
+  }
+
+  return escapedValue.split(/\r?\n/).map((line) => {
+    if (!line.startsWith(": ")) return line;
+    // The range always starts on its own line and stays together.
+    return `<span class="kyunghee-cover-range" style="display:inline-block;white-space:nowrap;word-break:normal;overflow-wrap:normal">${line}</span>`;
+  }).join("<br>");
+}
+
 function shouldSuppressTokenForContext(context, key) {
   return String(key || "").trim() === otherRoomTokenKey && context?.__isOtherRoomPage !== true;
 }
@@ -232,7 +245,7 @@ function replaceTemplateTokens(text, context) {
 function replaceTemplateTokensInHtml(text, context) {
   return renderConditionalBlocks(text, context).replace(/{{\s*([^#/][^}]*?)\s*}}/g, (_match, tokenExpression) => {
     const result = evaluateTokenExpressionDetailed(tokenExpression, context);
-    const value = escapeHtml(result.value);
+    const value = formatTemplateTokenHtmlValue(tokenExpression, result.value);
 
     return result.usedEmptyValueFallback && shouldStyleEmptyValueFallback(context)
       ? `<span class="preview-empty-data-fallback">${value}</span>`
@@ -241,6 +254,7 @@ function replaceTemplateTokensInHtml(text, context) {
 }
 
 module.exports = {
+  formatTemplateTokenHtmlValue,
   applyTokenFilter,
   evaluateTokenExpression,
   evaluateTokenExpressionDetailed,
