@@ -119,8 +119,8 @@ async function runTableFormatSaveScenario(context) {
               payload &&
               recognitionMarks &&
               recognitionMarks.enabled === true &&
-              Number.isFinite(Number(recognitionMarks.offsetXPt)) &&
-              Number.isFinite(Number(recognitionMarks.offsetYPt)) &&
+              recognitionMarks.offsetXPt === 14.17 &&
+              recognitionMarks.offsetYPt === 14.17 &&
               savedHtml.includes('<colgroup') &&
               /<col/i.test(savedHtml) &&
               /width:\\s*\\d+px/i.test(savedHtml) &&

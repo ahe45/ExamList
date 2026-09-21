@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 
 const { normalizeTemplateLayout } = require("./layout");
 
-test("normalizeTemplateLayout normalizes page recognition marks", () => {
+test("normalizeTemplateLayout fixes recognition margins to the default template", () => {
   const layout = normalizeTemplateLayout(
     {
       pages: [
@@ -32,8 +32,8 @@ test("normalizeTemplateLayout normalizes page recognition marks", () => {
 
   assert.deepEqual(layout.pages[0].settings.recognitionMarks, {
     enabled: true,
-    offsetXPt: 32.4,
-    offsetYPt: 0,
+    offsetXPt: 14.17,
+    offsetYPt: 14.17,
     sizePt: 72,
   });
 });

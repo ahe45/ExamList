@@ -79,8 +79,8 @@ function normalizeRecognitionMarks(page) {
 
   return {
     enabled: source.enabled === true || String(source.enabled || "").trim().toLowerCase() === "true",
-    offsetXPt: normalizeRecognitionMarkPoint(source.offsetXPt ?? source.xPt ?? source.offsetX ?? source.x),
-    offsetYPt: normalizeRecognitionMarkPoint(source.offsetYPt ?? source.yPt ?? source.offsetY ?? source.y),
+    offsetXPt: defaultRecognitionMarkOffsetPt,
+    offsetYPt: defaultRecognitionMarkOffsetPt,
     sizePt: normalizeRecognitionMarkPoint(source.sizePt ?? source.size, defaultRecognitionMarkSizePt, 72),
   };
 }

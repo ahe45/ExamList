@@ -28,8 +28,9 @@ function normalizeRecognitionMarks(settings) {
 
   return {
     enabled: source.enabled === true || String(source.enabled || "").trim().toLowerCase() === "true",
-    offsetXPt: normalizeFiniteNumber(source.offsetXPt ?? source.xPt ?? source.offsetX ?? source.x, 14.17, 0, 240),
-    offsetYPt: normalizeFiniteNumber(source.offsetYPt ?? source.yPt ?? source.offsetY ?? source.y, 14.17, 0, 240),
+    // Keep every template at the default template's 5 mm margins.
+    offsetXPt: 14.17,
+    offsetYPt: 14.17,
     sizePt: normalizeFiniteNumber(source.sizePt ?? source.size, 11.34, 2, 72),
   };
 }

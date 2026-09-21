@@ -134,9 +134,7 @@ async function assertEditorGridLayout(client) {
             pagePropertiesPanel?.querySelector('[data-editor-page-margin-field="' + field.replace('margin', '').toLowerCase() + '"]')
         );
         const pagePropertiesHasRecognitionMarks = Boolean(
-          pagePropertiesPanel?.querySelector('[data-examlist-recognition-setting="enabled"]') &&
-            pagePropertiesPanel?.querySelector('[data-examlist-recognition-setting="offsetX"]') &&
-            pagePropertiesPanel?.querySelector('[data-examlist-recognition-setting="offsetY"]')
+          pagePropertiesPanel?.querySelector('[data-examlist-recognition-setting="enabled"]')
         );
         const pagePropertiesHasBlockGrid = Boolean(
           pagePropertiesPanel?.querySelector('[data-examlist-block-grid-setting="columns"]') &&
@@ -217,10 +215,7 @@ async function assertEditorGridLayout(client) {
         const recognitionOffsetXInput = pagePropertiesPanel?.querySelector('[data-examlist-recognition-setting="offsetX"]');
         const recognitionOffsetYInput = pagePropertiesPanel?.querySelector('[data-examlist-recognition-setting="offsetY"]');
         const pagePropertiesRecognitionDefaults = Boolean(
-          recognitionOffsetXInput &&
-            recognitionOffsetYInput &&
-            recognitionOffsetXInput.value === '5' &&
-            recognitionOffsetYInput.value === '5'
+          !recognitionOffsetXInput && !recognitionOffsetYInput
         );
         const getLabelStyle = (element) => {
           const style = element ? getComputedStyle(element) : null;

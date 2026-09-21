@@ -1,6 +1,5 @@
-import { toMillimeterValue, toPointValue } from "./page-settings-adapter.js";
-
 const cssPixelsPerPoint = 96 / 72;
+// All templates use the default template's 5 mm recognition mark margins.
 const defaultRecognitionMarkOffsetPt = 14.17;
 const defaultRecognitionMarkSizePt = 11.34;
 const maxRecognitionMarkOffsetPt = 240;
@@ -20,14 +19,8 @@ function normalizeRecognitionMarksConfig(value) {
 
   return {
     enabled: source.enabled === true || String(source.enabled || "").trim().toLowerCase() === "true",
-    offsetXPt: normalizeRecognitionMarkPoint(
-      source.offsetXPt ?? source.xPt ?? source.offsetX ?? source.x,
-      defaultRecognitionMarkOffsetPt,
-    ),
-    offsetYPt: normalizeRecognitionMarkPoint(
-      source.offsetYPt ?? source.yPt ?? source.offsetY ?? source.y,
-      defaultRecognitionMarkOffsetPt,
-    ),
+    offsetXPt: defaultRecognitionMarkOffsetPt,
+    offsetYPt: defaultRecognitionMarkOffsetPt,
     sizePt: normalizeRecognitionMarkPoint(source.sizePt ?? source.size, defaultRecognitionMarkSizePt, 72),
   };
 }
@@ -61,10 +54,6 @@ function writeRecognitionMarksConfigToPage(page, config) {
 
 function hasRecognitionMarksConfig(page) {
   return Boolean(page?.settings?.recognitionMarks && typeof page.settings.recognitionMarks === "object");
-}
-
-function formatMillimeterInputValue(pointValue) {
-  return String(toMillimeterValue(pointValue)).replace(/\.0$/, "");
 }
 
 function pointValueToCssPixel(value) {
@@ -147,22 +136,6 @@ function createRecognitionMarksControls(page) {
         <span class="examlist-switch-track" aria-hidden="true"><span></span></span>
       </label>
     </div>
-    <div class="template-page-margin-grid examlist-recognition-marks-grid">
-      <label>
-        <span>X 여백</span>
-        <span class="template-page-property-unit-control">
-          <input class="template-page-property-control" data-examlist-recognition-setting="offsetX" type="number" inputmode="decimal" autocomplete="off" min="0" max="80" step="0.5" value="${formatMillimeterInputValue(config.offsetXPt)}" aria-label="인식 기준값 X 여백 직접 입력" />
-          <span class="template-page-property-control-unit" aria-hidden="true">mm</span>
-        </span>
-      </label>
-      <label>
-        <span>Y 여백</span>
-        <span class="template-page-property-unit-control">
-          <input class="template-page-property-control" data-examlist-recognition-setting="offsetY" type="number" inputmode="decimal" autocomplete="off" min="0" max="80" step="0.5" value="${formatMillimeterInputValue(config.offsetYPt)}" aria-label="인식 기준값 Y 여백 직접 입력" />
-          <span class="template-page-property-control-unit" aria-hidden="true">mm</span>
-        </span>
-      </label>
-    </div>
   `;
 
   return sectionElement;
@@ -171,42 +144,21 @@ function createRecognitionMarksControls(page) {
 function syncRecognitionMarksControls(sectionElement, config) {
   const normalizedConfig = normalizeRecognitionMarksConfig(config);
   const enabledControl = sectionElement?.querySelector?.('[data-examlist-recognition-setting="enabled"]');
-  const offsetXControl = sectionElement?.querySelector?.('[data-examlist-recognition-setting="offsetX"]');
-  const offsetYControl = sectionElement?.querySelector?.('[data-examlist-recognition-setting="offsetY"]');
 
   if (enabledControl instanceof HTMLInputElement) {
     enabledControl.checked = normalizedConfig.enabled;
   }
 
-  if (offsetXControl instanceof HTMLInputElement) {
-    offsetXControl.value = formatMillimeterInputValue(normalizedConfig.offsetXPt);
-    offsetXControl.disabled = !normalizedConfig.enabled;
-  }
-
-  if (offsetYControl instanceof HTMLInputElement) {
-    offsetYControl.value = formatMillimeterInputValue(normalizedConfig.offsetYPt);
-    offsetYControl.disabled = !normalizedConfig.enabled;
-  }
 }
 
 function readRecognitionMarksControls(sectionElement, fallbackConfig) {
   const enabledControl = sectionElement?.querySelector?.('[data-examlist-recognition-setting="enabled"]');
-  const offsetXControl = sectionElement?.querySelector?.('[data-examlist-recognition-setting="offsetX"]');
-  const offsetYControl = sectionElement?.querySelector?.('[data-examlist-recognition-setting="offsetY"]');
   const fallback = normalizeRecognitionMarksConfig(fallbackConfig);
 
   return normalizeRecognitionMarksConfig({
     enabled: enabledControl instanceof HTMLInputElement ? enabledControl.checked : fallback.enabled,
-    offsetXPt: toPointValue(offsetXControl instanceof HTMLInputElement ? offsetXControl.value : toMillimeterValue(fallback.offsetXPt)),
-    offsetYPt: toPointValue(offsetYControl instanceof HTMLInputElement ? offsetYControl.value : toMillimeterValue(fallback.offsetYPt)),
     sizePt: fallback.sizePt,
   });
-}
-
-function isRecognitionMarksNumberControl(control) {
-  return control instanceof HTMLInputElement &&
-    control.type === "number" &&
-    Boolean(control.closest?.(".examlist-recognition-marks-field"));
 }
 
 export function commitRecognitionMarksControlsToPage({
@@ -277,15 +229,6 @@ export function bindRecognitionMarksControls({ appState = null, onDirty = null, 
       return;
     }
 
-    applyFromControls({ syncControls: !isRecognitionMarksNumberControl(control) });
-  };
-  const handleRecognitionControlFocusOut = (event) => {
-    const control = event.target?.closest?.("[data-examlist-recognition-setting]");
-
-    if (!isRecognitionMarksNumberControl(control)) {
-      return;
-    }
-
     applyFromControls();
   };
   const handlePageSettingChange = (event) => {
@@ -302,7 +245,6 @@ export function bindRecognitionMarksControls({ appState = null, onDirty = null, 
 
   sectionElement.addEventListener("input", handleRecognitionControlChange);
   sectionElement.addEventListener("change", handleRecognitionControlChange);
-  sectionElement.addEventListener("focusout", handleRecognitionControlFocusOut);
   pagePropertiesHost.addEventListener("input", handlePageSettingChange);
   pagePropertiesHost.addEventListener("change", handlePageSettingChange);
   surfaceElement.addEventListener("template-editor-canvas-zoom-change", handleCanvasZoomChange);
@@ -311,7 +253,6 @@ export function bindRecognitionMarksControls({ appState = null, onDirty = null, 
   return () => {
     sectionElement.removeEventListener("input", handleRecognitionControlChange);
     sectionElement.removeEventListener("change", handleRecognitionControlChange);
-    sectionElement.removeEventListener("focusout", handleRecognitionControlFocusOut);
     pagePropertiesHost.removeEventListener("input", handlePageSettingChange);
     pagePropertiesHost.removeEventListener("change", handlePageSettingChange);
     surfaceElement.removeEventListener("template-editor-canvas-zoom-change", handleCanvasZoomChange);

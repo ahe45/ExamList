@@ -95,16 +95,12 @@ async function runRecognitionMarksCase(client) {
         const offsetXInput = document.querySelector('[data-examlist-recognition-setting="offsetX"]');
         const offsetYInput = document.querySelector('[data-examlist-recognition-setting="offsetY"]');
 
-        if (!enabledInput || !offsetXInput || !offsetYInput) {
+        if (!enabledInput || offsetXInput || offsetYInput) {
           return false;
         }
 
         enabledInput.checked = true;
         enabledInput.dispatchEvent(new Event('change', { bubbles: true }));
-        offsetXInput.value = '12';
-        offsetYInput.value = '8';
-        offsetXInput.dispatchEvent(new Event('input', { bubbles: true }));
-        offsetYInput.dispatchEvent(new Event('input', { bubbles: true }));
         return true;
       })()
     `,
@@ -121,8 +117,8 @@ async function runRecognitionMarksCase(client) {
         const topRightRect = overlay?.querySelector('.top-right')?.getBoundingClientRect();
         const bottomLeftRect = overlay?.querySelector('.bottom-left')?.getBoundingClientRect();
         const bottomRightRect = overlay?.querySelector('.bottom-right')?.getBoundingClientRect();
-        const expectedX = 12 * 96 / 25.4;
-        const expectedY = 8 * 96 / 25.4;
+        const expectedX = 14.17 * 96 / 72;
+        const expectedY = 14.17 * 96 / 72;
         const html = window.ExamListTemplateEditorRuntime?.getHtml?.() || '';
 
         return Boolean(
@@ -144,7 +140,7 @@ async function runRecognitionMarksCase(client) {
         );
       })()
     `,
-    "페이지 속성 인식 기준값 표시 위치 반영",
+    "인식 기준값 고정 여백 표시 위치 반영",
   );
 }
 

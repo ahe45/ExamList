@@ -108,15 +108,13 @@ test("recognition marks commit updates current appState page instead of stale bo
   const stalePage = {
     id: "page-content",
     settings: {
-      recognitionMarks: { enabled: false, offsetXPt: 14.17, offsetYPt: 14.17, sizePt: 11.34 },
+      recognitionMarks: { enabled: false, offsetXPt: 32.4, offsetYPt: 22.68, sizePt: 11.34 },
     },
     type: "content",
   };
   const currentPage = structuredClone(stalePage);
   const sectionElement = createSection({
     '[data-examlist-recognition-setting="enabled"]': new FakeInputElement({ checked: true }),
-    '[data-examlist-recognition-setting="offsetX"]': new FakeInputElement({ type: "number", value: "7" }),
-    '[data-examlist-recognition-setting="offsetY"]': new FakeInputElement({ type: "number", value: "8" }),
   });
   const pagePropertiesHost = createPagePropertiesHost(".examlist-recognition-marks-field", sectionElement);
 
@@ -128,7 +126,9 @@ test("recognition marks commit updates current appState page instead of stale bo
 
   assert.equal(committed, true);
   assert.equal(currentPage.settings.recognitionMarks.enabled, true);
-  assert.notEqual(currentPage.settings.recognitionMarks.offsetXPt, stalePage.settings.recognitionMarks.offsetXPt);
+  assert.equal(currentPage.settings.recognitionMarks.offsetXPt, 14.17);
+  assert.equal(currentPage.settings.recognitionMarks.offsetYPt, 14.17);
+  assert.equal(stalePage.settings.recognitionMarks.offsetXPt, 32.4);
   assert.equal(stalePage.settings.recognitionMarks.enabled, false);
 });
 
@@ -142,8 +142,6 @@ test("recognition marks commit does not create disabled default config", async (
   };
   const sectionElement = createSection({
     '[data-examlist-recognition-setting="enabled"]': new FakeInputElement({ checked: false }),
-    '[data-examlist-recognition-setting="offsetX"]': new FakeInputElement({ type: "number", value: "5" }),
-    '[data-examlist-recognition-setting="offsetY"]': new FakeInputElement({ type: "number", value: "5" }),
   });
   const pagePropertiesHost = createPagePropertiesHost(".examlist-recognition-marks-field", sectionElement);
 
