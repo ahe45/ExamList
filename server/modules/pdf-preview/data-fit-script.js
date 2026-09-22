@@ -1,4 +1,4 @@
-const dataFitMinimumFontSizePx = 5;
+const dataFitMinimumFontSizePt = 5;
 const dataFitBaseTolerancePx = 1.25;
 const dataFitMaxHeightTolerancePx = 4;
 const dataFitRowspanToleranceStepPx = 0.75;
@@ -16,7 +16,7 @@ function getPreviewDataFitScript() {
             (() => {
               const fitSelector = "[data-template-data-fit='true'], .template-data-fit";
               const cssPixelsPerPoint = 96 / 72;
-              const minimumFontSizePx = ${dataFitMinimumFontSizePx};
+              const minimumFontSizePx = ${dataFitMinimumFontSizePt} * cssPixelsPerPoint;
               const tolerancePx = ${dataFitBaseTolerancePx};
               const intrinsicHeightTolerancePx = ${dataFitIntrinsicHeightTolerancePx};
 
@@ -253,7 +253,7 @@ function getPreviewDataFitScript() {
                   const effectiveScale = item.baseFontSize > 0 ? fontSize / item.baseFontSize : scale;
                   const lineHeight = Math.max(1, item.baseLineHeight * effectiveScale);
 
-                  item.element.style.fontSize = formatPx(fontSize);
+                  item.element.style.fontSize = fontSize <= minimumFontSizePx ? "5pt" : formatPx(fontSize);
                   item.element.style.lineHeight = formatPx(lineHeight);
                 });
               }
@@ -272,8 +272,51 @@ function getPreviewDataFitScript() {
                 return cell.scrollHeight <= cell.clientHeight + tolerancePx;
               }
 
+              function dataItemsFitOnSingleLine(cell, items) {
+                const cellRect = cell.getBoundingClientRect();
+                return items.every(({ element }) => {
+                  const range = document.createRange();
+                  range.selectNodeContents(element);
+                  const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 && rect.height > 0);
+                  if (!rects.length) return true;
+                  // Multiple fragments on the same line (e.g. bidi text) are valid.
+                  const first = rects[0];
+                  return rects.every((rect) =>
+                    Math.abs(first.top - rect.top) <= 0.5 &&
+                    rect.left >= cellRect.left - 0.1 && rect.right <= cellRect.right + 0.1
+                  );
+                });
+              }
+
+              function fitCandidateDataCell(cell) {
+                const items = getFitItems(cell);
+                if (!items.length) return;
+                applyScale(items, 1);
+                if (dataItemsFitOnSingleLine(cell, items)) return;
+
+                // Test the actual 5pt floor first, including fonts larger than 20pt.
+                // Keep natural wrapping when even the minimum cannot fit.
+                applyScale(items, 0);
+                if (!dataItemsFitOnSingleLine(cell, items)) return;
+
+                let low = 0;
+                let high = 1;
+                for (let index = 0; index < 16; index += 1) {
+                  const mid = (low + high) / 2;
+                  applyScale(items, mid);
+                  if (dataItemsFitOnSingleLine(cell, items)) low = mid;
+                  else high = mid;
+                }
+                applyScale(items, low);
+              }
+
               function fitCell(cell) {
                 if (!(cell instanceof HTMLTableCellElement)) {
+                  return;
+                }
+
+                if (cell.closest(".preview-candidate-block")) {
+                  fitCandidateDataCell(cell);
                   return;
                 }
 

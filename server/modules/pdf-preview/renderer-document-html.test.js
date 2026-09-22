@@ -221,7 +221,7 @@ test("renderPreviewDocument fits data tag text inside fixed table cell heights",
   assert.match(result.html, /data-template-data-fit="true">아주 긴 모집단위명 데이터/);
   assert.match(result.html, /function fitCell\(cell\)/);
   assert.match(result.html, /cell\.style\.height = formatPx\(targetHeightPx\)/);
-  assert.match(result.html, /minimumFontSizePx = 5/);
+  assert.match(result.html, /minimumFontSizePx = 5 \* cssPixelsPerPoint/);
 });
 
 test("renderPreviewDocument appends other room content page for room generation", () => {
