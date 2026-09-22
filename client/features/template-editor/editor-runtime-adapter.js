@@ -464,7 +464,7 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
       tagDefinitions: mountedTagDefinitions,
       toolbarHost,
     });
-    syncCoverPageDisabledState({ pagePropertiesHost, selectedPage, surfaceElement });
+    syncCoverPageDisabledState({ editor: mountedEditor, pagePropertiesHost, selectedPage, surfaceElement });
     normalizeCandidateBlockTables(surfaceElement);
     applyTemplateEditorCanvasZoomFromState({ appState, recomputeFit: true, rootElement });
     return mountedEditor;
@@ -561,7 +561,7 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
     });
   }
 
-  syncCoverPageDisabledState({ pagePropertiesHost, selectedPage, surfaceElement });
+  syncCoverPageDisabledState({ editor, pagePropertiesHost, selectedPage, surfaceElement });
   syncCandidateBlockTemplateFromSurface(surfaceElement, selectedPage, null, { allowFallback: true });
   // Serialization settles object flow before recording the initial geometry.
   updateMountedRuntimeBaseline(selectedPage);

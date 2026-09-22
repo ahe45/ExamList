@@ -58,13 +58,7 @@
       updateTemplateTableControls();
     }
 
-    function destroy() {
-      unbindEvents();
-      clearTemplateEditorImageSelection();
-      clearTemplateEditorTableSelection();
-      clearTemplateEditorTableHoverState();
-      clearTemplateEditorTableObjectSelection({ updateOverlay: false });
-      clearTemplateEditorTableObjectHoverState({ updateOverlay: false });
+    function releaseInteractions() {
       releaseTemplateEditorImageMoveSession({ sync: false });
       releaseTemplateEditorImageResizeSession({ sync: false });
       releaseTemplateEditorTableResizeSession({ sync: false });
@@ -73,30 +67,62 @@
       releaseTemplateEditorTableSelectionSession({ keepSelection: false });
     }
 
+    function setInteractionDisabled(disabled) {
+      const nextDisabled = Boolean(disabled);
+      if (Boolean(state.templateEditor.interactionDisabled) === nextDisabled) {
+        return;
+      }
+      state.templateEditor.interactionDisabled = nextDisabled;
+      if (nextDisabled) {
+        state.templateEditor.isComposing = false;
+        releaseInteractions();
+        clearObjectSelection();
+        state.templateEditor.savedSelectionSnapshot = null;
+      }
+    }
+
+    const whenInteractive = (action) => (...args) => {
+      if (state.templateEditor.interactionDisabled) {
+        return false;
+      }
+      return action(...args);
+    };
+
+    function destroy() {
+      unbindEvents();
+      clearTemplateEditorImageSelection();
+      clearTemplateEditorTableSelection();
+      clearTemplateEditorTableHoverState();
+      clearTemplateEditorTableObjectSelection({ updateOverlay: false });
+      clearTemplateEditorTableObjectHoverState({ updateOverlay: false });
+      releaseInteractions();
+    }
+
     return Object.freeze({
-      applyCommand: applyTemplateEditorCommand,
+      applyCommand: whenInteractive(applyTemplateEditorCommand),
       clearObjectSelection,
       clearTableObjectHoverState: clearTemplateEditorTableObjectHoverState,
       clearTableObjectSelection: clearTemplateEditorTableObjectSelection,
       destroy,
       getHtml,
-      handleImageResizeStart: handleTemplateEditorImageResizeStart,
-      insertHtml: insertTemplateHtml,
-      insertImage: insertTemplateImage,
-      insertImageSource: insertTemplateImageSource,
-      insertTag: insertTemplateTag,
-      redo: redoTemplateEditorHistory,
+      handleImageResizeStart: whenInteractive(handleTemplateEditorImageResizeStart),
+      insertHtml: whenInteractive(insertTemplateHtml),
+      insertImage: whenInteractive(insertTemplateImage),
+      insertImageSource: whenInteractive(insertTemplateImageSource),
+      insertTag: whenInteractive(insertTemplateTag),
+      redo: whenInteractive(redoTemplateEditorHistory),
       render,
       renderInto,
       renderPagePropertiesPanel,
       renderTagPanel,
       renderToolbar,
       setHtml,
+      setInteractionDisabled,
       state,
       sync: syncTemplateEditorContent,
       updateImageSelectionOverlay: updateTemplateEditorImageSelectionOverlay,
       updateTableObjectOverlay: updateTemplateEditorTableObjectOverlay,
-      undo: undoTemplateEditorHistory,
+      undo: whenInteractive(undoTemplateEditorHistory),
     });
   }
 

@@ -242,10 +242,14 @@
         return false;
       }
 
-      overlayElement.style.left = `${Math.round(imageRect.left - overlayRect.left)}px`;
-      overlayElement.style.top = `${Math.round(imageRect.top - overlayRect.top)}px`;
-      overlayElement.style.width = `${Math.round(imageRect.width)}px`;
-      overlayElement.style.height = `${Math.round(imageRect.height)}px`;
+      // Client rects include the canvas transform; overlay CSS coordinates do not.
+      const scaleX = Math.max(overlayContainer.offsetWidth > 0 ? overlayRect.width / overlayContainer.offsetWidth : 1, 0.01);
+      const scaleY = Math.max(overlayContainer.offsetHeight > 0 ? overlayRect.height / overlayContainer.offsetHeight : 1, 0.01);
+      const toPixel = (value) => `${Math.round(value * 100) / 100}px`;
+      overlayElement.style.left = toPixel((imageRect.left - overlayRect.left) / scaleX - overlayContainer.clientLeft + overlayContainer.scrollLeft);
+      overlayElement.style.top = toPixel((imageRect.top - overlayRect.top) / scaleY - overlayContainer.clientTop + overlayContainer.scrollTop);
+      overlayElement.style.width = toPixel(imageRect.width / scaleX);
+      overlayElement.style.height = toPixel(imageRect.height / scaleY);
       overlayElement.classList.remove("hidden");
       return true;
     }

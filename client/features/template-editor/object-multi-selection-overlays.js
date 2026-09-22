@@ -516,6 +516,7 @@ export function bindObjectMultiSelectionOverlays({ editor, surfaceElement }) {
   surfaceElement.addEventListener("input", scheduleUpdate);
   surfaceElement.addEventListener("keyup", scheduleUpdate);
   surfaceElement.addEventListener("scroll", scheduleUpdate);
+  surfaceElement.addEventListener("template-editor-canvas-zoom-change", scheduleUpdate);
   document.addEventListener("selectionchange", scheduleUpdate);
   window.addEventListener("resize", scheduleUpdate);
   window.addEventListener("scroll", scheduleUpdate, true);
@@ -539,6 +540,7 @@ export function bindObjectMultiSelectionOverlays({ editor, surfaceElement }) {
       surfaceElement.removeEventListener("input", scheduleUpdate);
       surfaceElement.removeEventListener("keyup", scheduleUpdate);
       surfaceElement.removeEventListener("scroll", scheduleUpdate);
+      surfaceElement.removeEventListener("template-editor-canvas-zoom-change", scheduleUpdate);
       document.removeEventListener("selectionchange", scheduleUpdate);
       window.removeEventListener("resize", scheduleUpdate);
       window.removeEventListener("scroll", scheduleUpdate, true);

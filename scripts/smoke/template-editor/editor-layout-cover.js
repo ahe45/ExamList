@@ -89,6 +89,9 @@ async function assertCoverPageToggle(client) {
             surface?.classList.contains('is-cover-page-disabled') &&
             surface?.getAttribute('contenteditable') === 'false' &&
             surface?.getAttribute('aria-disabled') === 'true' &&
+            surface?.closest('.template-editor-page')?.inert &&
+            document.querySelector('#templateEditorToolbarHost')?.inert &&
+            document.querySelector('.template-tag-panel')?.inert &&
             getComputedStyle(surface).pointerEvents === 'none'
         );
       })()
@@ -128,6 +131,9 @@ async function assertCoverPageToggle(client) {
             !surface?.classList.contains('is-cover-page-disabled') &&
             surface?.getAttribute('contenteditable') === 'true' &&
             !surface?.hasAttribute('aria-disabled') &&
+            !surface?.closest('.template-editor-page')?.inert &&
+            !document.querySelector('#templateEditorToolbarHost')?.inert &&
+            !document.querySelector('.template-tag-panel')?.inert &&
             getComputedStyle(surface).pointerEvents !== 'none'
         );
       })()

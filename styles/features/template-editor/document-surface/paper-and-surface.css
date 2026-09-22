@@ -74,8 +74,15 @@
   user-select: none;
 }
 
-.editor-document-surface.is-cover-page-disabled .template-doc {
-  pointer-events: none;
+.is-cover-interaction-disabled,
+.is-cover-interaction-disabled * {
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.editor-toolbar.is-cover-interaction-disabled,
+.template-tag-panel.is-cover-interaction-disabled {
+  opacity: 0.56;
 }
 
 .editor-document-surface.editable:focus {

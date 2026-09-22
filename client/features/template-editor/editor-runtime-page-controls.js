@@ -199,6 +199,7 @@ export function commitCoverPageControlsToPage({
   appState = null,
   pagePropertiesHost,
   selectedPage,
+  editor = typeof window !== "undefined" ? window.ExamListTemplateEditorRuntime : null,
   surfaceElement = typeof document !== "undefined" ? document.getElementById("templateEditorSurface") : null,
   syncControls = true,
 } = {}) {
@@ -217,6 +218,7 @@ export function commitCoverPageControlsToPage({
   }
 
   syncCoverPageDisabledState({
+    editor,
     pagePropertiesHost,
     selectedPage: activePage,
     surfaceElement,
@@ -224,7 +226,7 @@ export function commitCoverPageControlsToPage({
   return true;
 }
 
-export function bindCoverPageControls({ appState = null, onDirty, pagePropertiesHost, selectedPage } = {}) {
+export function bindCoverPageControls({ appState = null, editor, onDirty, pagePropertiesHost, selectedPage } = {}) {
   if (!pagePropertiesHost || !selectedPage) {
     return null;
   }
@@ -256,6 +258,7 @@ export function bindCoverPageControls({ appState = null, onDirty, pageProperties
     if (
       !commitCoverPageControlsToPage({
         appState,
+        editor,
         pagePropertiesHost,
         selectedPage,
         surfaceElement: document.getElementById("templateEditorSurface"),
@@ -275,8 +278,10 @@ export function bindCoverPageControls({ appState = null, onDirty, pageProperties
   };
 }
 
-export function syncCoverPageDisabledState({ pagePropertiesHost, selectedPage, surfaceElement } = {}) {
+export function syncCoverPageDisabledState({ editor, pagePropertiesHost, selectedPage, surfaceElement } = {}) {
   const disabled = isDisabledCoverTemplatePage(selectedPage);
+
+  editor?.setInteractionDisabled?.(disabled);
 
   pagePropertiesHost?.classList?.toggle("is-cover-page-disabled", disabled);
 
@@ -307,10 +312,33 @@ export function syncCoverPageDisabledState({ pagePropertiesHost, selectedPage, s
   }
 
   surfaceElement.classList.toggle("is-cover-page-disabled", disabled);
+  const rootElement = surfaceElement.closest("#templateEditorRuntimeHost");
+  const interactionRegions = [
+    surfaceElement.closest(".template-editor-page") || surfaceElement,
+    rootElement?.querySelector("#templateEditorToolbarHost"),
+    rootElement?.querySelector(".template-tag-panel"),
+  ].filter(Boolean);
+
+  interactionRegions.forEach((region) => {
+    region.classList.toggle("is-cover-interaction-disabled", disabled);
+    if (disabled) {
+      if (!region.hasAttribute("inert")) {
+        region.dataset.examlistCoverInert = "true";
+        region.setAttribute("inert", "");
+      }
+      if (region.contains(region.ownerDocument.activeElement)) {
+        region.ownerDocument.activeElement.blur();
+      }
+    } else if (region.dataset.examlistCoverInert === "true") {
+      region.removeAttribute("inert");
+      delete region.dataset.examlistCoverInert;
+    }
+  });
 
   if (disabled) {
     if (!Object.prototype.hasOwnProperty.call(surfaceElement.dataset, "examlistCoverPreviousContenteditable")) {
       surfaceElement.dataset.examlistCoverPreviousContenteditable = surfaceElement.getAttribute("contenteditable") || "";
+      surfaceElement.dataset.examlistCoverPreviousReadonly = String(surfaceElement.classList.contains("readonly"));
     }
 
     surfaceElement.setAttribute("contenteditable", "false");
@@ -329,8 +357,9 @@ export function syncCoverPageDisabledState({ pagePropertiesHost, selectedPage, s
     }
 
     delete surfaceElement.dataset.examlistCoverPreviousContenteditable;
+    surfaceElement.classList.toggle("readonly", surfaceElement.dataset.examlistCoverPreviousReadonly === "true");
+    delete surfaceElement.dataset.examlistCoverPreviousReadonly;
   }
 
   surfaceElement.removeAttribute("aria-disabled");
-  surfaceElement.classList.remove("readonly");
 }

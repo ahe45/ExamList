@@ -220,6 +220,7 @@ export function ensureEditorRuntimeControls({
   if (!disposers.coverPage) {
     disposers.coverPage = bindCoverPageControls({
       appState,
+      editor,
       onDirty,
       pagePropertiesHost,
       selectedPage,

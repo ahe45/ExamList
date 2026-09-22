@@ -197,6 +197,34 @@ function createRuntimeEventHarness({
   };
 }
 
+test("disabled editor ignores input and history events and resumes when enabled", () => {
+  const harness = createRuntimeEventHarness();
+  const { state, surface, handleInput, handleBeforeInput, syncCalls, historyCalls } = harness;
+  state.templateEditor.interactionDisabled = true;
+  const input = { inputType: "insertText", target: surface };
+  const history = { inputType: "historyUndo", target: surface, preventDefault() {} };
+  handleInput(input);
+  handleBeforeInput(history);
+  assert.equal(syncCalls.length, 0);
+  assert.deepEqual(historyCalls, []);
+  state.templateEditor.interactionDisabled = false;
+  handleInput(input);
+  handleBeforeInput(history);
+  assert.equal(syncCalls.length, 1);
+  assert.deepEqual(historyCalls, ["undo"]);
+  harness.unbind();
+});
+
+test("disabling the editor cancels queued composition synchronization", () => {
+  const harness = createRuntimeEventHarness({ deferTimeouts: true });
+  harness.handleCompositionStart({ target: harness.surface });
+  harness.handleCompositionEnd({ target: harness.surface });
+  harness.state.templateEditor.interactionDisabled = true;
+  harness.runPendingTimers();
+  assert.equal(harness.syncCalls.length, 0);
+  harness.unbind();
+});
+
 test("template editor runtime input sync waits until IME composition is committed", () => {
   const { handleInput, surface, syncCalls } = createRuntimeEventHarness();
 

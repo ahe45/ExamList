@@ -16,6 +16,8 @@ const { runCellObjectKeyboardCheck } = require("./smoke/template-editor/cell-obj
 const { runKyungheeCoverWrapCheck } = require("./smoke/template-editor/kyunghee-cover-wrap");
 const { runTokenLineDeletionCheck } = require("./smoke/template-editor/token-line-deletion");
 const { runTokenTrailingLineCheck } = require("./smoke/template-editor/token-trailing-line");
+const { runDisabledCoverCheck } = require("./smoke/template-editor/cover-disabled");
+const { runObjectSelectionZoomCheck } = require("./smoke/template-editor/object-selection-zoom");
 const {
   createCdpClient,
   evaluate,
@@ -85,6 +87,18 @@ async function run() {
       "window.ExamListTemplateEditorRuntimeLoader",
       "editor loader",
     );
+    if (process.argv.includes("--selection-zoom")) {
+      await runObjectSelectionZoomCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Object selection zoom checks passed");
+      return;
+    }
+    if (process.argv.includes("--cover-disabled")) {
+      await runDisabledCoverCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Disabled cover interaction checks passed");
+      return;
+    }
     if (process.argv.includes("--token-trailing-line")) {
       await runTokenTrailingLineCheck(client);
       assert.deepEqual(client.getPageErrors(), []);
@@ -147,6 +161,10 @@ async function run() {
     }
     const result = await evaluate(client, `(${browserChecks.toString()})()`);
     assert.equal(result.failed.length, 0, JSON.stringify(result, null, 2));
+    await runObjectSelectionZoomCheck(client);
+    result.passed.push("image, table and multiple selection borders follow canvas zoom");
+    await runDisabledCoverCheck(client);
+    result.passed.push("disabled cover rejects all canvas interaction and restores editing when enabled");
     await runTokenTrailingLineCheck(client);
     result.passed.push("Backspace removes the blank line after a cover tag while retaining its content, caret, formatting and history");
     await runTokenLineDeletionCheck(client);

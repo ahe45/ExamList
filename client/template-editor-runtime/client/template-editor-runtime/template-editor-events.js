@@ -180,6 +180,7 @@
     }
 
     function refreshTemplateEditorSelectionVisualState() {
+      if (state.templateEditor.interactionDisabled) return;
       restoreTemplateEditorSavedRangeFromSnapshot();
       restoreTemplateEditorTableSelectionVisualState();
     }
@@ -202,7 +203,7 @@
     }
 
     function applyToolbarColorInput(colorInputElement) {
-      if (!colorInputElement) {
+      if (!colorInputElement || state.templateEditor.interactionDisabled) {
         return;
       }
 
@@ -504,7 +505,7 @@
         compositionSyncTimer = 0;
         // A Korean IME may already be composing the next syllable when the
         // previous composition's deferred callback runs. Never replace its DOM.
-        if (state.templateEditor.isComposing || !surface.isConnected || surface !== getTemplateEditorSurface()) return;
+        if (state.templateEditor.interactionDisabled || state.templateEditor.isComposing || !surface.isConnected || surface !== getTemplateEditorSurface()) return;
         syncTemplateEditorContent(
           surface.dataset.templateEditorAllowOverflowSync === "true" ? { allowOverflow: true } : undefined,
         );
@@ -648,7 +649,9 @@
         }
       }
       if (event.target === surface) {
-        ownerWindow.setTimeout(() => syncTemplateEditorContent(), 0);
+        ownerWindow.setTimeout(() => {
+          if (!state.templateEditor.interactionDisabled) syncTemplateEditorContent();
+        }, 0);
       }
     }
 
@@ -700,8 +703,13 @@
 
     const disposers = [];
     const addListener = (target, type, listener, listenerOptions) => {
-      target.addEventListener(type, listener, listenerOptions);
-      disposers.push(() => target.removeEventListener(type, listener, listenerOptions));
+      const guardedListener = (event) => {
+        if (!state.templateEditor.interactionDisabled) {
+          listener(event);
+        }
+      };
+      target.addEventListener(type, guardedListener, listenerOptions);
+      disposers.push(() => target.removeEventListener(type, guardedListener, listenerOptions));
     };
 
     function bindEvents() {
@@ -730,6 +738,11 @@
         }
       });
       addListener(shell.surfaceElement, "pointerleave", () => {
+        clearTemplateEditorImageHoverState();
+        clearTemplateEditorTableHoverState();
+        clearTemplateEditorTableObjectHoverState();
+      });
+      addListener(shell.surfaceElement, "template-editor-canvas-zoom-change", () => {
         clearTemplateEditorImageHoverState();
         clearTemplateEditorTableHoverState();
         clearTemplateEditorTableObjectHoverState();
