@@ -25,6 +25,15 @@ function isCandidateBlockFocusEditorOpen() {
   return Boolean(document.querySelector("[data-candidate-block-focus-layer], .examlist-candidate-block-focus-layer"));
 }
 
+function isDocumentToolbarColorInput(target) {
+  // The embedded editor shares the color input CSS class, but owns its
+  // data-editor-color-* events. Reapplying them here synchronizes the outer
+  // document while a block draft is open, destroying the modal's live DOM.
+  return Boolean(target?.matches?.(
+    ".template-toolbar-color-input-hidden[data-color-command], .template-toolbar-color-input-hidden[data-color-table-action]",
+  ));
+}
+
 function isSelectedCandidateBlockGridTarget(target) {
   const element = getElementFromEventTarget(target);
 
@@ -326,7 +335,7 @@ export function bindTemplateEditorFormEvents({
       return;
     }
 
-    if (event.target?.matches?.(".template-toolbar-color-input-hidden")) {
+    if (isDocumentToolbarColorInput(event.target)) {
       setDocumentColorValue(event.target.id || "", event.target.value || "");
       return;
     }
@@ -442,7 +451,7 @@ export function bindTemplateEditorFormEvents({
       return;
     }
 
-    if (event.target?.matches?.(".template-toolbar-color-input-hidden")) {
+    if (isDocumentToolbarColorInput(event.target)) {
       const colorValue = event.target.value || "";
 
       setDocumentColorValue(event.target.id || "", colorValue);

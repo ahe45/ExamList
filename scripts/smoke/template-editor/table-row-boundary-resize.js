@@ -32,7 +32,7 @@ async function runTableRowBoundaryResizeCheck(client) {
   }
 }
 
-async function setup(zoom, modal) {
+async function setup(zoom, modal, applicationEvents = false) {
   const { renderTemplateEditorView } = await import("/client/features/template-editor/renderers.js");
   const { mountTemplateEditorRuntime, unmountTemplateEditorRuntime } = await import("/client/features/template-editor/editor-runtime-adapter.js");
   const { openCandidateBlockFocusEditor, closeCandidateBlockFocusEditor } = await import("/client/features/template-editor/candidate-block-grid-focus-editor.js");
@@ -45,6 +45,11 @@ async function setup(zoom, modal) {
   const template = { id: "row-resize", name: "행 높이", paperPreset: "A4", orientation: "portrait", layout: { pages: [page] } };
   const appState = { templateEditor: { template, selectedPageId: page.id, dataTags: { groups: [] } } };
   const access = { permissions: { manageTemplates: true } };
+  if (applicationEvents) {
+    const { setupTemplateEditorActions } = await import("/client/features/template-editor/actions.js");
+    appState.summary = access;
+    setupTemplateEditorActions({ appState, navigateToPath() {}, onStateChange() {}, templatesActions: {} });
+  }
   const root = document.querySelector("#editor");
   root.innerHTML = renderTemplateEditorView({ access, editor: appState.templateEditor });
   const editor = await mountTemplateEditorRuntime({ access, appState });
