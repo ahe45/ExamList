@@ -2,6 +2,7 @@ const { buildPreviewSampleCandidates, previewSampleCandidateCount } = require(".
 const { getPreviewDocumentStyles } = require("./styles");
 const { escapeHtml } = require("./renderer-html-utils");
 const { renderPreviewDocumentParts } = require("./renderer");
+const { getPreviewDataFitScript } = require("./data-fit-script");
 
 const thumbnailGeneratedAt = new Date("2026-05-13T00:00:00.000Z");
 
@@ -64,6 +65,7 @@ function renderThumbnailDocument({ pageHtml, pageSize, template }) {
       </head>
       <body>
         <main class="preview-document">${pageHtml}</main>
+        ${getPreviewDataFitScript()}
       </body>
     </html>
   `;

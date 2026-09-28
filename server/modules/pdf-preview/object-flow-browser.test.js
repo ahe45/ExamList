@@ -7,6 +7,7 @@ const { spawn } = require("node:child_process");
 const { resolveBrowserPath, getAvailablePort } = require("../../../scripts/smoke-utils");
 const { createCdpClient, waitForDevtools, evaluate } = require("../../../scripts/smoke-browser-cdp");
 const { renderPreviewDocument } = require("./renderer");
+const { renderTemplateContentThumbnail } = require("./thumbnail");
 
 test("PDF document reserves space for positioned objects before following data tags", { skip: !resolveBrowserPath() }, async () => {
   const profile = await fs.mkdtemp(path.join(os.tmpdir(), "examlist-object-flow-"));
@@ -26,11 +27,12 @@ test("PDF document reserves space for positioned objects before following data t
       '<p id="after-image">이미지 아래</p>' +
       '<div class="preview-candidate-block-grid" style="position:absolute;top:300px;height:40px"></div>' +
       '<p id="after-grid">블록 아래</p></div>';
+    const template = { name: "지원자 명부", paperPreset: "A4", orientation: "portrait", layout: { pages: [
+        { type: "content", widthPt: 595.28, heightPt: 841.89, settings: { editorMode: "document", documentHtml }, elements: [] },
+      ] } };
     const { html } = renderPreviewDocument({
       candidates: [{ departmentName: "유아교육과" }],
-      template: { name: "지원자 명부", paperPreset: "A4", orientation: "portrait", layout: { pages: [
-        { type: "content", widthPt: 595.28, heightPt: 841.89, settings: { editorMode: "document", documentHtml }, elements: [] },
-      ] } },
+      template,
     });
     await evaluate(client, `document.open(); document.write(${JSON.stringify(html)}); document.close();`);
     const results = await evaluate(client, `(async () => {
@@ -53,6 +55,29 @@ test("PDF document reserves space for positioned objects before following data t
     assert.deepEqual(results.first, results.second, "repeated layout must not accumulate space");
     const pdf = await client.send("Page.printToPDF", { preferCSSPageSize: true });
     assert.ok(Buffer.from(pdf.data, "base64").subarray(0, 5).equals(Buffer.from("%PDF-")));
+    // Card thumbnails load through srcdoc and must perform layout automatically.
+    // Waiting for load and animation frames intentionally does not call fit().
+    const thumbnail = renderTemplateContentThumbnail(template, { candidates: [{ departmentName: "유아교육과" }] });
+    await client.send("Emulation.setEmulatedMedia", { media: "screen" });
+    const thumbnailRects = await evaluate(client, `(async () => {
+      document.body.innerHTML = '';
+      const frame = document.createElement('iframe');
+      frame.style.cssText = 'width:794px;height:1123px;transform:scale(0.54);transform-origin:top left';
+      const loaded = new Promise(resolve => frame.onload = resolve);
+      frame.srcdoc = ${JSON.stringify(thumbnail.html)};
+      document.body.append(frame);
+      await loaded;
+      await frame.contentDocument.fonts.ready;
+      await new Promise(resolve => frame.contentWindow.requestAnimationFrame(() => frame.contentWindow.requestAnimationFrame(resolve)));
+      const doc = frame.contentDocument;
+      return { titleBottom: doc.getElementById('title').getBoundingClientRect().bottom,
+        departmentTop: doc.getElementById('department').getBoundingClientRect().top,
+        text: doc.getElementById('department').textContent,
+        spacers: doc.querySelectorAll('[data-preview-object-flow-spacer]').length };
+    })()`);
+    assert.ok(thumbnailRects.departmentTop >= thumbnailRects.titleBottom, JSON.stringify(thumbnailRects));
+    assert.match(thumbnailRects.text, /유아교육과/);
+    assert.equal(thumbnailRects.spacers, 3);
     assert.deepEqual(client.getPageErrors(), []);
   } finally {
     client?.close();
