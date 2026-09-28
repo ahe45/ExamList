@@ -25,19 +25,12 @@
     syncTemplateEditorContent,
     updateTemplateTableControls,
   }) {
-    function getCandidateBlockFocusScale(element) {
-      const focusBlock = element?.closest?.("[data-candidate-block-instance].is-candidate-block-focus-editor") || null;
-
-      if (!(focusBlock instanceof HTMLElement)) {
-        return 1;
-      }
-
-      const computedStyle = window.getComputedStyle(focusBlock);
-      const scale = Number.parseFloat(
-        computedStyle.getPropertyValue("--examlist-candidate-block-focus-editor-scale") ||
-          computedStyle.getPropertyValue("--examlist-candidate-block-focus-scale"),
-      );
-
+    function getTableResizeScale(table, kind) {
+      // Pointer coordinates include canvas zoom and optional modal enlargement;
+      // row/column sizes are always stored in unscaled document pixels.
+      const rect = table.getBoundingClientRect();
+      const size = kind === "column" ? table.offsetWidth : table.offsetHeight;
+      const scale = size > 0 ? (kind === "column" ? rect.width : rect.height) / size : 1;
       return Number.isFinite(scale) && scale > 0 ? scale : 1;
     }
 
@@ -138,7 +131,7 @@
       }
 
       const cellRect = resizeHit.cell.getBoundingClientRect();
-      const focusScale = getCandidateBlockFocusScale(resizeHit.cell);
+      const focusScale = getTableResizeScale(resizeHit.table, resizeHit.kind);
       const selectedCell = getTemplateEditorSelectedCell?.();
       const focusCell = selectedCell?.closest?.("table") === resizeHit.table ? selectedCell : resizeHit.cell;
       const startSize =
@@ -151,9 +144,13 @@
           ? getTemplateEditorTableLogicalColumnWidth(resizeHit.table, resizeHit.lineIndex)
           : getTemplateEditorTableLogicalRowHeight(resizeHit.table, resizeHit.lineIndex);
       const columnCount = !cellOnly && resizeHit.kind === "column" ? getTemplateEditorTableColumnCount(resizeHit.table) : 0;
-      const nextLineIndex = !cellOnly && resizeHit.kind === "column" && resizeHit.lineIndex + 1 < columnCount ? resizeHit.lineIndex + 1 : null;
+      const preserveRowPair = !cellOnly && resizeHit.kind === "row";
+      const lineCount = preserveRowPair ? resizeHit.table.rows.length : columnCount;
+      const nextLineIndex = !cellOnly && resizeHit.lineIndex + 1 < lineCount ? resizeHit.lineIndex + 1 : null;
       const nextStartSize = !cellOnly && Number.isInteger(nextLineIndex)
-        ? getTemplateEditorTableLogicalColumnWidth(resizeHit.table, nextLineIndex)
+        ? preserveRowPair
+          ? getTemplateEditorTableLogicalRowHeight(resizeHit.table, nextLineIndex)
+          : getTemplateEditorTableLogicalColumnWidth(resizeHit.table, nextLineIndex)
         : 0;
 
       clearTemplateEditorTableSelection();

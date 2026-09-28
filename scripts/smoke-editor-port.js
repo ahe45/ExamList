@@ -18,6 +18,10 @@ const { runTokenLineDeletionCheck } = require("./smoke/template-editor/token-lin
 const { runTokenTrailingLineCheck } = require("./smoke/template-editor/token-trailing-line");
 const { runDisabledCoverCheck } = require("./smoke/template-editor/cover-disabled");
 const { runObjectSelectionZoomCheck } = require("./smoke/template-editor/object-selection-zoom");
+const { runTableRowBoundaryResizeCheck } = require("./smoke/template-editor/table-row-boundary-resize");
+const { runTableEqualizeWidthsCheck } = require("./smoke/template-editor/table-equalize-widths");
+const { runTableEqualizeHeightsCheck } = require("./smoke/template-editor/table-equalize-heights");
+const { runBlockDirectColorCheck } = require("./smoke/template-editor/block-direct-color");
 const {
   createCdpClient,
   evaluate,
@@ -87,6 +91,30 @@ async function run() {
       "window.ExamListTemplateEditorRuntimeLoader",
       "editor loader",
     );
+    if (process.argv.includes("--direct-color")) {
+      await runBlockDirectColorCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Data block direct color checks passed");
+      return;
+    }
+    if (process.argv.includes("--equalize-heights")) {
+      await runTableEqualizeHeightsCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Equal row height checks passed");
+      return;
+    }
+    if (process.argv.includes("--equalize-widths")) {
+      await runTableEqualizeWidthsCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Equal column width checks passed");
+      return;
+    }
+    if (process.argv.includes("--row-resize") || process.argv.includes("--block-row-resize")) {
+      await runTableRowBoundaryResizeCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Canvas and candidate block row resize checks passed");
+      return;
+    }
     if (process.argv.includes("--selection-zoom")) {
       await runObjectSelectionZoomCheck(client);
       assert.deepEqual(client.getPageErrors(), []);
@@ -162,6 +190,14 @@ async function run() {
     const result = await evaluate(client, `(${browserChecks.toString()})()`);
     assert.equal(result.failed.length, 0, JSON.stringify(result, null, 2));
     await runObjectSelectionZoomCheck(client);
+    await runTableRowBoundaryResizeCheck(client);
+    await runTableEqualizeWidthsCheck(client);
+    await runTableEqualizeHeightsCheck(client);
+    await runBlockDirectColorCheck(client);
+    result.passed.push("native color selection preserves data-block Apply/Cancel controls, scroll and chosen colors");
+    result.passed.push("equal row heights retain table size and merged cells across zoom, repeated application and reload");
+    result.passed.push("equal column widths preserve selected totals, unselected columns and table size on canvas and in data blocks");
+    result.passed.push("canvas and data-block row boundaries preserve table height, reverse at minimum height and survive Apply at multiple zoom levels");
     result.passed.push("image, table and multiple selection borders follow canvas zoom");
     await runDisabledCoverCheck(client);
     result.passed.push("disabled cover rejects all canvas interaction and restores editing when enabled");

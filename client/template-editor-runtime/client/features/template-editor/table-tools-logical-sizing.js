@@ -46,7 +46,9 @@
     }
 
     function getTemplateEditorTableRenderedRowHeight(rowElement, minimumRowHeight = 1) {
-      const renderedHeight = Math.round(rowElement?.getBoundingClientRect?.().height || 0);
+      const table = rowElement?.closest?.("table");
+      const scale = table?.offsetHeight > 0 ? table.getBoundingClientRect().height / table.offsetHeight : 1;
+      const renderedHeight = Math.round((rowElement?.getBoundingClientRect?.().height || 0) / (scale || 1));
 
       return Math.max(minimumRowHeight, renderedHeight || minimumRowHeight);
     }
@@ -67,7 +69,7 @@
       }
 
       const configuredTotalHeight = configuredHeights.reduce((heightSum, height) => heightSum + Math.max(0, height || 0), 0);
-      const renderedTableHeight = Math.round(table.getBoundingClientRect?.().height || 0);
+      const renderedTableHeight = table.offsetHeight;
 
       return renderedTableHeight > configuredTotalHeight + tolerancePx;
     }
@@ -305,7 +307,7 @@
       return getTemplateEditorTableRowHeights(table, minimumRowHeight)[rowIndex] || minimumRowHeight;
     }
 
-    function setTemplateEditorTableLogicalRowHeight(table, rowIndex, height) {
+    function setTemplateEditorTableLogicalRowHeight(table, rowIndex, height, adjacentRow = null) {
       const targetRow = table?.rows?.[rowIndex];
 
       if (!targetRow) {
@@ -316,6 +318,12 @@
       const requestedHeight = Math.max(minimumRowHeight, Math.round(height));
       const maxTableHeight = getTemplateEditorTableMaxHeight(table);
       const rowHeights = getTemplateEditorTableRowHeights(table, minimumRowHeight);
+      const preserveTableHeight = adjacentRow && Number.isInteger(adjacentRow.rowIndex) &&
+        adjacentRow.rowIndex === rowIndex + 1 && table.rows[adjacentRow.rowIndex] &&
+        Number.isFinite(adjacentRow.height);
+      if (preserveTableHeight) {
+        rowHeights[adjacentRow.rowIndex] = Math.max(minimumRowHeight, Math.round(adjacentRow.height));
+      }
       const otherRowsHeight = rowHeights.reduce((heightSum, rowHeight, currentRowIndex) => {
         if (currentRowIndex === rowIndex) {
           return heightSum;
@@ -324,7 +332,7 @@
         return heightSum + Math.max(minimumRowHeight, Math.round(rowHeight));
       }, 0);
       const maxRowHeight = Math.max(minimumRowHeight, maxTableHeight - otherRowsHeight);
-      const safeHeight = Math.min(requestedHeight, maxRowHeight);
+      const safeHeight = preserveTableHeight ? requestedHeight : Math.min(requestedHeight, maxRowHeight);
       const { entries } = buildTemplateTableCellMap(table);
 
       rowHeights[rowIndex] = safeHeight;
@@ -347,7 +355,14 @@
         0,
       );
 
-      if (totalHeight > 0) {
+      if (preserveTableHeight) {
+        // Update saved row-group geometry along with both rows, retaining the
+        // table's outer size (including its collapsed border).
+        const rows = Array.from(table.rows);
+        [table.tHead, ...Array.from(table.tBodies), table.tFoot].filter(Boolean).forEach((group) => {
+          group.style.height = `${Array.from(group.rows).reduce((sum, row) => sum + rowHeights[rows.indexOf(row)], 0)}px`;
+        });
+      } else if (totalHeight > 0) {
         table.style.height = `${Math.min(maxTableHeight, totalHeight)}px`;
       } else {
         syncTemplateEditorTableLogicalHeight(table, minimumRowHeight);

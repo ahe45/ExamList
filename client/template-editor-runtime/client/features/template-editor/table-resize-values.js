@@ -91,6 +91,18 @@
         return nextSize;
       }
 
+      if (Number.isInteger(resizeSession.nextLineIndex)) {
+        const minimum = Math.min(TEMPLATE_EDITOR_TABLE_MIN_SIZE, resizeSession.startSize, resizeSession.nextStartSize);
+        const delta = Math.max(minimum - resizeSession.startSize,
+          Math.min(resizeSession.nextStartSize - minimum, Math.round(nextSize - resizeSession.startSize)));
+        const targetSize = resizeSession.startSize + delta;
+        setTemplateEditorTableLogicalRowHeight(resizeSession.table, resizeSession.lineIndex, targetSize, {
+          rowIndex: resizeSession.nextLineIndex,
+          height: resizeSession.nextStartSize - delta,
+        });
+        return targetSize;
+      }
+
       setTemplateEditorTableLogicalRowHeight(resizeSession.table, resizeSession.lineIndex, nextSize);
       return nextSize;
     }

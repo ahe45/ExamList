@@ -239,6 +239,9 @@
       if (colorDirectTrigger) {
         const inputId = colorDirectTrigger.dataset.editorColorInput || "";
         const { inputElement } = toolbar.getEditorToolbarColorPickerElements(inputId);
+        // Native color pickers focus their hidden input. Establish focus without
+        // scrolling first so a transformed block editor stays inside its canvas.
+        inputElement?.focus({ preventScroll: true });
         inputElement?.showPicker ? inputElement.showPicker() : inputElement?.click();
         return;
       }

@@ -165,6 +165,7 @@
       restoreTemplateEditorSelection,
       setTemplateEditorStatus,
       setTemplateEditorTableLogicalColumnWidth,
+      setTemplateEditorTableLogicalColumnWidths,
       setTemplateEditorTableLogicalRowHeight,
       syncTemplateEditorContent,
       updateTemplateTableControls,

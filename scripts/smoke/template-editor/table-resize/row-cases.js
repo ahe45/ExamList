@@ -238,13 +238,13 @@ async function runConfiguredHeightFirstRowShrinkCase(client) {
     beforeMetrics,
     `
       current.columnCellHeights[0][0] <= before.columnCellHeights[0][0] - 250 &&
-        Math.abs(current.columnCellHeights[0][1] - before.columnCellHeights[0][1]) <= 3 &&
+        Math.abs(current.columnCellHeights[0][0] + current.columnCellHeights[0][1] - before.columnCellHeights[0][0] - before.columnCellHeights[0][1]) <= 3 &&
         Math.abs(current.columnCellHeights[0][2] - before.columnCellHeights[0][2]) <= 3 &&
         Math.abs(current.columnCellHeights[0][3] - before.columnCellHeights[0][3]) <= 3 &&
         Math.abs(current.columnCellHeights[0][4] - before.columnCellHeights[0][4]) <= 3 &&
-        current.tableHeight <= before.tableHeight - 250
+        Math.abs(current.tableHeight - before.tableHeight) <= 3
     `,
-    "일반 표 첫 행 축소 시 다른 행 높이 유지",
+    "일반 표 첫 행 축소 시 다음 행에 높이를 배분하고 표 전체 높이 유지",
   );
 }
 
@@ -317,11 +317,10 @@ async function runStaleTableHeightMiddleRowShrinkCase(client) {
     client,
     beforeMetrics,
     `
-      current.tableHeight >= before.tableHeight - 25 &&
-        current.tableHeight <= before.tableHeight - 15 &&
+      Math.abs(current.tableHeight - before.tableHeight) <= 3 &&
         Math.abs(current.columnCellHeights[0][0] - before.columnCellHeights[0][0]) <= 3 &&
         current.columnCellHeights[0][1] <= before.columnCellHeights[0][1] - 15 &&
-        Math.abs(current.columnCellHeights[0][2] - before.columnCellHeights[0][2]) <= 3 &&
+        Math.abs(current.columnCellHeights[0][1] + current.columnCellHeights[0][2] - before.columnCellHeights[0][1] - before.columnCellHeights[0][2]) <= 3 &&
         Math.abs(current.columnCellHeights[0][3] - before.columnCellHeights[0][3]) <= 3 &&
         Math.abs(current.columnCellHeights[0][4] - before.columnCellHeights[0][4]) <= 3
     `,
@@ -386,11 +385,10 @@ async function runPercentTableHeightMiddleRowShrinkCase(client) {
     client,
     beforeMetrics,
     `
-      current.tableHeight >= before.tableHeight - 25 &&
-        current.tableHeight <= before.tableHeight - 15 &&
+      Math.abs(current.tableHeight - before.tableHeight) <= 3 &&
         Math.abs(current.columnCellHeights[0][0] - before.columnCellHeights[0][0]) <= 3 &&
         current.columnCellHeights[0][1] <= before.columnCellHeights[0][1] - 15 &&
-        Math.abs(current.columnCellHeights[0][2] - before.columnCellHeights[0][2]) <= 3 &&
+        Math.abs(current.columnCellHeights[0][1] + current.columnCellHeights[0][2] - before.columnCellHeights[0][1] - before.columnCellHeights[0][2]) <= 3 &&
         Math.abs(current.columnCellHeights[0][3] - before.columnCellHeights[0][3]) <= 3 &&
         Math.abs(current.columnCellHeights[0][4] - before.columnCellHeights[0][4]) <= 3
     `,
@@ -467,7 +465,8 @@ async function runLowerEdgeRowResizeKeepsTargetRowAndFocusCase(client) {
     `
       current.columnCellHeights[0][0] >= before.columnCellHeights[0][0] - 15 &&
         current.columnCellHeights[0][0] <= before.columnCellHeights[0][0] - 9 &&
-        Math.abs(current.columnCellHeights[0][1] - before.columnCellHeights[0][1]) <= 2 &&
+        Math.abs(current.tableHeight - before.tableHeight) <= 2 &&
+        Math.abs(current.columnCellHeights[0][0] + current.columnCellHeights[0][1] - before.columnCellHeights[0][0] - before.columnCellHeights[0][1]) <= 2 &&
         Math.abs(current.columnCellHeights[0][2] - before.columnCellHeights[0][2]) <= 2
     `,
     "일반 표 하단 경계에서 1행 축소 시 2행 높이 기준 사용 방지",

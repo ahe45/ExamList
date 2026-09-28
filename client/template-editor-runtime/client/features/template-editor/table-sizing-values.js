@@ -29,13 +29,13 @@
       return Math.round((sortedValues[middleIndex - 1] + sortedValues[middleIndex]) / 2);
     }
 
-    function distributeTemplateEditorTotalSize(totalSize, targetCount) {
+    function distributeTemplateEditorTotalSize(totalSize, targetCount, minimumSize = TEMPLATE_EDITOR_TABLE_MIN_SIZE) {
       const safeCount = Math.max(1, Number(targetCount) || 1);
-      const safeTotalSize = Math.max(TEMPLATE_EDITOR_TABLE_MIN_SIZE * safeCount, Math.round(Number(totalSize) || 0));
+      const safeTotalSize = Math.max(minimumSize * safeCount, Math.round(Number(totalSize) || 0));
       const baseSize = Math.floor(safeTotalSize / safeCount);
       const remainder = safeTotalSize - baseSize * safeCount;
 
-      return Array.from({ length: safeCount }, (_, index) => baseSize + (index === safeCount - 1 ? remainder : 0));
+      return Array.from({ length: safeCount }, (_, index) => baseSize + (index < remainder ? 1 : 0));
     }
 
     return Object.freeze({

@@ -19,7 +19,6 @@
 
   const { createTemplateEditorTableSizingScopeController } = tableSizingScopeModule;
   const { createTemplateEditorTableSizingValueController } = tableSizingValuesModule;
-  const candidateBlockTableHostSelector = "[data-candidate-block-instance], [data-candidate-block-column-name]";
 
   function createTemplateEditorTableSizingController({
     TEMPLATE_EDITOR_TABLE_MIN_SIZE,
@@ -39,6 +38,7 @@
     restoreTemplateEditorSelection,
     setTemplateEditorStatus,
     setTemplateEditorTableLogicalColumnWidth,
+    setTemplateEditorTableLogicalColumnWidths,
     setTemplateEditorTableLogicalRowHeight,
     syncTemplateEditorContent,
     updateTemplateTableControls,
@@ -113,37 +113,18 @@
         targetColumnIndexes.length,
       );
 
-      targetColumnIndexes.forEach((columnIndex, index) => {
-        setTemplateEditorTableLogicalColumnWidth(table, columnIndex, equalizedWidths[index]);
-      });
+      // Apply the redistribution atomically: growing one column first can hit
+      // the table width limit before the neighbouring column has shrunk.
+      setTemplateEditorTableLogicalColumnWidths(table,
+        targetColumnIndexes.map((columnIndex, index) => ({ columnIndex, width: equalizedWidths[index] })),
+      );
 
       return selectedCell;
     }
 
-    function getTemplateEditorRenderedTableHeight(table) {
-      const renderedHeight = Math.round(table?.getBoundingClientRect?.().height || 0);
-
-      return Number.isFinite(renderedHeight) ? Math.max(0, renderedHeight) : 0;
-    }
-
-    function getTemplateEditorEqualizeRowTotalHeight(table, targetRowIndexes, currentHeights) {
-      const currentTotalHeight = currentHeights.reduce(
-        (totalHeight, height) => totalHeight + (Number(height) || TEMPLATE_EDITOR_TABLE_MIN_SIZE),
-        0,
-      );
-      const allRowIndexes = Array.from({ length: table?.rows?.length || 0 }, (_item, rowIndex) => rowIndex);
-      const targetRowIndexSet = new Set(targetRowIndexes);
-      const targetsEveryRow =
-        allRowIndexes.length > 0 &&
-        allRowIndexes.length === targetRowIndexes.length &&
-        allRowIndexes.every((rowIndex) => targetRowIndexSet.has(rowIndex));
-      const renderedTableHeight = getTemplateEditorRenderedTableHeight(table);
-
-      if (targetsEveryRow && renderedTableHeight > currentTotalHeight + 1) {
-        return renderedTableHeight;
-      }
-
-      return currentTotalHeight;
+    function getEqualizeRowHeights(table) {
+      const scale = table.offsetHeight > 0 ? table.getBoundingClientRect().height / table.offsetHeight : 1;
+      return Array.from(table.rows, row => Math.max(1, row.getBoundingClientRect().height / (scale || 1)));
     }
 
     function applyTemplateEditorEqualizedRowHeights(table, rowHeightEntries = []) {
@@ -151,7 +132,7 @@
         return false;
       }
 
-      const minimumRowHeight = table.closest?.(candidateBlockTableHostSelector) ? 1 : TEMPLATE_EDITOR_TABLE_MIN_SIZE;
+      const minimumRowHeight = 1;
       const normalizedEntries = rowHeightEntries
         .map((entry) => ({
           height: Math.max(minimumRowHeight, Math.round(Number(entry?.height) || minimumRowHeight)),
@@ -163,42 +144,23 @@
         return false;
       }
 
-      const nextHeightByRowIndex = new Map(normalizedEntries.map((entry) => [entry.rowIndex, entry.height]));
-      const { matrix, entries } = buildTemplateTableCellMap(table);
-
-      nextHeightByRowIndex.forEach((height, rowIndex) => {
-        const rowElement = table.rows[rowIndex];
-        const rowCells = new Set();
-
-        (matrix[rowIndex] || []).forEach((cell) => {
-          const entry = cell ? entries.get(cell) : null;
-
-          if (entry && entry.rowIndex === rowIndex) {
-            rowCells.add(cell);
-          }
-        });
-
-        rowElement.style.height = `${height}px`;
-        rowCells.forEach((cell) => {
-          cell.style.height = `${height}px`;
-        });
+      // Snapshot every row before writing: browser table layout can redistribute
+      // the remaining height as soon as a single row changes.
+      const rowHeights = getEqualizeRowHeights(table);
+      normalizedEntries.forEach(({ rowIndex, height }) => { rowHeights[rowIndex] = height; });
+      const { entries } = buildTemplateTableCellMap(table);
+      const rows = Array.from(table.rows);
+      rows.forEach((row, index) => { row.style.height = rowHeights[index] + "px"; });
+      entries.forEach((entry, cell) => {
+        cell.style.height = rowHeights.slice(entry.rowIndex, entry.rowIndex + entry.rowSpan)
+          .reduce((sum, height) => sum + height, 0) + "px";
       });
-
-      const totalHeight = Array.from(table.rows || []).reduce((heightSum, rowElement, rowIndex) => {
-        const configuredHeight = nextHeightByRowIndex.has(rowIndex)
-          ? nextHeightByRowIndex.get(rowIndex)
-          : getTemplateEditorTableLogicalRowHeight(table, rowIndex);
-
-        return heightSum + Math.max(minimumRowHeight, Math.round(Number(configuredHeight) || minimumRowHeight));
-      }, 0);
-
-      if (totalHeight > 0) {
-        table.style.height = `${Math.round(totalHeight)}px`;
-      }
-
-      if (table.closest?.(candidateBlockTableHostSelector)) {
-        table.style.maxHeight = "100%";
-      }
+      [table.tHead, ...Array.from(table.tBodies), table.tFoot].filter(Boolean).forEach((group) => {
+        group.style.height = Array.from(group.rows)
+          .reduce((sum, row) => sum + rowHeights[rows.indexOf(row)], 0) + "px";
+      });
+      // Keep the existing outer height, including collapsed borders and any
+      // percentage sizing; only redistribute the rows inside it.
 
       return true;
     }
@@ -219,13 +181,13 @@
         return selectedCell;
       }
 
-      const currentHeights = targetRowIndexes.map((rowIndex) =>
-        getTemplateEditorTableLogicalRowHeight(table, rowIndex),
-      );
-      const targetTotalHeight = getTemplateEditorEqualizeRowTotalHeight(table, targetRowIndexes, currentHeights);
+      const allRowHeights = getEqualizeRowHeights(table);
+      const currentHeights = targetRowIndexes.map((rowIndex) => allRowHeights[rowIndex]);
+      const targetTotalHeight = currentHeights.reduce((sum, height) => sum + height, 0);
       const equalizedHeights = distributeTemplateEditorTotalSize(
         targetTotalHeight,
         targetRowIndexes.length,
+        1,
       );
 
       applyTemplateEditorEqualizedRowHeights(
