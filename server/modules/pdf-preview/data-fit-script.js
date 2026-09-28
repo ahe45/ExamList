@@ -1,3 +1,5 @@
+const { syncPreviewObjectFlow } = require("./object-flow-script");
+
 const dataFitMinimumFontSizePt = 5;
 const dataFitBaseTolerancePx = 1.25;
 const dataFitMaxHeightTolerancePx = 4;
@@ -14,6 +16,7 @@ function getPreviewDataFitScript() {
   return `
           <script>
             (() => {
+              const syncObjectFlow = ${syncPreviewObjectFlow.toString()};
               const fitSelector = "[data-template-data-fit='true'], .template-data-fit";
               const cssPixelsPerPoint = 96 / 72;
               const minimumFontSizePx = ${dataFitMinimumFontSizePt} * cssPixelsPerPoint;
@@ -370,6 +373,7 @@ function getPreviewDataFitScript() {
                 for (let pass = 0; pass < 3; pass += 1) {
                   cells.forEach(fitCell);
                 }
+                syncObjectFlow(root);
               }
 
               function scheduleFit() {
