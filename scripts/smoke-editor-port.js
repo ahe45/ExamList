@@ -22,6 +22,7 @@ const { runTableRowBoundaryResizeCheck } = require("./smoke/template-editor/tabl
 const { runTableEqualizeWidthsCheck } = require("./smoke/template-editor/table-equalize-widths");
 const { runTableEqualizeHeightsCheck } = require("./smoke/template-editor/table-equalize-heights");
 const { runBlockDirectColorCheck } = require("./smoke/template-editor/block-direct-color");
+const { runTokenLayoutCheck } = require("./smoke/template-editor/token-layout");
 const {
   createCdpClient,
   evaluate,
@@ -40,7 +41,7 @@ async function run() {
     if (pathname === "/") {
       response.setHeader("Content-Type", "text/html; charset=utf-8");
       response.end(
-        '<!doctype html><html lang="ko"><head><meta charset="utf-8"></head><body><main id="editor"></main><script src="/client/template-editor-runtime/loader.js"></script></body></html>',
+        '<!doctype html><html lang="ko"><head><meta charset="utf-8"><link rel="stylesheet" href="/styles/features/template-editor/data-tags.css"></head><body><main id="editor"></main><script src="/client/template-editor-runtime/loader.js"></script></body></html>',
       );
       return;
     }
@@ -91,6 +92,12 @@ async function run() {
       "window.ExamListTemplateEditorRuntimeLoader",
       "editor loader",
     );
+    if (process.argv.includes("--token-layout")) {
+      await runTokenLayoutCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Token layout matches PDF text on canvas and in data blocks");
+      return;
+    }
     if (process.argv.includes("--direct-color")) {
       await runBlockDirectColorCheck(client);
       assert.deepEqual(client.getPageErrors(), []);
@@ -194,6 +201,8 @@ async function run() {
     await runTableEqualizeWidthsCheck(client);
     await runTableEqualizeHeightsCheck(client);
     await runBlockDirectColorCheck(client);
+    await runTokenLayoutCheck(client);
+    result.passed.push("token line heights and wrapping match PDF text on canvas and in data blocks");
     result.passed.push("native color selection preserves data-block Apply/Cancel controls, scroll and chosen colors");
     result.passed.push("equal row heights retain table size and merged cells across zoom, repeated application and reload");
     result.passed.push("equal column widths preserve selected totals, unselected columns and table size on canvas and in data blocks");

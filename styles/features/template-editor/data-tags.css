@@ -117,27 +117,31 @@
 }
 
 .template-token {
-  align-items: center;
-  background: #ffffff;
-  border: 1px solid rgba(221, 228, 239, 0.96);
-  border-radius: 8px;
+  /* Editor chrome must not change the printed text's line box or wrapping. */
+  background: rgba(219, 234, 254, 0.32);
+  border: 0;
+  border-radius: 0.16em;
   box-sizing: border-box;
-  box-shadow: 0 4px 10px rgba(22, 32, 51, 0.05);
-  color: var(--text);
-  display: inline-flex;
+  box-shadow: none;
+  color: inherit;
+  display: inline;
   font-size: 1em;
   font-weight: inherit;
-  gap: 0.24em;
-  letter-spacing: 0;
-  line-height: 1;
+  letter-spacing: inherit;
+  line-height: inherit;
   min-height: 0;
-  padding: 0.06em 0.28em;
+  margin: 0;
+  outline: 1px solid rgba(148, 163, 184, 0.8);
+  outline-offset: 0;
+  overflow-wrap: anywhere;
+  padding: 0;
   position: relative;
-  text-decoration: none;
+  text-decoration: inherit;
   transform: none;
   user-select: all;
   vertical-align: baseline;
-  white-space: nowrap;
+  white-space: inherit;
+  word-break: break-word;
 }
 
 .template-token[data-template-tag-value="document.kyungheeCover"] {
@@ -149,50 +153,24 @@
   border-radius: 0.24em;
   box-sizing: content-box;
   color: #16a34a;
-  display: inline-block;
+  display: block;
   fill: none;
   height: 0.68em;
   margin-right: 0;
   padding: 0.14em;
+  pointer-events: none;
+  position: absolute;
+  right: -0.4em;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
-  vertical-align: -0.12em;
+  top: -0.6em;
   width: 0.68em;
 }
 
-.template-doc :is(p, td, th, li):has(> .template-token ~ :not(br)) > .template-token,
-.template-doc :is(p, td, th, li):has(> :not(.template-token, br) ~ .template-token) > .template-token {
-  display: inline-block;
-  line-height: inherit;
-}
-
-.template-doc :is(td, th) .template-token {
-  align-items: center;
-  background: #ffffff;
-  border-color: rgba(148, 163, 184, 0.95);
-  border-radius: 0.28em;
-  border-width: 1px;
-  box-shadow: 0 0.06em 0.18em rgba(15, 23, 42, 0.12);
-  color: var(--text);
-  display: inline-block;
-  gap: 0;
-  height: auto;
-  line-height: inherit;
-  max-height: none;
-  min-height: 0;
-  padding: 0 0.22em;
-  vertical-align: baseline;
-}
-
-.template-doc :is(td, th) .template-token > svg {
+:is(.template-doc, [data-candidate-block-modal-editor-surface]) :is(td, th) .template-token > svg {
   display: none;
-}
-
-.template-doc :is(p, td, th, li):has(> .template-token ~ :not(br)) > .template-token > svg,
-.template-doc :is(p, td, th, li):has(> :not(.template-token, br) ~ .template-token) > .template-token > svg {
-  margin-right: 0.24em;
 }
 
 .template-token[contenteditable="false"][data-template-tag-value] {
@@ -205,12 +183,9 @@
 
 .template-token[data-template-tag-value]:hover,
 .template-token[data-template-tag-value]:focus-visible {
-  border-color: rgba(37, 99, 235, 0.74);
-  box-shadow:
-    0 0 0 2px rgba(37, 99, 235, 0.16),
-    0 8px 18px rgba(37, 99, 235, 0.14);
+  background-color: rgba(219, 234, 254, 0.6);
   outline: 2px solid rgba(37, 99, 235, 0.5);
-  outline-offset: 2px;
+  outline-offset: 0;
 }
 
 .template-token[data-template-tag-format-supported="true"]::after {
@@ -241,7 +216,7 @@
 }
 
 .template-token[data-template-tag-format] {
-  border-color: rgba(22, 163, 74, 0.72);
+  outline-color: rgba(22, 163, 74, 0.72);
 }
 
 .template-token[data-template-tag-format]::before {
@@ -258,8 +233,7 @@
 }
 
 .template-token-icons-hidden {
-  gap: 0;
-  padding-inline: 0.28em;
+  padding-inline: 0;
 }
 
 .template-token-icons-hidden > svg {
