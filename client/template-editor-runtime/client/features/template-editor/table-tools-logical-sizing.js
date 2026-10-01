@@ -321,8 +321,37 @@
       const preserveTableHeight = adjacentRow && Number.isInteger(adjacentRow.rowIndex) &&
         adjacentRow.rowIndex === rowIndex + 1 && table.rows[adjacentRow.rowIndex] &&
         Number.isFinite(adjacentRow.height);
+      let safeRequestedHeight = requestedHeight;
       if (preserveTableHeight) {
-        rowHeights[adjacentRow.rowIndex] = Math.max(minimumRowHeight, Math.round(adjacentRow.height));
+        // CSS heights are lower bounds: text and padding can require more than
+        // the editor's 24px minimum. Measure the intrinsic rows before dividing
+        // the pair so a too-small request cannot expand the whole table.
+        const probe = table.cloneNode(true);
+        probe.style.width = `${table.offsetWidth}px`;
+        probe.style.height = "0px";
+        probe.style.minHeight = "0";
+        probe.style.visibility = "hidden";
+        probe.style.pointerEvents = "none";
+        probe.style.position = "absolute";
+        Array.from(probe.rows).forEach(row => { row.style.height = "0px"; });
+        probe.querySelectorAll("thead,tbody,tfoot,td,th").forEach(element => {
+          element.style.height = "0px";
+          element.style.minHeight = "0";
+        });
+        table.parentElement.appendChild(probe);
+        let rowMinimums;
+        try {
+          const probeScale = probe.offsetHeight > 0 ? probe.getBoundingClientRect().height / probe.offsetHeight : 1;
+          rowMinimums = Array.from(probe.rows, row =>
+            Math.max(minimumRowHeight, Math.ceil(row.getBoundingClientRect().height / (probeScale || 1))));
+        } finally {
+          probe.remove();
+        }
+        const pairHeight = requestedHeight + Math.round(adjacentRow.height);
+        const targetMinimum = rowMinimums[rowIndex];
+        const adjacentMinimum = rowMinimums[adjacentRow.rowIndex];
+        safeRequestedHeight = Math.max(targetMinimum, Math.min(requestedHeight, pairHeight - adjacentMinimum));
+        rowHeights[adjacentRow.rowIndex] = Math.max(adjacentMinimum, pairHeight - safeRequestedHeight);
       }
       const otherRowsHeight = rowHeights.reduce((heightSum, rowHeight, currentRowIndex) => {
         if (currentRowIndex === rowIndex) {
@@ -332,7 +361,7 @@
         return heightSum + Math.max(minimumRowHeight, Math.round(rowHeight));
       }, 0);
       const maxRowHeight = Math.max(minimumRowHeight, maxTableHeight - otherRowsHeight);
-      const safeHeight = preserveTableHeight ? requestedHeight : Math.min(requestedHeight, maxRowHeight);
+      const safeHeight = preserveTableHeight ? safeRequestedHeight : Math.min(requestedHeight, maxRowHeight);
       const { entries } = buildTemplateTableCellMap(table);
 
       rowHeights[rowIndex] = safeHeight;
@@ -347,6 +376,7 @@
 
         if (cellHeight > 0) {
           cell.style.height = `${cellHeight}px`;
+          cell.style.minHeight = "0";
         }
       });
 

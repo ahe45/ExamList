@@ -25,6 +25,11 @@ function getPreviewPrintStyles(template = {}) {
     ${getPreviewPrintPageCss(template)}
 
     @media print {
+      * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
       body {
         background: #fff;
         padding: 0;

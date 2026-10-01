@@ -10,7 +10,7 @@ function getPreviewLayoutStyles() {
 
     body {
       background: #cfd7e5;
-      color: #102445;
+      color: #000000;
       font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
       margin: 0;
       padding: 24px;
@@ -31,7 +31,7 @@ function getPreviewLayoutStyles() {
 
     .preview-document-body {
       box-sizing: border-box;
-      color: #102445;
+      color: #000000;
       font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
       font-size: 11pt;
       height: 100%;
