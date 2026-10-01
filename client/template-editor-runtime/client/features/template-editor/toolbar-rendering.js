@@ -79,6 +79,9 @@
         cellPaddingRightId: toolbarIds.cellPaddingRight,
         cellPaddingBottomId: toolbarIds.cellPaddingBottom,
         cellPaddingLeftId: toolbarIds.cellPaddingLeft,
+        cellWidthId: toolbarIds.cellWidth,
+        rowHeightId: toolbarIds.rowHeight,
+        sizeScopeId: toolbarIds.sizeScope,
         imageInputId: toolbarIds.imageInput,
         imageInsertPanelId: toolbarIds.imageInsertPanel,
       });

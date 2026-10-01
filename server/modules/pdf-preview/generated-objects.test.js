@@ -12,6 +12,16 @@ test("buildDocumentGeneratedObjectSvg renders barcode as Code128-B", () => {
   assert.match(svg, /data-code128-checksum="88"/);
   assert.match(svg, new RegExp(`data-code128-sequence="${examNoCode128Sequence}"`));
   assert.match(svg, /data-code128-value="26010001"/);
+  assert.match(svg, /fill="#000000"/);
+  assert.doesNotMatch(svg, /#111827/);
+});
+
+test("generated QR codes use pure black for every foreground module", () => {
+  const svg = buildDocumentGeneratedObjectSvg("qrcode", "26010001");
+  const fills = Array.from(svg.matchAll(/<rect[^>]*fill="([^"]+)"/g), match => match[1]);
+  assert.ok(fills.length > 1);
+  assert.equal(fills[0], "#ffffff");
+  assert.ok(fills.slice(1).every(color => color === "#000000"));
 });
 
 test("replaceTemplateGeneratedObjectImagesInHtml resolves generated object source aliases for barcode values", () => {

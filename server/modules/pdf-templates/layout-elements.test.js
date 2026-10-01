@@ -2,6 +2,20 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const { normalizeTemplateLayout } = require("./layout");
+const { normalizeElementConfig } = require("./layout-element-config");
+
+test("all printable element defaults use pure black and preserve authored colors", () => {
+  for (const type of ["text", "dataText", "pageNumber", "rect", "ellipse", "checkbox", "signatureBox"]) {
+    const { style } = normalizeElementConfig(type, {});
+    assert.equal(style.color, "#000000", type);
+    if (style.borderColor) assert.equal(style.borderColor, "#000000", type);
+    const custom = normalizeElementConfig(type, { style: { color: "#ff0000", borderColor: "#00ff00" } });
+    assert.equal(custom.style.color, "#ff0000", type);
+    if (custom.style.borderColor) assert.equal(custom.style.borderColor, "#00ff00", type);
+  }
+  assert.equal(normalizeElementConfig("line", {}).style.strokeColor, "#000000");
+  assert.equal(normalizeElementConfig("line", {style:{strokeColor:"#0000ff"}}).style.strokeColor, "#0000ff");
+});
 
 test("normalizeTemplateLayout normalizes table columns and pagination", () => {
   const layout = normalizeTemplateLayout(

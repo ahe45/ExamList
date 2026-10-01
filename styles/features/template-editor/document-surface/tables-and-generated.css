@@ -16,7 +16,7 @@
 .template-render-sheet td,
 .editor-document-surface th,
 .editor-document-surface td {
-  border: 1pt solid rgba(154, 169, 191, 0.9);
+  border: 1pt solid #000000;
   box-sizing: border-box;
   min-width: 24px;
   overflow-wrap: break-word;
@@ -113,14 +113,14 @@
 
 .editor-document-image-placeholder {
   background: linear-gradient(180deg, rgba(230, 238, 248, 0.9), rgba(244, 247, 252, 0.95));
-  border: 1pt dashed rgba(81, 101, 133, 0.52);
-  color: #516585;
+  border: 1pt dashed #000000;
+  color: #000000;
   min-height: 124pt;
 }
 
 .editor-document-signature-box {
   background: rgba(255, 255, 255, 0.98);
-  border: 1pt dashed rgba(81, 101, 133, 0.68);
+  border: 1pt dashed #000000;
   max-width: 260pt;
 }
 
@@ -129,7 +129,7 @@
 }
 
 .editor-document-signature-box figcaption {
-  color: var(--muted);
+  color: #000000;
   font-size: 10pt;
 }
 

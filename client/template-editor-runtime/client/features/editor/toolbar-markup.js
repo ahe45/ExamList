@@ -85,6 +85,9 @@
       cellPaddingRightId = "",
       cellPaddingBottomId = "",
       cellPaddingLeftId = "",
+      cellWidthId = "",
+      rowHeightId = "",
+      sizeScopeId = "",
       imageInputId = "",
       imageInsertPanelId = "",
     }) {
@@ -143,6 +146,20 @@
         cellPaddingBottomId,
         cellPaddingLeftId,
       });
+      const tableSizeSectionMarkup = cellWidthId && rowHeightId ? `
+        <div class="template-toolbar-section template-toolbar-cell-size-section">
+          <span class="template-toolbar-section-label">셀 크기</span>
+          <div class="template-toolbar-cell-size-controls">
+            <div class="template-toolbar-cell-size-grid">
+              <label class="template-toolbar-cell-padding-field"><span class="template-toolbar-field-label">너비</span>
+                <span class="template-toolbar-size-input-wrap"><input class="template-toolbar-number" id="${escapeEditorToolbarAttribute(cellWidthId)}" data-template-cell-size-input="width" type="number" min="24" step="1" aria-label="셀 너비 (px)" /><span aria-hidden="true">px</span></span>
+              </label>
+              <label class="template-toolbar-cell-padding-field"><span class="template-toolbar-field-label">높이</span>
+                <span class="template-toolbar-size-input-wrap"><input class="template-toolbar-number" id="${escapeEditorToolbarAttribute(rowHeightId)}" data-template-cell-size-input="height" type="number" min="24" step="1" aria-label="셀 높이 (px)" /><span aria-hidden="true">px</span></span>
+              </label>
+            </div>
+          </div>
+        </div>` : "";
       const objectInsertSectionMarkup = `
         <div class="template-toolbar-section examlist-object-section examlist-object-insert-control">
           <span class="template-toolbar-section-label">삽입</span>
@@ -168,10 +185,12 @@
 
       return `
         <div class="template-toolbar-group" data-editor-format-toolbar-group="true">
-          <span class="template-toolbar-group-label">서식</span>
-          <div class="template-toolbar-section-row template-toolbar-section-row-dual">
-            <div class="template-toolbar-section template-toolbar-section-compact">
-              <span class="template-toolbar-section-label">글꼴</span>
+          <span class="template-toolbar-group-label">글자 모양</span>
+          <div class="template-toolbar-section template-toolbar-font-section">
+            <span class="template-toolbar-section-label">기본</span>
+            <div class="template-toolbar-format-grid">
+            <div class="template-toolbar-format-field">
+              <span class="template-toolbar-format-field-label">글꼴</span>
               <div class="template-toolbar-group-controls">
                 <div class="template-toolbar-font-family-combo" data-editor-font-family-combo="${escapeEditorToolbarAttribute(fontFamilyId)}">
                   <input class="template-toolbar-font-family-input" id="${escapeEditorToolbarAttribute(fontFamilyId)}" type="hidden" value="${escapeEditorToolbarAttribute(fontFamilyValue)}" aria-hidden="true" tabindex="-1"${renderEditorToolbarAttribute(commandSelectAttr, "fontName")} />
@@ -185,8 +204,8 @@
                 </div>
               </div>
             </div>
-            <div class="template-toolbar-section template-toolbar-section-compact">
-              <span class="template-toolbar-section-label">크기</span>
+            <div class="template-toolbar-format-field">
+              <span class="template-toolbar-format-field-label">크기</span>
               <div class="template-toolbar-group-controls template-toolbar-font-size-controls">
                 <div class="template-toolbar-font-size-combo" data-editor-font-size-combo="${escapeEditorToolbarAttribute(fontSizeId)}">
                   <input class="template-toolbar-font-size-input" id="${escapeEditorToolbarAttribute(fontSizeId)}" type="hidden" value="${escapeEditorToolbarAttribute(String(fontSizeValue))}" aria-hidden="true" tabindex="-1" />
@@ -200,6 +219,14 @@
                   </div>
                 </div>
               </div>
+            </div>
+            </div>
+          </div>
+          <div class="template-toolbar-section template-toolbar-text-colors-section">
+            <span class="template-toolbar-section-label">색깔</span>
+            <div class="template-toolbar-format-grid">
+              ${renderEditorToolbarColorPickerSection({ sectionLabel: "글자색", inputId: textColorId, inputValue: textColorValue, presetColors: EDITOR_TOOLBAR_TEXT_COLOR_PRESETS, colorCommand: "foreColor", fallbackValue: EDITOR_TOOLBAR_DEFAULT_TEXT_COLOR, sectionClassName: "template-toolbar-format-color-field", pickerClassName: "template-toolbar-color-picker-compact" })}
+              ${renderEditorToolbarColorPickerSection({ sectionLabel: "음영", inputId: textShadingId, inputValue: textShadingValue, presetColors: EDITOR_TOOLBAR_SHADING_COLOR_PRESETS, colorCommand: "hiliteColor", fallbackValue: "#fff59d", sectionClassName: "template-toolbar-format-color-field", pickerClassName: "template-toolbar-color-picker-compact" })}
             </div>
           </div>
           <div class="template-toolbar-section">
@@ -219,10 +246,6 @@
               ${renderEditorToolbarIconButton({ attributeName: commandAttr, attributeValue: "justifyRight", label: "오른쪽 정렬", iconMarkup: EDITOR_TOOLBAR_ICON_MARKUP.justifyRight })}
               ${renderEditorToolbarIconButton({ attributeName: commandAttr, attributeValue: "justifyFull", label: "배분정렬", iconMarkup: EDITOR_TOOLBAR_ICON_MARKUP.justifyFull })}
             </div>
-          </div>
-          <div class="template-toolbar-section-row template-toolbar-section-row-stack">
-            ${renderEditorToolbarColorPickerSection({ sectionLabel: "글자색", inputId: textColorId, inputValue: textColorValue, presetColors: EDITOR_TOOLBAR_TEXT_COLOR_PRESETS, colorCommand: "foreColor", fallbackValue: EDITOR_TOOLBAR_DEFAULT_TEXT_COLOR, sectionClassName: "template-toolbar-section-compact", pickerClassName: "template-toolbar-color-picker-compact" })}
-            ${renderEditorToolbarColorPickerSection({ sectionLabel: "음영", inputId: textShadingId, inputValue: textShadingValue, presetColors: EDITOR_TOOLBAR_SHADING_COLOR_PRESETS, colorCommand: "hiliteColor", fallbackValue: "#fff59d", sectionClassName: "template-toolbar-section-compact", pickerClassName: "template-toolbar-color-picker-compact" })}
           </div>
         </div>
         <div class="template-toolbar-group examlist-object-insert-group">
@@ -268,6 +291,7 @@
               ${tablePlacementSectionMarkup}
               ${tableShadingSectionMarkup}
               ${tableBorderSectionMarkup}
+              ${tableSizeSectionMarkup}
               ${tableCellPaddingSectionMarkup}
             `
             : `
@@ -292,6 +316,7 @@
                 ${tableShadingSectionMarkup}
               </div>
               ${tableBorderSectionMarkup}
+              ${tableSizeSectionMarkup}
               ${tableCellPaddingSectionMarkup}
             `}
         </div>

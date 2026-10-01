@@ -58,7 +58,7 @@
 .examlist-object-size-field {
   color: var(--text-dim, var(--muted));
   display: grid;
-  font-size: 0.72rem;
+  font-size: var(--template-toolbar-label-font-size, 0.68rem);
   font-weight: 800;
   gap: 6px;
   min-width: 0;
@@ -174,7 +174,7 @@
 
 .examlist-object-align-section-label {
   color: var(--text-dim, var(--muted));
-  font-size: 0.72rem;
+  font-size: var(--template-toolbar-label-font-size, 0.68rem);
   font-weight: 800;
 }
 

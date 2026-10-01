@@ -32,7 +32,7 @@ export function renderDocumentToolbar(access) {
 
   const toolbarMarkup = `
     <div class="template-toolbar-group editor-panel-block">
-      <span class="template-toolbar-group-label">서식</span>
+      <span class="template-toolbar-group-label">글자 모양</span>
       <div class="template-toolbar-section-row template-toolbar-section-row-dual">
         <div class="template-toolbar-section template-toolbar-section-compact">
           <span class="template-toolbar-section-label">글꼴</span>

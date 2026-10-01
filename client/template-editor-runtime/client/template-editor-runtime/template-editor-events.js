@@ -11,6 +11,7 @@
   function createTemplateEditorEventController({
     applyTemplateEditorFontFamily,
     applyTemplateEditorFontSize,
+    applyTemplateTableSize = () => {},
     applyToolbarColorTrigger,
     applyToolbarHexColorInput,
     clearTemplateEditorImageHoverState = () => {},
@@ -245,6 +246,11 @@
     }
 
     function getTemplateEditorToolbarPointerTarget(target) {
+      const sizeTrigger = target.closest("[data-template-table-size]");
+      const sizeControl = target.closest("[data-template-cell-size-input], [data-template-cell-size-scope]");
+      if (sizeTrigger || sizeControl) {
+        return { toolbarTrigger: sizeTrigger, toolbarSelectionControl: sizeControl };
+      }
       const toolbarTrigger = target.closest(
         "[data-template-command], [data-template-table-action], [data-template-cell-split-step], [data-template-cell-split-toggle], [data-template-cell-split-axis-option], [data-template-cell-split-confirm], [data-template-insert], [data-template-open-image], [data-template-image-insert-toggle], [data-template-insert-school-logo], [data-template-tag], .template-tag-accordion-summary, [data-editor-color-preset], [data-editor-color-apply], [data-editor-color-toggle], [data-editor-color-direct], [data-editor-font-family-toggle], [data-editor-font-family-option], [data-editor-font-size-toggle], [data-editor-font-size-option], [data-template-line-height-toggle], [data-template-line-height-option], [data-editor-border-select-toggle], [data-editor-border-select-option], [data-editor-border-width-toggle], [data-editor-border-width-option], [data-editor-cell-padding-toggle], [data-editor-cell-padding-option]",
       );
@@ -392,6 +398,14 @@
     }
 
     function handleInput(event) {
+      if (event.target?.matches?.("[data-template-cell-size-input]")) {
+        const value = event.target.value;
+        if (value && Number.isFinite(Number(value)) && Number(value) >= 24) {
+          applyTemplateTableSize({ dimension: event.target.dataset.templateCellSizeInput, preserveToolbarFocus: true });
+          scheduleTemplateEditorSelectionVisualStateRefresh();
+        }
+        return;
+      }
       if (event.target?.matches?.(".template-toolbar-border-width")) {
         event.target.dataset.editorBorderUserValue = "true";
       }

@@ -214,10 +214,8 @@
       }
 
       const computedStyle = window.getComputedStyle(selectedCell);
-      return parseTemplateEditorToolbarPointValue(
-        selectedCell.style[propertyName] || computedStyle[propertyName],
-        "",
-      );
+      const value = Number.parseFloat(computedStyle[propertyName]);
+      return Number.isFinite(value) ? String(Math.round(value * 100) / 100) : "";
     }
 
     function updateTemplateEditorFormattingControls() {
@@ -321,13 +319,18 @@
         return;
       }
 
-      if (templateEditorCellWidth) {
-        templateEditorCellWidth.value = getTemplateEditorPixelValue(selectedCell, "width");
-      }
-
-      if (templateEditorRowHeight) {
-        templateEditorRowHeight.value = getTemplateEditorPixelValue(selectedCell, "height");
-      }
+      const cells = getTemplateEditorActiveTableSelection()?.selectedCells?.length
+        ? getTemplateEditorActiveTableSelection().selectedCells : selectedCell ? [selectedCell] : [];
+      const commonValue = read => {
+        const values = cells.map(read);
+        return values.length && values.every(value => value === values[0]) ? values[0] : values.length ? "mixed" : "";
+      };
+      [[templateEditorCellWidth, "width"], [templateEditorRowHeight, "height"]].forEach(([input, dimension]) => {
+        if (!input || document.activeElement === input) return;
+        const value = commonValue(cell => getTemplateEditorPixelValue(cell, dimension));
+        input.value = value === "mixed" ? "" : value;
+        input.placeholder = value === "mixed" ? "혼합" : "";
+      });
 
       if (templateEditorCellShading) {
         syncEditorToolbarColorControls({
@@ -338,7 +341,7 @@
       }
 
       if (templateEditorCellPaddingTop) {
-        const value = getTemplateEditorCellPaddingValue(selectedCell, "paddingTop");
+        const value = commonValue(cell => getTemplateEditorCellPaddingValue(cell, "paddingTop"));
         if (typeof syncEditorToolbarCellPaddingControl === "function") {
           syncEditorToolbarCellPaddingControl(templateEditorCellPaddingTop, value);
         } else {
@@ -347,7 +350,7 @@
       }
 
       if (templateEditorCellPaddingRight) {
-        const value = getTemplateEditorCellPaddingValue(selectedCell, "paddingRight");
+        const value = commonValue(cell => getTemplateEditorCellPaddingValue(cell, "paddingRight"));
         if (typeof syncEditorToolbarCellPaddingControl === "function") {
           syncEditorToolbarCellPaddingControl(templateEditorCellPaddingRight, value);
         } else {
@@ -356,7 +359,7 @@
       }
 
       if (templateEditorCellPaddingBottom) {
-        const value = getTemplateEditorCellPaddingValue(selectedCell, "paddingBottom");
+        const value = commonValue(cell => getTemplateEditorCellPaddingValue(cell, "paddingBottom"));
         if (typeof syncEditorToolbarCellPaddingControl === "function") {
           syncEditorToolbarCellPaddingControl(templateEditorCellPaddingBottom, value);
         } else {
@@ -365,7 +368,7 @@
       }
 
       if (templateEditorCellPaddingLeft) {
-        const value = getTemplateEditorCellPaddingValue(selectedCell, "paddingLeft");
+        const value = commonValue(cell => getTemplateEditorCellPaddingValue(cell, "paddingLeft"));
         if (typeof syncEditorToolbarCellPaddingControl === "function") {
           syncEditorToolbarCellPaddingControl(templateEditorCellPaddingLeft, value);
         } else {

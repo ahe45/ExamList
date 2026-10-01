@@ -370,8 +370,11 @@ export function bindLineHeightControl({ editor, surfaceElement, toolbarHost }) {
   const lineHeightControl = createLineHeightControl();
   const fontSizeSection = positionFontSizeSection(toolbarHost);
   const fontSizeSectionRow = toolbarHost.querySelector(".template-toolbar-font-size-combo")?.closest(".template-toolbar-section-row");
+  const textColorsSection = toolbarHost.querySelector(".template-toolbar-text-colors-section");
 
-  if (fontSizeSection) {
+  if (textColorsSection) {
+    textColorsSection.after(lineHeightControl);
+  } else if (fontSizeSection) {
     fontSizeSection.after(lineHeightControl);
   } else if (fontSizeSectionRow) {
     fontSizeSectionRow.after(lineHeightControl);

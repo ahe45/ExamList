@@ -9,7 +9,7 @@ function renderTextElement(element, baseContext) {
     <div
       class="preview-element preview-text"
       style="${buildAbsoluteStyle(element, [
-        `color:${escapeHtml(style.color || "#102445")}`,
+        `color:${escapeHtml(style.color || "#000000")}`,
         `font-family:${escapeHtml(style.fontFamily || "Malgun Gothic, sans-serif")}`,
         `font-size:${Number(style.fontSize) || 16}pt`,
         `font-weight:${Number(style.fontWeight) || 500}`,

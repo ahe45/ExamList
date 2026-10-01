@@ -134,7 +134,7 @@ export function createObjectSizeToolbar() {
     <span class="template-toolbar-section-label">크기</span>
     <div class="examlist-object-size-grid">
       <label class="examlist-object-size-field">
-        <span>가로</span>
+        <span class="template-toolbar-field-label">가로</span>
         <div class="examlist-object-size-input-wrap">
           <input
             class="template-toolbar-number examlist-object-size-input"
@@ -149,7 +149,7 @@ export function createObjectSizeToolbar() {
         </div>
       </label>
       <label class="examlist-object-size-field">
-        <span>세로</span>
+        <span class="template-toolbar-field-label">세로</span>
         <div class="examlist-object-size-input-wrap">
           <input
             class="template-toolbar-number examlist-object-size-input"

@@ -83,14 +83,14 @@
 
 .editor-document-surface blockquote {
   background: rgba(238, 243, 251, 0.8);
-  border-left: 4pt solid rgba(40, 88, 184, 0.5);
+  border-left: 4pt solid #000000;
   border-radius: 12pt;
   padding: 12pt 16pt;
 }
 
 .editor-document-surface hr {
   border: 0;
-  border-top: 1pt solid rgba(81, 101, 133, 0.35);
+  border-top: 1pt solid #000000;
   margin: 20pt 0;
 }
 

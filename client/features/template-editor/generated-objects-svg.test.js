@@ -16,4 +16,14 @@ test("buildGeneratedObjectSvg renders barcode preview as Code128-B", async () =>
   assert.match(svg, /data-code128-checksum="88"/);
   assert.match(svg, /data-code128-sequence="104,18,22,16,17,16,16,16,17,88,106"/);
   assert.match(svg, /data-code128-value="26010001"/);
+  assert.match(svg, /fill="#000000"/);
+  assert.doesNotMatch(svg, /#111827/);
+});
+
+test("QR preview uses pure black for every foreground module", async () => {
+  const { buildGeneratedObjectSvg } = await importClientModule("generated-objects-svg.js");
+  const svg = buildGeneratedObjectSvg("qrcode", "26010001");
+  const fills = Array.from(svg.matchAll(/<rect[^>]*fill="([^"]+)"/g), match => match[1]);
+  assert.equal(fills[0], "#ffffff");
+  assert.ok(fills.length > 1 && fills.slice(1).every(color => color === "#000000"));
 });

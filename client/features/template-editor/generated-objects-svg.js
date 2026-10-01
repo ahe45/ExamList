@@ -48,7 +48,7 @@ export function buildGeneratedObjectSvg(objectType, objectValue) {
 
         if (shouldFill) {
           contentCells.push(
-            `<rect x="${quietZone + x * cellSize}" y="${quietZone + y * cellSize}" width="${cellSize}" height="${cellSize}" fill="#111827" />`,
+            `<rect x="${quietZone + x * cellSize}" y="${quietZone + y * cellSize}" width="${cellSize}" height="${cellSize}" fill="#000000" />`,
           );
         }
       }
@@ -58,7 +58,7 @@ export function buildGeneratedObjectSvg(objectType, objectValue) {
       .map((cellKey) => {
         const [x, y] = cellKey.split(":").map(Number);
 
-        return `<rect x="${quietZone + x * cellSize}" y="${quietZone + y * cellSize}" width="${cellSize}" height="${cellSize}" fill="#111827" />`;
+        return `<rect x="${quietZone + x * cellSize}" y="${quietZone + y * cellSize}" width="${cellSize}" height="${cellSize}" fill="#000000" />`;
       })
       .join("");
 

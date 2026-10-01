@@ -741,7 +741,7 @@
 .template-page-number-overlay {
   align-items: flex-end;
   box-sizing: border-box;
-  color: #102445;
+  color: #000000;
   display: flex;
   font-size: calc(12px * var(--template-editor-canvas-zoom, 1));
   font-weight: 800;

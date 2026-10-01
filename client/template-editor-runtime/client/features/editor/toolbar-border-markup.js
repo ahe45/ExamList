@@ -276,7 +276,7 @@
                 aria-controls="${escapeEditorToolbarAttribute(menuId)}"
               >
                 <span data-editor-cell-padding-current>${escapeEditorToolbarHtml(normalizedValue)}</span>
-                <span class="template-toolbar-cell-padding-unit" aria-hidden="true">pt</span>
+                <span class="template-toolbar-cell-padding-unit" aria-hidden="true">px</span>
                 <span class="template-toolbar-combo-caret" aria-hidden="true"></span>
               </button>
               <div class="template-toolbar-combo-menu template-toolbar-cell-padding-menu hidden" id="${escapeEditorToolbarAttribute(menuId)}" data-editor-cell-padding-menu-for="${escapeEditorToolbarAttribute(id)}" role="listbox" aria-label="${escapeEditorToolbarAttribute(ariaLabel)} 목록">

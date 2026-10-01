@@ -53,7 +53,7 @@ function buildDocumentGeneratedObjectSvg(objectType, objectValue) {
 
         if ((seed + x * 3 + y * 5) % 7 < 3) {
           contentCells.push(
-            `<rect x="${x * cellSize}" y="${y * cellSize}" width="${cellSize}" height="${cellSize}" fill="#111827" />`,
+            `<rect x="${x * cellSize}" y="${y * cellSize}" width="${cellSize}" height="${cellSize}" fill="#000000" />`,
           );
         }
       }
@@ -63,7 +63,7 @@ function buildDocumentGeneratedObjectSvg(objectType, objectValue) {
       .map((cellKey) => {
         const [x, y] = cellKey.split(":").map(Number);
 
-        return `<rect x="${x * cellSize}" y="${y * cellSize}" width="${cellSize}" height="${cellSize}" fill="#111827" />`;
+        return `<rect x="${x * cellSize}" y="${y * cellSize}" width="${cellSize}" height="${cellSize}" fill="#000000" />`;
       })
       .join("");
 

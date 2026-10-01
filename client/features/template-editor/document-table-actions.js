@@ -1,4 +1,24 @@
 export function getActiveDocumentTableCell() {
+  const runtimeState = window.ExamListTemplateEditorRuntime?.state?.templateEditor || null;
+  const surfaceElement = document.getElementById("templateEditorSurface");
+  const selectedCell = runtimeState?.tableSelection?.anchorCell || null;
+
+  // Cell drags deliberately clear the native text range. Toolbar focus can
+  // then leave a caret on the document wrapper instead of inside a cell.
+  if (selectedCell?.nodeType === Node.ELEMENT_NODE && surfaceElement?.contains(selectedCell)) {
+    return selectedCell;
+  }
+
+  const runtimeActiveCell = runtimeState?.activeCellElement || null;
+  if (
+    runtimeState?.suppressToolbarSelectionChange &&
+    document.activeElement?.closest?.("#templateEditorToolbarHost") &&
+    runtimeActiveCell?.nodeType === Node.ELEMENT_NODE &&
+    surfaceElement?.contains(runtimeActiveCell)
+  ) {
+    return runtimeActiveCell;
+  }
+
   const selection = window.getSelection();
 
   if (!selection || !selection.rangeCount) {
@@ -15,10 +35,6 @@ export function getActiveDocumentTableCell() {
   if (selectionCell) {
     return selectionCell;
   }
-
-  const runtimeState = window.ExamListTemplateEditorRuntime?.state?.templateEditor || null;
-  const surfaceElement = document.getElementById("templateEditorSurface");
-  const runtimeActiveCell = runtimeState?.activeCellElement || runtimeState?.tableSelection?.anchorCell || null;
 
   if (
     runtimeState?.suppressToolbarSelectionChange &&

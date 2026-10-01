@@ -24,7 +24,7 @@ const supportedLineDirections = Object.freeze(["horizontal", "vertical", "diagon
 
 function normalizeTextStyle(baseStyle = {}, defaults = {}) {
   return {
-    color: String(baseStyle.color || defaults.color || "#102445"),
+    color: String(baseStyle.color || defaults.color || "#000000"),
     fontFamily: String(baseStyle.fontFamily || defaults.fontFamily || "Noto Sans KR"),
     fontSize: normalizeFiniteNumber(baseStyle.fontSize, defaults.fontSize ?? 16, 1, 200),
     fontWeight: normalizeFiniteNumber(baseStyle.fontWeight, defaults.fontWeight ?? 500, 100, 900),
@@ -36,10 +36,10 @@ function normalizeTextStyle(baseStyle = {}, defaults = {}) {
 function normalizeBoxStyle(baseStyle = {}, defaults = {}) {
   return {
     backgroundColor: String(baseStyle.backgroundColor || defaults.backgroundColor || "transparent"),
-    borderColor: String(baseStyle.borderColor || defaults.borderColor || "#516585"),
+    borderColor: String(baseStyle.borderColor || defaults.borderColor || "#000000"),
     borderStyle: normalizeOption(baseStyle.borderStyle, supportedBoxBorderStyles, defaults.borderStyle || "solid"),
     borderWidth: normalizeFiniteNumber(baseStyle.borderWidth, defaults.borderWidth ?? 1, 0, 24),
-    color: String(baseStyle.color || defaults.color || "#102445"),
+    color: String(baseStyle.color || defaults.color || "#000000"),
     fontSize: normalizeFiniteNumber(baseStyle.fontSize, defaults.fontSize ?? 12, 1, 200),
     fontWeight: normalizeFiniteNumber(baseStyle.fontWeight, defaults.fontWeight ?? 600, 100, 900),
     opacity: normalizeFiniteNumber(baseStyle.opacity, defaults.opacity ?? 1, 0, 1),
@@ -50,7 +50,7 @@ function normalizeBoxStyle(baseStyle = {}, defaults = {}) {
 
 function normalizeLineStyle(baseStyle = {}, defaults = {}) {
   return {
-    strokeColor: String(baseStyle.strokeColor || defaults.strokeColor || "#516585"),
+    strokeColor: String(baseStyle.strokeColor || defaults.strokeColor || "#000000"),
     strokeStyle: normalizeOption(baseStyle.strokeStyle, supportedBoxBorderStyles, defaults.strokeStyle || "solid"),
     strokeWidth: normalizeFiniteNumber(baseStyle.strokeWidth, defaults.strokeWidth ?? 1.5, 0.5, 24),
   };
@@ -158,7 +158,7 @@ function normalizeElementConfig(elementType, config) {
       label: String(baseConfig.label || ""),
       style: normalizeBoxStyle(baseConfig.style, {
         backgroundColor: "transparent",
-        borderColor: "#516585",
+        borderColor: "#000000",
         borderStyle: "solid",
         borderWidth: 1.2,
         radius: elementType === "rect" ? 8 : 999,
@@ -173,7 +173,7 @@ function normalizeElementConfig(elementType, config) {
       label: String(baseConfig.label || "확인"),
       style: normalizeBoxStyle(baseConfig.style, {
         backgroundColor: "transparent",
-        borderColor: "#516585",
+        borderColor: "#000000",
         borderStyle: "solid",
         borderWidth: 1.2,
         fontSize: 12,
@@ -189,7 +189,7 @@ function normalizeElementConfig(elementType, config) {
       placeholderText: String(baseConfig.placeholderText || "서명란"),
       style: normalizeBoxStyle(baseConfig.style, {
         backgroundColor: "transparent",
-        borderColor: "#516585",
+        borderColor: "#000000",
         borderStyle: "dashed",
         borderWidth: 1.2,
         fontSize: 12,

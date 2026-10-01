@@ -21,7 +21,7 @@
 
 .template-toolbar-border-field-label {
   color: var(--text-dim, var(--muted));
-  font-size: 0.68rem;
+  font-size: var(--template-toolbar-label-font-size, 0.68rem);
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
@@ -216,6 +216,37 @@
   align-items: start;
 }
 
+.template-toolbar-cell-size-controls {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.template-toolbar-cell-size-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.template-toolbar-cell-size-grid input {
+  width: 100%;
+  min-width: 0;
+  padding-right: 30px;
+  appearance: textfield;
+}
+
+.template-toolbar-cell-size-grid input::-webkit-inner-spin-button,
+.template-toolbar-cell-size-grid input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.template-toolbar-size-input-wrap { position: relative; display: block; }
+.template-toolbar-size-input-wrap > span {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; font-size: 0.7rem; color: var(--muted);
+}
+
 .template-toolbar-cell-padding-controls {
   display: grid;
   min-width: 0;
@@ -233,7 +264,7 @@
 .template-toolbar-cell-padding-field {
   color: var(--text-dim, var(--muted));
   display: grid;
-  font-size: 0.76rem;
+  font-size: var(--template-toolbar-label-font-size, 0.68rem);
   font-weight: 800;
   gap: 4px;
   min-width: 0;
@@ -241,7 +272,7 @@
 
 .template-toolbar-cell-padding-field-label {
   color: var(--text-dim, var(--muted));
-  font-size: 0.68rem;
+  font-size: var(--template-toolbar-label-font-size, 0.68rem);
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;

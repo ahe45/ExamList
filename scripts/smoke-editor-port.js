@@ -21,6 +21,7 @@ const { runObjectSelectionZoomCheck } = require("./smoke/template-editor/object-
 const { runTableRowBoundaryResizeCheck } = require("./smoke/template-editor/table-row-boundary-resize");
 const { runTableEqualizeWidthsCheck } = require("./smoke/template-editor/table-equalize-widths");
 const { runTableEqualizeHeightsCheck } = require("./smoke/template-editor/table-equalize-heights");
+const { runTableSizeInputsCheck } = require("./smoke/template-editor/table-size-inputs");
 const { runBlockDirectColorCheck } = require("./smoke/template-editor/block-direct-color");
 const { runTokenLayoutCheck } = require("./smoke/template-editor/token-layout");
 const {
@@ -92,6 +93,12 @@ async function run() {
       "window.ExamListTemplateEditorRuntimeLoader",
       "editor loader",
     );
+    if (process.argv.includes("--size-inputs")) {
+      await runTableSizeInputsCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Cell size input checks passed");
+      return;
+    }
     if (process.argv.includes("--token-layout")) {
       await runTokenLayoutCheck(client);
       assert.deepEqual(client.getPageErrors(), []);

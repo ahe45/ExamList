@@ -22,7 +22,11 @@
       }
 
       const rect = element.getBoundingClientRect();
-      const pixelValue = property === "height" ? rect.height : rect.width;
+      const table = element.closest("table");
+      const axisSize = property === "height" ? table?.offsetHeight : table?.offsetWidth;
+      const tableRect = table?.getBoundingClientRect();
+      const scale = axisSize > 0 ? (property === "height" ? tableRect.height : tableRect.width) / axisSize : 1;
+      const pixelValue = (property === "height" ? rect.height : rect.width) / (scale || 1);
 
       if (!Number.isFinite(pixelValue) || pixelValue <= 0) {
         return "";

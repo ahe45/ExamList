@@ -64,7 +64,7 @@ function renderLineElement(element) {
           y1="${coordinates.y1}"
           x2="${coordinates.x2}"
           y2="${coordinates.y2}"
-          stroke="${escapeHtml(style.strokeColor || "#516585")}"
+          stroke="${escapeHtml(style.strokeColor || "#000000")}"
           stroke-width="${strokeWidth}"
           stroke-linecap="round"
           ${dashArray ? `stroke-dasharray="${dashArray}"` : ""}
@@ -99,7 +99,7 @@ function renderCheckboxElement(element) {
     <div
       class="preview-element preview-checkbox-element"
       style="${buildAbsoluteStyle(element, [
-        `color:${escapeHtml(style.color || "#102445")}`,
+        `color:${escapeHtml(style.color || "#000000")}`,
         `font-size:${Number(style.fontSize) || 12}pt`,
         `font-weight:${Number(style.fontWeight) || 600}`,
         `opacity:${Number.isFinite(Number(style.opacity)) ? Number(style.opacity) : 1}`,
@@ -109,7 +109,7 @@ function renderCheckboxElement(element) {
         class="preview-checkbox-box ${checked ? "checked" : ""}"
         style="
           background:${escapeHtml(style.backgroundColor || "transparent")};
-          border:${boxBorderWidth}pt ${escapeHtml(style.borderStyle || "solid")} ${escapeHtml(style.borderColor || "#516585")};
+          border:${boxBorderWidth}pt ${escapeHtml(style.borderStyle || "solid")} ${escapeHtml(style.borderColor || "#000000")};
         "
       >${checked ? "✓" : ""}</span>
       <span class="preview-checkbox-label">${escapeHtml(label)}</span>

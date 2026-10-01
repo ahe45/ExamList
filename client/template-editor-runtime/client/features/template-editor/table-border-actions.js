@@ -31,7 +31,7 @@
   const { createTemplateEditorTableBorderConfigController } = tableBorderConfigModule;
   const { createTemplateEditorTableBorderGeometryController } = tableBorderGeometryModule;
   const { createTemplateEditorTableBorderSelectionController } = tableBorderSelectionModule;
-  const TEMPLATE_EDITOR_CELL_PADDING_MAX = 72;
+  const TEMPLATE_EDITOR_CELL_PADDING_MAX = 96;
   const TEMPLATE_EDITOR_CELL_PADDING_SIDES = Object.freeze([
     Object.freeze({ key: "top", propertyName: "paddingTop", label: "위쪽" }),
     Object.freeze({ key: "right", propertyName: "paddingRight", label: "오른쪽" }),
@@ -40,8 +40,7 @@
   ]);
 
   function formatTemplateEditorPointValue(value) {
-    const roundedValue = Math.round(value * 10) / 10;
-    return Number.isInteger(roundedValue) ? String(roundedValue) : roundedValue.toFixed(1).replace(/\.0$/, "");
+    return String(Math.round(value * 100) / 100);
   }
 
   function createTemplateEditorTableBorderActionController({
@@ -134,7 +133,7 @@
         return Number.NaN;
       }
 
-      return Math.round(numericValue * 10) / 10;
+      return Math.round(numericValue * 100) / 100;
     }
 
     function applyTemplateEditorCellPadding(options = {}) {
@@ -153,7 +152,7 @@
 
       if (invalidEntry) {
         setTemplateEditorStatus(
-          `셀 ${invalidEntry.label} 여백은 0pt 이상 ${TEMPLATE_EDITOR_CELL_PADDING_MAX}pt 이하로 입력하세요.`,
+          `셀 ${invalidEntry.label} 여백은 0px 이상 ${TEMPLATE_EDITOR_CELL_PADDING_MAX}px 이하로 입력하세요.`,
           "warning",
         );
         return null;
@@ -168,7 +167,7 @@
 
       targetCells.forEach((cell) => {
         activeEntries.forEach((entry) => {
-          cell.style[entry.propertyName] = `${formatTemplateEditorPointValue(entry.value)}pt`;
+          cell.style[entry.propertyName] = `${formatTemplateEditorPointValue(entry.value)}px`;
         });
       });
 

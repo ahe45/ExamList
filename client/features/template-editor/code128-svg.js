@@ -156,7 +156,7 @@ export function buildCode128Svg(value, options = {}) {
   const width = Number(options.width) > 0 ? Number(options.width) : 240;
   const height = Number(options.height) > 0 ? Number(options.height) : 72;
   const quietZoneModules = 10;
-  const barColor = String(options.barColor || "#111827");
+  const barColor = String(options.barColor || "#000000");
   const backgroundColor = String(options.backgroundColor || "#ffffff");
   const { checksum, sequence, value: normalizedValue } = buildCode128BSequence(value);
   const barcodeModuleCount = sequence.reduce((sum, code) => {

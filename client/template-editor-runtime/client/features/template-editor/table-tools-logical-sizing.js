@@ -385,16 +385,15 @@
         0,
       );
 
-      if (preserveTableHeight) {
-        // Update saved row-group geometry along with both rows, retaining the
-        // table's outer size (including its collapsed border).
-        const rows = Array.from(table.rows);
-        [table.tHead, ...Array.from(table.tBodies), table.tFoot].filter(Boolean).forEach((group) => {
-          group.style.height = `${Array.from(group.rows).reduce((sum, row) => sum + rowHeights[rows.indexOf(row)], 0)}px`;
-        });
-      } else if (totalHeight > 0) {
+      // Fixed row-group heights must follow numeric edits as well as dragging;
+      // otherwise the browser redistributes the old total across all rows.
+      const rows = Array.from(table.rows);
+      [table.tHead, ...Array.from(table.tBodies), table.tFoot].filter(Boolean).forEach((group) => {
+        group.style.height = `${Array.from(group.rows).reduce((sum, row) => sum + rowHeights[rows.indexOf(row)], 0)}px`;
+      });
+      if (!preserveTableHeight && totalHeight > 0) {
         table.style.height = `${Math.min(maxTableHeight, totalHeight)}px`;
-      } else {
+      } else if (!preserveTableHeight) {
         syncTemplateEditorTableLogicalHeight(table, minimumRowHeight);
       }
 

@@ -608,6 +608,7 @@
       });
 
       const eventController = deps.events.createTemplateEditorEventController({
+        applyTemplateTableSize,
         applyTemplateEditorFontFamily,
         applyTemplateEditorFontSize,
         applyToolbarColorTrigger,

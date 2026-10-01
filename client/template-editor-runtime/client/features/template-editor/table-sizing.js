@@ -233,7 +233,8 @@
       return selectedCell;
     }
 
-    function applyTemplateTableSize() {
+    function applyTemplateTableSize(options = {}) {
+      const toolbarFocus = options.preserveToolbarFocus ? document.activeElement : null;
       restoreTemplateEditorSelection();
 
       const selectedCell = getTemplateEditorSelectedCell();
@@ -243,21 +244,26 @@
         return;
       }
 
-      const scope = String(getTemplateEditorSizeScopeInput()?.value || "cell");
-      const targetCells = getTemplateEditorSizeScopeCells(selectedCell, scope);
+      const targetCells = getTemplateEditorActiveTableSelection()?.selectedCells?.length
+        ? Array.from(getTemplateEditorActiveTableSelection().selectedCells) : [selectedCell];
 
       if (targetCells.length === 0) {
         setTemplateEditorStatus("적용할 셀을 찾을 수 없습니다.", "warning");
         return;
       }
 
-      const widthInput = String(getTemplateEditorCellWidthInput()?.value || "").trim();
-      const heightInput = String(getTemplateEditorRowHeightInput()?.value || "").trim();
+      const widthInput = options.dimension === "height" ? "" : String(getTemplateEditorCellWidthInput()?.value || "").trim();
+      const heightInput = options.dimension === "width" ? "" : String(getTemplateEditorRowHeightInput()?.value || "").trim();
       const widthValue = widthInput ? Number(widthInput) : null;
       const heightValue = heightInput ? Number(heightInput) : null;
 
       if (widthValue === null && heightValue === null) {
         setTemplateEditorStatus("셀 가로 또는 세로 값을 입력하세요.", "warning");
+        return;
+      }
+
+      if ([widthValue, heightValue].some(value => value !== null && (!Number.isFinite(value) || value < TEMPLATE_EDITOR_TABLE_MIN_SIZE))) {
+        setTemplateEditorStatus(`셀 크기는 ${TEMPLATE_EDITOR_TABLE_MIN_SIZE}px 이상으로 입력하세요.`, "warning");
         return;
       }
 
@@ -267,20 +273,27 @@
           return;
         }
 
-        if (scope === "cell") {
-          applyTemplateEditorTableCellWidth(selectedCell, widthValue);
-        } else {
-          const targetColumnIndexes = getTemplateEditorSizeScopeColumnIndexes(selectedCell, scope);
-
-          if (targetColumnIndexes.length === 0) {
-            setTemplateEditorStatus("적용할 열을 찾을 수 없습니다.", "warning");
-            return;
+        const table = selectedCell.closest("table");
+        const { entries } = buildTemplateTableCellMap(table);
+        const widths = new Map();
+        targetCells.forEach(cell => {
+          const entry = entries.get(cell);
+          if (!entry) return;
+          const base = Math.floor(widthValue / entry.colSpan);
+          for (let index = 0; index < entry.colSpan; index += 1) {
+            widths.set(entry.colIndex + index, base + (index === entry.colSpan - 1 ? widthValue - base * entry.colSpan : 0));
           }
-
-          targetColumnIndexes.forEach((columnIndex) => {
-            setTemplateEditorTableLogicalColumnWidth(selectedCell.closest("table"), columnIndex, widthValue);
-          });
-        }
+        });
+        const { columns } = ensureTemplateEditorTableColGroup(table);
+        const indexes = Array.from(widths.keys());
+        const total = Array.from(widths.values()).reduce((sum, width) => sum + width, 0);
+        const safeTotal = getTemplateEditorClampedColumnGroupWidth(table, columns, indexes, total);
+        let used = 0;
+        setTemplateEditorTableLogicalColumnWidths(table, indexes.map((columnIndex, index) => {
+          const width = index === indexes.length - 1 ? safeTotal - used : Math.round(widths.get(columnIndex) * safeTotal / total);
+          used += width;
+          return { columnIndex, width };
+        }));
       }
 
       if (heightValue !== null) {
@@ -297,9 +310,12 @@
           const rowIndex = table && rowElement ? Array.from(table.rows || []).indexOf(rowElement) : -1;
 
           if (table && rowIndex >= 0) {
-            const rowIndexes = rowIndexesByTable.get(table) || new Set();
-
-            rowIndexes.add(rowIndex);
+            const rowIndexes = rowIndexesByTable.get(table) || new Map();
+            const span = Math.max(1, Math.min(cell.rowSpan || 1, table.rows.length - rowIndex));
+            const baseHeight = Math.floor(heightValue / span);
+            for (let index = 0; index < span; index += 1) {
+              rowIndexes.set(rowIndex + index, baseHeight + (index === span - 1 ? heightValue - baseHeight * span : 0));
+            }
             rowIndexesByTable.set(table, rowIndexes);
             return;
           }
@@ -311,15 +327,16 @@
         });
 
         rowIndexesByTable.forEach((rowIndexes, table) => {
-          rowIndexes.forEach((rowIndex) => {
-            setTemplateEditorTableLogicalRowHeight(table, rowIndex, heightValue);
+          rowIndexes.forEach((height, rowIndex) => {
+            setTemplateEditorTableLogicalRowHeight(table, rowIndex, height);
           });
         });
       }
 
-      focusTemplateEditorCell(selectedCell);
+      if (!options.preserveToolbarFocus) focusTemplateEditorCell(selectedCell);
       syncTemplateEditorContent();
       updateTemplateTableControls();
+      toolbarFocus?.focus?.({ preventScroll: true });
     }
 
     return Object.freeze({

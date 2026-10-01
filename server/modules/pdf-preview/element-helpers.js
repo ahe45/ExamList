@@ -18,9 +18,9 @@ function buildAbsoluteStyle(element, additionalRules = []) {
 function buildBoxDecoration(style = {}, fallbackRadius = 0) {
   return [
     `background:${escapeHtml(style.backgroundColor || "transparent")}`,
-    `border:${Number(style.borderWidth) || 1}pt ${escapeHtml(style.borderStyle || "solid")} ${escapeHtml(style.borderColor || "#516585")}`,
+    `border:${Number(style.borderWidth) || 1}pt ${escapeHtml(style.borderStyle || "solid")} ${escapeHtml(style.borderColor || "#000000")}`,
     `border-radius:${Number(style.radius) || fallbackRadius}pt`,
-    `color:${escapeHtml(style.color || "#102445")}`,
+    `color:${escapeHtml(style.color || "#000000")}`,
     `font-size:${Number(style.fontSize) || 12}pt`,
     `font-weight:${Number(style.fontWeight) || 600}`,
     `opacity:${Number.isFinite(Number(style.opacity)) ? Number(style.opacity) : 1}`,

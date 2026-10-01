@@ -58,7 +58,7 @@ function getPreviewLayoutStyles() {
 
     .preview-page-number {
       bottom: 14.25pt;
-      color: #102445;
+      color: #000000;
       font-size: 10pt;
       font-weight: 700;
       left: 0;

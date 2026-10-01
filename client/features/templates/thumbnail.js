@@ -149,7 +149,7 @@ function getElementStyle(element, extraStyles = "") {
 
 function getTextStyle(style = {}) {
   return [
-    `color:${escapeHtml(style.color || "#102445")}`,
+    `color:${escapeHtml(style.color || "#000000")}`,
     `font-family:${escapeHtml(style.fontFamily || "Noto Sans KR")}, sans-serif`,
     `font-size:${formatPx(pointToPixel(style.fontSize || 12))}`,
     `font-weight:${Math.round(toNumber(style.fontWeight, 500))}`,
@@ -250,7 +250,7 @@ function renderLineElement(element) {
   return `
     <div
       class="template-card-page-element template-card-line-element ${isVertical ? "vertical" : ""}"
-      style="${getElementStyle(element, `border-color:${escapeHtml(style.strokeColor || "#516585")};border-width:${Math.max(1, pointToPixel(style.strokeWidth || 1))}px;`)}"
+      style="${getElementStyle(element, `border-color:${escapeHtml(style.strokeColor || "#000000")};border-width:${Math.max(1, pointToPixel(style.strokeWidth || 1))}px;`)}"
     ></div>
   `;
 }
@@ -267,7 +267,7 @@ function renderBoxElement(element) {
         element,
         [
           `background:${escapeHtml(style.backgroundColor || "transparent")}`,
-          `border:${borderWidth}px ${escapeHtml(style.borderStyle || "solid")} ${escapeHtml(style.borderColor || "#516585")}`,
+          `border:${borderWidth}px ${escapeHtml(style.borderStyle || "solid")} ${escapeHtml(style.borderColor || "#000000")}`,
           `border-radius:${borderRadius}`,
         ].join(";"),
       )}"

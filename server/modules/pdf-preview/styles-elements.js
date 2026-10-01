@@ -13,7 +13,7 @@ function getPreviewElementStyles() {
     .preview-image-wrap {
       align-items: center;
       background: rgba(239, 244, 255, 0.48);
-      border: 1px solid rgba(144, 163, 199, 0.48);
+      border: 1px solid #000000;
       display: flex;
       justify-content: center;
       overflow: hidden;
@@ -27,7 +27,7 @@ function getPreviewElementStyles() {
 
     .preview-image-placeholder {
       align-items: center;
-      color: #50627e;
+      color: #000000;
       display: inline-flex;
       flex-direction: column;
       font-size: 8pt;
@@ -101,13 +101,13 @@ function getPreviewElementStyles() {
     }
 
     .preview-signature-label {
-      color: #2c4166;
+      color: inherit;
       font-size: 9pt;
     }
 
     .preview-signature-placeholder {
       align-items: center;
-      color: #657896;
+      color: inherit;
       display: flex;
       justify-content: center;
       min-height: 100%;
@@ -126,7 +126,7 @@ function getPreviewElementStyles() {
 
     .preview-table thead th {
       background: #eff4ff;
-      border: 1px solid #90a3c7;
+      border: 1px solid #000000;
       font-size: 9pt;
       font-weight: 700;
       height: 28pt;
@@ -134,7 +134,7 @@ function getPreviewElementStyles() {
     }
 
     .preview-table tbody td {
-      border: 1px solid #9eabc2;
+      border: 1px solid #000000;
       font-size: 8.8pt;
       padding: 4pt;
       vertical-align: middle;
@@ -164,7 +164,7 @@ function getPreviewElementStyles() {
 
     .preview-photo-placeholder {
       align-items: center;
-      color: #50627e;
+      color: #000000;
       flex-direction: column;
       font-size: 7.2pt;
       gap: 2pt;

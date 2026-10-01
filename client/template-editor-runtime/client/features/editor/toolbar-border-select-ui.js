@@ -35,9 +35,7 @@
         return "";
       }
 
-      const normalizedValue = Math.max(0, Math.round(numericValue * 10) / 10);
-
-      return Number.isInteger(normalizedValue) ? String(normalizedValue) : normalizedValue.toFixed(1);
+      return String(Math.max(0, Math.round(numericValue * 100) / 100));
     }
 
     function getEditorToolbarBorderSelectElements(inputId = "") {
@@ -178,14 +176,15 @@
         return "";
       }
 
-      const normalizedValue = formatEditorToolbarCellPaddingValue(value || inputElement.value || "");
+      const isMixed = value === "mixed";
+      const normalizedValue = isMixed ? "" : formatEditorToolbarCellPaddingValue(value);
       const { comboElement, menuElement } = getEditorToolbarCellPaddingComboElements(inputElement.id);
       const currentValueElement = comboElement?.querySelector("[data-editor-cell-padding-current]") || null;
 
       inputElement.value = normalizedValue;
 
       if (currentValueElement) {
-        currentValueElement.textContent = normalizedValue || "-";
+        currentValueElement.textContent = isMixed ? "혼합" : normalizedValue || "-";
       }
 
       Array.from(menuElement?.querySelectorAll("[data-editor-cell-padding-option]") || []).forEach((buttonElement) => {

@@ -3,3 +3,22 @@
 @import url("./toolbar/typography-and-tools.css");
 @import url("./toolbar/object-and-insert-controls.css");
 @import url("./toolbar/steppers-and-colors.css");
+
+.template-toolbar-field-label,
+.template-toolbar-cell-padding-field-label,
+.template-toolbar-border-field-label,
+.template-toolbar-format-field-label,
+.template-toolbar-format-color-field > .template-toolbar-section-label,
+.template-toolbar-input-label,
+.examlist-object-align-section-label {
+  color: var(--text-dim, var(--muted));
+  font-size: var(--template-toolbar-label-font-size, 0.68rem);
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.examlist-object-size-field,
+.examlist-object-align-section {
+  gap: 4px;
+}

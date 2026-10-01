@@ -38,14 +38,14 @@ function getPreviewContentStyles() {
 
     .preview-document-body blockquote {
       background: rgba(238, 243, 251, 0.8);
-      border-left: 4pt solid rgba(40, 88, 184, 0.5);
+      border-left: 4pt solid #000000;
       border-radius: 12pt;
       padding: 12pt 16pt;
     }
 
     .preview-document-body hr {
       border: 0;
-      border-top: 1pt solid rgba(81, 101, 133, 0.35);
+      border-top: 1pt solid #000000;
       margin: 20pt 0;
     }
 
@@ -191,7 +191,7 @@ function getPreviewContentStyles() {
 
     .preview-document-body th,
     .preview-document-body td {
-      border: 1pt solid rgba(154, 169, 191, 0.9);
+      border: 1pt solid #000000;
       padding: 2pt;
       vertical-align: top;
     }
@@ -203,7 +203,7 @@ function getPreviewContentStyles() {
 
     .preview-document-body .editor-document-signature-box {
       align-items: center;
-      border: 1pt dashed rgba(81, 101, 133, 0.68);
+      border: 1pt dashed #000000;
       border-radius: 18pt;
       display: grid;
       gap: 8pt;
@@ -214,14 +214,14 @@ function getPreviewContentStyles() {
     }
 
     .preview-document-body .editor-document-signature-box figcaption {
-      color: #69788f;
+      color: #000000;
       font-size: 10pt;
     }
 
     .preview-document-figure-image {
       align-items: center;
       background: linear-gradient(180deg, rgba(230, 238, 248, 0.9), rgba(244, 247, 252, 0.95));
-      border: 1pt dashed rgba(81, 101, 133, 0.52);
+      border: 1pt dashed #000000;
       border-radius: 18pt;
       display: flex;
       justify-content: center;
@@ -231,7 +231,7 @@ function getPreviewContentStyles() {
     }
 
     .preview-document-figure-image.placeholder {
-      color: #516585;
+      color: #000000;
       font-weight: 700;
     }
 

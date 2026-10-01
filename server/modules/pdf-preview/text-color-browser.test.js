@@ -24,6 +24,8 @@ test("canvas and PDF preserve text, table, background, line and mark colors", { 
       '<table><tr><td id="cell">Table black</td><td id="token"><span data-template-tag-value="candidate.name">Name</span></td></tr></table>' +
       '<p id="black" style="color:#000000">Explicit black</p>' +
       '<p id="red" style="color:#ff0000">Explicit red</p>' +
+      '<img id="barcode" data-template-object-type="barcode" data-template-object-source="candidate.examNo" src="" style="width:100px;height:30px" />' +
+      '<img id="qrcode" data-template-object-type="qrcode" data-template-object-source="candidate.examNo" src="" style="width:60px;height:60px" />' +
       '<table><tr><th id="header">Default header</th></tr>' +
       '<tr><td id="black-border" style="border:2px solid #000000;background-color:#00ff00">Black border, green fill</td></tr>' +
       '<tr><td id="custom-border" style="border:2px dashed #ff0000;background-color:#ffff00">Red border, yellow fill</td></tr>' +
@@ -34,7 +36,7 @@ test("canvas and PDF preserve text, table, background, line and mark colors", { 
       { type: "content", widthPt: 595.28, heightPt: 841.89, settings: { editorMode: "document", documentHtml,
         pageNumber: { enabled: true }, recognitionMarks: { enabled: true } }, elements: [] },
     ] } };
-    const candidates = [{ name: "Candidate black" }];
+    const candidates = [{ name: "Candidate black", examNo: "26010001" }];
     const { html } = renderPreviewDocument({ template, candidates });
     const readColors = `(async () => {
       await document.fonts.ready;
@@ -61,7 +63,30 @@ test("canvas and PDF preserve text, table, background, line and mark colors", { 
     assert.deepEqual(await evaluate(client, readDecorations), canvasDecorations);
     assert.equal(await evaluate(client, `getComputedStyle(document.getElementById('black-border')).printColorAdjust`), "exact");
     assert.equal(await evaluate(client, `getComputedStyle(document.querySelector('.preview-recognition-mark')).backgroundColor`), "rgb(0, 0, 0)");
-    assert.equal(await evaluate(client, `getComputedStyle(document.querySelector('.preview-page-number')).color`), "rgb(16, 36, 69)");
+    assert.equal(await evaluate(client, `getComputedStyle(document.querySelector('.preview-page-number')).color`), "rgb(0, 0, 0)");
+    for (const id of ['cell', 'header', 'rule']) {
+      assert.equal(await evaluate(client, `getComputedStyle(document.getElementById('${id}')).borderTopColor`), "rgb(0, 0, 0)");
+    }
+    assert.equal(await evaluate(client, `getComputedStyle(document.getElementById('quote')).borderLeftColor`), "rgb(0, 0, 0)");
+    const codePixels = await evaluate(client, `(async () => {
+      return Promise.all(['barcode','qrcode'].map(async id => {
+        const img = document.getElementById(id); await img.decode();
+        const canvas = document.createElement('canvas'); canvas.width=img.naturalWidth; canvas.height=img.naturalHeight;
+        const context = canvas.getContext('2d'); context.drawImage(img,0,0);
+        const data = context.getImageData(0,0,canvas.width,canvas.height).data;
+        let black=0, other=0;
+        for(let i=0;i<data.length;i+=4) {
+          if(!data[i+3]) continue;
+          if(data[i]===0 && data[i+1]===0 && data[i+2]===0) black++;
+          else if(data[i]!==255 || data[i+1]!==255 || data[i+2]!==255) other++;
+        }
+        return {id,black,other};
+      }));
+    })()`);
+    codePixels.forEach(result => {
+      assert.ok(result.black > 0, JSON.stringify(result));
+      assert.equal(result.other, 0, JSON.stringify(result));
+    });
     const result = await client.send("Page.printToPDF", { preferCSSPageSize: true, printBackground: true });
     const pdf = await PDFDocument.load(Buffer.from(result.data, "base64"));
     const contents = pdf.getPage(0).node.Contents();

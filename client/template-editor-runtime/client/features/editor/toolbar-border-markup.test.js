@@ -35,7 +35,7 @@ test("table border width renders as a focus-preserving dropdown", () => {
   });
 });
 
-test("table cell padding renders as focus-preserving dropdowns with 0 to 10pt choices", () => {
+test("table cell padding renders as focus-preserving dropdowns with 0 to 10px choices", () => {
   const renderer = createRenderer();
   const html = renderer.renderEditorToolbarCellPaddingSection({
     tableActionAttr: "data-template-table-action",
@@ -48,6 +48,7 @@ test("table cell padding renders as focus-preserving dropdowns with 0 to 10pt ch
   assert.match(html, /class="template-toolbar-cell-padding-combo"/);
   assert.match(html, /id="cellPaddingTop" type="hidden" value="2"/);
   assert.match(html, /data-editor-cell-padding-toggle="cellPaddingTop"/);
+  assert.match(html, /template-toolbar-cell-padding-unit" aria-hidden="true">px<\/span>/);
   assert.match(html, /data-editor-cell-padding-menu-for="cellPaddingTop"/);
   assert.match(
     html,
