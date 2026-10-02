@@ -42,12 +42,14 @@ function getTokenOccurrenceIndex(surfaceElement, tokenElement, tagKey) {
 }
 
 function createActiveTokenDescriptor(tokenElement, tagKey) {
-  const surfaceElement = tokenElement?.closest?.("[data-editor-document-surface]");
+  const modalSurface = tokenElement?.closest?.("[data-candidate-block-modal-editor-surface]");
+  const surfaceElement = modalSurface || tokenElement?.closest?.("[data-editor-document-surface]");
 
   return {
     occurrenceIndex: getTokenOccurrenceIndex(surfaceElement, tokenElement, tagKey),
     pageId: String(surfaceElement?.dataset?.pageId || "").trim(),
     tagKey,
+    isCandidateBlockModal: Boolean(modalSurface),
   };
 }
 
@@ -56,7 +58,9 @@ function findCurrentTokenElement(activeTokenElement, activeTokenDescriptor) {
     return activeTokenElement;
   }
 
-  const surfaceElement = activeTokenDescriptor?.pageId
+  const surfaceElement = activeTokenDescriptor?.isCandidateBlockModal
+    ? window.ExamListCandidateBlockModalEditor?.getActiveSurface?.()
+    : activeTokenDescriptor?.pageId
     ? Array.from(document.querySelectorAll("[data-editor-document-surface]"))
         .find((element) => String(element?.dataset?.pageId || "").trim() === activeTokenDescriptor.pageId)
     : document.getElementById("templateEditorSurface");
@@ -199,7 +203,18 @@ export function createDataTagFormatActions({
         delete tokenElement.dataset.templateTagFormat;
       }
 
-      syncSelectedPageDocumentHtml?.({ render: false });
+      const modalSurface = tokenElement.closest?.("[data-candidate-block-modal-editor-surface]");
+      if (modalSurface) {
+        // Keep the change in the block draft until its editor is closed.
+        // Synchronizing the outer document here would lose the draft.
+        window.ExamListCandidateBlockModalEditor?.syncActiveEditor?.({ markDirty: true });
+      } else {
+        // Attribute edits emit no native input event. Synchronize the runtime
+        // so its history, serialized draft and dirty state include the format.
+        const runtime = typeof window !== "undefined" ? window.ExamListTemplateEditorRuntime : null;
+        runtime?.sync?.();
+        syncSelectedPageDocumentHtml?.({ render: false });
+      }
     }
 
     resetModalState(modalState);

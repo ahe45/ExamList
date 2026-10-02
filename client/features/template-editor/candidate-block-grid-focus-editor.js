@@ -1951,9 +1951,12 @@ function commitCandidateBlockDraft(state) {
     templateHtml: normalizeCandidateBlockTemplateHtml(draftConfig.columnNameRow?.templateHtml),
   };
 
-  if (state.blockElement instanceof HTMLElement) {
-    state.blockElement.innerHTML = sourceConfig.blockTemplateHtml;
-    normalizeCandidateBlockTables(state.blockElement);
+  // Opening a nested dialog can rerender the outer grid. Commit to its current
+  // source block so the next surface synchronization cannot restore old HTML.
+  const currentBlockElement = state.surfaceElement?.querySelector?.("[data-candidate-block-instance]") || state.blockElement;
+  if (currentBlockElement instanceof HTMLElement) {
+    currentBlockElement.innerHTML = sourceConfig.blockTemplateHtml;
+    normalizeCandidateBlockTables(currentBlockElement);
   }
 
   return true;

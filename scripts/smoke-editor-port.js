@@ -8,6 +8,7 @@ const { spawn } = require("node:child_process");
 const { getAvailablePort, resolveBrowserPath } = require("./smoke-utils");
 const { runTokenTableTypingCheck } = require("./smoke/template-editor/token-table-typing");
 const { runDataTagFormatStabilityCheck } = require("./smoke/template-editor/data-tag-format-stability");
+const { runDataTagFormatSaveCheck } = require("./smoke/template-editor/data-tag-format-save");
 const { runGridBoundaryDeletionCheck } = require("./smoke/template-editor/grid-boundary-deletion");
 const { runObjectScrollStabilityCheck } = require("./smoke/template-editor/object-scroll-stability");
 const { runTableTextDragCheck } = require("./smoke/template-editor/table-text-drag");
@@ -93,6 +94,12 @@ async function run() {
       "window.ExamListTemplateEditorRuntimeLoader",
       "editor loader",
     );
+    if (process.argv.includes("--format-save")) {
+      await runDataTagFormatSaveCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Data tag format save checks passed");
+      return;
+    }
     if (process.argv.includes("--size-inputs")) {
       await runTableSizeInputsCheck(client);
       assert.deepEqual(client.getPageErrors(), []);
