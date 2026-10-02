@@ -3,6 +3,7 @@ import { renderAuthStatus } from "../features/auth/renderers.js";
 import { syncStableBusyOverlays } from "./stable-busy-overlays.js";
 import { getActiveSchoolId } from "./school-context.js";
 import { syncViewShell } from "./view-shell.js";
+import { renderTemplateEditorPanel } from "./template-editor-panel.js";
 
 const loaders = {
   accounts: () => import("../features/accounts/renderers.js"),
@@ -57,7 +58,7 @@ export function createAppRenderer({ appState, dom, getEditorActions, renderModal
     };
     for (const [name, panel] of Object.entries(dom.panelsByView)) {
       if (name === view) {
-        if (view === "templateEditor") panel.innerHTML = renderView[view]?.() || "";
+        if (view === "templateEditor") renderTemplateEditorPanel(panel, renderView[view]?.() || "");
         else renderPartialHtml(panel, renderView[view]?.() || "");
       } else if (panel.childNodes.length) clearPartialHtml(panel);
     }

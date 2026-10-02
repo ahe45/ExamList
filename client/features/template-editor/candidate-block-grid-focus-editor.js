@@ -1258,6 +1258,7 @@ function scheduleActiveCandidateBlockModalSync() {
 }
 
 function restoreCandidateBlockFocusChrome(state = candidateBlockFocusState) {
+  refreshCandidateBlockSourceElement(state);
   if (
     candidateBlockFocusState !== state ||
     !(state?.surfaceElement instanceof HTMLElement) ||
@@ -1674,7 +1675,15 @@ function handleWindowLayoutChange() {
   applyCandidateBlockFocusLayout();
 }
 
+function refreshCandidateBlockSourceElement(state) {
+  if (state?.surfaceElement?.isConnected && !state.surfaceElement.contains(state.blockElement)) {
+    const currentSource = state.surfaceElement.querySelector("[data-candidate-block-instance]");
+    if (currentSource instanceof HTMLElement) state.blockElement = currentSource;
+  }
+}
+
 function applyCandidateBlockFocusLayout(state = candidateBlockFocusState) {
+  refreshCandidateBlockSourceElement(state);
   const { blockElement, layerElement, modalSurfaceElement, surfaceElement } = state || {};
 
   if (
