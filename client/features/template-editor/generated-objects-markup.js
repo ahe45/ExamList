@@ -23,7 +23,7 @@ export function buildGeneratedObjectMarkup(objectType, objectSourceKey = "candid
   const sourceLabel = getGeneratedObjectSourceLabel(normalizedSourceKey, tagDefinitions);
   const previewValue = resolveGeneratedObjectPreviewValue(previewRecord || {}, normalizedSourceKey, tagDefinitions);
   const objectLabel = `${sourceLabel} ${objectConfig.labelSuffix}`;
-  const sourceUrl = createGeneratedObjectSvgDataUrl(buildGeneratedObjectSvg(normalizedType, previewValue));
+  const sourceUrl = createGeneratedObjectSvgDataUrl(buildGeneratedObjectSvg(normalizedType, previewValue, normalizedSourceKey));
 
   return `
     <img

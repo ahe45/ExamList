@@ -20,6 +20,7 @@ const candidateTemplateHeaderNotes = Object.freeze({
   date: "yyyy-mm-dd 형식으로 입력하세요. 예: 2026-03-28",
   endTime: "선택 입력입니다. 입력 시 hh:mm 형식으로 입력하세요. 예: 10:00",
   time: "hh:mm 형식으로 입력하세요. 예: 08:40",
+  periodCode: "숫자 한 자리(1~9)만 입력하세요. 예: 1",
 });
 const candidateUploadDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 const candidateUploadTimePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -122,6 +123,14 @@ function createCandidateWorkbookService({ createHttpError }) {
     return normalizedValue;
   }
 
+  function normalizeUploadPeriodCode(value, rowNumber) {
+    const normalizedValue = normalizeText(value, "교시코드", rowNumber).trim();
+    if (!/^[1-9]$/.test(normalizedValue)) {
+      throw createHttpError(400, `교시코드는 숫자 한 자리(1~9)만 입력할 수 있습니다.${createRowSuffix(rowNumber)}`, "CANDIDATE_PERIOD_CODE_INVALID");
+    }
+    return normalizedValue;
+  }
+
   function normalizeCandidateWorkbookInput(candidateInput = {}, index = -1, options = {}) {
     const rowNumber = Number(index) >= 0 ? Number(index) + 2 : -1;
     const shouldValidateUploadDateTimeFormat = Boolean(options.validateUploadDateTimeFormat);
@@ -157,7 +166,9 @@ function createCandidateWorkbookService({ createHttpError }) {
       opt9: normalizeOptionalText(candidateInput.opt9 ?? candidateInput.OPT9),
       opt10: normalizeOptionalText(candidateInput.opt10 ?? candidateInput.OPT10),
       period: normalizeText(candidateInput.period ?? candidateInput.periodName, "교시명", rowNumber),
-      periodCode: normalizeText(candidateInput.periodCode, "교시코드", rowNumber),
+      periodCode: options.validateUploadPeriodCode
+        ? normalizeUploadPeriodCode(candidateInput.periodCode, rowNumber)
+        : normalizeText(candidateInput.periodCode, "교시코드", rowNumber),
       room: normalizeText(candidateInput.room, "고사실명", rowNumber),
       roomCode: normalizeText(candidateInput.roomCode, "고사실코드", rowNumber),
       series: normalizeText(candidateInput.series, "계열명", rowNumber),

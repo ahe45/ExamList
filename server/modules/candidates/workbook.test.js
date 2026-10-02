@@ -16,6 +16,18 @@ function createHttpError(statusCode, message, errorCode = "") {
   return error;
 }
 
+test("upload period codes accept exactly one digit from 1 to 9", () => {
+  const service = createCandidateWorkbookService({createHttpError});
+  for (const value of [1, 9, "1", "9"]) {
+    const row = service.normalizeCandidateWorkbookInput(createCandidateWorkbookInput({periodCode:value}), 0, {validateUploadPeriodCode:true});
+    assert.equal(row.periodCode, String(value));
+  }
+  for (const value of [0, "0", "P1", "10", "01", "-1", "1.0", "1교시", "１", "", null]) {
+    assert.throws(() => service.normalizeCandidateWorkbookInput(createCandidateWorkbookInput({periodCode:value}), 2, {validateUploadPeriodCode:true}),
+      error => error.statusCode===400 && /교시코드/.test(error.message) && /4행/.test(error.message));
+  }
+});
+
 function createCandidateWorkbookInput(overrides = {}) {
   return {
     admission: "일반전형",

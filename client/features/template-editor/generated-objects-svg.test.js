@@ -7,6 +7,15 @@ function importClientModule(fileName) {
   return import(pathToFileURL(path.join(__dirname, fileName)).href);
 }
 
+test("exam date barcode preview uses compact dates while other sources retain hyphens", async () => {
+  const { buildGeneratedObjectMarkup } = await importClientModule("generated-objects-markup.js");
+  const { buildGeneratedObjectSvg } = await importClientModule("generated-objects-svg.js");
+  const markup = buildGeneratedObjectMarkup("barcode", "candidate.examDate", { previewRecord: {examDate:"2026-10-21"} });
+  assert.match(decodeURIComponent(markup), /data-code128-value="20261021"/);
+  assert.match(buildGeneratedObjectSvg("barcode", "2026-10-21", "candidate.opt1"), /data-code128-value="2026-10-21"/);
+  assert.equal(buildGeneratedObjectSvg("qrcode", "2026-10-21", "candidate.examDate"), buildGeneratedObjectSvg("qrcode", "2026-10-21"));
+});
+
 test("buildGeneratedObjectSvg renders barcode preview as Code128-B", async () => {
   const { buildGeneratedObjectSvg } = await importClientModule("generated-objects-svg.js");
   const svg = buildGeneratedObjectSvg("barcode", "26010001");

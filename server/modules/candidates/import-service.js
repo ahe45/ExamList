@@ -13,6 +13,7 @@ const CANDIDATE_IMPORT_EXISTING_DATA_POLICIES = Object.freeze({
 });
 const CANDIDATE_UPLOAD_NORMALIZATION_OPTIONS = Object.freeze({
   validateUploadDateTimeFormat: true,
+  validateUploadPeriodCode: true,
 });
 const candidateImportCountFormatter = new Intl.NumberFormat("ko-KR");
 

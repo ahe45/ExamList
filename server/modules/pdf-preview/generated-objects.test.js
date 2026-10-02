@@ -4,6 +4,14 @@ const { buildDocumentGeneratedObjectSvg, replaceTemplateGeneratedObjectImagesInH
 
 const examNoCode128Sequence = "104,18,22,16,17,16,16,16,17,88,106";
 
+test("saved exam date barcodes regenerate with compact dates in PDF", () => {
+  const html = '<img data-template-object-type="barcode" data-template-object-source="candidate.examDate" src="old-preview" />';
+  const result = replaceTemplateGeneratedObjectImagesInHtml(html, {candidate:{examDate:"2026-10-21"}});
+  assert.match(decodeURIComponent(result), /data-code128-value="20261021"/);
+  assert.match(buildDocumentGeneratedObjectSvg("barcode", "2026-10-21", "candidate.opt1"), /data-code128-value="2026-10-21"/);
+  assert.equal(buildDocumentGeneratedObjectSvg("qrcode", "2026-10-21", "candidate.examDate"), buildDocumentGeneratedObjectSvg("qrcode", "2026-10-21"));
+});
+
 test("buildDocumentGeneratedObjectSvg renders barcode as Code128-B", () => {
   const svg = buildDocumentGeneratedObjectSvg("barcode", "26010001");
 

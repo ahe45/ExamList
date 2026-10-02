@@ -50,8 +50,8 @@ function createGeneratedObjectSvgDataUrl(svgMarkup) {
   return createGeneratedObjectSvgDataUrlFromConfig(svgMarkup);
 }
 
-function buildGeneratedObjectSvg(objectType, objectValue) {
-  return buildGeneratedObjectSvgFromConfig(objectType, objectValue);
+function buildGeneratedObjectSvg(objectType, objectValue, sourceKey) {
+  return buildGeneratedObjectSvgFromConfig(objectType, objectValue, normalizeGeneratedObjectSourceKey(sourceKey));
 }
 
 export function buildGeneratedObjectMarkup(objectType, objectSourceKey = "candidate.examNo", { previewRecord = null, tagDefinitions = getActiveTagDefinitions() } = {}) {
@@ -123,7 +123,7 @@ export function patchGeneratedObjectController({ getTagDefinitions = null } = {}
       }
 
       const value = getTemplateGeneratedObjectValue(examinee, sourceKey);
-      return createGeneratedObjectSvgDataUrl(buildGeneratedObjectSvg(objectType, value));
+      return createGeneratedObjectSvgDataUrl(buildGeneratedObjectSvg(objectType, value, sourceKey));
     }
 
     function decorateTemplateGeneratedObjectImage(imageElement, { examinee = null, getPreviewExaminee = null } = {}) {
@@ -171,7 +171,7 @@ export function patchGeneratedObjectController({ getTagDefinitions = null } = {}
       if (previewUrl) {
         imageElement.src = previewUrl;
       } else if (value) {
-        imageElement.src = createGeneratedObjectSvgDataUrl(buildGeneratedObjectSvg(objectType, value));
+        imageElement.src = createGeneratedObjectSvgDataUrl(buildGeneratedObjectSvg(objectType, value, sourceKey));
       }
 
       return true;

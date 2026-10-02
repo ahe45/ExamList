@@ -19,8 +19,12 @@ function createDocumentSvgDataUrl(svgMarkup) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(String(svgMarkup || ""))}`;
 }
 
-function buildDocumentGeneratedObjectSvg(objectType, objectValue) {
-  const normalizedValue = String(objectValue || "").trim() || "123100001";
+function buildDocumentGeneratedObjectSvg(objectType, objectValue, sourceKey = "") {
+  let normalizedValue = String(objectValue || "").trim() || "123100001";
+  const [sourcePath] = splitTokenPipeline(sourceKey);
+  if (objectType === "barcode" && sourcePath === "candidate.examDate") {
+    normalizedValue = normalizedValue.replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$1$2$3");
+  }
 
   if (objectType === "qrcode") {
     const gridSize = 21;
@@ -237,7 +241,7 @@ function replaceTemplateGeneratedObjectImagesInHtml(text, context, options = {})
 
       const normalizedObjectValue = objectValue || "123100001";
       const objectLabel = `${getGeneratedObjectSourceLabel(objectSource)} ${normalizedType === "qrcode" ? "QR코드" : "바코드"}`;
-      const sourceUrl = createDocumentSvgDataUrl(buildDocumentGeneratedObjectSvg(normalizedType, normalizedObjectValue));
+      const sourceUrl = createDocumentSvgDataUrl(buildDocumentGeneratedObjectSvg(normalizedType, normalizedObjectValue, objectSource));
 
       return replaceOrAppendHtmlAttribute(
         replaceOrAppendHtmlAttribute(

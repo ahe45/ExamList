@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const { createCandidateImportService } = require("./import-service");
+const { createCandidateWorkbookService } = require("./workbook");
 
 function createHttpError(statusCode, message, errorCode = "") {
   return Object.assign(new Error(message), { errorCode, statusCode });
@@ -29,6 +30,20 @@ function createCandidateRow(overrides = {}) {
     ...overrides,
   };
 }
+
+test("upload preview and import reject invalid period codes before any database writes", async () => {
+  const workbook = createCandidateWorkbookService({createHttpError});
+  const service = createService({
+    normalizeCandidateWorkbookInput:workbook.normalizeCandidateWorkbookInput,
+    workbookRows:[createCandidateRow({periodCode:"1"}),createCandidateRow({periodCode:"10"})],
+    getPool:()=> {throw new Error("Invalid upload must not access database");},
+    upsertCandidateWorkbookRows:async()=> {throw new Error("Invalid upload must not write data");},
+  });
+  for (const method of ["previewCandidateImport", "importCandidates"]) {
+    await assert.rejects(()=>service[method]({fileContentBase64:"xlsx",schoolId:"school-1"}),
+      error=>error.errorCode==="CANDIDATE_PERIOD_CODE_INVALID" && /3행/.test(error.message));
+  }
+});
 
 function createService({
   existingRows = [],

@@ -5,9 +5,12 @@ export function createGeneratedObjectSvgDataUrl(svgMarkup) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(String(svgMarkup || ""))}`;
 }
 
-export function buildGeneratedObjectSvg(objectType, objectValue) {
+export function buildGeneratedObjectSvg(objectType, objectValue, sourceKey = "") {
   const normalizedType = normalizeGeneratedObjectType(objectType);
-  const normalizedValue = String(objectValue || "123100001").trim() || "123100001";
+  let normalizedValue = String(objectValue || "123100001").trim() || "123100001";
+  if (normalizedType === "barcode" && sourceKey === "candidate.examDate") {
+    normalizedValue = normalizedValue.replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$1$2$3");
+  }
 
   if (normalizedType === "qrcode") {
     const size = 29;

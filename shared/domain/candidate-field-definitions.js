@@ -147,7 +147,7 @@ const candidateFieldDefinitions = Object.freeze([
     label: "교시코드",
     templateWidth: 16,
     exportWidth: 16,
-    sample: "P1",
+    sample: "1",
   }),
   createFieldDefinition({
     key: "building",
