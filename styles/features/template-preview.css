@@ -1,0 +1,31 @@
+.editor-preview-modal {
+  align-items: stretch;
+  padding: 24px;
+  z-index: 1680;
+}
+
+.editor-preview-modal-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: calc(100vh - 48px);
+  max-height: calc(100vh - 48px);
+  max-width: 1320px;
+  width: min(100%, 1320px);
+}
+
+.editor-preview-body {
+  display: grid;
+  gap: 16px;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.editor-preview-frame {
+  align-self: stretch;
+  background: #dce4f1;
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 18px;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
