@@ -101,6 +101,7 @@ function getPreviewContentStyles() {
 
     .preview-candidate-block {
       box-sizing: border-box;
+      position: relative;
       line-height: calc(1em + 1pt);
       min-height: 15pt;
       overflow: hidden;
