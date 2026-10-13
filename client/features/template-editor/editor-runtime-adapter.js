@@ -467,6 +467,10 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
     syncCoverPageDisabledState({ editor: mountedEditor, pagePropertiesHost, selectedPage, surfaceElement });
     normalizeCandidateBlockTables(surfaceElement);
     applyTemplateEditorCanvasZoomFromState({ appState, recomputeFit: true, rootElement });
+    // Nested settings dialogs retain this runtime. Refresh its page number
+    // overlay and Save button from the newly committed settings as well.
+    commitPageNumberControlsToPage({ appState, pagePropertiesHost, selectedPage, surfaceElement });
+    updateMountedRuntimeDirtyState(appState, selectedPage, normalizeSavedRuntimeHtml(mountedEditor.getHtml(), mountedTagDefinitions));
     return mountedEditor;
   }
 
@@ -568,7 +572,9 @@ export async function mountTemplateEditorRuntime({ access, appState } = {}) {
   writeCandidateBlockGridSizeToConfig(selectedPage, getCandidateBlockGridElements(surfaceElement)[0]);
   syncRuntimeOwnedSelectedPageFieldsToSavedSnapshot(appState, selectedPage, template);
   mountedDirty = false;
-  appState.templateEditor.isDirty = false;
+  // Establish the document baseline without discarding unsaved settings,
+  // such as page number formatting, when the editor is mounted again.
+  appState.templateEditor.isDirty = hasTemplateSnapshotChanges(appState);
   updateSaveButtonState(appState);
 
   return editor;

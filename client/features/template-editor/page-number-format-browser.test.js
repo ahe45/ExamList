@@ -2,11 +2,12 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const os = require("node:os");
+const http = require("node:http");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const esbuild = require("esbuild");
 const { resolveBrowserPath, getAvailablePort } = require("../../../scripts/smoke-utils");
-const { createCdpClient, waitForDevtools, evaluate, dispatchBrowserMouseClick, dispatchBrowserKey } = require("../../../scripts/smoke-browser-cdp");
+const { createCdpClient, waitForDevtools, waitForCondition, evaluate, dispatchBrowserMouseClick, dispatchBrowserKey } = require("../../../scripts/smoke-browser-cdp");
 const { normalizeTemplateLayout } = require("../../../server/modules/pdf-templates/layout");
 const { renderPreviewDocument } = require("../../../server/modules/pdf-preview/renderer");
 
@@ -14,29 +15,27 @@ test("page number modal cancels safely, saves formatting, and renders the same f
   const root = path.resolve(__dirname, "../../..");
   const bundle = await esbuild.build({ stdin: { resolveDir: __dirname, contents: `
     import { renderTemplateEditorView } from './renderers.js';
-    import { bindPageNumberControls } from './page-number-controls.js';
+    import { mountTemplateEditorRuntime, syncTemplateEditorRuntimeToState, resetTemplateEditorRuntimeDirtyBaseline } from './editor-runtime-adapter.js';
+    import { renderTemplateEditorPanel } from '../../app/template-editor-panel.js';
     import { createPageNumberFormatActions } from './page-number-format-actions.js';
     import { bindTemplateEditorClickEvents } from './template-editor-click-events.js';
     import { createModalCloseGuard } from '../../app/modal-close-guard.js';
     window.testState = { ui: {}, templateEditor: {
       selectedPageId: 'page-1', dataTags: { groups: [] }, isDirty: false,
-      template: { id: 'test', layout: { pages: [
-        { id: 'page-1', type: 'content', settings: { pageNumber: { enabled: true, position: 'right', preset: 'koreanPage' } } },
+      template: { id: 'test', name: '서식 테스트', paperPreset: 'A4', orientation: 'portrait', generationUnit: 'room', layout: { pages: [
+        { id: 'page-1', type: 'content', settings: { documentHtml: '<div class="template-doc"><p>본문</p></div>', pageNumber: { enabled: true, position: 'right', preset: 'koreanPage' } } },
         { id: 'page-2', type: 'content', settings: {} }
       ] } }
     } };
     const appState = window.testState;
-    let dispose;
+    const access = { permissions: { manageTemplates: true, previewTemplates: true } };
     function render() {
-      dispose?.();
-      document.getElementById('root').innerHTML = renderTemplateEditorView({
-        access: { permissions: { manageTemplates: true, previewTemplates: true } }, editor: appState.templateEditor,
-      });
-      dispose = bindPageNumberControls({ appState,
-        pagePropertiesHost: document.getElementById('templatePagePropertiesPanel'),
-        selectedPage: appState.templateEditor.template.layout.pages.find(p => p.id === appState.templateEditor.selectedPageId),
-        surfaceElement: document.getElementById('templateEditorSurface'),
-      });
+      window.testRenderPending = (async () => {
+        syncTemplateEditorRuntimeToState({ appState });
+        renderTemplateEditorPanel(document.getElementById('root'), renderTemplateEditorView({ access, editor: appState.templateEditor }));
+        await mountTemplateEditorRuntime({ access, appState });
+      })();
+      return window.testRenderPending;
     }
     window.testRender = render;
     const actions = createPageNumberFormatActions({ appState, canManageTemplates: () => true, onStateChange: render });
@@ -45,10 +44,34 @@ test("page number modal cancels safely, saves formatting, and renders the same f
       close: actions.closePageNumberFormatModal, isOpen: () => appState.templateEditor.pageNumberFormatModal?.isOpen });
     guard.attach();
     bindTemplateEditorClickEvents({ appState, ...actions });
-    render();
+    window.ExamListTemplateEditorRuntimeLoader = {
+      load: () => Promise.resolve(),
+      createTemplateEditor: window.ExamListTemplateEditorRuntime.createTemplateEditor,
+    };
+    window.testReady = render().then(() => {
+      appState.templateEditor.savedTemplateSnapshot = structuredClone(appState.templateEditor.template);
+      resetTemplateEditorRuntimeDirtyBaseline({ appState });
+      window.originalSurface = document.getElementById('templateEditorSurface');
+      window.testResetBaseline = () => {
+        appState.templateEditor.savedTemplateSnapshot = structuredClone(appState.templateEditor.template);
+        resetTemplateEditorRuntimeDirtyBaseline({ appState });
+      };
+      return true;
+    });
   ` }, bundle: true, write: false, format: "iife", platform: "browser" });
   const css = (await Promise.all(["styles/base.css", "styles/surfaces.css", "styles/features/template-editor.css"]
     .map(async file => (await esbuild.build({ entryPoints: [path.join(root, file)], bundle: true, write: false })).outputFiles[0].text))).join("\n");
+  const runtimeRoot = path.join(root, "client/template-editor-runtime");
+  const manifest = require(path.join(runtimeRoot, "client/template-editor-runtime/manifest.js"));
+  const runtimeSources = await Promise.all(manifest.requiredScripts.map(file => fs.readFile(path.resolve(runtimeRoot, file), "utf8")));
+  const runtime = await esbuild.transform(runtimeSources.join("\n;\n"), { minify: true });
+  const html = `<html><head><style>${css}</style></head><body><main id="root"></main><script>${runtime.code}</script><script>${bundle.outputFiles[0].text}</script></body></html>`;
+  const server = http.createServer((request, response) => {
+    if (request.url !== "/") { response.writeHead(404).end(); return; }
+    response.setHeader("Content-Type", "text/html; charset=utf-8");
+    response.end(html);
+  });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
   const profile = await fs.mkdtemp(path.join(os.tmpdir(), "examlist-page-number-"));
   const port = await getAvailablePort();
   const browser = spawn(resolveBrowserPath(), ["--headless", "--disable-gpu", "--no-first-run",
@@ -58,12 +81,19 @@ test("page number modal cancels safely, saves formatting, and renders the same f
     client = await createCdpClient(await waitForDevtools(port));
     await client.send("Runtime.enable");
     await client.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
-    const html = `<html><head><style>${css}</style></head><body><main id="root"></main><script>${bundle.outputFiles[0].text}</script></body></html>`;
-    await evaluate(client, `document.open();document.write(${JSON.stringify(html)});document.close();`);
-    const click = selector => dispatchBrowserMouseClick(client, selector);
+    await client.send("Page.navigate", { url: `http://127.0.0.1:${server.address().port}/` });
+    await waitForCondition(client, "window.testReady", "real editor initialization");
+    await evaluate(client, "window.testReady");
+    const click = async selector => {
+      await dispatchBrowserMouseClick(client, selector);
+      await evaluate(client, "window.testRenderPending");
+    };
     const open = () => click('[data-action="open-page-number-format-modal"]');
     const set = (key, value) => evaluate(client, `document.querySelector('[data-page-number-format-field="${key}"]').value=${JSON.stringify(value)};`);
     const readFormat = () => evaluate(client, "testState.templateEditor.template.layout.pages[0].settings.pageNumber.format || null");
+    const saveDisabled = () => evaluate(client, "document.querySelector('[data-action=save-template-layout]').disabled");
+    assert.equal(await saveDisabled(), true);
+    assert.equal(await evaluate(client, "document.getElementById('templateEditorSurface') === window.originalSurface"), true);
     await open();
     assert.equal(await evaluate(client, "document.getElementById('templateEditorRuntimeHost').inert"), true);
     assert.equal(await evaluate(client, "document.querySelector('.page-number-format-modal-overlay').getAttribute('aria-modal')"), "true");
@@ -74,6 +104,7 @@ test("page number modal cancels safely, saves formatting, and renders the same f
     await click('.page-number-format-modal-overlay .ghost-button');
     assert.equal(await readFormat(), null);
     assert.equal(await evaluate(client, "testState.templateEditor.isDirty"), false);
+    assert.equal(await saveDisabled(), true);
     await open();
     await set("fontSizePt", "99");
     await click('[data-action="save-page-number-format-modal"]');
@@ -93,6 +124,8 @@ test("page number modal cancels safely, saves formatting, and renders the same f
     const expected = { fontFamily: font, fontSizePt: 16.5, color: "#1d4ed8", bold: false, italic: true, underline: true };
     assert.deepEqual(await readFormat(), expected);
     assert.equal(await evaluate(client, "testState.templateEditor.isDirty"), true);
+    assert.equal(await saveDisabled(), false, "Saving page number format must enable template Save after the runtime refresh");
+    assert.equal(await evaluate(client, "document.getElementById('templateEditorSurface') === window.originalSurface"), true);
     const readStyle = selector => evaluate(client, `(() => {const s=getComputedStyle(document.querySelector(${JSON.stringify(selector)}));
       return { fontFamily:s.fontFamily, fontSize:s.fontSize, color:s.color, fontWeight:s.fontWeight, fontStyle:s.fontStyle, decoration:s.textDecorationLine };})()`);
     const editorStyle = await readStyle(".template-page-number-overlay");
@@ -104,10 +137,15 @@ test("page number modal cancels safely, saves formatting, and renders the same f
     assert.equal(await evaluate(client, "document.querySelector('[data-page-number-format-field=fontFamily]').value"), font);
     assert.equal(await evaluate(client, "document.querySelector('[data-page-number-format-field=fontSizePt]').value"), "16.5");
     await dispatchBrowserKey(client, "Escape", { keyCode: 27 });
+    await evaluate(client, "window.testRenderPending");
     assert.equal(await evaluate(client, "document.querySelector('.page-number-format-modal-overlay') === null"), true);
     // Changing alignment must not discard the format saved in the modal.
     await evaluate(client, "const position=document.querySelector('[data-examlist-page-number-setting=position]');position.value='left';position.dispatchEvent(new Event('change',{bubbles:true}));");
     assert.deepEqual(await readFormat(), expected);
+    await evaluate(client, "window.testRender()");
+    assert.equal(await saveDisabled(), false, "Later renders must retain unsaved page number formatting");
+    await evaluate(client, "window.testResetBaseline()");
+    assert.equal(await saveDisabled(), true, "Saving the template establishes a clean baseline");
     const pages = await evaluate(client, "testState.templateEditor.template.layout.pages");
     const metadata = { name: "서식", paperPreset: "A4", orientation: "portrait", generationUnit: "room" };
     const layout = normalizeTemplateLayout({ pages }, metadata, "format-test");
@@ -125,5 +163,6 @@ test("page number modal cancels safely, saves formatting, and renders the same f
     browser.kill();
     await new Promise(resolve => browser.exitCode !== null ? resolve() : browser.once("exit", resolve));
     await fs.rm(profile, { recursive: true, force: true }).catch(() => {});
+    await new Promise(resolve => server.close(resolve));
   }
 });

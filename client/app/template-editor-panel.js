@@ -5,7 +5,8 @@ export function renderTemplateEditorPanel(panel, html) {
   const currentHost = panel.querySelector("#templateEditorRuntimeHost");
   const nextHost = next.content.querySelector("#templateEditorRuntimeHost");
   const hasNestedEditorDialog = currentHost?.querySelector("[data-candidate-block-modal-editor-surface]") ||
-    panel.querySelector(".data-tag-format-modal-overlay") || next.content.querySelector(".data-tag-format-modal-overlay");
+    panel.querySelector(".data-tag-format-modal-overlay, .page-number-format-modal-overlay") ||
+    next.content.querySelector(".data-tag-format-modal-overlay, .page-number-format-modal-overlay");
   if (
     currentHost && hasNestedEditorDialog && nextHost &&
     currentHost.dataset.templateId === nextHost.dataset.templateId &&
