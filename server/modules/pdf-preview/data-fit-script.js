@@ -1,4 +1,5 @@
 const { syncPreviewObjectFlow } = require("./object-flow-script");
+const { fitPreviewGeneratedObjects } = require("./generated-object-fit-script");
 
 const dataFitMinimumFontSizePt = 5;
 const dataFitBaseTolerancePx = 1.25;
@@ -17,6 +18,7 @@ function getPreviewDataFitScript() {
           <script>
             (() => {
               const syncObjectFlow = ${syncPreviewObjectFlow.toString()};
+              const fitGeneratedObjects = ${fitPreviewGeneratedObjects.toString()};
               const fitSelector = "[data-template-data-fit='true'], .template-data-fit";
               const cssPixelsPerPoint = 96 / 72;
               const minimumFontSizePx = ${dataFitMinimumFontSizePt} * cssPixelsPerPoint;
@@ -373,6 +375,7 @@ function getPreviewDataFitScript() {
                 for (let pass = 0; pass < 3; pass += 1) {
                   cells.forEach(fitCell);
                 }
+                fitGeneratedObjects(root);
                 syncObjectFlow(root);
               }
 
@@ -381,6 +384,11 @@ function getPreviewDataFitScript() {
               }
 
               window.ExamListPreviewDataFit = Object.freeze({ fit: fitTemplateDataCells });
+
+              // Headless printing can start before a scheduled animation frame.
+              // beforeprint runs synchronously, so printing cannot snapshot the
+              // document until fitting and the object flow spacers are complete.
+              window.addEventListener("beforeprint", () => fitTemplateDataCells(document));
 
               if (document.readyState === "loading") {
                 document.addEventListener("DOMContentLoaded", scheduleFit, { once: true });
