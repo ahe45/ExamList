@@ -148,6 +148,10 @@ export function createTemplateEditorPersistenceActions({
       appState.templateEditor.generationUnitModal = {
         isOpen: false,
       };
+      appState.templateEditor.pageNumberFormatModal = {
+        isOpen: false,
+        pageId: "",
+      };
       appState.templateEditor.dataTagSampleValues = loadDataTagSampleValues(
         sampleTagDefinitions,
         templatePayload?.layout?.dataTagSettings?.sampleData || null,

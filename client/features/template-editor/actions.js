@@ -19,6 +19,7 @@ import { createDocumentToolbarActions } from "./document-toolbar-actions.js";
 import { createDataTagSampleActions } from "./data-tag-sample-actions.js";
 import { createDataTagFormatActions } from "./data-tag-format-actions.js";
 import { createGenerationUnitSettingsActions } from "./generation-unit-settings-actions.js";
+import { createPageNumberFormatActions } from "./page-number-format-actions.js";
 import { createTemplateEditorPersistenceActions } from "./template-editor-persistence-actions.js";
 import { createTemplateEditorStateActions } from "./template-editor-state-actions.js";
 import { createTemplateEditorDocumentRefresh } from "./template-editor-document-refresh.js";
@@ -248,6 +249,11 @@ export function setupTemplateEditorActions({
     canManageTemplates,
     onStateChange,
   });
+  const {
+    openPageNumberFormatModal,
+    closePageNumberFormatModal,
+    savePageNumberFormatModal,
+  } = createPageNumberFormatActions({ appState, canManageTemplates, onStateChange });
 
   const {
     applyDocumentCommand,
@@ -313,6 +319,7 @@ export function setupTemplateEditorActions({
     closeGenerationUnitSettingsModal,
     closeTemplatePreview,
     getClosestDocumentSurface,
+    closePageNumberFormatModal,
     getDocumentImageTarget,
     getDocumentSurfacePageId,
     handleDocumentImageMove,
@@ -331,6 +338,7 @@ export function setupTemplateEditorActions({
     openDataTagFormatModal,
     openGenerationUnitSettingsModal,
     openTemplatePreview,
+    openPageNumberFormatModal,
     redoDocumentHistory,
     refreshDocumentEditorRuntime,
     releaseDocumentImageMoveSession,
@@ -339,6 +347,7 @@ export function setupTemplateEditorActions({
     saveTemplateLayout,
     saveGenerationUnitSettingsModal,
     resetDataTagSampleModal,
+    savePageNumberFormatModal,
     requestUnsavedTemplateEditorAction,
     saveDataTagSampleModal,
     saveDataTagFormatModal,
@@ -375,6 +384,7 @@ export function setupTemplateEditorActions({
     closeDataTagSampleModal,
     closeGenerationUnitSettingsModal,
     getCurrentSchoolRouteKey,
+    closePageNumberFormatModal,
     discardTemplateEditorChanges,
     isDataTagSampleModalDirty,
     loadTemplateEditor,

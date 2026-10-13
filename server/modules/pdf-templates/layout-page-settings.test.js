@@ -3,6 +3,23 @@ const assert = require("node:assert/strict");
 
 const { normalizeTemplateLayout } = require("./layout");
 
+test("page number formatting survives saving and rejects invalid CSS values", () => {
+  const { normalizePageNumberSettings } = require("./layout-page-settings");
+  const format = { fontFamily: "'GulimChe', 'Gulim', sans-serif", fontSizePt: 16.5,
+    color: "#123abc", bold: false, italic: true, underline: true };
+  const config = { enabled: true, position: "right", preset: "koreanPage", format };
+  const metadata = { name: "서식", paperPreset: "A4", orientation: "portrait", generationUnit: "room" };
+  const saved = normalizeTemplateLayout({ pages: [{ type: "content", settings: { pageNumber: config } }] }, metadata, "format-test");
+  const reloaded = normalizeTemplateLayout(JSON.parse(JSON.stringify(saved)), metadata, "format-test");
+  assert.deepEqual(reloaded.pages[0].settings.pageNumber, config);
+  const invalid = normalizePageNumberSettings({ format: {
+    fontFamily: "serif;position:fixed", fontSizePt: 999, color: "red;display:none",
+  } });
+  assert.equal(invalid.format.fontFamily, "'Noto Sans KR', sans-serif");
+  assert.equal(invalid.format.fontSizePt, 72);
+  assert.equal(invalid.format.color, "#000000");
+});
+
 test("normalizeTemplateLayout fixes recognition margins to the default template", () => {
   const layout = normalizeTemplateLayout(
     {

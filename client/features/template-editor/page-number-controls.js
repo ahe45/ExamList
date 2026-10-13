@@ -1,4 +1,8 @@
 import { escapeHtml } from "../../app/html-utils.js";
+import { generationUnitSettingsIcon } from "./generation-unit-settings-renderer.js";
+import {
+  normalizePageNumberFormat, getPageNumberFormatCss,
+} from "./page-number-format-controls.js";
 
 const pageNumberPresetDefinitions = Object.freeze({
   numericCurrentTotal: Object.freeze({
@@ -122,6 +126,7 @@ function normalizePageNumberConfig(value) {
     enabled: source.enabled === true || String(source.enabled || "").trim().toLowerCase() === "true",
     position,
     preset,
+    ...(source.format && typeof source.format === "object" ? { format: normalizePageNumberFormat(source.format) } : {}),
   };
 }
 
@@ -197,6 +202,9 @@ function updatePageNumberOverlay(surfaceElement, selectedPage, editorState) {
   const surfaceScale = getPageNumberSurfaceScale(surfaceElement);
 
   overlayElement.textContent = renderPageNumberText(config, getEditorPageNumberContext(editorState, selectedPage));
+  const format = normalizePageNumberFormat(config.format);
+  overlayElement.style.cssText = getPageNumberFormatCss(format);
+  overlayElement.style.fontSize = `${format.fontSizePt * (96 / 72) * surfaceScale.y}px`;
   overlayElement.dataset.pageNumberPosition = config.position;
   overlayElement.style.justifyContent =
     pageNumberPositionDefinitions[config.position]?.cssJustifyContent || pageNumberPositionDefinitions.center.cssJustifyContent;
@@ -220,10 +228,13 @@ function createPageNumberControls(page) {
   sectionElement.innerHTML = `
     <div class="examlist-page-number-header">
       <span>페이지 번호</span>
+      <div class="page-number-header-actions">
+      <button class="icon-button page-number-format-toggle" type="button" data-action="open-page-number-format-modal" aria-label="페이지 번호 서식 설정" title="페이지 번호 서식 설정" aria-haspopup="dialog" ${config.enabled && !isCoverPage ? "" : "disabled"}>${generationUnitSettingsIcon}</button>
       <label class="examlist-switch-control">
         <input class="sr-only" data-examlist-page-number-setting="enabled" type="checkbox" aria-label="페이지 번호 표시" ${config.enabled ? "checked" : ""} ${isCoverPage ? "disabled" : ""} />
         <span class="examlist-switch-track" aria-hidden="true"><span></span></span>
       </label>
+      </div>
     </div>
     <div class="examlist-page-number-options-grid">
       <label>
@@ -264,6 +275,8 @@ function syncPageNumberControls(sectionElement, page) {
   const positionControl = sectionElement?.querySelector?.('[data-examlist-page-number-setting="position"]');
 
   sectionElement?.classList?.toggle("is-cover-page", isCoverPage);
+  const formatButton = sectionElement.querySelector('[data-action="open-page-number-format-modal"]');
+  if (formatButton) formatButton.disabled = isCoverPage || !config.enabled;
 
   if (enabledControl instanceof HTMLInputElement) {
     enabledControl.checked = !isCoverPage && config.enabled;
@@ -295,6 +308,7 @@ function readPageNumberControls(sectionElement, fallbackConfig, page) {
   }
 
   return normalizePageNumberConfig({
+    ...fallback,
     enabled: enabledControl instanceof HTMLInputElement ? enabledControl.checked : fallback.enabled,
     position: positionControl instanceof HTMLSelectElement ? positionControl.value : fallback.position,
     preset: presetControl instanceof HTMLSelectElement ? presetControl.value : fallback.preset,

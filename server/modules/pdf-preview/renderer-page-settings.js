@@ -1,5 +1,6 @@
 const { escapeHtml } = require("./renderer-html-utils");
 const { replaceTemplateTokens } = require("./tokens");
+const { getPageNumberFormatCss } = require("../../../shared/page-number-format");
 
 const defaultDocumentSafeArea = Object.freeze({
   bottom: 28.35,
@@ -122,6 +123,7 @@ function normalizePageNumberSettings(page) {
     enabled: !isCoverPage(page) && (source.enabled === true || String(source.enabled || "").trim().toLowerCase() === "true"),
     position,
     preset,
+    format: source.format,
   };
 }
 
@@ -141,9 +143,9 @@ function renderPageNumberSetting(page, baseContext) {
   const safeArea = normalizeDocumentSafeArea(page);
   const leftInset = formatPtValue(safeArea.left + pageNumberAdditionalHorizontalInsetPt);
   const rightInset = formatPtValue(safeArea.right + pageNumberAdditionalHorizontalInsetPt);
-  const style = `left:${leftInset}pt;right:${rightInset}pt;text-align:${settings.position};`;
+  const style = `left:${leftInset}pt;right:${rightInset}pt;text-align:${settings.position};${settings.format ? getPageNumberFormatCss(settings.format) : ""}`;
 
-  return `<div class="preview-page-number" style="${style}">${escapeHtml(renderPageNumberText(settings, baseContext))}</div>`;
+  return `<div class="preview-page-number" style="${escapeHtml(style)}">${escapeHtml(renderPageNumberText(settings, baseContext))}</div>`;
 }
 
 module.exports = {

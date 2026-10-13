@@ -42,6 +42,9 @@
       "open-generation-unit-settings-modal",
       "close-generation-unit-settings-modal",
       "save-generation-unit-settings-modal",
+      "open-page-number-format-modal",
+      "close-page-number-format-modal",
+      "save-page-number-format-modal",
     ]);
 
     function canBypassPendingTableObjectClickSuppression(event, ownerWindow) {

@@ -115,6 +115,13 @@ export function registerAppModalGuards({
     isOpen: () => Boolean(appState.templateEditor.generationUnitModal?.isOpen),
   });
   modalCloseGuard.registerModal({
+    id: "page-number-format",
+    closeActions: ["close-page-number-format-modal"],
+    close: editorActions.closePageNumberFormatModal,
+    isDirty: () => false,
+    isOpen: () => Boolean(appState.templateEditor.pageNumberFormatModal?.isOpen),
+  });
+  modalCloseGuard.registerModal({
     id: "template-editor-unsaved",
     cancel: clearPendingTemplateEditorAction,
     close: discardTemplateEditorChangesAndRunPendingAction,

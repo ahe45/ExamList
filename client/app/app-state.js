@@ -428,6 +428,10 @@ export const appState = {
     generationUnitModal: {
       isOpen: false,
     },
+    pageNumberFormatModal: {
+      isOpen: false,
+      pageId: "",
+    },
     imageMoveSession: null,
     imageResizeSession: null,
     isDirty: false,

@@ -32,6 +32,7 @@ export function bindTemplateEditorClickEvents({
   closeDataTagFormatModal,
   closeDataTagSampleModal,
   closeGenerationUnitSettingsModal,
+  closePageNumberFormatModal,
   closeTemplatePreview,
   insertDataTag,
   insertDocumentBarcode,
@@ -43,6 +44,7 @@ export function bindTemplateEditorClickEvents({
   openDataTagFormatModal,
   openDataTagSampleModal,
   openGenerationUnitSettingsModal,
+  openPageNumberFormatModal,
   openTemplatePreview,
   refreshDocumentEditorRuntime,
   rememberDocumentSelection,
@@ -51,6 +53,7 @@ export function bindTemplateEditorClickEvents({
   saveTemplateLayout,
   saveDataTagFormatModal,
   saveGenerationUnitSettingsModal,
+  savePageNumberFormatModal,
   saveDataTagSampleModal,
   setDocumentColorPanelVisibility,
   setDocumentColorValue,
@@ -104,6 +107,11 @@ export function bindTemplateEditorClickEvents({
       "open-generation-unit-settings-modal",
       "close-generation-unit-settings-modal",
       "save-generation-unit-settings-modal",
+      "open-page-number-format-modal",
+      "close-page-number-format-modal",
+      "save-page-number-format-modal",
+      "toggle-page-number-format-style",
+      "set-page-number-format-color",
       "reset-template-editor-canvas-zoom",
       "step-template-editor-canvas-zoom",
     ].includes(actionName);
@@ -129,6 +137,28 @@ export function bindTemplateEditorClickEvents({
 
     if (actionName === "open-generation-unit-settings-modal") {
       await openGenerationUnitSettingsModal();
+      return;
+    }
+
+    if (actionName === "open-page-number-format-modal") {
+      await openPageNumberFormatModal();
+      return;
+    }
+    if (actionName === "close-page-number-format-modal") {
+      await closePageNumberFormatModal();
+      return;
+    }
+    if (actionName === "save-page-number-format-modal") {
+      await savePageNumberFormatModal();
+      return;
+    }
+    if (actionName === "toggle-page-number-format-style") {
+      actionTarget.setAttribute("aria-pressed", actionTarget.getAttribute("aria-pressed") !== "true" ? "true" : "false");
+      return;
+    }
+    if (actionName === "set-page-number-format-color") {
+      const color = actionTarget.closest(".page-number-format-modal-overlay")?.querySelector('[data-page-number-format-field="color"]');
+      if (color) color.value = actionTarget.dataset.color;
       return;
     }
 

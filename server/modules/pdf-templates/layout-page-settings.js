@@ -22,6 +22,7 @@ const legacyPageNumberPresetAliases = Object.freeze({
   currentTotal: "numericCurrentTotal",
 });
 const supportedPageNumberPositions = Object.freeze(["left", "center", "right"]);
+const { normalizePageNumberFormat } = require("../../../shared/page-number-format");
 
 function normalizeRecognitionMarks(settings) {
   const source = settings && typeof settings === "object" ? settings : {};
@@ -48,6 +49,7 @@ function normalizePageNumberSettings(settings) {
     enabled: normalizeBoolean(source.enabled, false),
     position,
     preset,
+    ...(source.format && typeof source.format === "object" ? { format: normalizePageNumberFormat(source.format) } : {}),
   };
 }
 

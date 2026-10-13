@@ -9,6 +9,7 @@
   const EDITOR_TOOLBAR_FONT_OPTIONS = Object.freeze([
     Object.freeze({ label: "기본", value: "'Noto Sans KR', sans-serif" }),
     Object.freeze({ label: "맑은 고딕", value: "'Malgun Gothic', sans-serif" }),
+    Object.freeze({ label: "굴림체", value: "'GulimChe', 'Gulim', sans-serif" }),
     Object.freeze({ label: "나눔고딕", value: "'Nanum Gothic', sans-serif" }),
     Object.freeze({ label: "나눔명조", value: "'Nanum Myeongjo', serif" }),
     Object.freeze({ label: "바탕", value: "'Batang', serif" }),
