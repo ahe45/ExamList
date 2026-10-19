@@ -4,6 +4,7 @@ function syncPreviewObjectFlow(root) {
   root.querySelectorAll(".preview-document-body .template-doc").forEach((documentElement) => {
     const objects = Array.from(documentElement.children).filter((element) =>
       element.matches("table, img, .preview-candidate-block-grid") &&
+      element.dataset.templateObjectInline !== "false" &&
       getComputedStyle(element).position === "absolute",
     );
 

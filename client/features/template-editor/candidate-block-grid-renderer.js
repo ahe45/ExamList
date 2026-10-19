@@ -335,6 +335,7 @@ function renderCandidateBlockGridDocument(container, page) {
   const existingGridElements = getCandidateBlockGridElements(documentElement);
   const existingGridElement = existingGridElements[0] || null;
   const nextGridElement = createCandidateBlockGridElement(config);
+  if (existingGridElement?.dataset?.templateObjectInline === "false") nextGridElement.dataset.templateObjectInline = "false";
 
   existingGridElements.forEach((gridElement, index) => {
     if (index > 0) {

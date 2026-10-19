@@ -13,6 +13,7 @@ import {
 } from "./editor-runtime-page-controls.js";
 import { bindDocumentWrapperNormalization } from "./template-document-normalizer.js";
 import { bindObjectInteractionScroll } from "./object-interaction-scroll.js";
+import { bindObjectFlowControls } from "./object-flow-controls.js";
 
 function isContentTemplatePage(page) {
   return String(page?.type || "").trim() === "content";
@@ -50,6 +51,7 @@ export function createEditorRuntimeDisposerState() {
     lineHeight: null,
     objectAlignment: null,
     objectSize: null,
+    objectFlow: null,
     objectScroll: null,
     otherRoomPage: null,
     pageNumber: null,
@@ -298,6 +300,10 @@ export function ensureEditorRuntimeControls({
 
   if (!disposers.objectAlignment) {
     disposers.objectAlignment = bindObjectAlignmentControls({ editor, surfaceElement, toolbarHost });
+  }
+
+  if (!disposers.objectFlow) {
+    disposers.objectFlow = bindObjectFlowControls({ editor, surfaceElement, toolbarHost });
   }
 
   orderContentPagePropertySections({ pagePropertiesHost, selectedPage });

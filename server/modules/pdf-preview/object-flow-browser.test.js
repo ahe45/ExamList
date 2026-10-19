@@ -78,6 +78,41 @@ test("PDF document reserves space for positioned objects before following data t
     assert.ok(thumbnailRects.departmentTop >= thumbnailRects.titleBottom, JSON.stringify(thumbnailRects));
     assert.match(thumbnailRects.text, /유아교육과/);
     assert.equal(thumbnailRects.spacers, 3);
+
+    // Free objects retain the same coordinates without reserving text rows,
+    // including a data grid rebuilt from its saved placeholder.
+    const freeTemplate = structuredClone(template);
+    freeTemplate.layout.pages[0].settings.documentHtml = '<div class="template-doc">' +
+      '<table id="freeTable" data-template-object-inline="false" style="position:absolute;left:30px;top:100px;width:200px;height:60px;margin:0"><tr><td>표</td></tr></table>' +
+      '<img id="freeImage" data-template-object-inline="false" style="position:absolute;left:30px;top:100px;width:80px;height:50px" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E">' +
+      '<div data-candidate-block-grid="true" data-template-object-inline="false"></div><p id="freeAfter">뒷 문장</p></div>';
+    freeTemplate.layout.pages[0].settings.candidateBlockGrid = {
+      enabled:true,variant:'photo',columns:1,rows:1,xPt:22.5,yPt:75,widthPt:165,heightPt:75,blockTemplateHtml:'<p>수험생</p>',
+    };
+    const freeHtml = renderPreviewDocument({candidates:[{name:'수험생'}],template:freeTemplate}).html;
+    await evaluate(client, `document.open(); document.write(${JSON.stringify(freeHtml)}); document.close();`);
+    const freeResult = await evaluate(client, `(async () => {
+      await document.fonts.ready;
+      const read = () => ({
+        spacers:document.querySelectorAll('[data-preview-object-flow-spacer]').length,
+        tops:['#freeTable','#freeImage','.preview-candidate-block-grid'].map(selector => {
+          const el=document.querySelector(selector);return {top:el.getBoundingClientRect().top,inline:el.dataset.templateObjectInline};
+        }),after:document.getElementById('freeAfter').getBoundingClientRect().top,
+      });
+      window.ExamListPreviewDataFit.fit(); const first=read();
+      window.ExamListPreviewDataFit.fit(); return {first,second:read()};
+    })()`);
+    assert.equal(freeResult.first.spacers,0,JSON.stringify(freeResult));
+    freeResult.first.tops.forEach(object => {
+      assert.equal(object.inline,'false');
+      assert.ok(Math.abs(object.top-freeResult.first.tops[0].top)<1,JSON.stringify(freeResult));
+    });
+    assert.ok(freeResult.first.after < freeResult.first.tops[0].top, 'Free objects must not push following text');
+    assert.deepEqual(freeResult.first,freeResult.second);
+    const freeThumbnail = renderTemplateContentThumbnail(freeTemplate,{candidates:[{name:'수험생'}]});
+    assert.match(freeThumbnail.html,/data-template-object-inline="false"/);
+    const freePdf = await client.send("Page.printToPDF",{preferCSSPageSize:true});
+    assert.ok(Buffer.from(freePdf.data,'base64').subarray(0,5).equals(Buffer.from('%PDF-')));
     assert.deepEqual(client.getPageErrors(), []);
   } finally {
     client?.close();

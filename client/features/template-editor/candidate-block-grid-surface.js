@@ -138,6 +138,7 @@ export function renderCandidateBlockGridOnSurface(surfaceElement, selectedPage) 
 
   if (existingGridElement) {
     const nextGridElement = createCandidateBlockGridElement(config);
+    if (existingGridElement.dataset.templateObjectInline === "false") nextGridElement.dataset.templateObjectInline = "false";
 
     clearCandidateBlockGridSelection();
     existingGridElement.replaceWith(nextGridElement);

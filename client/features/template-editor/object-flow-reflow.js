@@ -91,6 +91,8 @@ function isFlowObjectElement(objectElement, documentElement) {
 
   const kind = getFlowObjectKind(objectElement);
 
+  if (objectElement.dataset.templateObjectInline === "false") return false;
+
   if (!kind || objectElement.closest(transientSelector) || getTopLevelChild(objectElement, documentElement) !== objectElement) {
     return false;
   }
@@ -137,6 +139,9 @@ function getFlowSpacer(documentElement, flowId) {
 }
 
 function cleanupUnsupportedFlowState(documentElement) {
+  documentElement.querySelectorAll(flowObjectSelector).forEach(element => {
+    if (element.dataset.templateObjectInline === "false") flowObjectLayoutState.delete(element);
+  });
   const flowObjects = Array.from(documentElement?.querySelectorAll?.(flowObjectSelector) || [])
     .filter((objectElement) => isFlowObjectElement(objectElement, documentElement));
   const flowObjectSet = new Set(flowObjects);
@@ -402,6 +407,8 @@ function isFlowReferenceChild(element, documentElement, activeElement, activeSpa
   if (element.matches("[data-template-object-flow-spacer]")) {
     return true;
   }
+
+  if (element.dataset.templateObjectInline === "false" && element.style.position === "absolute") return false;
 
   if (isAbsoluteFlowObjectChild(element, documentElement)) {
     return false;
@@ -674,7 +681,10 @@ export function syncTemplateEditorObjectFlowObjects(documentElement, options = {
 
   const caretHosts = new Set(flowObjects.map((objectElement) => ensureFlowObjectCaretHost(objectElement, documentElement)));
   documentElement.querySelectorAll("[data-template-object-caret-host]").forEach((paragraph) => {
-    if (!caretHosts.has(paragraph)) paragraph.removeAttribute("data-template-object-caret-host");
+    if (!caretHosts.has(paragraph)) {
+      paragraph.removeAttribute("data-template-object-caret-host");
+      if (!paragraph.textContent.trim() && !paragraph.querySelector("*:not(br)")) paragraph.remove();
+    }
   });
 
   return flowObjects
@@ -687,6 +697,7 @@ export function reflowTemplateEditorObjectRows(activeElement, options = {}) {
   const documentElement = options.documentElement || activeElement?.closest?.(".template-doc") || null;
 
   if (!isFlowObjectElement(activeElement, documentElement)) {
+    if (isHtmlElement(documentElement)) cleanupUnsupportedFlowState(documentElement);
     return {
       shiftedObjects: [],
       spacerElement: null,

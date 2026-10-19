@@ -846,6 +846,9 @@ function createCandidateBlockGridRenderer({
     }
 
     const startMatch = String(html || "").match(/<div\b(?=[^>]*\bdata-candidate-block-grid=(['"])true\1)[^>]*>/i);
+    if (startMatch && /\bdata-template-object-inline\s*=\s*(['"])false\1/i.test(startMatch[0])) {
+      gridHtml = gridHtml.replace(/<div\b/, '<div data-template-object-inline="false"');
+    }
 
     if (startMatch?.index >= 0) {
       const startIndex = startMatch.index;

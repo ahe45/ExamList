@@ -169,6 +169,19 @@ export function createObjectSizeToolbar() {
   return sectionElement;
 }
 
+export function createObjectFlowToolbar() {
+  const sectionElement = document.createElement("div");
+  sectionElement.className = "template-toolbar-section examlist-object-section examlist-object-flow-control";
+  sectionElement.innerHTML = `
+    <span class="template-toolbar-section-label">배치</span>
+    <label class="examlist-object-inline-label">
+      <input data-examlist-object-inline type="checkbox" disabled />
+      <span>글자처럼 취급</span>
+    </label>
+  `;
+  return sectionElement;
+}
+
 
 function getObjectToolbarGroup(toolbarHost) {
   return (

@@ -25,6 +25,7 @@ const { runTableEqualizeHeightsCheck } = require("./smoke/template-editor/table-
 const { runTableSizeInputsCheck } = require("./smoke/template-editor/table-size-inputs");
 const { runTableMinimumSizeCheck } = require("./smoke/template-editor/table-minimum-size");
 const { runTableInsertionSizeCheck } = require("./smoke/template-editor/table-insertion-size");
+const { runObjectInlineCheck } = require("./smoke/template-editor/object-inline");
 const { runBlockDirectColorCheck } = require("./smoke/template-editor/block-direct-color");
 const { runTokenLayoutCheck } = require("./smoke/template-editor/token-layout");
 const {
@@ -100,6 +101,12 @@ async function run() {
       await runDataTagFormatSaveCheck(client);
       assert.deepEqual(client.getPageErrors(), []);
       console.log("Data tag format save checks passed");
+      return;
+    }
+    if (process.argv.includes("--object-inline")) {
+      await runObjectInlineCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Per-object inline wrapping and overlapping checks passed");
       return;
     }
     if (process.argv.includes("--insertion-size")) {
@@ -224,6 +231,8 @@ async function run() {
     }
     const result = await evaluate(client, `(${browserChecks.toString()})()`);
     assert.equal(result.failed.length, 0, JSON.stringify(result, null, 2));
+    await runObjectInlineCheck(client);
+    result.passed.push("per-object inline wrapping permits overlapping tables, images and data grids and survives saving and history");
     await runObjectSelectionZoomCheck(client);
     await runTableRowBoundaryResizeCheck(client);
     await runTableEqualizeWidthsCheck(client);

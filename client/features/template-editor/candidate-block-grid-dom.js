@@ -39,6 +39,7 @@ function createCandidateBlockGridStoragePlaceholder(gridElement = null) {
 
   placeholderElement.className = "examlist-candidate-block-grid";
   placeholderElement.dataset.candidateBlockGrid = "true";
+  if (gridElement?.dataset?.templateObjectInline === "false") placeholderElement.dataset.templateObjectInline = "false";
 
   return placeholderElement;
 }

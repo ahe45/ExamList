@@ -111,6 +111,7 @@
   ]);
 
   const allowedDataAttributes = new Set([
+    "data-template-object-inline",
     "data-template-table-clipboard",
     "data-candidate-block-columns",
     "data-candidate-block-column-name",

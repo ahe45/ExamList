@@ -7,6 +7,28 @@
   --template-toolbar-section-label-width: 3em;
 }
 
+.examlist-object-inline-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--template-toolbar-label-font-size, 0.68rem);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.examlist-object-inline-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 0;
+  accent-color: #2d63f5;
+}
+
+.examlist-object-inline-label:has(input:disabled) {
+  opacity: 0.58;
+  cursor: default;
+}
+
 .examlist-object-insert-grid {
   align-items: center;
   display: flex;
