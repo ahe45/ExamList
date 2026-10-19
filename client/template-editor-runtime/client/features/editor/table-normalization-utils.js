@@ -136,6 +136,11 @@
     Array.from(table.rows).forEach((row) => {
       Array.from(row.cells).forEach((cell) => {
         applyTemplateTableCellPresentation(cell, cell);
+        // A browser caret placeholder (including nested empty paragraphs) is
+        // not content that should prevent shrinking an otherwise empty cell.
+        const empty = !String(cell.textContent || "").replace(/[\s\u200b\ufeff]/g, "") &&
+          !cell.querySelector("img, table, hr, svg, video, audio, canvas, input, [data-template-tag-value], [data-template-object-type]");
+        cell.toggleAttribute("data-template-empty-cell", empty);
       });
     });
 

@@ -19,7 +19,7 @@
     normalizeTemplateEditorColorValue,
   } = editorContentModule;
 
-  const TEMPLATE_EDITOR_TABLE_MIN_SIZE = 24;
+  const TEMPLATE_EDITOR_TABLE_MIN_SIZE = 1;
 
   function parseTemplateEditorPixelStyle(value, fallback = 0) {
     const parsedValue = Number.parseFloat(String(value || "").replace("px", ""));
@@ -117,6 +117,26 @@
     return matrix.reduce((maxColumnCount, row) => Math.max(maxColumnCount, row?.length || 0), 0);
   }
 
+  function getTemplateEditorTableTrackMinimumSize(table, cellMap, trackIndex, axis = "column") {
+    const view = table?.ownerDocument?.defaultView;
+    if (!view?.getComputedStyle) return TEMPLATE_EDITOR_TABLE_MIN_SIZE;
+    const collapsed = view.getComputedStyle(table).borderCollapse === "collapse";
+    const sides = axis === "column" ? ["Left", "Right"] : ["Top", "Bottom"];
+    let minimum = TEMPLATE_EDITOR_TABLE_MIN_SIZE;
+    cellMap.entries.forEach((entry, cell) => {
+      const span = axis === "column" ? entry.colSpan : entry.rowSpan;
+      const index = axis === "column" ? entry.colIndex : entry.rowIndex;
+      // A merged cell is constrained by the sum of its tracks, not each track.
+      if (span !== 1 || index !== trackIndex) return;
+      const style = view.getComputedStyle(cell);
+      const inset = sides.reduce((sum, side) => sum +
+        parseTemplateEditorPixelStyle(style[`padding${side}`]) +
+        parseTemplateEditorPixelStyle(style[`border${side}Width`]) * (collapsed ? 0.5 : 1), 0);
+      minimum = Math.max(minimum, Math.ceil(1 + inset - 0.001));
+    });
+    return minimum;
+  }
+
   function getTemplateEditorMeasuredColumnWidth(cellMap, columnIndex) {
     const { matrix, entries } = cellMap;
 
@@ -144,6 +164,7 @@
     buildTemplateTableCellMap,
     getTemplateEditorMeasuredColumnWidth,
     getTemplateEditorTableColumnCount,
+    getTemplateEditorTableTrackMinimumSize,
     parseTemplateEditorPixelStyle,
   });
 });

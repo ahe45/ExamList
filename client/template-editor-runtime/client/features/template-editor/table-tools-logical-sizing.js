@@ -222,7 +222,8 @@
         return Math.max(TEMPLATE_EDITOR_TABLE_MIN_SIZE, Math.round(requestedTotalWidth));
       }
 
-      const minTotalWidth = TEMPLATE_EDITOR_TABLE_MIN_SIZE * normalizedIndexes.length;
+      const cellMap = buildTemplateTableCellMap(table);
+      const minTotalWidth = normalizedIndexes.reduce((sum, index) => sum + getTrackMinimum(table, cellMap, index), 0);
       const safeRequestedWidth = Math.max(minTotalWidth, Math.round(requestedTotalWidth));
       const currentWidths = columns.map((columnElement) =>
         Math.max(TEMPLATE_EDITOR_TABLE_MIN_SIZE, parseTemplateEditorPixelStyle(columnElement.style.width, TEMPLATE_EDITOR_TABLE_MIN_SIZE)),
@@ -242,6 +243,10 @@
         currentTableWidth > tableMaxWidth ? currentTargetWidth : currentTargetWidth + Math.max(0, tableMaxWidth - currentTableWidth);
 
       return Math.min(safeRequestedWidth, Math.max(minTotalWidth, maxExpandableWidth));
+    }
+
+    function getTrackMinimum(table, cellMap, index, axis = "column") {
+      return globalThis.ExamListEditorTableCellUtils?.getTemplateEditorTableTrackMinimumSize?.(table, cellMap, index, axis) || TEMPLATE_EDITOR_TABLE_MIN_SIZE;
     }
 
     function getTemplateEditorTableLogicalColumnWidth(table, columnIndex) {
@@ -289,8 +294,9 @@
         return false;
       }
 
+      const cellMap = buildTemplateTableCellMap(table);
       normalizedEntries.forEach(({ columnIndex, width }) => {
-        columns[columnIndex].style.width = `${Math.max(TEMPLATE_EDITOR_TABLE_MIN_SIZE, Math.round(width))}px`;
+        columns[columnIndex].style.width = `${Math.max(getTrackMinimum(table, cellMap, columnIndex), Math.round(width))}px`;
       });
       syncTemplateEditorTableWidth(table, columns);
       return true;
@@ -315,7 +321,7 @@
       }
 
       const minimumRowHeight = getTemplateEditorTableMinimumRowHeight(table);
-      const requestedHeight = Math.max(minimumRowHeight, Math.round(height));
+      const requestedHeight = Math.max(getTrackMinimum(table, buildTemplateTableCellMap(table), rowIndex, "row"), Math.round(height));
       const maxTableHeight = getTemplateEditorTableMaxHeight(table);
       const rowHeights = getTemplateEditorTableRowHeights(table, minimumRowHeight);
       const preserveTableHeight = adjacentRow && Number.isInteger(adjacentRow.rowIndex) &&
@@ -324,7 +330,7 @@
       let safeRequestedHeight = requestedHeight;
       if (preserveTableHeight) {
         // CSS heights are lower bounds: text and padding can require more than
-        // the editor's 24px minimum. Measure the intrinsic rows before dividing
+        // the editor's minimum. Measure the intrinsic rows before dividing
         // the pair so a too-small request cannot expand the whole table.
         const probe = table.cloneNode(true);
         probe.style.width = `${table.offsetWidth}px`;
@@ -343,11 +349,11 @@
         try {
           const probeScale = probe.offsetHeight > 0 ? probe.getBoundingClientRect().height / probe.offsetHeight : 1;
           rowMinimums = Array.from(probe.rows, row =>
-            Math.max(minimumRowHeight, Math.ceil(row.getBoundingClientRect().height / (probeScale || 1))));
+            Math.max(minimumRowHeight, Math.ceil(row.getBoundingClientRect().height / (probeScale || 1) - 0.001)));
         } finally {
           probe.remove();
         }
-        const pairHeight = requestedHeight + Math.round(adjacentRow.height);
+        const pairHeight = Math.round(height) + Math.round(adjacentRow.height);
         const targetMinimum = rowMinimums[rowIndex];
         const adjacentMinimum = rowMinimums[adjacentRow.rowIndex];
         safeRequestedHeight = Math.max(targetMinimum, Math.min(requestedHeight, pairHeight - adjacentMinimum));

@@ -88,7 +88,7 @@ async function runTableSizeInputsCheck(client) {
         widths.rows.forEach((height,index)=>assert.ok(Math.abs(height-shortened.rows[index])<1));
         const heights = await input('height','70');
         assert.ok(heights.rows.every(height=>Math.abs(height-70)<=2),JSON.stringify(heights));
-        const invalid = await input('height','10');
+        const invalid = await input('height','0');
         assert.deepEqual(invalid.rows,heights.rows,'Incomplete/invalid input must not resize');
         await select([[0,0]]);
         const paddingBefore = await evaluate(client, read);

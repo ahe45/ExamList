@@ -18,12 +18,22 @@
 .editor-document-surface td {
   border: 1pt solid #000000;
   box-sizing: border-box;
-  min-width: 24px;
+  min-width: 1px;
   overflow-wrap: break-word;
   padding: 2pt;
   text-align: left;
   vertical-align: top;
   white-space: normal;
+}
+
+/* Empty editing placeholders must not impose a full text line on a tiny row.
+   Keep the font size intact so typing restores the normal text presentation. */
+:is(.template-editor-surface, .template-render-sheet, .editor-document-surface) [data-template-empty-cell],
+:is(.template-editor-surface, .template-render-sheet, .editor-document-surface) [data-template-empty-cell] * {
+  line-height: 1px !important;
+  min-height: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .template-editor-surface th,

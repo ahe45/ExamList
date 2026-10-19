@@ -152,10 +152,10 @@
           <div class="template-toolbar-cell-size-controls">
             <div class="template-toolbar-cell-size-grid">
               <label class="template-toolbar-cell-padding-field"><span class="template-toolbar-field-label">너비</span>
-                <span class="template-toolbar-size-input-wrap"><input class="template-toolbar-number" id="${escapeEditorToolbarAttribute(cellWidthId)}" data-template-cell-size-input="width" type="number" min="24" step="1" aria-label="셀 너비 (px)" /><span aria-hidden="true">px</span></span>
+                <span class="template-toolbar-size-input-wrap"><input class="template-toolbar-number" id="${escapeEditorToolbarAttribute(cellWidthId)}" data-template-cell-size-input="width" type="number" min="1" step="1" aria-label="셀 너비 (px)" /><span aria-hidden="true">px</span></span>
               </label>
               <label class="template-toolbar-cell-padding-field"><span class="template-toolbar-field-label">높이</span>
-                <span class="template-toolbar-size-input-wrap"><input class="template-toolbar-number" id="${escapeEditorToolbarAttribute(rowHeightId)}" data-template-cell-size-input="height" type="number" min="24" step="1" aria-label="셀 높이 (px)" /><span aria-hidden="true">px</span></span>
+                <span class="template-toolbar-size-input-wrap"><input class="template-toolbar-number" id="${escapeEditorToolbarAttribute(rowHeightId)}" data-template-cell-size-input="height" type="number" min="1" step="1" aria-label="셀 높이 (px)" /><span aria-hidden="true">px</span></span>
               </label>
             </div>
           </div>

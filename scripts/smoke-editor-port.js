@@ -23,6 +23,8 @@ const { runTableRowBoundaryResizeCheck } = require("./smoke/template-editor/tabl
 const { runTableEqualizeWidthsCheck } = require("./smoke/template-editor/table-equalize-widths");
 const { runTableEqualizeHeightsCheck } = require("./smoke/template-editor/table-equalize-heights");
 const { runTableSizeInputsCheck } = require("./smoke/template-editor/table-size-inputs");
+const { runTableMinimumSizeCheck } = require("./smoke/template-editor/table-minimum-size");
+const { runTableInsertionSizeCheck } = require("./smoke/template-editor/table-insertion-size");
 const { runBlockDirectColorCheck } = require("./smoke/template-editor/block-direct-color");
 const { runTokenLayoutCheck } = require("./smoke/template-editor/token-layout");
 const {
@@ -98,6 +100,18 @@ async function run() {
       await runDataTagFormatSaveCheck(client);
       assert.deepEqual(client.getPageErrors(), []);
       console.log("Data tag format save checks passed");
+      return;
+    }
+    if (process.argv.includes("--insertion-size")) {
+      await runTableInsertionSizeCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Inserted rows and columns inherit cursor cell sizes");
+      return;
+    }
+    if (process.argv.includes("--minimum-size")) {
+      await runTableMinimumSizeCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Minimum cell content size checks passed");
       return;
     }
     if (process.argv.includes("--size-inputs")) {

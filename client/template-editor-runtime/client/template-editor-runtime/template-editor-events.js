@@ -400,7 +400,7 @@
     function handleInput(event) {
       if (event.target?.matches?.("[data-template-cell-size-input]")) {
         const value = event.target.value;
-        if (value && Number.isFinite(Number(value)) && Number(value) >= 24) {
+        if (value && Number.isFinite(Number(value)) && Number(value) >= Number(event.target.min || 1)) {
           applyTemplateTableSize({ dimension: event.target.dataset.templateCellSizeInput, preserveToolbarFocus: true });
           scheduleTemplateEditorSelectionVisualStateRefresh();
         }

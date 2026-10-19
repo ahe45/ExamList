@@ -6,7 +6,7 @@
 
   globalScope.ExamListTemplateEditorTableStructureSplit = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
-  const TEMPLATE_EDITOR_LOCAL_TABLE_MIN_SIZE = 24;
+  const TEMPLATE_EDITOR_LOCAL_TABLE_MIN_SIZE = 1;
   const countFormatter = new Intl.NumberFormat("ko-KR");
 
   function formatRuntimeCount(value) {

@@ -228,23 +228,54 @@
         return null;
       }
 
+      const table = selectedCell.closest("table");
+      const { matrix, entries } = buildTemplateTableCellMap(table);
+      const selectedEntry = entries.get(selectedCell);
+      if (!selectedEntry) return null;
       const sourceRow = selectedCell.parentElement;
+      const scale = table.offsetHeight > 0 ? table.getBoundingClientRect().height / table.offsetHeight : 1;
+      const rowHeights = new Map(Array.from(table.rows, row => [row, row.getBoundingClientRect().height / (scale || 1)]));
+      const nextHeight = Math.max(1, selectedCell.getBoundingClientRect().height / (scale || 1));
+      const targetRowIndex = position === "before" ? selectedEntry.rowIndex : selectedEntry.rowIndex + selectedEntry.rowSpan;
       const nextRow = document.createElement("tr");
-
-      Array.from(sourceRow.children).forEach((cell) => {
+      const extendedCells = new Set();
+      entries.forEach((entry, cell) => {
+        if (entry.rowIndex < targetRowIndex && entry.rowIndex + entry.rowSpan > targetRowIndex) {
+          cell.rowSpan = entry.rowSpan + 1;
+          extendedCells.add(cell);
+        }
+      });
+      let focusCell = null;
+      Array.from(new Set(matrix[selectedEntry.rowIndex] || [])).forEach((cell) => {
+        if (!cell || extendedCells.has(cell)) return;
+        const entry = entries.get(cell);
         const nextTagName = position === "before" && cell.tagName === "TH" ? "TH" : "TD";
-        nextRow.appendChild(createTemplateTableCell(nextTagName, cell));
+        const nextCell = createTemplateTableCell(nextTagName, cell);
+        nextCell.innerHTML = "<br />";
+        nextCell.colSpan = entry.colSpan;
+        nextRow.appendChild(nextCell);
+        if (cell === selectedCell) focusCell = nextCell;
       });
 
       if (position === "before") {
         sourceRow.before(nextRow);
       } else {
-        sourceRow.after(nextRow);
+        table.rows[targetRowIndex - 1].after(nextRow);
       }
+      rowHeights.set(nextRow, nextHeight);
+      Array.from(table.rows).forEach(row => { row.style.height = `${rowHeights.get(row)}px`; });
+      buildTemplateTableCellMap(table).entries.forEach((entry, cell) => {
+        cell.style.height = `${Array.from(table.rows).slice(entry.rowIndex, entry.rowIndex + entry.rowSpan)
+          .reduce((sum, row) => sum + rowHeights.get(row), 0)}px`;
+        cell.style.minHeight = "0";
+      });
+      [table.tHead, ...Array.from(table.tBodies), table.tFoot].filter(Boolean).forEach(group => {
+        group.style.height = `${Array.from(group.rows).reduce((sum, row) => sum + rowHeights.get(row), 0)}px`;
+      });
+      table.style.height = `${Array.from(rowHeights.values()).reduce((sum, height) => sum + height, 0)}px`;
+      normalizeTemplateEditorTableAppearance(table);
 
-      normalizeTemplateEditorTableAppearance(selectedCell.closest("table"));
-
-      return nextRow.children[Math.min(selectedCell.cellIndex, nextRow.children.length - 1)] || nextRow.firstElementChild;
+      return focusCell || nextRow.firstElementChild;
     }
 
     function insertTemplateTableColumn(position) {
@@ -265,6 +296,16 @@
       }
 
       const targetColumnIndex = position === "before" ? selectedEntry.colIndex : selectedEntry.colIndex + selectedEntry.colSpan;
+      // Capture the logical widths before changing the cell map. Otherwise the
+      // colgroup hydrator appends a minimum-width column at the end of the table.
+      const { columns } = ensureTemplateEditorTableColGroup(table);
+      const columnWidths = columns.map(column => parseFloat(column.style.width) || 1);
+      const nextWidth = columnWidths.slice(selectedEntry.colIndex, selectedEntry.colIndex + selectedEntry.colSpan)
+        .reduce((sum, width) => sum + width, 0);
+      const nextColumn = document.createElement("col");
+      nextColumn.style.width = `${nextWidth}px`;
+      columns[0].parentElement.insertBefore(nextColumn, columns[targetColumnIndex] || null);
+      columnWidths.splice(targetColumnIndex, 0, nextWidth);
       const adjustedCells = new Set();
       let focusCell = null;
 
@@ -294,6 +335,7 @@
         const styleSourceCell = referenceCell || row.cells[row.cells.length - 1] || selectedCell;
         const tagName = referenceCell?.tagName || (Array.from(row.cells).every((cell) => cell.tagName === "TH") ? "TH" : "TD");
         const nextCell = createTemplateTableCell(tagName, styleSourceCell);
+        nextCell.innerHTML = "<br />";
 
         insertTemplateCellAtAbsoluteColumn(row, targetColumnIndex, nextCell);
 
@@ -302,6 +344,11 @@
         }
       });
 
+      buildTemplateTableCellMap(table).entries.forEach((entry, cell) => {
+        cell.style.width = `${columnWidths.slice(entry.colIndex, entry.colIndex + entry.colSpan)
+          .reduce((sum, width) => sum + width, 0)}px`;
+      });
+      table.style.width = `${columnWidths.reduce((sum, width) => sum + width, 0)}px`;
       normalizeTemplateEditorTableAppearance(table);
 
       return focusCell;

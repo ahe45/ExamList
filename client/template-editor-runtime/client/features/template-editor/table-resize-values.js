@@ -68,8 +68,11 @@
 
       if (resizeSession.kind === "column") {
         if (Number.isInteger(resizeSession.nextLineIndex) && resizeSession.nextStartSize >= TEMPLATE_EDITOR_TABLE_MIN_SIZE) {
-          const minDelta = TEMPLATE_EDITOR_TABLE_MIN_SIZE - resizeSession.startSize;
-          const maxDelta = resizeSession.nextStartSize - TEMPLATE_EDITOR_TABLE_MIN_SIZE;
+          const cellMap = buildTemplateTableCellMap(resizeSession.table);
+          const minimum = index => globalThis.ExamListEditorTableCellUtils?.getTemplateEditorTableTrackMinimumSize?.(
+            resizeSession.table, cellMap, index, "column") || TEMPLATE_EDITOR_TABLE_MIN_SIZE;
+          const minDelta = Math.min(resizeSession.startSize, minimum(resizeSession.lineIndex)) - resizeSession.startSize;
+          const maxDelta = resizeSession.nextStartSize - Math.min(resizeSession.nextStartSize, minimum(resizeSession.nextLineIndex));
           const safeDelta = Math.max(minDelta, Math.min(maxDelta, Math.round(nextSize - resizeSession.startSize)));
           const targetSize = Math.max(TEMPLATE_EDITOR_TABLE_MIN_SIZE, Math.round(resizeSession.startSize + safeDelta));
           const nextColumnSize = Math.max(TEMPLATE_EDITOR_TABLE_MIN_SIZE, Math.round(resizeSession.nextStartSize - safeDelta));
