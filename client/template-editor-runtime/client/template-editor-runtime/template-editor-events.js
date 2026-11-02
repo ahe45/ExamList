@@ -6,8 +6,6 @@
 
   globalScope.ExamListTemplateEditorEvents = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
-  const TEMPLATE_EDITOR_COLOR_INPUT_APPLY_DELAY_MS = 160;
-
   function createTemplateEditorEventController({
     applyTemplateEditorFontFamily,
     applyTemplateEditorFontSize,
@@ -54,8 +52,6 @@
     updateTemplateTableControls,
   }) {
     const isElement = (target) => Boolean(target && target instanceof ownerWindow.Element);
-    let pendingToolbarColorInputTimer = 0;
-    let pendingToolbarColorInputElement = null;
 
     function isCompositionInputEvent(event) {
       const inputType = String(event?.inputType || "");
@@ -194,15 +190,6 @@
       }, 0);
     }
 
-    function cancelPendingToolbarColorInputApply() {
-      if (pendingToolbarColorInputTimer && typeof ownerWindow.clearTimeout === "function") {
-        ownerWindow.clearTimeout(pendingToolbarColorInputTimer);
-      }
-
-      pendingToolbarColorInputTimer = 0;
-      pendingToolbarColorInputElement = null;
-    }
-
     function applyToolbarColorInput(colorInputElement) {
       if (!colorInputElement || state.templateEditor.interactionDisabled) {
         return;
@@ -210,25 +197,6 @@
 
       applyToolbarColorTrigger(colorInputElement);
       scheduleTemplateEditorSelectionVisualStateRefresh();
-    }
-
-    function scheduleToolbarColorInputApply(colorInputElement) {
-      cancelPendingToolbarColorInputApply();
-      pendingToolbarColorInputElement = colorInputElement;
-      pendingToolbarColorInputTimer = ownerWindow.setTimeout(() => {
-        const targetInputElement = pendingToolbarColorInputElement;
-
-        pendingToolbarColorInputTimer = 0;
-        pendingToolbarColorInputElement = null;
-        applyToolbarColorInput(targetInputElement);
-      }, TEMPLATE_EDITOR_COLOR_INPUT_APPLY_DELAY_MS);
-    }
-
-    function flushToolbarColorInputApply(colorInputElement) {
-      const targetInputElement = pendingToolbarColorInputElement || colorInputElement;
-
-      cancelPendingToolbarColorInputApply();
-      applyToolbarColorInput(targetInputElement);
     }
 
     function saveTemplateEditorSelectionFromToolbarPointer() {
@@ -386,7 +354,7 @@
       }
 
       if (event.target?.matches?.(".template-toolbar-color")) {
-        flushToolbarColorInputApply(event.target);
+        applyToolbarColorInput(event.target);
         toolbar.closeAllEditorToolbarColorPanels();
         return;
       }
@@ -449,7 +417,13 @@
       }
 
       if (event.target?.matches?.(".template-toolbar-color")) {
-        scheduleToolbarColorInputApply(event.target);
+        // Applying formatting restores focus to the canvas, which dismisses
+        // Chromium's native chooser even while the pointer is still dragging.
+        // Update only the toolbar swatch until the chooser commits a change.
+        toolbar.syncEditorToolbarColorControls?.({
+          colorInputElement: event.target,
+          colorValue: event.target.value,
+        });
         return;
       }
 
@@ -778,7 +752,6 @@
     }
 
     function unbindEvents() {
-      cancelPendingToolbarColorInputApply();
       disposers.splice(0).forEach((dispose) => dispose());
     }
 

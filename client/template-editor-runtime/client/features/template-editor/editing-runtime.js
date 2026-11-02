@@ -269,14 +269,41 @@
         : [];
     }
 
-    function createTemplateEditorLineHeightSnapshot(templateEditorSurface) {
+    function shouldResizeTemplateEditorBlockFont(element, range) {
+      if (element.querySelector("p, div, h1, h2, h3, h4, h5, h6, li, blockquote, pre, table, img, hr")) return false;
+      if (element.matches("td.is-selected-cell, th.is-selected-cell")) return true;
+      if (!range || !range.intersectsNode(element)) return false;
+      const hasContent = fragment => Boolean(
+        fragment.textContent.replace(/[\s\u200b\ufeff]/g, "") ||
+        fragment.querySelector("img, table, hr, [data-template-tag-value], [data-template-object-type]")
+      );
+      if (range.collapsed) return !hasContent(element);
+      const before = element.ownerDocument.createRange();
+      before.selectNodeContents(element);
+      if (element.contains(range.startContainer)) {
+        before.setEnd(range.startContainer, range.startOffset);
+        if (hasContent(before.cloneContents())) return false;
+      }
+      const after = element.ownerDocument.createRange();
+      after.selectNodeContents(element);
+      if (element.contains(range.endContainer)) {
+        after.setStart(range.endContainer, range.endOffset);
+        if (hasContent(after.cloneContents())) return false;
+      }
+      return true;
+    }
+
+    function createTemplateEditorLineHeightSnapshot(templateEditorSurface, fontSize) {
       const blockSelector = "p,h1,h2,h3,h4,h5,h6,li,blockquote,td,th,div";
       const blocks = Array.from(templateEditorSurface.querySelectorAll(blockSelector));
+      const selection = window.getSelection?.();
+      const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
       return getTemplateEditorLineHeightTargets(templateEditorSurface).map((element) => ({
         element,
         surface: templateEditorSurface,
         blockIndex: blocks.indexOf(element),
         lineHeight: getTemplateEditorPreservedLineHeightValue(element),
+        fontSize: shouldResizeTemplateEditorBlockFont(element, range) ? fontSize : null,
       }));
     }
 
@@ -298,13 +325,18 @@
         return false;
       }
 
-      connectedSnapshot.forEach(({ element, lineHeight }) => {
+      connectedSnapshot.forEach(({ element, lineHeight, fontSize }) => {
+        // The paragraph's own font creates a minimum line box even when every
+        // visible character is inside a smaller span. Resize that base only
+        // for a fully formatted block or an empty caret line.
+        if (fontSize != null) element.style.fontSize = `${fontSize}pt`;
         element.style.lineHeight = lineHeight;
         // CSS computes an inherited calc(1em + spacing) on the parent. An
         // enlarged inline span must evaluate it against its own font size.
         element.querySelectorAll("[style]").forEach((inlineElement) => {
           if (!inlineElement.style.fontSize || inlineElement.matches(blockSelector) ||
               inlineElement.parentElement?.closest(blockSelector) !== element) return;
+          if (fontSize != null) inlineElement.style.fontSize = `${fontSize}pt`;
           const ownLineHeight = inlineElement.style.lineHeight;
           if (!ownLineHeight || ownLineHeight === "inherit" || /^[\d.]+(?:px|pt)$/i.test(ownLineHeight)) {
             inlineElement.style.lineHeight = lineHeight;
@@ -694,7 +726,7 @@
       const isFontSizeInRange =
         Number.isFinite(normalizedFontSize) && normalizedFontSize >= 1 && normalizedFontSize <= 72;
       const lineHeightSnapshot = isFontSizeInRange
-        ? createTemplateEditorLineHeightSnapshot(templateEditorSurface)
+        ? createTemplateEditorLineHeightSnapshot(templateEditorSurface, normalizedFontSize)
         : [];
 
       if (isFontSizeInRange && applyTemplateEditorTableSelectionFontSize(normalizedFontSize)) {

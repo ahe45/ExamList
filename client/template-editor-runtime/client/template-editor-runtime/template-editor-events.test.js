@@ -284,7 +284,7 @@ test("IME callbacks do not synchronize a detached or destroyed editor", () => {
   assert.equal(harness.state.templateEditor.isComposing, false);
 });
 
-test("template editor runtime debounces native color input while dragging", () => {
+test("native color dragging never applies formatting or steals focus before change", () => {
   const { colorApplyCalls, handleInput, runPendingTimers, timeoutCalls } = createRuntimeEventHarness({
     deferTimeouts: true,
   });
@@ -299,14 +299,14 @@ test("template editor runtime debounces native color input while dragging", () =
 
   const activeColorTimers = timeoutCalls.filter((timeout) => !timeout.cleared && timeout.delay === 160);
 
-  assert.equal(activeColorTimers.length, 1);
+  assert.equal(activeColorTimers.length, 0);
 
   runPendingTimers();
 
-  assert.deepEqual(colorApplyCalls, [colorInputElement]);
+  assert.deepEqual(colorApplyCalls, []);
 });
 
-test("template editor runtime flushes pending color input on change", () => {
+test("native color change applies the committed color exactly once", () => {
   const { colorApplyCalls, handleChange, handleInput, runPendingTimers } = createRuntimeEventHarness({
     deferTimeouts: true,
   });
