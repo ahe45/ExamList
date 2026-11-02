@@ -30,6 +30,7 @@ const { runBlockDirectColorCheck } = require("./smoke/template-editor/block-dire
 const { runTokenLayoutCheck } = require("./smoke/template-editor/token-layout");
 const { runCoverFocusDeletionCheck } = require("./smoke/template-editor/cover-focus-deletion");
 const { runSmallFontLineHeightCheck } = require("./smoke/template-editor/small-font-line-height");
+const { runMultiCellColorCheck } = require("./smoke/template-editor/multi-cell-color");
 const {
   createCdpClient,
   evaluate,
@@ -109,6 +110,12 @@ async function run() {
       await runSmallFontLineHeightCheck(client);
       assert.deepEqual(client.getPageErrors(), []);
       console.log("Small font lines shrink, retain mixed text and survive history/reload");
+      return;
+    }
+    if (process.argv.includes("--multi-cell-color")) {
+      await runMultiCellColorCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Direct color applies to all selected cells");
       return;
     }
     if (process.argv.includes("--format-save")) {
@@ -324,6 +331,8 @@ async function run() {
     result.passed.push("native blank-paper click shows the zero-space caret below a floating table and accepts typing");
     await runSmallFontLineHeightCheck(client);
     result.passed.push("whole text lines, nested formatting, tags and empty lines shrink to 1pt and retain history/reload");
+    await runMultiCellColorCheck(client);
+    result.passed.push("native direct colors apply to every selected cell, including nested styles and data tags");
     assert.deepEqual(client.getPageErrors(), []);
     console.log(JSON.stringify(result, null, 2));
   } finally {

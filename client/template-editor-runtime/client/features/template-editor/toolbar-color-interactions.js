@@ -49,7 +49,10 @@
       const colorInputId = triggerElement?.dataset?.editorColorInput || "";
       const colorCommand = triggerElement?.dataset?.editorColorCommand || "";
       const colorTableAction = triggerElement?.dataset?.editorColorTableAction || "";
-      const colorInputElement = getElementById(colorInputId);
+      // Preset buttons reference an input by data attribute; a native chooser
+      // dispatches change on the input itself, without that reference attribute.
+      const colorInputElement = getElementById(colorInputId) ||
+        (triggerElement?.matches?.('input[type="color"]') ? triggerElement : null);
       const colorValue =
         triggerElement?.dataset?.editorColorNone === "true"
           ? "transparent"
