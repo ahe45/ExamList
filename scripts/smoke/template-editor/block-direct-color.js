@@ -76,22 +76,50 @@ async function runBlockDirectColorCheck(client) {
           } else input.showPicker = () => { input.focus(); };
           const before = inspect();
           direct.click();
+          const originalValue=input.value;
+          input.value='#345678';input.dispatchEvent(new Event('input',{bubbles:true}));
+          if(!document.querySelector('style[data-editor-color-preview]')) throw new Error('Native color input must paint synchronously');
           // Canceling a native chooser emits no color change.
+          input.value=originalValue;
           surface.focus({preventScroll:true});
+          // A headless page can change activeElement without firing focusout.
+          input.dispatchEvent(new FocusEvent('focusout',{bubbles:true,relatedTarget:surface}));
           await window.blockRowResize.settle();
+          if(document.querySelector('style[data-editor-color-preview]')) throw new Error('Canceling a chooser must clear its preview');
           const canceled = inspect();
           direct.click();
           const opened = inspect();
+          await window.blockRowResize.settle();
           const htmlBeforeDrag = surface.innerHTML;
           for (const value of ['#123456','#56789a','#be2345']) {
             input.value = value; input.dispatchEvent(new Event('input', {bubbles:true}));
+            if (!document.querySelector('style[data-editor-color-preview="'+input.id+'"]')) throw new Error('Color preview must not wait for a timer');
             await new Promise(resolve => setTimeout(resolve, 200));
             if (document.activeElement !== input) throw new Error('Dragging color stole focus from the native picker: '+input.id);
+            const previewStyle=document.querySelector('style[data-editor-color-preview="'+input.id+'"]');
+            if (!previewStyle) throw new Error('Dragging must preview the selected color immediately: '+input.id);
+            const command=input.dataset.editorColorCommand;
+            const expected=document.createElement('span');expected.style.color=value;
+            if(command){
+              const rule=previewStyle.sheet.cssRules[0];
+              const property=command==='foreColor'?'color':'background-color';
+              if(rule.style.getPropertyValue(property)!==expected.style.color) throw new Error('Live text preview has the wrong color');
+              const name=rule.selectorText.slice('::highlight('.length,-1);
+              if(!CSS.highlights.get(name)?.size) throw new Error('Live text preview has no selected ranges');
+            }else{
+              const computed=getComputedStyle(cell);
+              const property=input.dataset.editorColorTableAction==='apply-cell-border'?'borderTopColor':'backgroundColor';
+              if(computed[property]!==expected.style.color) throw new Error('Live cell preview has the wrong color: '+input.id);
+            }
           }
           const preview = inspect();
-          if (surface.innerHTML !== htmlBeforeDrag) throw new Error('Dragging must not rewrite the live document: '+input.id);
+          if (surface.innerHTML !== htmlBeforeDrag) {
+            const after=surface.innerHTML;let at=0;while(at<after.length && after[at]===htmlBeforeDrag[at])at++;
+            throw new Error('Dragging must not rewrite the live document: '+input.id+' '+JSON.stringify({before:htmlBeforeDrag.slice(Math.max(0,at-80),at+180),after:after.slice(Math.max(0,at-80),at+180)}));
+          }
           input.dispatchEvent(new Event('change', {bubbles:true}));
           await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          if(document.querySelector('style[data-editor-color-preview]')) throw new Error('Committed colors must clear their temporary preview');
           results.push({id:input.id, before, canceled, opened, preview, committed:inspect(), html:surface.querySelector('td[colspan]').outerHTML});
         }
         return results;

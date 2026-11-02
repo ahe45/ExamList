@@ -6,6 +6,7 @@
 
   globalScope.ExamListTemplateEditorEvents = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
+  let colorPreviewSequence = 0;
   function createTemplateEditorEventController({
     applyTemplateEditorFontFamily,
     applyTemplateEditorFontSize,
@@ -52,6 +53,77 @@
     updateTemplateTableControls,
   }) {
     const isElement = (target) => Boolean(target && target instanceof ownerWindow.Element);
+    const colorPreviewName = `examlist-color-preview-${++colorPreviewSequence}`;
+    let colorPreviewStyle = null;
+    let colorPreviewInput = null;
+
+    function clearToolbarColorPreview() {
+      ownerWindow.CSS?.highlights?.delete(colorPreviewName);
+      colorPreviewStyle?.remove();
+      colorPreviewStyle = null;
+      colorPreviewInput = null;
+    }
+
+    function getColorPreviewSelector(element) {
+      const path = [];
+      for (let node = element; node?.parentElement; node = node.parentElement) {
+        path.unshift(`${node.tagName.toLowerCase()}:nth-child(${Array.from(node.parentElement.children).indexOf(node) + 1})`);
+      }
+      return `html > ${path.join(" > ")}`;
+    }
+
+    function previewToolbarColorInput(input) {
+      const surface = getTemplateEditorSurface();
+      const color = input.value;
+      if (!surface || !ownerDocument.head || !/^#[0-9a-f]{6}$/i.test(color)) return;
+      const command = input.dataset?.editorColorCommand;
+      const action = input.dataset?.editorColorTableAction;
+      const range = state.templateEditor.savedRange || createTemplateEditorRangeFromSnapshot();
+      let cells = getTemplateEditorActiveTableSelectionCells();
+      if (!cells.length) {
+        const node = range?.startContainer;
+        const cell = state.templateEditor.activeCellElement ||
+          (node?.nodeType === 1 ? node : node?.parentElement)?.closest?.("td, th");
+        if (cell && surface.contains(cell)) cells = [cell];
+      }
+      let css = "";
+      if (command === "foreColor" || command === "hiliteColor") {
+        const selectedCells = getTemplateEditorActiveTableSelectionCells();
+        const ranges = selectedCells.length ? selectedCells.map(cell => {
+          const cellRange = ownerDocument.createRange();
+          cellRange.selectNodeContents(cell);
+          return cellRange;
+        }) : range && !range.collapsed && surface.contains(range.commonAncestorContainer) ? [range.cloneRange()] : [];
+        if (!ranges.length || !ownerWindow.Highlight || !ownerWindow.CSS?.highlights) return;
+        ownerWindow.CSS.highlights.set(colorPreviewName, new ownerWindow.Highlight(...ranges));
+        const property = command === "foreColor" ? "color" : "background-color";
+        const selector = getColorPreviewSelector(surface);
+        css = `::highlight(${colorPreviewName}) { ${property}: ${color}; }
+          ${selector}::selection, ${selector} *::selection { ${property}: ${color}; }`;
+      } else if (action === "apply-cell-shading") {
+        css = cells.map(cell => `${getColorPreviewSelector(cell)} { background-color: ${color} !important; }`).join("\n");
+      } else if (action === "apply-cell-border" && cells.length) {
+        const target = ownerDocument.getElementById(toolbarIds.borderTarget)?.value || "all";
+        const rects = cells.map(cell => cell.getBoundingClientRect());
+        const edges = {top: Math.min(...rects.map(r => r.top)), bottom: Math.max(...rects.map(r => r.bottom)),
+          left: Math.min(...rects.map(r => r.left)), right: Math.max(...rects.map(r => r.right))};
+        css = cells.map((cell, index) => {
+          const sides = ["top", "right", "bottom", "left"].filter(side => {
+            const outer = Math.abs(rects[index][side] - edges[side]) < 1;
+            return target === "all" || target === side || target === "outer" && outer || target === "inner" && !outer;
+          });
+          return `${getColorPreviewSelector(cell)} { ${sides.map(side => `border-${side}-color: ${color} !important;`).join(" ")} }`;
+        }).join("\n");
+      }
+      if (!css) return;
+      if (!colorPreviewStyle) {
+        colorPreviewStyle = ownerDocument.createElement("style");
+        colorPreviewStyle.dataset.editorColorPreview = input.id;
+        ownerDocument.head.append(colorPreviewStyle);
+      }
+      colorPreviewInput = input;
+      colorPreviewStyle.textContent = css;
+    }
 
     function isCompositionInputEvent(event) {
       const inputType = String(event?.inputType || "");
@@ -354,6 +426,7 @@
       }
 
       if (event.target?.matches?.(".template-toolbar-color")) {
+        clearToolbarColorPreview();
         applyToolbarColorInput(event.target);
         toolbar.closeAllEditorToolbarColorPanels();
         return;
@@ -417,13 +490,13 @@
       }
 
       if (event.target?.matches?.(".template-toolbar-color")) {
-        // Applying formatting restores focus to the canvas, which dismisses
-        // Chromium's native chooser even while the pointer is still dragging.
-        // Update only the toolbar swatch until the chooser commits a change.
+        // Paint the preview without editing the document or restoring focus;
+        // both would disrupt the native chooser's ongoing pointer gesture.
         toolbar.syncEditorToolbarColorControls?.({
           colorInputElement: event.target,
           colorValue: event.target.value,
         });
+        previewToolbarColorInput(event.target);
         return;
       }
 
@@ -665,8 +738,12 @@
       }
 
       if (target?.closest(".template-toolbar-color-picker")) {
+        if (target.closest("[data-editor-color-preset], [data-editor-color-apply], [data-editor-color-toggle], [data-editor-color-direct]")) {
+          clearToolbarColorPreview();
+        }
         return;
       }
+      clearToolbarColorPreview();
 
       if (target?.closest(".template-toolbar-icon-select")) {
         return;
@@ -703,6 +780,12 @@
     function bindEvents() {
       addListener(getTemplateEditorModal(), "click", handleClick);
       addListener(getTemplateEditorModal(), "pointerdown", handleToolbarPointerDownCapture, true);
+      addListener(ownerDocument, "focusout", event => {
+        if (event.target === colorPreviewInput) clearToolbarColorPreview();
+      }, true);
+      addListener(ownerDocument, "keydown", event => {
+        if (event.key === "Escape") clearToolbarColorPreview();
+      }, true);
       addListener(getTemplateEditorModal(), "pointerdown", handlePointerDown);
       addListener(getTemplateEditorModal(), "keydown", handleKeydown, true);
       addListener(getTemplateEditorModal(), "change", handleChange);
@@ -752,6 +835,7 @@
     }
 
     function unbindEvents() {
+      clearToolbarColorPreview();
       disposers.splice(0).forEach((dispose) => dispose());
     }
 
