@@ -68,6 +68,9 @@ async function setup(zoom, modal, applicationEvents = false) {
       point: { x: cellRect.left + cellRect.width / 2, y: cellRect.bottom - 1 } };
   };
   if (modal) open();
+  // Earlier scenarios may leave the page scrolled after larger text reflows.
+  surface.querySelector(modal ? '[data-candidate-block-modal-editor-surface] table' : '.template-doc table')
+    ?.scrollIntoView({ block: "center" });
   await settle();
   window.blockRowResize = { read, settle,
     async reload() {

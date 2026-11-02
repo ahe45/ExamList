@@ -1,4 +1,4 @@
-import { normalizeDocumentFontNodes, sanitizeNodeTree, stripTransientDocumentState } from "./document-editor-sanitizer.js";
+import { normalizeDocumentFontNodes, normalizeDocumentLineHeights, sanitizeNodeTree, stripTransientDocumentState } from "./document-editor-sanitizer.js";
 import { normalizeDocumentTokenNodes } from "./document-editor-tokens.js";
 
 export function normalizeEditableDocumentRoot(rootNode, options = {}) {
@@ -14,6 +14,7 @@ export function normalizeEditableDocumentRoot(rootNode, options = {}) {
   });
   ensureDocumentRootWrapper(rootNode);
   removeGeneratedUndefinedDocumentText(rootNode);
+  normalizeDocumentLineHeights(rootNode);
 }
 
 

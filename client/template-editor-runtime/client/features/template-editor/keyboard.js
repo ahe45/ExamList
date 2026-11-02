@@ -697,6 +697,58 @@
       return true;
     }
 
+    function deleteLineBeforeTemplateEditorFlowSpacer(event) {
+      if (event.key !== "Delete" || event.altKey || event.shiftKey) return false;
+      const surface = getTemplateEditorSurface?.() || shell.surfaceElement;
+      const selection = ownerWindow.getSelection?.();
+      const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+      if (!range?.collapsed || !surface?.contains(range.startContainer)) return false;
+      const element = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement;
+      const paragraph = element?.closest?.("p, div");
+      const documentElement = paragraph?.parentElement;
+      if (!documentElement?.classList.contains("template-doc")) return false;
+      let spacer = paragraph.nextSibling;
+      while (spacer?.nodeType === 3 && !spacer.textContent.trim()) spacer = spacer.nextSibling;
+      if (!spacer?.matches?.("[data-template-object-flow-spacer]")) return false;
+      const object = Array.from(documentElement.children).find(child =>
+        child !== spacer && !child.hasAttribute("data-template-object-flow-spacer") &&
+        child.dataset.templateObjectFlowId === spacer.dataset.templateObjectFlowId);
+      if (!object) return false;
+      // Data grids have their own line-boundary deletion controller.
+      if (object.matches("[data-candidate-block-grid], .examlist-candidate-block-grid")) return false;
+
+      const tail = range.cloneRange();
+      tail.selectNodeContents(paragraph);
+      tail.setStart(range.startContainer, range.startOffset);
+      const remaining = tail.cloneContents();
+      if (remaining.textContent.replace(/[\s\u200b\ufeff]/g, "") ||
+          remaining.querySelectorAll("br").length > 1 ||
+          remaining.querySelector("img, table, hr, [contenteditable='false']")) return false;
+
+      // Chromium deletes the noneditable spacer and inserts a BR in the
+      // preceding paragraph. Reflow restores the spacer, leaving an extra line.
+      event.preventDefault();
+      const isEmpty = !paragraph.textContent.replace(/[\s\u200b\ufeff]/g, "") &&
+        !paragraph.querySelector("img, table, hr, [contenteditable='false']");
+      if (isEmpty && !paragraph.hasAttribute("data-template-object-caret-host") &&
+          paragraph.querySelectorAll("br").length <= 1) {
+        const previous = paragraph.previousElementSibling;
+        const next = object.nextElementSibling;
+        const caretHost = previous?.matches("p, div") && previous.getAttribute("contenteditable") !== "false" &&
+          !previous.matches("[data-template-object-flow-spacer], [data-candidate-block-grid], .examlist-candidate-block-grid")
+          ? previous : next?.matches("p, div") ? next : null;
+        if (caretHost) {
+          paragraph.remove();
+          range.selectNodeContents(caretHost);
+          range.collapse(caretHost === next);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          syncTemplateEditorContent({ preserveSelection: true, focusEditor: true });
+        }
+      }
+      return true;
+    }
+
     function handleKeydown(event) {
       if (event.isComposing || state.templateEditor.isComposing) return;
       const isSurfaceTarget = event.target === shell.surfaceElement || shell.surfaceElement.contains(event.target);
@@ -753,6 +805,9 @@
       }
 
       if (isSurfaceTarget && !isModifierPressed && (event.key === "Backspace" || event.key === "Delete")) {
+        if (deleteLineBeforeTemplateEditorFlowSpacer(event)) {
+          return;
+        }
         if (protectEmptyTemplateDocumentBoundary(event)) {
           return;
         }

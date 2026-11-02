@@ -1,3 +1,5 @@
+const { normalizeDocumentLineHeightStyle } = require("../../../shared/document-html-sanitizer");
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -14,6 +16,7 @@ function sanitizeDocumentHtml(html) {
       "",
     )
     .replace(/<\s*(script|style|iframe|object|embed|form|input|textarea|select|button|link|meta)\b[^>]*\/?\s*>/gi, "")
+    .replace(/\sstyle\s*=\s*(["'])(.*?)\1/gi, (_match, quote, style) => ` style=${quote}${normalizeDocumentLineHeightStyle(style)}${quote}`)
     .replace(/\son[a-z-]+\s*=\s*(["']).*?\1/gi, "")
     .replace(/\son[a-z-]+\s*=\s*[^\s>]+/gi, "")
     .replace(/\s(src|href)\s*=\s*(["'])(.*?)\2/gi, (_match, attributeName, quoteCharacter, attributeValue) => (

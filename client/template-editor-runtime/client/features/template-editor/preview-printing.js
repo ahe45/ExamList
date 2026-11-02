@@ -10,6 +10,7 @@
     function getTemplateDocumentStyles(settings = null) {
       const pageSettings = settings || pageSettingsModule?.getDefaultTemplatePageSettings?.() || null;
       return `
+        ${globalThis.ExamListDocumentHtmlSanitizer?.getDocumentLineHeightStyles?.() || ""}
         ${pageSettingsModule?.getTemplatePagePrintCss?.(pageSettings) || "@page { size: A4 portrait; margin: 0; }"}
         * { box-sizing: border-box; }
         body {

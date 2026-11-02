@@ -260,6 +260,7 @@ function getPreviewDataFitScript() {
 
                   item.element.style.fontSize = fontSize <= minimumFontSizePx ? "5pt" : formatPx(fontSize);
                   item.element.style.lineHeight = formatPx(lineHeight);
+                  item.element.style.setProperty("--template-text-line-height", formatPx(lineHeight));
                 });
               }
 

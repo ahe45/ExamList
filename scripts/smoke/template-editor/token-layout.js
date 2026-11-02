@@ -4,16 +4,23 @@ const { setupTableSizing } = require("./table-row-boundary-resize");
 const { createTemplate, normalizeTemplateLayout, renderPreviewDocument } = require("../../../server/modules/pdf-preview/renderer-test-helpers");
 
 function createCases() {
-  return [10, 11, 14, 18].flatMap(size => [300, 50, 25].flatMap(width => [false, true].flatMap(mixed =>
-    [false, true].map(showIcon => ({size, width, mixed, showIcon})))));
+  const wrapping = [10, 11, 14, 18].flatMap(size => [300, 50, 25].flatMap(width => [false, true].flatMap(mixed =>
+    [false, true].map(showIcon => ({size, width, mixed, showIcon, placement:'block', spacing:1})))));
+  return wrapping.concat([8, 11, 22, 36, 72].flatMap(size => ['inline','nested','inherited'].flatMap(placement =>
+    [0,1,3].flatMap(spacing => [false,true].map(showIcon => ({size,width:300,mixed:true,showIcon,placement,spacing}))))));
 }
 
 function markup(cases, inTable) {
-  return cases.map(({size, width, mixed, showIcon}, index) => {
-    const token = `<span class="template-token${showIcon ? '' : ' template-token-icons-hidden'}" contenteditable="false" data-template-tag-value="candidate.name" data-template-tag-format-supported="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z" /></svg>홍길동</span>`;
-    const text = mixed ? `성명 ${token} 확인` : token;
-    const p = `<p class="token-layout-probe" data-probe="${index}" style="font-size:${size}pt;line-height:calc(1em + 1pt);margin:0;padding:0">${text}</p>`;
-    return `<div style="width:${width}px">${inTable ? `<table style="width:${width}px;border-collapse:collapse;table-layout:fixed"><tr><td style="padding:0;border:0">${p}</td></tr></table>` : p}</div>`;
+  return cases.map(({size, width, mixed, showIcon, placement, spacing}, index) => {
+    const inlineStyle = placement === 'inline' ? ` style="font-size:${size}pt"` : '';
+    const token = `<span class="template-token${showIcon ? '' : ' template-token-icons-hidden'}"${inlineStyle} contenteditable="false" data-template-tag-value="candidate.name" data-template-tag-format-supported="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z" /></svg>홍길동</span>`;
+    const plain = `<span${inlineStyle}>홍길동</span>`;
+    const wrap = value => placement === 'nested' ? `<b style="font-size:${size}pt"><i>${value}</i></b>` : value;
+    const content = value => mixed ? `성명 ${wrap(value)} 확인` : wrap(value);
+    const style = `font-size:${['block','inherited'].includes(placement) ? size : 11}pt;${placement === 'inherited' ? '' : `line-height:calc(1em + ${spacing}pt);`}margin:0;padding:0`;
+    const p = `<p class="token-layout-probe" data-probe="${index}" style="${style}">${content(token)}</p>`+
+      `<p class="token-layout-plain-probe" style="${style}">${content(plain)}</p>`;
+    return `<div style="width:${width}px;${placement === 'inherited' ? `line-height:calc(1em + ${spacing}pt)` : ''}">${inTable ? `<table style="width:${width}px;border-collapse:collapse;table-layout:fixed"><tr><td style="padding:0;border:0">${p}</td></tr></table>` : p}</div>`;
   }).join("");
 }
 
@@ -24,7 +31,8 @@ function measure(root) {
     const token = p.querySelector('.template-token, .template-data-fit');
     const rect = p.getBoundingClientRect();
     const tokenRect = token.getBoundingClientRect();
-    return {height:rect.height / scale, width:rect.width / scale, tokenWidth:tokenRect.width / scale,
+    return {height:rect.height / scale, plainHeight:p.nextElementSibling.getBoundingClientRect().height / scale,
+      lineHeight:win.getComputedStyle(token).lineHeight, width:rect.width / scale, tokenWidth:tokenRect.width / scale,
       fontSize:win.getComputedStyle(token).fontSize, text:p.textContent};
   });
 }
@@ -46,6 +54,7 @@ async function runTokenLayoutCheck(client) {
         const result = await evaluate(client, `(async () => {
           const root = document.querySelector(${JSON.stringify(modal ? '[data-candidate-block-modal-editor-surface]' : '#templateEditorSurface .template-doc')});
           root.innerHTML = ${JSON.stringify(html)};
+          ExamListDocumentHtmlSanitizer.normalizeDocumentLineHeights(root);
           const measured = (${measure.toString()})(root);
           const frame=document.createElement('iframe');frame.style.cssText='position:fixed;left:0;top:0;width:1000px;height:1000px';
           await new Promise(resolve=>{frame.onload=resolve;frame.srcdoc=${JSON.stringify(pdfHtml)};document.body.append(frame)});
@@ -64,6 +73,10 @@ async function runTokenLayoutCheck(client) {
           }
           assert.equal(actual.fontSize, expected.fontSize);
           assert.equal(actual.text, expected.text);
+          assert.ok(Math.abs(actual.height - actual.plainHeight) < 0.1,
+            'Tag chrome must not increase line height: '+JSON.stringify({modal,inTable,...cases[index],actual}));
+          assert.ok(Math.abs(parseFloat(actual.lineHeight) - (cases[index].size + cases[index].spacing) * 4 / 3) < 0.1,
+            'Line spacing must be evaluated at the text size: '+JSON.stringify({modal,inTable,...cases[index],actual}));
         });
       }
     } finally {

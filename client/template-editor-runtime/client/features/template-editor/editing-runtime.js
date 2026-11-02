@@ -181,7 +181,8 @@
 
       // Preserve scalable line heights, but convert fixed lengths using the
       // pre-format font size so enlarging text retains the authored spacing.
-      if (inlineLineHeight && !/^[\d.]+(?:px|pt)$/i.test(inlineLineHeight) && inlineLineHeight !== "inherit") {
+      if (inlineLineHeight && !/^[\d.]+(?:px|pt)$/i.test(inlineLineHeight) &&
+          !/^max\(\s*1em\s*,\s*[\d.]+(?:px|pt)\s*\)$/i.test(inlineLineHeight) && inlineLineHeight !== "inherit") {
         return inlineLineHeight;
       }
 

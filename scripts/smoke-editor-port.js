@@ -28,6 +28,7 @@ const { runTableInsertionSizeCheck } = require("./smoke/template-editor/table-in
 const { runObjectInlineCheck } = require("./smoke/template-editor/object-inline");
 const { runBlockDirectColorCheck } = require("./smoke/template-editor/block-direct-color");
 const { runTokenLayoutCheck } = require("./smoke/template-editor/token-layout");
+const { runCoverFocusDeletionCheck } = require("./smoke/template-editor/cover-focus-deletion");
 const {
   createCdpClient,
   evaluate,
@@ -97,6 +98,12 @@ async function run() {
       "window.ExamListTemplateEditorRuntimeLoader",
       "editor loader",
     );
+    if (process.argv.includes("--cover-focus-deletion")) {
+      await runCoverFocusDeletionCheck(client);
+      assert.deepEqual(client.getPageErrors(), []);
+      console.log("Cover focus and logo boundary deletion checks passed");
+      return;
+    }
     if (process.argv.includes("--format-save")) {
       await runDataTagFormatSaveCheck(client);
       assert.deepEqual(client.getPageErrors(), []);

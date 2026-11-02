@@ -65,6 +65,7 @@
 
       fontElement.replaceWith(replacementSpan);
     });
+    globalThis.ExamListDocumentHtmlSanitizer?.normalizeDocumentLineHeights(rootElement);
   }
 
   function normalizeTemplateEditorInlineFontSizeStyles(rootElement, appliedFontSizePt = null) {

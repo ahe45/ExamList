@@ -66,6 +66,7 @@
     "height",
     "left",
     "line-height",
+    "--template-text-line-height",
     "margin",
     "margin-bottom",
     "margin-left",
@@ -111,6 +112,8 @@
   ]);
 
   const allowedDataAttributes = new Set([
+    // Live document sync must retain the empty cell's minimum line height.
+    "data-template-empty-cell",
     "data-template-object-inline",
     "data-template-table-clipboard",
     "data-candidate-block-columns",
@@ -146,7 +149,7 @@
   ]);
 
   function sanitizeStyleValue(styleValue) {
-    return String(styleValue || "")
+    const sanitized = String(styleValue || "")
       .split(";")
       .map((declaration) => declaration.trim())
       .filter(Boolean)
@@ -175,6 +178,65 @@
       })
       .filter(Boolean)
       .join("; ");
+    return normalizeDocumentLineHeightStyle(sanitized);
+  }
+
+  // Custom properties inherit the expression, whereas line-height inherits a
+  // computed pixel value. Evaluate that expression again at each text size.
+  function normalizeDocumentLineHeightStyle(styleValue) {
+    if (!/(?:^|;)\s*(?:line-height|--template-text-line-height)\s*:/i.test(String(styleValue || ""))) {
+      return String(styleValue || "");
+    }
+    const declarations = String(styleValue || "").split(";").map(value => value.trim()).filter(Boolean);
+    let lineHeight = "";
+    const result = declarations.filter(declaration => {
+      const separator = declaration.indexOf(":");
+      const property = declaration.slice(0, separator).trim().toLowerCase();
+      if (property === "--template-text-line-height") return false;
+      if (property === "line-height") lineHeight = declaration.slice(separator + 1).trim();
+      return true;
+    });
+    if (!lineHeight || /^(inherit|unset)$/i.test(lineHeight)) {
+      return result.filter(value => !/^line-height\s*:/i.test(value)).join("; ");
+    }
+    // Fixed lengths imported from older documents must still accommodate a
+    // larger font. Explicit zero-height object spacers remain untouched.
+    if (/^(?:\d*\.)?\d+(?:px|pt)$/i.test(lineHeight) && parseFloat(lineHeight) > 0) {
+      lineHeight = `max(1em, ${lineHeight})`;
+      result.forEach((value, index) => {
+        if (/^line-height\s*:/i.test(value)) result[index] = `line-height: ${lineHeight}`;
+      });
+    }
+    // Layout wrappers use zero-height lines; their text descendants still need
+    // normal font-aware spacing (not an inherited zero).
+    if (!/^0(?:px|pt|em|%)?$/i.test(lineHeight)) {
+      result.push(`--template-text-line-height: ${lineHeight}`);
+    }
+    return result.join("; ");
+  }
+
+  function getDocumentLineHeightStyles() {
+    const roots = ":is(.template-doc, .preview-document-body, .preview-candidate-block, [data-candidate-block-modal-editor-surface])";
+    return `${roots}, ${roots} :is(p, div, h1, h2, h3, h4, h5, h6, li, blockquote, pre, td, th, span, font, b, strong, i, em, u, s, a, sub, sup):not([data-template-object-flow-spacer]):not([data-template-object-caret-host], .template-object-caret, [data-template-empty-cell]) {
+      line-height: var(--template-text-line-height, calc(1em + 1pt));
+    }`;
+  }
+
+  function normalizeDocumentLineHeights(rootNode) {
+    const documentRef = rootNode?.ownerDocument;
+    if (documentRef?.head && !documentRef.getElementById("examlist-document-line-heights")) {
+      const style = documentRef.createElement("style");
+      style.id = "examlist-document-line-heights";
+      style.textContent = getDocumentLineHeightStyles();
+      documentRef.head.append(style);
+    }
+    const elements = Array.from(rootNode?.querySelectorAll?.("[style]") || []);
+    if (rootNode?.style) elements.unshift(rootNode);
+    elements.forEach(element => {
+      const current = element.getAttribute("style") || "";
+      const normalized = normalizeDocumentLineHeightStyle(current);
+      if (normalized !== current) element.setAttribute("style", normalized);
+    });
   }
 
   function isSafeImageSource(value) {
@@ -472,6 +534,9 @@
   return Object.freeze({
     sanitizeNodeTree,
     normalizeDocumentFontNodes,
+    normalizeDocumentLineHeights,
+    normalizeDocumentLineHeightStyle,
+    getDocumentLineHeightStyles,
     stripTransientDocumentState,
     sanitizeHtml,
   });

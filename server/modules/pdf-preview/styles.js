@@ -2,6 +2,7 @@ const { getPreviewContentStyles } = require("./styles-content");
 const { getPreviewElementStyles } = require("./styles-elements");
 const { getPreviewLayoutStyles } = require("./styles-layout");
 const { getPreviewPrintStyles } = require("./styles-print");
+const { getDocumentLineHeightStyles } = require("../../../shared/document-html-sanitizer");
 
 function getPreviewDocumentStyles(template = {}) {
   return [
@@ -9,6 +10,7 @@ function getPreviewDocumentStyles(template = {}) {
     getPreviewContentStyles(),
     getPreviewElementStyles(),
     getPreviewPrintStyles(template),
+    getDocumentLineHeightStyles(),
   ].join("\n");
 }
 
