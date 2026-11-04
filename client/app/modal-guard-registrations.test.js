@@ -132,6 +132,7 @@ test("registers every app modal close action with the modal close guard", () => 
     "close-data-tag-sample-modal",
     "close-data-tag-format-modal",
     "close-generation-unit-settings-modal",
+    "close-other-room-settings-modal",
     "close-page-number-format-modal",
     "close-pdf-generation-create-modal",
     "close-pdf-generation-template-preview",

@@ -115,6 +115,13 @@ export function registerAppModalGuards({
     isOpen: () => Boolean(appState.templateEditor.generationUnitModal?.isOpen),
   });
   modalCloseGuard.registerModal({
+    id: "other-room-settings",
+    closeActions: ["close-other-room-settings-modal"],
+    close: editorActions.closeOtherRoomSettingsModal,
+    isDirty: () => false,
+    isOpen: () => Boolean(appState.templateEditor.otherRoomSettingsModal?.isOpen),
+  });
+  modalCloseGuard.registerModal({
     id: "page-number-format",
     closeActions: ["close-page-number-format-modal"],
     close: editorActions.closePageNumberFormatModal,

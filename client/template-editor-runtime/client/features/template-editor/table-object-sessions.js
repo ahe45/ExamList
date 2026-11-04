@@ -43,6 +43,9 @@
       "close-generation-unit-settings-modal",
       "save-generation-unit-settings-modal",
       "open-page-number-format-modal",
+      "open-other-room-settings-modal",
+      "close-other-room-settings-modal",
+      "save-other-room-settings-modal",
       "close-page-number-format-modal",
       "save-page-number-format-modal",
     ]);

@@ -49,6 +49,7 @@ const EDITOR_SIDEBAR_ACTION_SELECTOR = [
   "[data-action='open-data-tag-sample-modal']",
   "[data-action='open-generation-unit-settings-modal']",
   "[data-action='open-page-number-format-modal']",
+  "[data-action='open-other-room-settings-modal']",
   "[data-action='select-editor-page']",
 ].join(", ");
 

@@ -1,3 +1,5 @@
+import { generationUnitSettingsIcon } from "./generation-unit-settings-renderer.js";
+
 function isContentTemplatePage(page) {
   return String(page?.type || "").trim() === "content";
 }
@@ -20,6 +22,7 @@ function normalizeOtherRoomPageConfig(value) {
   const source = value && typeof value === "object" ? value : {};
 
   return {
+    ...(typeof source.text === "string" ? { text: source.text } : {}),
     enabled: source.enabled === true || String(source.enabled || "").trim().toLowerCase() === "true",
   };
 }
@@ -50,10 +53,13 @@ function createOtherRoomPageControls(page) {
   sectionElement.innerHTML = `
     <div class="examlist-other-room-page-header">
       <span>타 고사실 페이지</span>
+      <div class="page-number-header-actions">
+      <button class="icon-button page-number-format-toggle" type="button" data-action="open-other-room-settings-modal" aria-label="타 고사실 설정" title="타 고사실 설정" aria-haspopup="dialog" ${config.enabled ? "" : "disabled"}>${generationUnitSettingsIcon}</button>
       <label class="examlist-switch-control">
         <input class="sr-only" data-examlist-other-room-page-setting="enabled" type="checkbox" aria-label="타 고사실 페이지 사용" ${config.enabled ? "checked" : ""} />
         <span class="examlist-switch-track" aria-hidden="true"><span></span></span>
       </label>
+      </div>
     </div>
   `;
 
@@ -67,6 +73,10 @@ function syncOtherRoomPageControls(sectionElement, page) {
   if (enabledControl instanceof HTMLInputElement) {
     enabledControl.checked = config.enabled;
   }
+  const settingsButton = sectionElement?.querySelector?.('[data-action="open-other-room-settings-modal"]');
+  if (settingsButton) {
+    settingsButton.disabled = !config.enabled;
+  }
 }
 
 function readOtherRoomPageControls(sectionElement, fallbackConfig) {
@@ -74,6 +84,7 @@ function readOtherRoomPageControls(sectionElement, fallbackConfig) {
   const fallback = normalizeOtherRoomPageConfig(fallbackConfig);
 
   return normalizeOtherRoomPageConfig({
+    ...fallback,
     enabled: enabledControl instanceof HTMLInputElement ? enabledControl.checked : fallback.enabled,
   });
 }

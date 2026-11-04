@@ -148,6 +148,7 @@ export function createTemplateEditorPersistenceActions({
       appState.templateEditor.generationUnitModal = {
         isOpen: false,
       };
+      appState.templateEditor.otherRoomSettingsModal = { isOpen: false, pageId: "" };
       appState.templateEditor.pageNumberFormatModal = {
         isOpen: false,
         pageId: "",

@@ -57,6 +57,7 @@ function normalizeOtherRoomPageSettings(settings) {
   const source = settings && typeof settings === "object" ? settings : {};
 
   return {
+    ...(typeof source.text === "string" ? { text: source.text } : {}),
     enabled: normalizeBoolean(source.enabled, false),
   };
 }

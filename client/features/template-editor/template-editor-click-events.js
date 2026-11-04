@@ -33,6 +33,7 @@ export function bindTemplateEditorClickEvents({
   closeDataTagSampleModal,
   closeGenerationUnitSettingsModal,
   closePageNumberFormatModal,
+  closeOtherRoomSettingsModal,
   closeTemplatePreview,
   insertDataTag,
   insertDocumentBarcode,
@@ -45,6 +46,7 @@ export function bindTemplateEditorClickEvents({
   openDataTagSampleModal,
   openGenerationUnitSettingsModal,
   openPageNumberFormatModal,
+  openOtherRoomSettingsModal,
   openTemplatePreview,
   refreshDocumentEditorRuntime,
   rememberDocumentSelection,
@@ -54,6 +56,7 @@ export function bindTemplateEditorClickEvents({
   saveDataTagFormatModal,
   saveGenerationUnitSettingsModal,
   savePageNumberFormatModal,
+  saveOtherRoomSettingsModal,
   saveDataTagSampleModal,
   setDocumentColorPanelVisibility,
   setDocumentColorValue,
@@ -108,8 +111,11 @@ export function bindTemplateEditorClickEvents({
       "close-generation-unit-settings-modal",
       "save-generation-unit-settings-modal",
       "open-page-number-format-modal",
+      "open-other-room-settings-modal",
       "close-page-number-format-modal",
+      "close-other-room-settings-modal",
       "save-page-number-format-modal",
+      "save-other-room-settings-modal",
       "toggle-page-number-format-style",
       "set-page-number-format-color",
       "reset-template-editor-canvas-zoom",
@@ -140,12 +146,24 @@ export function bindTemplateEditorClickEvents({
       return;
     }
 
+    if (actionName === "open-other-room-settings-modal") {
+      await openOtherRoomSettingsModal();
+      return;
+    }
     if (actionName === "open-page-number-format-modal") {
       await openPageNumberFormatModal();
       return;
     }
+    if (actionName === "close-other-room-settings-modal") {
+      await closeOtherRoomSettingsModal();
+      return;
+    }
     if (actionName === "close-page-number-format-modal") {
       await closePageNumberFormatModal();
+      return;
+    }
+    if (actionName === "save-other-room-settings-modal") {
+      await saveOtherRoomSettingsModal();
       return;
     }
     if (actionName === "save-page-number-format-modal") {

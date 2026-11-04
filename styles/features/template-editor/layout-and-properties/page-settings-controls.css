@@ -106,7 +106,8 @@
   width: 32px;
 }
 
-.page-number-format-modal-overlay {
+.page-number-format-modal-overlay,
+.other-room-settings-modal-overlay {
   z-index: 1690;
 }
 

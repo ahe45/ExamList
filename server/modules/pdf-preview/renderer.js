@@ -27,6 +27,7 @@ function createBaseContext({
   schoolSettings = {},
   templateName = "",
   isOtherRoomPage = false,
+  otherRoomText = "타고사실",
   totalPages,
 }) {
   const candidate = representativeCandidate || {};
@@ -36,7 +37,10 @@ function createBaseContext({
     roomAssignmentCountMap instanceof Map ? roomAssignmentCountMap : createRoomAssignmentCountMap(candidates);
 
   return {
-    __emptyValueData: emptyValueData && typeof emptyValueData === "object" && !Array.isArray(emptyValueData) ? emptyValueData : {},
+    __emptyValueData: {
+      ...(emptyValueData && typeof emptyValueData === "object" && !Array.isArray(emptyValueData) ? emptyValueData : {}),
+      ...(isOtherRoomPage ? { "room.otherRoom": "" } : {}),
+    },
     __isOtherRoomPage: isOtherRoomPage === true,
     __sampleData: sampleData && typeof sampleData === "object" && !Array.isArray(sampleData) ? sampleData : {},
     __sampleFallbackForEmptyDataTags: isOtherRoomPage === true,
@@ -67,7 +71,7 @@ function createBaseContext({
     },
     room: {
       ...buildRoomTokenMap(candidate, resolvedRoomAssignmentCountMap),
-      otherRoom: isOtherRoomPage === true ? "타고사실" : "",
+      otherRoom: isOtherRoomPage === true ? otherRoomText : "",
     },
     row: {
       index: "",
@@ -120,6 +124,7 @@ function renderPreviewDocumentParts({ candidates, emptyValueData = null, generat
         generatedAt,
         kyungheeCoverText: resolvedKyungheeCoverText,
         isOtherRoomPage: pageInstance.isOtherRoomPage,
+        otherRoomText: typeof page?.settings?.otherRoomPage?.text === "string" ? page.settings.otherRoomPage.text : "타고사실",
         pageNumber: pageNumberByIndex.get(index) || 0,
         representativeCandidate,
         roomAssignmentCountMap,

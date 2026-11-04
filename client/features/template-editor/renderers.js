@@ -6,6 +6,7 @@ import { renderPagePropertyPanel } from "./page-property-renderers.js";
 import { dataTagSampleSettingsIcon, renderDataTagSampleModal } from "./data-tag-samples-renderer.js";
 import { renderDataTagFormatModal } from "./data-tag-format-renderer.js";
 import { renderGenerationUnitSettingsModal } from "./generation-unit-settings-renderer.js";
+import { renderOtherRoomSettingsModal } from "./other-room-settings-controls.js";
 import { renderPageNumberFormatModal } from "./page-number-format-controls.js";
 import {
   getTemplateEditorCanvasZoom,
@@ -191,7 +192,7 @@ export function renderTemplateEditorView({ access, editor }) {
       editor.dataTagFormatModal?.isOpen ||
       editor.generationUnitSettingsModal?.isOpen ||
       editor.generationUnitModal?.isOpen ||
-      editor.pageNumberFormatModal?.isOpen,
+      editor.pageNumberFormatModal?.isOpen || editor.otherRoomSettingsModal?.isOpen,
   );
   const runtimeModalAttributes = isBlockingModalOpen ? 'inert aria-hidden="true"' : "";
   const runtimeModalClass = isBlockingModalOpen ? " is-template-editor-modal-open" : "";
@@ -263,5 +264,6 @@ export function renderTemplateEditorView({ access, editor }) {
     ${renderDataTagFormatModal(editor)}
     ${renderGenerationUnitSettingsModal(editor)}
     ${renderPageNumberFormatModal(editor)}
+    ${renderOtherRoomSettingsModal(editor)}
   `;
 }

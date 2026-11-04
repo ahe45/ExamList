@@ -428,6 +428,7 @@ export const appState = {
     generationUnitModal: {
       isOpen: false,
     },
+    otherRoomSettingsModal: { isOpen: false, pageId: "" },
     pageNumberFormatModal: {
       isOpen: false,
       pageId: "",

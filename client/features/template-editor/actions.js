@@ -19,6 +19,7 @@ import { createDocumentToolbarActions } from "./document-toolbar-actions.js";
 import { createDataTagSampleActions } from "./data-tag-sample-actions.js";
 import { createDataTagFormatActions } from "./data-tag-format-actions.js";
 import { createGenerationUnitSettingsActions } from "./generation-unit-settings-actions.js";
+import { createOtherRoomSettingsActions } from "./other-room-settings-actions.js";
 import { createPageNumberFormatActions } from "./page-number-format-actions.js";
 import { createTemplateEditorPersistenceActions } from "./template-editor-persistence-actions.js";
 import { createTemplateEditorStateActions } from "./template-editor-state-actions.js";
@@ -255,6 +256,9 @@ export function setupTemplateEditorActions({
     savePageNumberFormatModal,
   } = createPageNumberFormatActions({ appState, canManageTemplates, onStateChange });
 
+  const { openOtherRoomSettingsModal, closeOtherRoomSettingsModal, saveOtherRoomSettingsModal } =
+    createOtherRoomSettingsActions({ appState, canManageTemplates, onStateChange });
+
   const {
     applyDocumentCommand,
     getActiveDocumentRange,
@@ -320,6 +324,7 @@ export function setupTemplateEditorActions({
     closeTemplatePreview,
     getClosestDocumentSurface,
     closePageNumberFormatModal,
+    closeOtherRoomSettingsModal,
     getDocumentImageTarget,
     getDocumentSurfacePageId,
     handleDocumentImageMove,
@@ -339,6 +344,7 @@ export function setupTemplateEditorActions({
     openGenerationUnitSettingsModal,
     openTemplatePreview,
     openPageNumberFormatModal,
+    openOtherRoomSettingsModal,
     redoDocumentHistory,
     refreshDocumentEditorRuntime,
     releaseDocumentImageMoveSession,
@@ -348,6 +354,7 @@ export function setupTemplateEditorActions({
     saveGenerationUnitSettingsModal,
     resetDataTagSampleModal,
     savePageNumberFormatModal,
+    saveOtherRoomSettingsModal,
     requestUnsavedTemplateEditorAction,
     saveDataTagSampleModal,
     saveDataTagFormatModal,
@@ -385,6 +392,7 @@ export function setupTemplateEditorActions({
     closeGenerationUnitSettingsModal,
     getCurrentSchoolRouteKey,
     closePageNumberFormatModal,
+    closeOtherRoomSettingsModal,
     discardTemplateEditorChanges,
     isDataTagSampleModalDirty,
     loadTemplateEditor,
