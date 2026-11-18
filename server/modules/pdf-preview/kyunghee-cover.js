@@ -61,9 +61,9 @@ function getScopeValue(candidate, field) {
   return aliases.map((key) => text(candidate[key])).find(Boolean) || "";
 }
 
-async function resolveKyungheeCoverText({ candidateService, template, filters, schoolId, candidatePayload, samplePage }) {
+async function resolveKyungheeCoverData({ candidateService, template, filters, schoolId, candidatePayload, samplePage }) {
   const firstCandidate = candidatePayload.items?.[0];
-  if (!firstCandidate || !hasKyungheeCoverTag(template)) return "";
+  if (!firstCandidate || !hasKyungheeCoverTag(template)) return null;
 
   const strategy = getGenerationTargetStrategy(template.generationUnit, getTemplateGenerationUnitFields(template, []));
   const fields = strategy ? (Array.isArray(strategy.groupBy) ? strategy.groupBy : [strategy.groupBy]) : [];
@@ -71,7 +71,8 @@ async function resolveKyungheeCoverText({ candidateService, template, filters, s
   // Empty grouping values still define a group, even though the repository omits empty filters.
   const inScope = (candidate) => fields.every((field) => getScopeValue(candidate, field) === scope[field]);
   if (samplePage === 1 && candidatePayload.total <= candidatePayload.items.length) {
-    return buildKyungheeCoverText(candidatePayload.items.filter(inScope));
+    const candidates = candidatePayload.items.filter(inScope);
+    return { assignedCount: candidates.length, text: buildKyungheeCoverText(candidates) };
   }
 
   const scopedFilters = {
@@ -90,7 +91,7 @@ async function resolveKyungheeCoverText({ candidateService, template, filters, s
     const result = await candidateService.findCandidates({ ...scopedFilters, limit: pageSize, page });
     candidates.push(...result.items.filter(inScope));
   }
-  return buildKyungheeCoverText(candidates);
+  return { assignedCount: candidates.length, text: buildKyungheeCoverText(candidates) };
 }
 
-module.exports = { buildKyungheeCoverText, hasKyungheeCoverTag, kyungheeCoverTagKey, resolveKyungheeCoverText };
+module.exports = { buildKyungheeCoverText, hasKyungheeCoverTag, kyungheeCoverTagKey, resolveKyungheeCoverData };

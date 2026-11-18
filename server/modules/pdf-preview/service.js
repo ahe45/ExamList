@@ -1,4 +1,5 @@
 const { normalizeTemplateLayout } = require("../pdf-templates/layout");
+const { normalizeCandidateFilter } = require("../candidates/normalization");
 const { resolveGenerationCandidateSort } = require("../pdf-generations/candidate-sort");
 const {
   getGenerationUnitFieldLabel,
@@ -6,7 +7,7 @@ const {
   normalizeGenerationUnitFieldKey,
 } = require("../pdf-generations/generation-unit-fields");
 const { renderPreviewDocument } = require("./renderer");
-const { resolveKyungheeCoverText } = require("./kyunghee-cover");
+const { resolveKyungheeCoverData } = require("./kyunghee-cover");
 const { buildPreviewSampleCandidates, previewSampleCandidateCount } = require("./sample-candidates");
 
 const generationUnitConfig = Object.freeze({
@@ -135,7 +136,7 @@ function getCandidateGenerationUnitFieldValue(candidate = {}, field = "") {
 function selectPreviewCandidates(candidates, generationUnit, generationUnitFields = []) {
   const customFields = getTemplateGenerationUnitFields({ layout: { generation: { unitFields: generationUnitFields } } }, []);
 
-  if (customFields.length && Array.isArray(candidates) && candidates.length > 1) {
+  if (customFields.length && Array.isArray(candidates) && candidates.length) {
     const firstCandidate = candidates[0] || {};
     const targetValues = customFields.map((field) => getCandidateGenerationUnitFieldValue(firstCandidate, field));
 
@@ -149,6 +150,9 @@ function selectPreviewCandidates(candidates, generationUnit, generationUnitField
         selectedGroupLabel: customFields
           .map((field, index) => `${getGenerationUnitFieldLabel(field)} ${targetValues[index]}`)
           .join(" / "),
+        targetFilters: Object.fromEntries(
+          customFields.map((field, index) => [field === "date" ? "examDate" : field, targetValues[index]]),
+        ),
         trimmed: filteredCandidates.length > 0 && filteredCandidates.length < candidates.length,
       };
     }
@@ -156,7 +160,7 @@ function selectPreviewCandidates(candidates, generationUnit, generationUnitField
 
   const config = generationUnitConfig[generationUnit];
 
-  if (!config || !Array.isArray(candidates) || candidates.length <= 1) {
+  if (!config || !Array.isArray(candidates) || !candidates.length) {
     return {
       candidates: Array.isArray(candidates) ? candidates : [],
       selectedGroupLabel: "",
@@ -182,8 +186,34 @@ function selectPreviewCandidates(candidates, generationUnit, generationUnitField
   return {
     candidates: filteredCandidates.length ? filteredCandidates : candidates,
     selectedGroupLabel: `${config.label} ${groupValue}`,
+    targetFilters: { [config.field === "groupName" ? "group" : config.field]: groupValue },
     trimmed: filteredCandidates.length > 0 && filteredCandidates.length < candidates.length,
   };
+}
+
+async function resolveAssignedCount(candidateService, candidateQuery, candidatePayload, selection) {
+  const selectedCount = selection.candidates.length;
+  const total = Number(candidatePayload?.total) || 0;
+
+  if (!selectedCount || total <= candidatePayload.items.length) {
+    return selectedCount;
+  }
+
+  const normalizedFilter = normalizeCandidateFilter(candidateQuery);
+  const targetFilters = selection.targetFilters || {};
+
+  if (Object.entries(targetFilters).every(([key, value]) => normalizedFilter[key] === value)) {
+    return total;
+  }
+
+  const targetPayload = await candidateService.findCandidates({
+    ...candidateQuery,
+    ...targetFilters,
+    limit: 1,
+    page: 1,
+  });
+
+  return Math.max(selectedCount, Number(targetPayload?.total) || 0);
 }
 
 function shouldRenderActualCandidates(previewRequest = {}) {
@@ -289,16 +319,17 @@ function createPdfPreviewService({ candidateService, createHttpError, pdfTemplat
       previewRequest.candidateSort && typeof previewRequest.candidateSort === "object" && !Array.isArray(previewRequest.candidateSort)
         ? previewRequest.candidateSort
         : resolveGenerationCandidateSort({ template });
-    const candidatePayload = await candidateService.findCandidates({
+    const candidateQuery = {
       ...(previewRequest.filters && typeof previewRequest.filters === "object" ? previewRequest.filters : {}),
       limit: sampleLimit,
       page: samplePage,
       schoolId,
       sortDirection: candidateSort.sortDirection,
       sortKey: candidateSort.sortKey,
-    });
+    };
+    const candidatePayload = await candidateService.findCandidates(candidateQuery);
     const sampledCandidates = Array.isArray(candidatePayload?.items) ? candidatePayload.items : [];
-    const kyungheeCoverText = await resolveKyungheeCoverText({
+    const kyungheeCover = await resolveKyungheeCoverData({
       candidateService,
       template,
       filters: previewRequest.filters || {},
@@ -311,6 +342,8 @@ function createPdfPreviewService({ candidateService, createHttpError, pdfTemplat
       template.generationUnit,
       getTemplateGenerationUnitFields(template, []),
     );
+    const assignedCount = kyungheeCover?.assignedCount
+      ?? await resolveAssignedCount(candidateService, candidateQuery, candidatePayload, selectedCandidates);
     const hydratedCandidates =
       hasPhotoElement(template.layout) && typeof candidateService.hydrateCandidatesWithPhotos === "function"
       ? await candidateService.hydrateCandidatesWithPhotos(selectedCandidates.candidates)
@@ -326,10 +359,11 @@ function createPdfPreviewService({ candidateService, createHttpError, pdfTemplat
     });
 
     return {
+      assignedCount,
       candidates: hydratedCandidates,
       emptyValueData,
       generatedAt,
-      kyungheeCoverText,
+      kyungheeCoverText: kyungheeCover?.text ?? "",
       sampleData,
       schoolSettings,
       template,
@@ -349,6 +383,7 @@ function createPdfPreviewService({ candidateService, createHttpError, pdfTemplat
     }
 
     const preview = renderPreviewDocument({
+      assignedCount: renderActualCandidates ? previewPayload.assignedCount : undefined,
       candidates: renderCandidates,
       emptyValueData: previewPayload.emptyValueData,
       generatedAt: previewPayload.generatedAt,

@@ -775,8 +775,8 @@ function createCandidateBlockGridRenderer({
             __styleEmptyValueFallback: true,
             candidate: buildCandidateTokenMap({}, baseContext.school),
             room: {
-              ...buildRoomTokenMap({}, baseContext._roomAssignmentCountMap),
-              otherRoom: baseContext.room?.otherRoom || "",
+              ...baseContext.room,
+              ...buildRoomTokenMap(),
             },
             row: {
               index: "",
@@ -819,8 +819,8 @@ function createCandidateBlockGridRenderer({
               __styleEmptyValueFallback: true,
               candidate: buildCandidateTokenMap(rowEntry.candidate || {}, baseContext.school),
               room: {
-                ...buildRoomTokenMap(rowEntry.candidate || {}, baseContext._roomAssignmentCountMap),
-                otherRoom: baseContext.room?.otherRoom || "",
+                ...baseContext.room,
+                ...buildRoomTokenMap(rowEntry.candidate),
               },
               row: {
                 index: rowEntry.isEmpty ? "" : rowEntry.rowNumber,

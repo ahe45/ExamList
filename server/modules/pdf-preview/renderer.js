@@ -5,7 +5,7 @@ const { getPreviewDocumentStyles } = require("./styles");
 const { escapeHtml } = require("./renderer-html-utils");
 const { renderDocumentPage } = require("./renderer-document-page");
 const { isCoverPage, renderPageNumberSetting, renderRecognitionMarks } = require("./renderer-page-settings");
-const { buildRoomTokenMap, createRoomAssignmentCountMap } = require("./room-context");
+const { buildRoomTokenMap } = require("./room-context");
 const { buildKyungheeCoverText, hasKyungheeCoverTag } = require("./kyunghee-cover");
 const {
   buildCandidateTokenMap,
@@ -16,13 +16,13 @@ const {
 } = require("./tokens");
 
 function createBaseContext({
+  assignedCount,
   candidates,
   emptyValueData = {},
   generatedAt,
   kyungheeCoverText = "",
   pageNumber,
   representativeCandidate,
-  roomAssignmentCountMap,
   sampleData = {},
   schoolSettings = {},
   templateName = "",
@@ -33,8 +33,7 @@ function createBaseContext({
   const candidate = representativeCandidate || {};
   const school = buildSchoolTokenMap(schoolSettings);
   const candidateAdmissionYear = String(candidate.admissionYear || formatDateValue(candidate.examDate, "-").slice(0, 4) || "");
-  const resolvedRoomAssignmentCountMap =
-    roomAssignmentCountMap instanceof Map ? roomAssignmentCountMap : createRoomAssignmentCountMap(candidates);
+  const documentCandidateCount = Array.isArray(candidates) ? candidates.length : 0;
 
   return {
     __emptyValueData: {
@@ -45,7 +44,6 @@ function createBaseContext({
     __sampleData: sampleData && typeof sampleData === "object" && !Array.isArray(sampleData) ? sampleData : {},
     __sampleFallbackForEmptyDataTags: isOtherRoomPage === true,
     __styleEmptyValueFallback: isOtherRoomPage !== true,
-    _roomAssignmentCountMap: resolvedRoomAssignmentCountMap,
     admission: {
       typeName: String(candidate.admissionTypeName || ""),
       unitName: String(candidate.majorName || candidate.departmentName || ""),
@@ -56,7 +54,7 @@ function createBaseContext({
       kyungheeCover: isOtherRoomPage ? "" : kyungheeCoverText,
       generatedAt: formatDateTimeValue(generatedAt),
       templateName: String(templateName || ""),
-      totalCandidates: Array.isArray(candidates) ? candidates.length : 0,
+      totalCandidates: documentCandidateCount,
       unitName: String(candidate.roomName || candidate.examName || candidate.admissionTypeName || ""),
     },
     exam: {
@@ -70,7 +68,8 @@ function createBaseContext({
       total: totalPages,
     },
     room: {
-      ...buildRoomTokenMap(candidate, resolvedRoomAssignmentCountMap),
+      ...buildRoomTokenMap(candidate),
+      assignedCount: assignedCount ?? documentCandidateCount,
       otherRoom: isOtherRoomPage === true ? otherRoomText : "",
     },
     row: {
@@ -88,7 +87,7 @@ function getTemplateDataTagSettings(template = {}) {
     : {};
 }
 
-function renderPreviewDocumentParts({ candidates, emptyValueData = null, generatedAt, kyungheeCoverText = null, sampleData = null, schoolSettings = {}, template }) {
+function renderPreviewDocumentParts({ assignedCount, candidates, emptyValueData = null, generatedAt, kyungheeCoverText = null, sampleData = null, schoolSettings = {}, template }) {
   const previewPages = buildPreviewPages(template?.layout, candidates);
   const totalPages = previewPages.length;
   const dataTagSettings = getTemplateDataTagSettings(template);
@@ -101,7 +100,6 @@ function renderPreviewDocumentParts({ candidates, emptyValueData = null, generat
       ? emptyValueData
       : dataTagSettings.emptyValueData || resolvedSampleData;
   const pageNumberByIndex = new Map();
-  const roomAssignmentCountMap = createRoomAssignmentCountMap(candidates);
   const resolvedKyungheeCoverText = kyungheeCoverText ?? (hasKyungheeCoverTag(template) ? buildKyungheeCoverText(candidates) : "");
   let totalNumberedPages = 0;
 
@@ -119,6 +117,7 @@ function renderPreviewDocumentParts({ candidates, emptyValueData = null, generat
       const representativeCandidate = pageInstance.representativeCandidate || pageInstance.rows[0] || candidates[0] || null;
       const page = pageInstance.page;
       const baseContext = createBaseContext({
+        assignedCount,
         candidates,
         emptyValueData: resolvedEmptyValueData,
         generatedAt,
@@ -127,7 +126,6 @@ function renderPreviewDocumentParts({ candidates, emptyValueData = null, generat
         otherRoomText: typeof page?.settings?.otherRoomPage?.text === "string" ? page.settings.otherRoomPage.text : "타고사실",
         pageNumber: pageNumberByIndex.get(index) || 0,
         representativeCandidate,
-        roomAssignmentCountMap,
         sampleData: resolvedSampleData,
         schoolSettings,
         templateName: template?.name || "",

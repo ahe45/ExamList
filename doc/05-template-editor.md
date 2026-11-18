@@ -301,7 +301,7 @@ API:
 - `candidate.buildingCode`
 - `candidate.roomName`
 - `candidate.roomCode`
-- `room.assignedCount`
+- `room.assignedCount`: 현재 PDF 생성 대상의 전체 배정인원. 한 대상을 여러 PDF로 분할해도 같은 인원을 표시합니다.
 - `room.otherRoom`
 
 수험생 정보:

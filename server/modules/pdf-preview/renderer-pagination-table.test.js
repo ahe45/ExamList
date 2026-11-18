@@ -87,7 +87,7 @@ test("renderPreviewDocument replaces tokens and paginates table rows", () => {
   assert.match(result.pages[2]?.html || "", /<span class="template-data-fit" data-template-data-fit="true">3<\/span>[\s\S]*박민수/);
 });
 
-test("renderPreviewDocument renders assigned counts by exam room", () => {
+test("renderPreviewDocument uses the generation target count for rows from different rooms", () => {
   const layout = normalizeTemplateLayout(
     {
       pages: [
@@ -135,12 +135,13 @@ test("renderPreviewDocument renders assigned counts by exam room", () => {
       { buildingName: "본관", name: "박민수", roomName: "102호" },
     ],
     generatedAt: new Date("2026-04-20T09:00:00+09:00"),
-    template: createTemplate(layout),
+    template: { ...createTemplate(layout), generationUnit: "unit" },
   });
 
-  assert.match(result.html, /홍길동[\s\S]*101호[\s\S]*2/);
-  assert.match(result.html, /김영희[\s\S]*101호[\s\S]*2/);
-  assert.match(result.html, /박민수[\s\S]*102호[\s\S]*1/);
+  const cellValues = [...result.html.matchAll(/data-template-data-fit="true">([^<]+)<\/span>/g)]
+    .map((match) => match[1]);
+
+  assert.deepEqual(cellValues, ["홍길동", "101호", "3", "김영희", "101호", "3", "박민수", "102호", "3"]);
 });
 
 test("renderPreviewDocument applies table column date format", () => {

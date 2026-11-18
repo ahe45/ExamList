@@ -52,6 +52,7 @@ function createService({
       return {
         async beginTransaction() {},
         async commit() {},
+        async query() { return [[]]; },
         release() {},
         async rollback() {},
       };
@@ -158,6 +159,7 @@ test("candidate import writes 500-row batches in one transaction", async () => {
     async commit() {
       calls.push("commit");
     },
+    async query() { return [[]]; },
     release() {
       calls.push("release");
     },
@@ -202,6 +204,7 @@ test("candidate import rolls back every batch when a bulk write fails", async ()
     async commit() {
       calls.push("commit");
     },
+    async query() { return [[]]; },
     release() {
       calls.push("release");
     },
@@ -233,4 +236,33 @@ test("candidate import rolls back every batch when a bulk write fails", async ()
     expectedError,
   );
   assert.deepEqual(calls, ["begin", "write:500", "write:1", "rollback", "release"]);
+});
+
+test("candidate import rolls back when the final room code mapping conflicts", async () => {
+  const calls = [];
+  const service = createService({
+    getPool: () => ({
+      async getConnection() {
+        return {
+          async beginTransaction() {},
+          async query(sql, params) {
+            if (!sql.includes("HAVING COUNT(DISTINCT building_code, room)")) return [[]];
+            assert.deepEqual(params, ["school-1", "2026-03-28", "P1", "R101"]);
+            return [[{ examDate: "2026-03-28", periodCode: "P1", code: "R101" }]];
+          },
+          async commit() { calls.push("commit"); },
+          async rollback() { calls.push("rollback"); },
+          release() {},
+        };
+      },
+    }),
+    upsertCandidateWorkbookRows: async () => calls.push("write"),
+    workbookRows: [createCandidateRow()],
+  });
+
+  await assert.rejects(service.importCandidates({ fileContentBase64: "xlsx", schoolId: "school-1" }), {
+    errorCode: "CANDIDATE_LOCATION_CODE_CONFLICT",
+    statusCode: 409,
+  });
+  assert.deepEqual(calls, ["write", "rollback"]);
 });

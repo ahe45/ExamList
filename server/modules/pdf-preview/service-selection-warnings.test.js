@@ -109,7 +109,7 @@ test("previewTemplate renders sample values when candidate data is empty", async
   assert.match(payload.previewHtml, /25/);
 });
 
-test("previewTemplate can render actual candidates for generation previews", async () => {
+test("previewTemplate renders actual candidates with the generation target count before pagination", async () => {
   let receivedQuery = null;
   const service = createPdfPreviewService({
     candidateService: {
@@ -117,6 +117,7 @@ test("previewTemplate can render actual candidates for generation previews", asy
         receivedQuery = query;
 
         return {
+          total: 501,
           items: [
             {
               examNo: "26010001",
@@ -160,7 +161,7 @@ test("previewTemplate can render actual candidates for generation previews", asy
                 sortDirection: "desc",
                 sortKey: "name",
               },
-              documentHtml: '<div class="template-doc"><p>{{candidate.name}}</p></div>',
+              documentHtml: '<div class="template-doc"><p>{{candidate.name}} / {{room.assignedCount}}명 / {{document.totalCandidates}}명</p></div>',
               editorMode: "document",
             },
             type: "content",
@@ -181,7 +182,42 @@ test("previewTemplate can render actual candidates for generation previews", asy
   assert.equal(receivedQuery.sortDirection, "desc");
   assert.equal(receivedQuery.sortKey, "name");
   assert.match(payload.previewHtml, /실제이름/);
+  assert.match(payload.previewHtml, /501명 \/ 1명/);
   assert.doesNotMatch(payload.previewHtml, /샘플이름/);
+});
+
+test("resolvePreviewPayload counts only the selected custom target when the preview is unfiltered", async () => {
+  const candidate = { examDate: "2026-11-21", periodCode: "1", major: "성호관 소극장", roomCode: "R101" };
+  const queries = [];
+  const service = createPdfPreviewService({
+    candidateService: {
+      async findCandidates(query) {
+        queries.push(query);
+        return { items: [candidate], total: query.major ? 100 : 2624 };
+      },
+    },
+    createHttpError,
+    pdfTemplateService: {},
+  });
+
+  const payload = await service.resolvePreviewPayload({
+    sampleLimit: 1,
+    template: {
+      generationUnit: "custom",
+      layout: {
+        generation: { unit: "custom", unitFields: ["date", "periodCode", "major"] },
+        pages: [{ type: "cover" }],
+      },
+    },
+  });
+
+  assert.equal(payload.candidates.length, 1);
+  assert.equal(payload.assignedCount, 100);
+  const [, targetQuery] = queries;
+  assert.equal(targetQuery.examDate, candidate.examDate);
+  assert.equal(targetQuery.periodCode, candidate.periodCode);
+  assert.equal(targetQuery.major, candidate.major);
+  assert.equal(targetQuery.roomCode, undefined);
 });
 
 test("previewTemplate includes the other room page for room generation previews", async () => {

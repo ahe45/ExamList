@@ -1,5 +1,7 @@
 const { candidateFieldMap } = require("./field-map");
 const { createCandidateImportService } = require("./import-service");
+const { assertUniqueCandidateLocationCodes, lockCandidateSchool } = require("./location-code-policy");
+const { withDatabaseTransaction } = require("../database/connection");
 const {
   normalizeCandidateFilter,
   normalizeCandidateRecordInput,
@@ -71,27 +73,30 @@ function createCandidateRecordService({ createHttpError, getDefaultSchoolId = nu
 
   async function updateCandidate(candidateId, payload = {}, options = {}) {
     const normalizedCandidateId = String(candidateId || "").trim();
-    const schoolId = String(options.schoolId || payload.schoolId || "").trim();
+    const requestedSchoolId = String(options.schoolId || payload.schoolId || "").trim();
 
     if (!normalizedCandidateId) {
       throw createHttpError(400, "수험생 식별자가 필요합니다.", "CANDIDATE_ID_REQUIRED");
     }
 
-    const existingCandidate = await candidateRepository.getCandidateWorkbookRowById(normalizedCandidateId, { schoolId });
-
-    if (!existingCandidate) {
+    const schoolId = requestedSchoolId || (await candidateRepository.getCandidateWorkbookRowById(normalizedCandidateId))?.schoolId;
+    if (!schoolId) {
       throw createHttpError(404, "수험생 정보를 찾을 수 없습니다.", "CANDIDATE_NOT_FOUND");
     }
 
-    const normalizedRow = normalizeCandidateWorkbookInput(
-      {
-        ...toCandidateWorkbookRow(existingCandidate),
-        ...payload,
-      },
-      -1,
-    );
+    await withDatabaseTransaction(getPool, async (connection) => {
+      await lockCandidateSchool(connection, schoolId);
+      const writeOptions = { connection, schoolId };
+      const existingCandidate = await candidateRepository.getCandidateWorkbookRowById(normalizedCandidateId, writeOptions);
 
-    await candidateRepository.updateCandidateRowById(normalizedCandidateId, normalizedRow, { schoolId });
+      if (!existingCandidate) {
+        throw createHttpError(404, "수험생 정보를 찾을 수 없습니다.", "CANDIDATE_NOT_FOUND");
+      }
+
+      const normalizedRow = normalizeCandidateWorkbookInput({ ...toCandidateWorkbookRow(existingCandidate), ...payload }, -1);
+      await candidateRepository.updateCandidateRowById(normalizedCandidateId, normalizedRow, writeOptions);
+      await assertUniqueCandidateLocationCodes(connection, schoolId, [normalizedRow], createHttpError);
+    });
 
     return candidateRepository.getCandidateViewRowById(normalizedCandidateId, { schoolId });
   }

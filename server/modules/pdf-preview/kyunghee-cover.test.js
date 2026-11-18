@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { buildKyungheeCoverText, resolveKyungheeCoverText } = require("./kyunghee-cover");
+const { buildKyungheeCoverText, resolveKyungheeCoverData } = require("./kyunghee-cover");
 const { createPdfPreviewService } = require("./service");
 const { renderPreviewDocument } = require("./renderer");
 
@@ -49,7 +49,7 @@ test("cover reads the entire generation group across query pages while preservin
   const last = { ...first, examNo: "3005650052" };
   const foreign = { ...first, periodCode: "002", examNo: "9999999999" };
   const queries = [];
-  const text = await resolveKyungheeCoverText({
+  const result = await resolveKyungheeCoverData({
     candidateService: { async findCandidates(query) {
       queries.push(query);
       return { items: query.page === 1 ? [first, foreign] : [last], total: 3, limit: 2 };
@@ -57,7 +57,7 @@ test("cover reads the entire generation group across query pages while preservin
     template: template(), schoolId: "school-test", filters: { admissionCode: "A", keyword: "선택조건" },
     candidatePayload: { items: [first], total: 3 }, samplePage: 2,
   });
-  assert.equal(text, "자유전공학부\n: 3005650027 ~ 3005650052");
+  assert.deepEqual(result, { assignedCount: 2, text: "자유전공학부\n: 3005650027 ~ 3005650052" });
   assert.equal(queries.length, 2);
   assert.deepEqual(queries.map((q) => [q.schoolId, q.admissionCode, q.keyword, q.date, q.roomCode, q.page]), [
     ["school-test", "A", "선택조건", "2026-08-08", "006", 1],
@@ -67,7 +67,7 @@ test("cover reads the entire generation group across query pages while preservin
 
 test("complete query results isolate the selected date, period and room without another read", async () => {
   const candidate = { examDate: "2026-08-08", periodCode: "1", roomCode: "1", unit: "학과", examNo: "01" };
-  const result = await resolveKyungheeCoverText({
+  const result = await resolveKyungheeCoverData({
     candidateService: { findCandidates() { assert.fail("unnecessary database read"); } },
     template: template(), schoolId: "school-test", filters: {}, samplePage: 1,
     candidatePayload: { total: 4, items: [candidate,
@@ -76,7 +76,7 @@ test("complete query results isolate the selected date, period and room without 
       { ...candidate, roomCode: "2", examNo: "97" },
     ] },
   });
-  assert.equal(result, "학과\n: 01 ~ 01");
+  assert.deepEqual(result, { assignedCount: 1, text: "학과\n: 01 ~ 01" });
 });
 
 test("actual preview displays full group ranges even when rendering only one candidate", async () => {

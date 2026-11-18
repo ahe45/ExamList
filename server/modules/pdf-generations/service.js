@@ -287,6 +287,7 @@ function createPdfGenerationService({
     await cleanupExpiredPdfGenerationPreviews(2 * 60 * 60 * 1000, storageRoot);
 
     const previewDocument = renderPreviewDocument({
+      assignedCount: renderActualCandidates ? previewPayload.assignedCount : undefined,
       candidates: renderCandidates,
       emptyValueData: previewPayload.emptyValueData,
       generatedAt,

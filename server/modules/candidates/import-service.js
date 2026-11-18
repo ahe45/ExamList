@@ -1,4 +1,5 @@
 const { createWorkbookSessionStore } = require("./workbook-session-store");
+const { assertUniqueCandidateLocationCodes, lockCandidateSchool } = require("./location-code-policy");
 const candidateFields = require("../../../shared/domain/candidate-fields");
 const { withDatabaseTransaction } = require("../database/connection");
 
@@ -94,7 +95,7 @@ function createCandidateImportService({
     return normalizedRows;
   }
 
-  async function getExistingCandidateImportRowsByKeys(candidateRows = [], schoolId = "") {
+  async function getExistingCandidateImportRowsByKeys(candidateRows = [], schoolId = "", executeQuery = query) {
     const normalizedExamineeNos = Array.from(
       new Set(
         (Array.isArray(candidateRows) ? candidateRows : [])
@@ -114,7 +115,7 @@ function createCandidateImportService({
       const placeholders = examineeChunk.map(() => "?").join(", ");
       const scopedConditions = schoolId ? "school_id = ? AND" : "";
       const scopedParams = schoolId ? [schoolId] : [];
-      const rows = await query(
+      const rows = await executeQuery(
         `
           SELECT
             id,
@@ -218,11 +219,20 @@ function createCandidateImportService({
     return ["insert", "update"].includes(String(operation || "").trim());
   }
 
-  async function saveCandidateRows(classifiedRows = [], options = {}) {
-    const schoolId = await resolveSchoolId(options.schoolId);
-    const candidateRows = (Array.isArray(classifiedRows) ? classifiedRows : []).map((entry) => entry.row);
-
+  async function saveCandidateRows(normalizedRows, { schoolId, existingDataPolicy, onProgress }) {
     return withDatabaseTransaction(getPool, async (connection) => {
+      await lockCandidateSchool(connection, schoolId);
+      const existingRowMap = await getExistingCandidateImportRowsByKeys(normalizedRows, schoolId,
+        async (sql, params) => (await connection.query(sql, params))[0],
+      );
+      const candidateRows = classifyCandidateImportRows(normalizedRows, existingRowMap)
+        .filter((entry) => shouldProcessCandidateImportOperation(entry.operation, existingDataPolicy))
+        .map((entry) => entry.row);
+
+      if (!candidateRows.length) {
+        throw createHttpError(400, "선택한 기존 데이터 처리 방식에 따라 반영할 수험생 데이터가 없습니다.", "CANDIDATE_IMPORT_NOTHING_SELECTED");
+      }
+
       let processed = 0;
 
       for (let startIndex = 0; startIndex < candidateRows.length; startIndex += CANDIDATE_IMPORT_WRITE_BATCH_SIZE) {
@@ -233,9 +243,10 @@ function createCandidateImportService({
           schoolId,
         });
         processed += batchRows.length;
-        await options.onProgress?.({ processed, total: candidateRows.length });
+        await onProgress?.({ processed, total: candidateRows.length });
       }
 
+      await assertUniqueCandidateLocationCodes(connection, schoolId, candidateRows, createHttpError);
       return { processed };
     });
   }
@@ -306,16 +317,7 @@ function createCandidateImportService({
       ? await sessions.get(payload.previewToken, schoolId, payload.ownerId || "")
       : prepareCandidateImportRows(await parseCandidateWorkbook(payload.fileContentBase64));
     const existingDataPolicy = normalizeCandidateImportExistingDataPolicy(payload.existingDataPolicy);
-    const existingRowMap = await getExistingCandidateImportRowsByKeys(normalizedRows, schoolId);
-    const selectedRows = classifyCandidateImportRows(normalizedRows, existingRowMap).filter((entry) =>
-      shouldProcessCandidateImportOperation(entry.operation, existingDataPolicy),
-    );
-
-    if (!selectedRows.length) {
-      throw createHttpError(400, "선택한 기존 데이터 처리 방식에 따라 반영할 수험생 데이터가 없습니다.", "CANDIDATE_IMPORT_NOTHING_SELECTED");
-    }
-
-    const result = await saveCandidateRows(selectedRows, { schoolId, onProgress: payload.onProgress });
+    const result = await saveCandidateRows(normalizedRows, { schoolId, existingDataPolicy, onProgress: payload.onProgress });
     if (sessions && payload.previewToken) await sessions.remove(payload.previewToken);
     return result;
   }

@@ -536,10 +536,14 @@ function createCandidateReadRepository({ createHttpError, query }) {
 
   async function getCandidateWorkbookRowById(candidateId, options = {}) {
     const schoolId = String(options.schoolId || "").trim();
-    const [candidateRow] = await query(
+    const executeQuery = options.connection
+      ? async (sql, params) => (await options.connection.query(sql, params))[0]
+      : query;
+    const [candidateRow] = await executeQuery(
       `
         SELECT
           id,
+          school_id AS schoolId,
           designated_sort AS designatedSort,
           admission_year AS admissionYear,
           exam_date AS date,

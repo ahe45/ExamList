@@ -152,8 +152,11 @@ function createCandidateWriteRepository({ query, resolveSchoolId }) {
   async function updateCandidateRowById(candidateId, row = {}, options = {}) {
     const schoolId = String(options.schoolId || "").trim();
     const sourceId = createCandidateRecordSourceId(row);
+    const executeQuery = options.connection
+      ? (sql, params) => options.connection.query(sql, params)
+      : query;
 
-    await query(
+    await executeQuery(
       `
         UPDATE candidate_records
         SET

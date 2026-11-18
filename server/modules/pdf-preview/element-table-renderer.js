@@ -90,8 +90,8 @@ function renderTableElement(element, pageInstance, baseContext) {
                 ...baseContext,
                 candidate: buildCandidateTokenMap(rowEntry.candidate || {}, baseContext.school),
                 room: {
-                  ...buildRoomTokenMap(rowEntry.candidate || {}, baseContext._roomAssignmentCountMap),
-                  otherRoom: baseContext.room?.otherRoom || "",
+                  ...baseContext.room,
+                  ...buildRoomTokenMap(rowEntry.candidate),
                 },
                 row: {
                   index: rowEntry.isEmpty ? "" : rowEntry.rowNumber,

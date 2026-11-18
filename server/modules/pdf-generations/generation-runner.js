@@ -90,6 +90,7 @@ function createPdfGenerationRunner({
       template: previewPayload.template,
     });
     const previewDocument = renderPreviewDocument({
+      assignedCount: previewPayload.assignedCount,
       candidates: previewPayload.candidates,
       emptyValueData: previewPayload.emptyValueData,
       generatedAt: previewPayload.generatedAt,

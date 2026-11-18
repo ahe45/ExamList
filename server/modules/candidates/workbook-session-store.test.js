@@ -26,7 +26,7 @@ test("final workbook save reuses parsed rows but compares against current databa
   const row = { examineeNo: "1", periodCode: "P1", name: "updated" };
   const service = createCandidateImportService({ rootDir: root,
     createHttpError: (statusCode, message, errorCode) => Object.assign(new Error(message), { statusCode, errorCode }),
-    getPool: () => ({ getConnection: async () => ({ beginTransaction: async () => {}, commit: async () => { committed = true; }, rollback: async () => {}, release() {} }) }),
+    getPool: () => ({ getConnection: async () => ({ beginTransaction: async () => {}, commit: async () => { committed = true; }, query: async sql => [sql.includes("AS examineeNo") ? existing : []], rollback: async () => {}, release() {} }) }),
     normalizeCandidateWorkbookInput: row => row, parseCandidateWorkbook: async () => { parses++; return [row]; },
     query: async () => existing, resolveSchoolId: async id => id, toCandidateWorkbookRow: row => row,
     upsertCandidateWorkbookRows: async rows => { written.push(...rows); },
