@@ -3,6 +3,8 @@ const { getGenerationTargetStrategy, resolveGenerationRequestTargetName } = requ
 const { normalizeGenerationCandidateSort } = require("./candidate-sort");
 const { getTemplateGenerationUnitFields } = require("./generation-unit-fields");
 
+const generationResultListFields = Object.freeze(["admission", "unit", "room"]);
+
 const generationResultScopeCandidateFields = Object.freeze({
   admission: Object.freeze(["admission", "admissionTypeName"]),
   building: Object.freeze(["building", "buildingName"]),
@@ -88,18 +90,23 @@ function getCandidateScopeValue(candidate = {}, fieldAliases = []) {
 function buildGenerationResultScopeSnapshot(candidates = []) {
   const candidateRows = Array.isArray(candidates) ? candidates : [];
   const scopeEntries = Object.entries(generationResultScopeCandidateFields).flatMap(([key, fieldAliases]) => {
-    const values = [
-      ...new Set(
-        candidateRows
-          .map((candidate) => getCandidateScopeValue(candidate, fieldAliases))
-          .filter(Boolean),
-      ),
-    ];
+    const values = getCandidateScopeValues(candidateRows, fieldAliases);
 
     return values.length === 1 ? [[key, values[0]]] : [];
   });
 
   return Object.fromEntries(scopeEntries);
+}
+
+function getCandidateScopeValues(candidates, fieldAliases) {
+  return [...new Set(candidates.map((candidate) => getCandidateScopeValue(candidate, fieldAliases)).filter(Boolean))];
+}
+
+function buildGenerationResultScopeValues(candidates = []) {
+  return Object.fromEntries(generationResultListFields.map((key) => [
+    key,
+    getCandidateScopeValues(candidates, generationResultScopeCandidateFields[key]),
+  ]));
 }
 
 function buildGenerationRequestSnapshot({
@@ -142,6 +149,7 @@ function buildGenerationRequestSnapshot({
     candidateSort: normalizeGenerationCandidateSort(request.candidateSort),
     filters,
     generationUnit,
+    resultScopeValues: buildGenerationResultScopeValues(candidates),
     sampleLimit: normalizePositiveInteger(request.sampleLimit || chunk?.chunkSize, 5000, 1, 5000),
     targetName,
     template: normalizedTemplate,
@@ -269,5 +277,7 @@ module.exports = {
   buildGenerationRequestSummary,
   buildGenerationRequestSnapshot,
   buildGenerationResultScopeSnapshot,
+  buildGenerationResultScopeValues,
+  generationResultListFields,
   restoreGenerationRequestFromHistory,
 };

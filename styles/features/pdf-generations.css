@@ -306,6 +306,26 @@
   user-select: none;
 }
 
+.pdf-generation-scope-values summary {
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.pdf-generation-scope-values ul {
+  list-style: none;
+  margin: 4px 0 0;
+  max-height: 12rem;
+  overflow: auto;
+  padding: 0;
+  text-align: left;
+  user-select: text;
+}
+
+.pdf-generation-scope-values li {
+  overflow-wrap: anywhere;
+  padding: 2px 0;
+}
+
 .pdf-generation-select-column {
   width: 46px;
 }

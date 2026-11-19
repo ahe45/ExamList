@@ -1,6 +1,6 @@
 const { normalizeProgressPercent } = require("./queue-options");
 const { normalizeGenerationRequestFilters } = require("./filters");
-const { buildGenerationRequestSummary } = require("./snapshots");
+const { buildGenerationRequestSummary, generationResultListFields } = require("./snapshots");
 const { parseJsonColumn, terminalGenerationStatuses } = require("./filters");
 
 const generationResultScopeKeys = Object.freeze([
@@ -42,8 +42,7 @@ const generationScopeFilterFallbackMap = Object.freeze({
   unit: "unitCode",
 });
 
-function buildGenerationResultScope(row = {}) {
-  const requestSnapshot = parseJsonColumn(row.requestJson, null);
+function buildGenerationResultScope(row, requestSnapshot) {
   const filters = normalizeGenerationRequestFilters(requestSnapshot?.filters);
   const resultScope = normalizeGenerationRequestFilters(requestSnapshot?.resultScope);
   const generationUnit = String(
@@ -80,6 +79,15 @@ function buildGenerationResultScope(row = {}) {
 function mapGenerationRow(row) {
   const status = String(row.status || "completed");
   const purgedAt = row.purgedAt instanceof Date ? row.purgedAt.toISOString() : String(row.purgedAt || "");
+  const requestSnapshot = parseJsonColumn(row.requestJson, null);
+  const resultScopeValues = Object.fromEntries(generationResultListFields.flatMap((key) => {
+    const values = requestSnapshot?.resultScopeValues?.[key];
+    if (Array.isArray(values)) {
+      return [[key, values]];
+    }
+    const savedValue = String(requestSnapshot?.resultScope?.[key] || "").trim();
+    return savedValue && savedValue !== "-" ? [[key, [savedValue]]] : [];
+  }));
 
   return {
     batchId: String(row.batchId || ""),
@@ -101,7 +109,8 @@ function mapGenerationRow(row) {
     attemptCount: Number(row.attemptCount) || 1,
     maxAttempts: Number(row.maxAttempts) || 1,
     errorMessage: String(row.errorMessage || ""),
-    resultScope: buildGenerationResultScope(row),
+    resultScope: buildGenerationResultScope(row, requestSnapshot),
+    resultScopeValues,
     warnings: parseJsonColumn(row.warningJson, []),
     completedAt: row.completedAt instanceof Date ? row.completedAt.toISOString() : String(row.completedAt || ""),
     createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt || ""),

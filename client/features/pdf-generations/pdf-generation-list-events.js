@@ -167,7 +167,8 @@ export function handlePdfGenerationListMouseDown(event, context) {
     return false;
   }
 
-  if (!event.target.closest("[data-generation-row-id], [data-pdf-generation-select]")) {
+  if (event.target.closest(".pdf-generation-scope-values") ||
+      !event.target.closest("[data-generation-row-id], [data-pdf-generation-select]")) {
     return false;
   }
 

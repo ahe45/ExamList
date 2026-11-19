@@ -120,3 +120,54 @@ test("listPdfGenerations infers missing display scope from current candidate dat
   assert.equal(queryParams[0].status, "completed");
   assert.equal(queryParams[1].status, "completed");
 });
+
+test("listPdfGenerations reconstructs older mixed cells from the saved PDF page", async () => {
+  const snapshot = {
+    candidatePage: 2,
+    candidateSort: { sortKey: "name", sortDirection: "desc" },
+    filters: { date: "2026-11-21", periodCode: "1", major: "성호관" },
+    generationUnit: "custom",
+    generationUnitFields: ["date", "periodCode", "major"],
+    resultScope: { admission: "생성 당시 전형", track: "수시" },
+    sampleLimit: 2,
+  };
+  const oldRow = { id: "older", schoolId: "school-1", candidateCount: 2, requestJson: JSON.stringify(snapshot) };
+  const savedRow = {
+    ...oldRow,
+    id: "newer",
+    requestJson: JSON.stringify({
+      ...snapshot,
+      resultScopeValues: { admission: ["전형A", "전형B"], unit: [], room: ["103호"] },
+    }),
+  };
+  let lookups = 0;
+  const actions = createPdfGenerationReadActions({
+    candidateService: {
+      async findCandidates(filters) {
+        lookups += 1;
+        assert.deepEqual(filters, {
+          ...snapshot.filters,
+          ...snapshot.candidateSort,
+          schoolId: "school-1",
+          page: 2,
+          limit: 2,
+        });
+        const group = { date: "2026-11-21", periodCode: "1", major: "성호관", admission: "현재 전형" };
+        return { items: [
+          { ...group, unit: "국문과", room: "101호" },
+          { ...group, unit: "영문과", room: "102호" },
+        ] };
+      },
+    },
+    query: async (sql) => sql.includes("COUNT(*) AS total") ? [{ total: 2 }] : [oldRow, savedRow],
+  });
+
+  const result = await actions.listPdfGenerations({ schoolId: "school-1" });
+  assert.equal(lookups, 1);
+  assert.deepEqual(result.items[0].resultScopeValues, {
+    admission: ["생성 당시 전형"], unit: ["국문과", "영문과"], room: ["101호", "102호"],
+  });
+  assert.deepEqual(result.items[1].resultScopeValues, {
+    admission: ["전형A", "전형B"], unit: [], room: ["103호"],
+  });
+});

@@ -3,6 +3,10 @@ const { createRequestSnapshotStore } = require("./request-snapshot-store");
 const { normalizeGenerationListFilter, normalizeGenerationRequestFilters, parseJsonColumn } = require("./filters");
 const { mapBatchRow, mapGenerationDetailRow, mapGenerationRow } = require("./mappers");
 const { summarizePdfGenerationBatchStatus } = require("./batch-status");
+const { normalizeGenerationCandidateSort } = require("./candidate-sort");
+const { getTemplateGenerationUnitFields } = require("./generation-unit-fields");
+const { buildGenerationResultScopeValues, generationResultListFields } = require("./snapshots");
+const { selectPreviewCandidates } = require("../pdf-preview/service");
 
 const generationResultScopeCandidateColumns = Object.freeze({
   admission: "admission",
@@ -86,6 +90,7 @@ function buildResultScopeFromCandidateAggregate(row = {}) {
 }
 
 function createPdfGenerationReadActions({
+  candidateService,
   createHttpError,
   getBatchGenerationRows,
   getBatchRow,
@@ -131,9 +136,51 @@ function createPdfGenerationReadActions({
     };
   }
 
+  async function inferMissingResultScopeValues(row) {
+    const snapshot = parseJsonColumn(row.requestJson, null);
+    if (!snapshot || typeof candidateService?.findCandidates !== "function" || !row.schoolId || !(Number(row.candidateCount) > 0)) {
+      return row;
+    }
+
+    const missingFields = generationResultListFields.filter((key) =>
+      !Array.isArray(snapshot.resultScopeValues?.[key]) && !snapshot.resultScope?.[key],
+    );
+    if (!missingFields.length) {
+      return row;
+    }
+
+    const payload = await candidateService.findCandidates({
+      ...normalizeGenerationRequestFilters(snapshot.filters),
+      ...normalizeGenerationCandidateSort(snapshot.candidateSort),
+      schoolId: row.schoolId,
+      page: snapshot.candidatePage || snapshot.chunk?.candidatePage || 1,
+      limit: snapshot.sampleLimit || snapshot.chunk?.chunkSize || 5000,
+    });
+    const { candidates } = selectPreviewCandidates(
+      payload.items,
+      snapshot.generationUnit || row.generationUnit,
+      snapshot.generationUnitFields ?? getTemplateGenerationUnitFields(snapshot.template, []),
+    );
+    if (candidates.length !== Number(row.candidateCount)) {
+      return row;
+    }
+
+    const values = buildGenerationResultScopeValues(candidates);
+    const resultScopeValues = {
+      ...snapshot.resultScopeValues,
+      ...Object.fromEntries(missingFields.map((key) => [key, values[key]])),
+    };
+    return { ...row, requestJson: JSON.stringify({ ...snapshot, resultScopeValues }) };
+  }
+
+  async function inferGenerationDisplayScope(row, scopeCache) {
+    const rowWithValues = await inferMissingResultScopeValues(row);
+    return inferMissingResultScope(rowWithValues, scopeCache);
+  }
+
   async function inferMissingResultScopes(rows = []) {
     const scopeCache = new Map();
-    return mapWithConcurrency(rows, 3, row => inferMissingResultScope(row, scopeCache));
+    return mapWithConcurrency(rows, 3, row => inferGenerationDisplayScope(row, scopeCache));
   }
 
   async function listPdfGenerations(rawFilter = {}) {
@@ -205,7 +252,13 @@ function createPdfGenerationReadActions({
           CASE WHEN JSON_VALID(request_json) THEN JSON_OBJECT(
             'filters', JSON_EXTRACT(request_json, '$.filters'),
             'resultScope', JSON_EXTRACT(request_json, '$.resultScope'),
+            'resultScopeValues', JSON_EXTRACT(request_json, '$.resultScopeValues'),
             'generationUnit', JSON_EXTRACT(request_json, '$.generationUnit'),
+            'generationUnitFields', JSON_EXTRACT(request_json, '$.template.layout.generation.unitFields'),
+            'candidatePage', JSON_EXTRACT(request_json, '$.candidatePage'),
+            'candidateSort', JSON_EXTRACT(request_json, '$.candidateSort'),
+            'sampleLimit', JSON_EXTRACT(request_json, '$.sampleLimit'),
+            'chunk', JSON_EXTRACT(request_json, '$.chunk'),
             'targetName', JSON_EXTRACT(request_json, '$.targetName')
           ) ELSE NULL END AS requestJson,
           expires_at AS expiresAt,
@@ -296,7 +349,7 @@ function createPdfGenerationReadActions({
       throw createHttpError(404, "PDF 생성 이력을 찾을 수 없습니다.", "PDF_GENERATION_DETAIL_NOT_FOUND");
     }
 
-    return mapGenerationDetailRow(await inferMissingResultScope(generationRow));
+    return mapGenerationDetailRow(await inferGenerationDisplayScope(generationRow));
   }
 
   return Object.freeze({

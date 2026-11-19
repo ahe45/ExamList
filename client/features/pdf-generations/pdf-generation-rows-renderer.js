@@ -2,12 +2,25 @@ import { hasAccess } from "../../app/access.js";
 import { renderGridStatusRow } from "../../app/data-grid-table.js";
 import { escapeHtml } from "../../app/html-utils.js";
 import { formatCount } from "../../app/number-format.js";
-import { normalizePdfGenerationGridValue, pdfGenerationGridColumns } from "./pdf-generation-table-model.js";
+import { getPdfGenerationGridValues, pdfGenerationGridColumns } from "./pdf-generation-table-model.js";
 
 const numericGenerationGridKeys = new Set(["candidateCount", "pageCount", "sequenceNumber"]);
 
 function renderGenerationTextCell(item = {}, column = {}) {
-  const rawValue = normalizePdfGenerationGridValue(item, column.key);
+  const values = getPdfGenerationGridValues(item, column.key);
+  if (values.length > 1) {
+    const summary = `${formatCount(values.length)}개 보기`;
+    return `
+      <td class="table-column-${escapeHtml(column.key)}">
+        <details class="pdf-generation-scope-values">
+          <summary aria-label="${escapeHtml(`${column.label} ${summary}`)}">${escapeHtml(summary)}</summary>
+          <ul>${values.map((value) => `<li>${escapeHtml(value)}</li>`).join("")}</ul>
+        </details>
+      </td>
+    `;
+  }
+
+  const [rawValue] = values;
   const value = numericGenerationGridKeys.has(column.key) ? formatCount(rawValue) : rawValue || "-";
 
   return `

@@ -39,6 +39,11 @@ export function getPdfGenerationTableState(pdfGenerations = {}) {
 }
 
 export function normalizePdfGenerationGridValue(item = {}, key = "") {
+  const values = item.resultScopeValues?.[key];
+  if (Array.isArray(values)) {
+    return values.join(", ") || "-";
+  }
+
   const resultScope = item.resultScope || {};
   const valueMap = {
     admission: resultScope.admission,
@@ -60,6 +65,11 @@ export function normalizePdfGenerationGridValue(item = {}, key = "") {
   };
 
   return String(valueMap[key] ?? item[key] ?? "").trim();
+}
+
+export function getPdfGenerationGridValues(item, key) {
+  const values = item.resultScopeValues?.[key];
+  return Array.isArray(values) && values.length ? values : [normalizePdfGenerationGridValue(item, key)];
 }
 
 function getGenerationSequenceTimestamp(item = {}) {
@@ -108,7 +118,7 @@ export function getPdfGenerationFilterOptionValues(pdfGenerations = {}, key = ""
   return Array.from(
     new Set(
       (Array.isArray(pdfGenerations.items) ? pdfGenerations.items : [])
-        .map((item) => normalizePdfGenerationGridValue(item, key))
+        .flatMap((item) => getPdfGenerationGridValues(item, key))
         .filter(Boolean),
     ),
   ).sort((left, right) => left.localeCompare(right, "ko", { numeric: true, sensitivity: "base" }));
@@ -155,7 +165,7 @@ export function getFilteredPdfGenerationRows(pdfGenerations = {}) {
   const rows = (Array.isArray(pdfGenerations.items) ? pdfGenerations.items : []).filter((item) =>
     filterEntries.every(([key, values]) => {
       const selectedValues = (Array.isArray(values) ? values : []).map((value) => String(value || "").trim()).filter(Boolean);
-      return !selectedValues.length || selectedValues.includes(normalizePdfGenerationGridValue(item, key));
+      return !selectedValues.length || getPdfGenerationGridValues(item, key).some((value) => selectedValues.includes(value));
     }),
   );
   const [sortRule] = Array.isArray(tableState.sortRules) ? tableState.sortRules : [];

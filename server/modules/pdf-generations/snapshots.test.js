@@ -54,11 +54,11 @@ test("buildGenerationRequestSnapshot stores unique display scope from generated 
         examDate: "2026-05-19",
         major: "영어영문",
         period: "1교시",
-        room: "101호",
-        roomCode: "R101",
+        room: "102호",
+        roomCode: "R102",
         time: "09:00",
         track: "수시",
-        unit: "인문대학",
+        unit: "사회과학대학",
       },
     ],
     request: {
@@ -82,10 +82,13 @@ test("buildGenerationRequestSnapshot stores unique display scope from generated 
     endTime: "10:00",
     examDate: "2026-05-19",
     period: "1교시",
-    room: "101호",
     time: "09:00",
     track: "수시",
-    unit: "인문대학",
+  });
+  assert.deepEqual(snapshot.resultScopeValues, {
+    admission: ["논술"],
+    unit: ["인문대학", "사회과학대학"],
+    room: ["101호", "102호"],
   });
   assert.equal(snapshot.resultScope.major, undefined);
   assert.equal(snapshot.filters.admissionCode, "A01");

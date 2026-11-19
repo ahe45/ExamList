@@ -22,7 +22,7 @@ export function resolvePdfGenerationFilterMenuPosition(triggerElement) {
 }
 
 export function isInteractiveGenerationTarget(target) {
-  return Boolean(target.closest?.("a, button, input, label, select, textarea, [data-action]"));
+  return Boolean(target.closest?.("a, button, input, label, select, textarea, .pdf-generation-scope-values, [data-action]"));
 }
 
 export function openPdfGenerationPrintWindow(printUrl = "") {

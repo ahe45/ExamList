@@ -107,6 +107,7 @@ function createPdfGenerationService({
     scheduleQueuedGeneration,
   } = pdfGenerationQueueService;
   const pdfGenerationHistoryService = createPdfGenerationHistoryService({
+    candidateService,
     createHttpError,
     createPdfGeneration,
     fs,

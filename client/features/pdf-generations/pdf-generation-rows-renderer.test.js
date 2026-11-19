@@ -56,3 +56,13 @@ test("empty PDF generation rows span the visible columns", () => {
   const html = renderGenerationRows([]);
   assert.match(html, new RegExp(`colspan="${pdfGenerationGridColumns.length + 2}"`));
 });
+
+test("PDF generation rows show every room in an expandable cell", () => {
+  const html = renderGenerationRows([{
+    id: "generation-1",
+    resultScopeValues: { room: ["101호", "102호 <별관>"] },
+  }]);
+
+  assert.match(html, /<summary aria-label="고사실 2개 보기">2개 보기<\/summary>/);
+  assert.match(html, /<ul><li>101호<\/li><li>102호 &lt;별관&gt;<\/li><\/ul>/);
+});

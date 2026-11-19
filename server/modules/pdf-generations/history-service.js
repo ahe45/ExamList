@@ -3,6 +3,7 @@ const { createPdfGenerationReadActions } = require("./history-read-service");
 const { createPdfGenerationRerunActions } = require("./history-rerun-service");
 
 function createPdfGenerationHistoryService({
+  candidateService,
   createHttpError,
   createPdfGeneration,
   fs,
@@ -18,6 +19,7 @@ function createPdfGenerationHistoryService({
     writeAuditLog,
   });
   const readActions = createPdfGenerationReadActions({
+    candidateService,
     createHttpError,
     getBatchGenerationRows,
     getBatchRow,

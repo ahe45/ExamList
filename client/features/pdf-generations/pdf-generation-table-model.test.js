@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   applyPdfGenerationSequenceNumbers,
   getFilteredPdfGenerationRows,
+  getPdfGenerationFilterOptionValues,
   getPdfGenerationTableState,
   pdfGenerationGridColumns,
 } from "./pdf-generation-table-model.js";
@@ -60,4 +61,17 @@ test("PDF generation grid defaults to sequence ascending sort", () => {
   });
 
   assert.deepEqual(rows.map((row) => row.id), ["first", "second"]);
+});
+
+test("PDF generation filters match each room in a multi-room PDF", () => {
+  const grid = {
+    items: [
+      { id: "mixed", resultScopeValues: { room: ["101호", "102호"] } },
+      { id: "single", resultScope: { room: "103호" } },
+    ],
+    table: { filters: { room: ["102호"] } },
+  };
+
+  assert.deepEqual(getPdfGenerationFilterOptionValues(grid, "room"), ["101호", "102호", "103호"]);
+  assert.deepEqual(getFilteredPdfGenerationRows(grid).map((item) => item.id), ["mixed"]);
 });
